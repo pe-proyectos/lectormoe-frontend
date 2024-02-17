@@ -1,0 +1,30 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+Astro.cookies.delete("token");
+Astro.cookies.delete("username");
+Astro.cookies.delete("user_slug");
+console.log('logged out');
+
+---
+
+<Layout title="lat-Manga - Tus mangas en latino">
+	<div id="logout"></div>
+</Layout>
+
+<script>
+    import { cookieStore } from 'cookie-store';
+	async function load() {
+		if (!document.querySelector("#logout")) {
+			return;
+		}
+		await Promise.all([
+			cookieStore.delete("token"),
+			cookieStore.delete("username"),
+			cookieStore.delete("user_slug"),
+		]);
+		window.location.href = "/";
+	}
+    document.addEventListener('astro:page-load', load, { once: false });
+</script>
+

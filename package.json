@@ -1,0 +1,29 @@
+{
+  "name": "latmanga-frontend",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.4.1",
+    "@astrojs/node": "^8.2.0",
+    "@types/page-flip": "^2.0.3",
+    "@types/toastify-js": "^1.12.3",
+    "astro": "^4.3.2",
+    "bun-types": "^1.0.25",
+    "cookie-store": "next",
+    "page-flip": "^2.0.7",
+    "toastify-js": "^1.12.0",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.2",
+    "daisyui": "latest",
+    "tailwindcss": "^3.4.1"
+  }
+}

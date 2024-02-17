@@ -1,0 +1,25 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/MangaCard.astro';
+
+const { data: mangas } = await Astro.locals.callAPI(`/api/manga`);
+const { data: demographies } = await Astro.locals.callAPI(`/api/demography`);
+
+---
+
+<Layout title="lat-Manga - Tus mangas en latino">
+    <div class="flex flex-wrap w-full place-content-around">
+		{demographies && demographies.map((demography: any, index: number) => {
+			return <a href={`/demography/${demography.slug}`} class="tooltip tooltip-bottom w-full cursor-pointer sm:w-auto mt-2 mx-4" data-tip={demography.description}>
+				<span class="label-text mr-2">{demography.name}</span>
+			</a>
+		})}
+	</div>
+    <div class="flex w-full justify-center">
+		<div class="flex flex-wrap justify-center">
+			{mangas && mangas.map((manga: any) => {
+				return <Card manga={manga} />
+			})}
+		</div>
+	</div>
+</Layout>

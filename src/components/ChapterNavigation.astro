@@ -1,0 +1,82 @@
+---
+interface Props {
+    isTop: boolean;
+    currentPageNumber: number;
+	manga: any;
+    chapter: any;
+}
+
+const { isTop, manga, chapter, currentPageNumber } = Astro.props;
+---
+
+<div class="sticky z-10 top-0 bg-base-100 bg-opacity-95 opacity-95 shadow-md md:shadow-lg pt-2 flex flex-wrap place-content-between justify-center">
+    <select class="select page-select min-w-40 mb-2 sm:mx-4 sm:max-w-64 md:mx-auto w-full md:w-auto select-bordered select-sm">
+        {
+            chapter.pages.map((page: any) => (
+                <option
+                    value={page.number}
+                    selected={page.number === currentPageNumber}>
+                    Página {page.number}
+                </option>
+            ))
+        }
+    </select>
+    {
+        isTop
+        ? (
+            <a
+                href={`/manga/${manga.slug}`}
+                class="uppercase font-bold text-xl text-center cursor-pointer" >
+                <h4 transition:name={`manga_title_${manga.slug}`}>
+                    {manga.title}
+                </h4>
+            </a>
+        )
+        : (
+            <a
+                href={`/manga/${manga.slug}/chapter/${chapter.slug}`}
+                class="uppercase font-bold text-xl text-center cursor-pointer" >
+                {manga.title}
+            </a>
+        )
+    }
+    <select class="select chapter-select min-w-40 mb-2 sm:mx-4 md:mx-auto w-full sm:max-w-64 md:w-auto select-bordered select-sm text-right join-item">
+        {
+            manga.chapters.map((manga_chapter: any) => (
+                <option
+                    data-chapter-number={manga_chapter.number}
+                    value={manga_chapter.number}
+                    data-is-current-chapter={manga_chapter.number === chapter.number ? 'true' : 'false'}
+                    selected={manga_chapter.number === chapter.number}
+                    disabled={manga_chapter.number === chapter.number}>
+                    {manga_chapter.title} - #{manga_chapter.number}
+                </option>
+            ))
+        }
+    </select>
+    <!-- Hidden anchor tags to navigate to the selected chapter with the navigation API-->
+    <div class="hidden w-0 h-0 opacity-0">
+        {
+            manga.chapters.map((manga_chapter: any) => (
+                <a
+                    class="chapter-href"
+                    data-chapter-number={manga_chapter.number}
+                    href={`/manga/${manga.slug}/chapter/${manga_chapter.slug}`} />
+            ))
+        }
+    </div>
+</div>
+
+<script>
+    function load() {
+        document.querySelectorAll(".chapter-select")
+            .forEach(elem => {
+                const chapterSelect = elem as HTMLSelectElement;
+                chapterSelect.addEventListener('change', () => {
+                    const selectedChapterHref = document.querySelector(`.chapter-href[data-chapter-number="${chapterSelect.value}"]`) as HTMLAnchorElement;
+                    selectedChapterHref?.click();
+                });
+            });
+    }
+    document.addEventListener('astro:page-load', load, { once: false });
+</script>

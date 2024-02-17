@@ -1,0 +1,142 @@
+---
+interface Props {
+    manga: any;
+    chapter: any;
+}
+
+const { manga, chapter } = Astro.props;
+---
+
+<dialog id="modal_last_chapter" class="modal">
+  <div class="modal-box">
+    <h3 class="text-lg text-font-djb">{manga.title}</h3>
+    <h4 class="text-lg">#{chapter.number} {chapter.title}</h4>
+    <p class="py-4 font-bold text-md">Vaya! Parece que llegaste al final.</p>
+    {
+        !!manga.next_chapter_date &&
+        (
+            <p class="pt-4">
+                <span>El siguiente capítulo estará disponible el</span>
+                <span class="text-red-300">{manga.next_chapter_date}</span>
+            </p>
+        )
+    }
+    <p class="pt-2">
+        Comparte tu opinión de este manga con el mundo.
+    </p>
+    <div class="flex flex-wrap place-content-around overflow-hidden">
+        {
+            ['C', 'B', 'A', 'S'].map(rank => (
+                <label class="swap text-6xl text-center min-h-32 text-base-300 hover:text-accent">
+                    <input id={`rank-${rank}`} type="checkbox" class="rank-checkbox" data-rank={rank} />
+                    <div class="swap-on">
+                        <span class="font-bold text-font-djb text-red-500">{rank}</span>
+                    </div>
+                    <div class="swap-off">
+                        <span class="text-4xl text-font-djb">{rank}</span>
+                    </div>
+                </label>
+            ))
+        }
+    </div>
+    <p class="text-sm">
+        C = Regular, B = Bueno, A = Excelente, S = Perfecto
+    </p>
+    <p class="pt-4">
+        Dejános un comentario corto sobre este manga.
+    </p>
+    <textarea class="w-full border-2 border-accent p-2 mt-2" required></textarea>
+    <input id="hidden-manga-slug" type="text" class="hidden" value={manga.slug} hidden></input>
+    <p class="text-xs text-red-400 mb-2">Tu calificación y comentario serán públicos.</p>
+    <div class="flex justify-between">
+        <form method="dialog">
+            <button class="btn btn-primary">Cerrar</button>
+        </form>
+        <button id="btn-send-rating" class="btn btn-accent">Enviar</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop bg-black bg-opacity-80">
+    <button>close</button>
+  </form>
+</dialog>
+
+
+<script>
+    import Toastify from "toastify-js";
+
+    function load() {
+        const btnSendRating = document.getElementById('btn-send-rating') as HTMLButtonElement;
+        const rankInputs = document.querySelectorAll('.rank-checkbox');
+        const commentInput = document.querySelector('textarea');
+
+        btnSendRating?.addEventListener('click', async () => {
+            const modal = document.getElementById('modal_last_chapter') as HTMLDialogElement;
+            const mangaSlugElement = document.getElementById('hidden-manga-slug') as HTMLInputElement;
+            // @ts-ignore
+            const rank = Array.from(rankInputs).find(input => input.checked)?.dataset?.rank?.toUpperCase();
+            // @ts-ignore
+            const comment = commentInput.value;
+            if (!rank || !comment) {
+				Toastify({
+					text: "Debes completar todos los campos para enviar tu opinión.",
+					className: "alert alert-error",
+					selector: document.querySelector(".toast") as HTMLElement,
+					gravity: "bottom",
+					position: "right",
+					duration: 5000
+				}).showToast();
+                return;
+            }
+            try {
+                btnSendRating.disabled = true;
+                const request = await fetch(`${import.meta.env.PUBLIC_API_URL}/api/manga/${mangaSlugElement.value}/rank`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')
+                    },
+                    body: JSON.stringify({ rank, comment })
+                });
+                const { status, message } = await request.json();
+                if (!status) {
+                    throw new Error(message);
+                }
+                modal.close();
+                // @ts-ignore
+                rankInputs.forEach(input => input.checked = false);
+                // @ts-ignore
+                commentInput.value = '';
+                Toastify({
+                    text: "Gracias por tu opinión",
+                    className: "alert alert-success",
+                    selector: document.querySelector(".toast") as HTMLElement,
+                    gravity: "bottom",
+                    position: "right",
+                    duration: 5000
+                }).showToast();
+            } catch (error) {
+                Toastify({
+                    // @ts-ignore
+                    text: error?.message || "Ocurrió un error al enviar tu opinión",
+                    className: "alert alert-error",
+                    selector: document.querySelector(".toast") as HTMLElement,
+                    gravity: "bottom",
+                    position: "right",
+                    duration: 5000
+                }).showToast();
+            } finally {
+                btnSendRating.disabled = false;
+            }
+        });
+
+        rankInputs.forEach(input => {
+            input.addEventListener('click', () => {
+                // @ts-ignore
+                rankInputs.forEach(input => input.checked = false);
+                // @ts-ignore
+                input.checked = true;
+            });
+        });
+    }
+    document.addEventListener('astro:page-load', load, { once: false });
+</script>

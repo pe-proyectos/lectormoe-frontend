@@ -1,0 +1,43 @@
+---
+import Layout from "../../../../layouts/Layout.astro";
+import ClickReader from "../../../../components/ClickReader.astro";
+import ChapterNavigation from "../../../../components/ChapterNavigation.astro";
+import ModalTutorial from "../../../../components/ModalTutorial.astro";
+import ModalLastChapter from "../../../../components/ModalLastChapter.astro";
+
+const { manga_slug, chapter_slug } = Astro.params;
+
+const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga/${manga_slug}`);
+
+if (!mangaStatus) {
+    return Astro.redirect('/404');
+}
+
+const { status: chapterStatus, data: chapter } = await Astro.locals.callAPI(`/api/manga/${manga_slug}/chapter/${chapter_slug}`);
+
+if (!chapterStatus) {
+    return Astro.redirect('/404');
+}
+
+const currentPageNumber = parseInt(Astro.url.searchParams.get("page") || "1");
+---
+
+<Layout title={[manga.title, manga.author.name].join(" - ")} useMargin={false} >
+    <ChapterNavigation
+        isTop={true}
+        manga={manga}
+        chapter={chapter}
+        currentPageNumber={currentPageNumber} />
+    <div id="viewer-container">
+        <ClickReader
+            manga={manga}
+            chapter={chapter}
+            currentPageNumber={currentPageNumber} />
+    </div>
+    <ModalTutorial
+        manga={manga}
+        chapter={chapter} />
+    <ModalLastChapter
+        manga={manga}
+        chapter={chapter} />
+</Layout>
