@@ -5,13 +5,13 @@ FROM base AS install
 # Set user and group
 USER root
 
-COPY ./package.json ./bun.lockb ./
+COPY ./package.json ./bun.lockb ./astro.config.mjs ./postcss.config.js ./tailwind.config.js ./tsconfig.json ./
 COPY ./src ./src
 COPY ./public ./public
 
 # Install dependencies
-RUN bun install --production
-RUN bun run build:only
+RUN bun install
+RUN bun run build
 
 FROM base AS release
 # Set user and group
