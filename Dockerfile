@@ -10,12 +10,12 @@ COPY ./public ./public
 
 # Install dependencies
 RUN bun install
-RUN bun run build
 
 FROM base AS release
 USER root
 
 COPY --from=install /app/ .
+RUN bun run build
 
 EXPOSE 4321/tcp
 ENTRYPOINT [ "bun", "dist/server/entry.mjs" ]
