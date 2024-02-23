@@ -11,7 +11,7 @@ COPY ./public ./public
 
 # Install dependencies
 RUN bun install --production
-RUN bun run build
+RUN bun run build:only
 
 FROM base AS release
 # Set user and group
