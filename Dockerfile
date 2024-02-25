@@ -1,4 +1,4 @@
-FROM oven/bun:latest as base
+FROM oven/bun:canary-debian as base
 WORKDIR /app
 
 FROM base AS install
@@ -15,7 +15,10 @@ FROM base AS release
 USER root
 
 COPY --from=install /app/ .
-RUN bun run build
+RUN bunx --bun astro build
 
-EXPOSE 4321/tcp
-ENTRYPOINT [ "bun", "dist/server/entry.mjs" ]
+ENV HOST=0.0.0.0
+ENV PORT=4321
+EXPOSE 4321
+# CMD bunx astro dev
+CMD bunx --bun astro preview

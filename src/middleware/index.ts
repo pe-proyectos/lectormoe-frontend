@@ -8,7 +8,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.user_slug = context.cookies.get('user_slug')?.value;
 
     const callAPI = async (url: string, fetchOptions?: RequestInit) => {
-        const response = await fetch(import.meta.env.PUBLIC_API_URL + url, {
+        console.log('url', url);
+        console.log('fetchOptions', fetchOptions);
+        // @ts-ignore
+        console.log('env ', import.meta.env.PUBLIC_API_URL);
+        
+        console.log('env ', Bun.env.PUBLIC_API_URL);
+        
+        
+        const API_URL = import.meta.env.PUBLIC_API_URL || '';
+        console.log('API_URL', API_URL);
+        
+        const response = await fetch(API_URL + url, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': context.locals.token ? `Bearer ${context.locals.token}` : ''

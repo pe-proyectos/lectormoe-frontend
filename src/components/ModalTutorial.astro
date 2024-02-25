@@ -68,7 +68,7 @@ const { manga, chapter } = Astro.props;
 </dialog>
 
 <script>
-    import { cookieStore } from 'cookie-store';
+    import 'cookie-store';
 
     async function load() {
         const modal_tutorial = document.getElementById('modal_tutorial') as HTMLDialogElement;
