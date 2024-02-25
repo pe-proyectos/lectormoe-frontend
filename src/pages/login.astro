@@ -80,8 +80,11 @@ import Layout from "../layouts/Layout.astro";
 				button.disabled = false;
 			} else {
 				await Promise.all([
+					// @ts-ignore
 					cookieStore.set("token", data.token),
+					// @ts-ignore
 					cookieStore.set("username", data.username),
+					// @ts-ignore
 					cookieStore.set("user_slug", data.user_slug),
 				])
 				location.href = "/";
