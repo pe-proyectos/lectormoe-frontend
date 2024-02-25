@@ -3,10 +3,10 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "bunx --bun astro dev",
-    "start": "bunx --bun astro dev",
-    "build": "bunx --bun astro check && astro build",
-    "preview": "bunx --bun astro preview",
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "bun run ./dist/server/entry.mjs",
     "astro": "bunx --bun astro"
   },
   "dependencies": {
@@ -15,6 +15,7 @@
     "@types/page-flip": "^2.0.3",
     "@types/toastify-js": "^1.12.3",
     "astro": "^4.4.4",
+    "astro-bun-adapter": "^1.0.2",
     "autoprefixer": "^10.4.17",
     "cookie-store": "^3.0.0",
     "daisyui": "^4.7.2",

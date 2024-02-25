@@ -15,10 +15,8 @@ FROM base AS release
 USER root
 
 COPY --from=install /app/ .
-# RUN bunx --bun astro build
-
 ENV HOST=0.0.0.0
 ENV PORT=4321
 EXPOSE 4321
-CMD bunx astro dev
-# CMD bunx --bun astro preview
+
+CMD bunx --bun astro build && bun run ./dist/server/entry.mjs

@@ -1,4 +1,4 @@
-import node from '@astrojs/node';
+import bun from 'astro-bun-adapter';
 import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
@@ -7,8 +7,9 @@ export default defineConfig({
     server: {
         host: true,
     },
+    vite: {
+        envPrefix: 'PUBLIC_',
+    },
     prefetch: false,
-    adapter: node({
-        mode: 'standalone',
-    }),
+    adapter: bun(),
 });

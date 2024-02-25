@@ -62,13 +62,17 @@ import Layout from "../layouts/Layout.astro";
 <script>
 	import Toastify from 'toastify-js';
 	function load() {
+		console.log('import.meta.env', import.meta.env);
+		console.log('process.env', process.env);
+		const API_URL = import.meta.env.PUBLIC_API_URL;
+		console.log('API_URL from import.meta.env.PUBLIC_API_URL =', API_URL);
 		const formRegister = document.getElementById("form-register") as HTMLFormElement;
 		formRegister?.addEventListener("submit", async (event) => {
 			event.preventDefault();
 			const button = formRegister.querySelector("button") as HTMLButtonElement;
 			button.disabled = true;
 			const formData = new FormData(formRegister);
-			const response = await fetch(`${import.meta.env.PUBLIC_API_URL}/api/auth/register`, {
+			const response = await fetch(`${API_URL}/api/auth/register`, {
 				method: "POST",
 				body: formData,
 			});
