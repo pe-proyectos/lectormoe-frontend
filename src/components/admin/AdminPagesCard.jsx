@@ -63,11 +63,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
                     <Button
                         color="red"
                         size="sm"
-                        onClick={() => {
-                            const newPages = [...pages];
-                            newPages.splice(row.index, 1);
-                            setData(newPages);
-                        }}
+                        onClick={() => deletePage(row.original.id)}
                     >
                         Eliminar
                     </Button>
@@ -121,11 +117,25 @@ export function AdminPagesCard({ manga, chapter, pages }) {
             });
     }
 
+    const deletePage = async (id) => {
+        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter/${chapter.number}/pages/${id}`, {
+            method: 'DELETE',
+        })
+            .then(response => {
+                toast.success('Página eliminada');
+                setData(response);
+            })
+            .catch(error => {
+                toast.error(error?.message);
+            });
+    }
+
     const table = useMaterialReactTable({
         columns,
         data,
         enableRowOrdering: true,
         enableColumnActions: false,
+        enablePagination: false,
         muiRowDragHandleProps: ({ table }) => ({
             onDragEnd: () => {
                 const { draggingRow, hoveredRow } = table.getState();
