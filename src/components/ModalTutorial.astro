@@ -73,11 +73,13 @@ const { manga, chapter } = Astro.props;
     async function load() {
         const modal_tutorial = document.getElementById('modal_tutorial') as HTMLDialogElement;
 
+        // @ts-ignore
         if ((await cookieStore.get('tutorial'))?.value !== 'true') {
             modal_tutorial.open = true;
         }
 
         document.getElementById('show-tutorial-checkbox')?.addEventListener('change', (event: Event) => {
+            // @ts-ignore
             cookieStore.set('tutorial', (event.target as HTMLInputElement).checked.toString());
         });
     }

@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { AdminSidebar } from '../../components/admin/AdminSidebar.jsx';
+
+if (!Astro.locals.logged) {
+  Astro.redirect("/login");
+}
+---
+
+<Layout title="Administrador">
+    <AdminSidebar page="interactions" client:only />
+</Layout>

@@ -18,15 +18,20 @@ const { manga } = Astro.props;
 					}
 				</h4>
 			</div>
-			<img src={manga.image_url} alt={manga.title} class="h-full overflow-hidden"/>
+			<img src={manga.imageUrl} alt={manga.title} class="h-full overflow-hidden"/>
 		</div>
 		<div class="block sm:hidden m-2 ml-4 w-full max-w-40">
 			<h3 class="text-lg font-bold">{manga.title}</h3>
 			<p class="text-sm text-[#8b8b8b]">
-				{manga.author.name}
+                {manga.authors.map((author: any, index: number) => (
+                    <>
+                        <a transition:name={`manga_${manga.slug}_author_${author.slug}`} class="m-0" href={`/author/${author.slug}`}>{author.name}</a>
+                        {index !== manga.authors.length - 1 ? (index === manga.authors.length - 2 ? ' & ' : ', ') : ''}
+                    </>
+                ))}
 			</p>
 			<p class="text-sm text-[#8b8b8b]">
-				{manga.short_description}
+				{manga.shortDescription}
 			<p class="text-sm text-[#8b8b8b]">
 				{manga.genre?.join(', ')}
 			</p>

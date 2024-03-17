@@ -5,34 +5,48 @@ import ChapterNavigation from "../../../../components/ChapterNavigation.astro";
 import ModalTutorial from "../../../../components/ModalTutorial.astro";
 import ModalLastChapter from "../../../../components/ModalLastChapter.astro";
 
-const { manga_slug, chapter_slug } = Astro.params;
+const { mangaSlug, chapterNumber } = Astro.params;
 
-const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga/${manga_slug}`);
+const [
+    { status: mangaStatus, data: manga },
+    { status: chapterStatus, data: chapter },
+    { status: pagesStatus, data: pages },
+] = await Promise.all([
+    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}`),
+    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
+    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages`),
+]);
 
 if (!mangaStatus) {
-    return Astro.redirect('/404');
+    return Astro.redirect("/404");
 }
 
-const { status: chapterStatus, data: chapter } = await Astro.locals.callAPI(`/api/manga/${manga_slug}/chapter/${chapter_slug}`);
-
 if (!chapterStatus) {
+    return Astro.redirect("/404");
+}
+
+if (!pagesStatus) {
     return Astro.redirect('/404');
 }
 
 const currentPageNumber = parseInt(Astro.url.searchParams.get("page") || "1");
 ---
 
-<Layout title={[manga.title, manga.author.name].join(" - ")} useMargin={false} >
+<Layout title={manga.title}>
     <ChapterNavigation
         isTop={true}
         manga={manga}
         chapter={chapter}
-        currentPageNumber={currentPageNumber} />
+        pages={pages}
+        currentPageNumber={currentPageNumber}
+    />
     <div id="viewer-container">
         <ClickReader
             manga={manga}
             chapter={chapter}
-            currentPageNumber={currentPageNumber} />
+            pages={pages}
+            currentPageNumber={currentPageNumber}
+        />
     </div>
     <ModalTutorial
         manga={manga}

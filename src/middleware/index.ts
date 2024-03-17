@@ -47,16 +47,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.formatDate = formatDate;
 
     try {
-        const check = await callAPI('/api/auth/check');
+        const domain = context.url.hostname;
 
-        if (check?.status !== true) {
+        const [authCheck, organizationCheck] = await Promise.all([
+            callAPI('/api/auth/check'),
+            callAPI(`/api/organization/check?domain=${domain}`),
+        ]);
+
+        if (authCheck?.status !== true) {
             context.locals.token = undefined;
             context.locals.username = undefined;
             context.locals.user_slug = undefined;
-            context.cookies.set('token', '', {maxAge: 0});
-            context.cookies.set('username', '', {maxAge: 0});
-            context.cookies.set('user_slug', '', {maxAge: 0});
+            context.cookies.set('token', '', { maxAge: 0 });
+            context.cookies.set('username', '', { maxAge: 0 });
+            context.cookies.set('user_slug', '', { maxAge: 0 });
             context.locals.logged = false;
+        }
+
+        if (organizationCheck?.status === true) {
+            context.locals.organization = organizationCheck.data;
         }
 
         context.locals.logged = context.locals.token ? true : false;
@@ -65,11 +74,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     } catch (error) {
         // @ts-ignore
         if (error?.message === 'Not found') {
-            console.log('Ocurrió un error not_found en '+ context.request.url);
+            console.warn('Ocurrió un error not_found en ' + context.request.url);
             return context.redirect('/404');
         }
         console.error(error);
-        console.log('Ocurrió un error 500 en ' + context.request.url);
+        console.warn('Ocurrió un error 500 en ' + context.request.url);
         return context.redirect('/500');
     }
 });

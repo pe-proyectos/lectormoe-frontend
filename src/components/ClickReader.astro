@@ -3,23 +3,24 @@ interface Props {
     currentPageNumber: number;
     manga: any;
     chapter: any;
+    pages: any[];
 }
 
-const { chapter, currentPageNumber } = Astro.props;
+const { chapter, pages, currentPageNumber } = Astro.props;
 ---
 
 <div id="viewer" class="relative h-full w-full flex items-center justify-center" data-current-page-number={currentPageNumber}>
     <div
         class={
             "notfound-page w-full min-h-96 bg-black bg-opacity-50 flex items-center justify-center"
-            + (chapter.pages.find((page: any) => page.number == currentPageNumber) ? " hidden" : "")
+            + (pages.find((page: any) => page.number == currentPageNumber) ? " hidden" : "")
         }>
         <h1>Página no encontrada</h1>
     </div>
     {
-        chapter.pages.map((page: any) => (
+        pages.map((page: any) => (
             <img
-                src={page.image_url}
+                src={page.imageUrl}
                 alt={`Página ${page.number}`}
                 id={`page-${page.number}`}
                 data-number={page.number}

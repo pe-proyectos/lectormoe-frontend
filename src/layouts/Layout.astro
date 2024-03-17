@@ -1,13 +1,16 @@
 ---
-import Navbar from '../components/Navbar.astro';
+import { ThemeProvider } from "../components/ThemeProvider.jsx";
+import { StickyNavbar } from '../components/StickyNavbar.jsx';
 import { ViewTransitions } from "astro:transitions";
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 interface Props {
 	title: string;
-    useMargin?: boolean;
+	useTransitions?: boolean;
 }
 
-const { title, useMargin } = Astro.props;
+const { title, useTransitions } = Astro.props;
 const { theme } = Astro.locals;
 ---
 
@@ -19,19 +22,19 @@ const { theme } = Astro.locals;
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title}</title>
-        <ViewTransitions />
+		<title>{title} - {Astro.locals.organization.title}</title>
+		<!-- hidden organization info -->
+		<meta id="meta-organization" data-organization={JSON.stringify(Astro.locals.organization)} />
+		{
+			useTransitions !== false && <ViewTransitions />
+		}
 	</head>
-	<body class="w-svw min-w-svw min-h-svh overflow-x-hidden bg-base-300">
-        <div class="wrapper min-h-svh w-full flex justify-center">
-            <div class="min-h-svh w-[calc(900px)] max-w-[calc(900px)] bg-base-100 shadow-lg">
-                <Navbar />
-                <div class={`grow ${useMargin ? 'p-4' : ''}`}>
-                    <slot />
-                </div>
-            </div>
-        </div>
-        <div class="toast"></div>
+	<body>
+        <ThemeProvider>
+            <StickyNavbar username={Astro.locals.username} client:only />
+			<slot />
+            <ToastContainer client:load/>
+        </ThemeProvider>
 	</body>
 </html>
 
@@ -46,59 +49,9 @@ const { theme } = Astro.locals;
     .text-font-djb {
         font-family: "DJB Me and My Shadow";
     }
-    .black-button {
-        border-radius: 0;
-        border-width: 2px;
-    }
-    /* light */
-    [data-theme="light"] .black-button {
-        background-color: white;
-        color: black;
-        border-color: black;
-    }
-    [data-theme="light"] .black-button:hover {
-        background-color: black;
-        color: white;
-    }
-    [data-theme="light"] .border-white-color {
-        border-color: black;
-    }
-    [data-theme="light"] .border-black-color {
-        border-color: white;
-    }
-    [data-theme="light"] .border-black-hover-color:hover {
-        border-color: black;
-    }
-    /* black */
-    [data-theme="black"] .black-button {
-        background-color: black;
-        color: white;
-        border-color: white;
-    }
-    [data-theme="black"] .black-button:hover {
-        background-color: white;
-        color: black;
-    }
-    [data-theme="black"] .border-white-color {
-        border-color: white;
-    }
-    [data-theme="black"] .border-black-color {
-        border-color: black;
-    }
-    [data-theme="black"] .border-black-hover-color:hover {
-        border-color: white;
-    }
 </style>
 
 <script>
-    import 'cookie-store';
-
-    async function load() {
-        const theme = (await cookieStore.get('theme'))?.value === 'light' ? 'light' : 'black';
-        document.documentElement.setAttribute('data-theme', theme);
-        const inverseTheme = theme === 'light' ? 'black' : 'light';
-        document.querySelector('.navbar')?.setAttribute('data-theme', inverseTheme);
-    }
-    document.addEventListener('astro:before-swap', load, { once: false });
-    document.addEventListener('astro:page-load', load, { once: false });
+	// @ts-ignore
+	window.organization = JSON.parse(document.getElementById('meta-organization').dataset.organization);
 </script>

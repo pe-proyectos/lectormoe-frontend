@@ -1,0 +1,35 @@
+---
+import AdminLayout from "../../../../../../layouts/AdminLayout.astro";
+import { AdminMangasBreadcrumb } from "../../../../../../components/admin/AdminMangasBreadcrumb.jsx";
+import { AdminPagesCard } from "../../../../../../components/admin/AdminPagesCard.jsx";
+
+const { mangaSlug, chapterNumber } = Astro.params;
+
+const [
+    { status: mangaStatus, data: manga },
+    { status: chapterStatus, data: chapter },
+    { status: pagesStatus, data: pages },
+] = await Promise.all([
+    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}`),
+    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
+    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages`),
+]);
+
+if (!mangaStatus) {
+    return Astro.redirect('/404');
+}
+
+if (!chapterStatus) {
+    return Astro.redirect('/404');
+}
+
+if (!pagesStatus) {
+    return Astro.redirect('/404');
+}
+---
+
+<AdminLayout title="Editar capitulo" page="mangas">
+  <AdminMangasBreadcrumb client:only />
+  <div class="py-2"></div>
+  <AdminPagesCard manga={manga} chapter={chapter} pages={pages} client:only />
+</AdminLayout>

@@ -4,15 +4,16 @@ interface Props {
     currentPageNumber: number;
 	manga: any;
     chapter: any;
+    pages: any[];
 }
 
-const { isTop, manga, chapter, currentPageNumber } = Astro.props;
+const { isTop, manga, chapter, pages, currentPageNumber } = Astro.props;
 ---
 
 <div class="sticky z-10 top-0 bg-base-100 bg-opacity-95 opacity-95 shadow-md md:shadow-lg pt-2 flex flex-wrap place-content-between justify-center">
     <select class="select page-select min-w-40 mb-2 sm:mx-4 sm:max-w-64 md:mx-auto w-full md:w-auto select-bordered select-sm">
         {
-            chapter.pages.map((page: any) => (
+            pages.map((page: any) => (
                 <option
                     value={page.number}
                     selected={page.number === currentPageNumber}>
@@ -34,7 +35,7 @@ const { isTop, manga, chapter, currentPageNumber } = Astro.props;
         )
         : (
             <a
-                href={`/manga/${manga.slug}/chapter/${chapter.slug}`}
+                href={`/manga/${manga.slug}/chapters/${chapter.number}`}
                 class="uppercase font-bold text-xl text-center cursor-pointer" >
                 {manga.title}
             </a>
@@ -61,7 +62,7 @@ const { isTop, manga, chapter, currentPageNumber } = Astro.props;
                 <a
                     class="chapter-href"
                     data-chapter-number={manga_chapter.number}
-                    href={`/manga/${manga.slug}/chapter/${manga_chapter.slug}`} />
+                    href={`/manga/${manga.slug}/chapters/${manga_chapter.number}`} />
             ))
         }
     </div>

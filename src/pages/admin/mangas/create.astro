@@ -1,0 +1,11 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { AdminMangasBreadcrumb } from "../../../components/admin/AdminMangasBreadcrumb.jsx";
+import { AdminCreateMangaCustomCard } from "../../../components/admin/AdminCreateMangaCustomCard.jsx";
+---
+
+<AdminLayout title="Crear manga" page="mangas">
+  <AdminMangasBreadcrumb client:only />
+  <div class="py-2"></div>
+  <AdminCreateMangaCustomCard client:only />
+</AdminLayout>

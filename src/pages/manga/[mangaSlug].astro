@@ -1,9 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-const { manga_slug } = Astro.params;
+const { mangaSlug } = Astro.params;
 
-const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga/${manga_slug}`);
+const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}`);
 
 if (!mangaStatus) {
     return Astro.redirect('/404');
@@ -24,13 +24,13 @@ function colorByRank(rank: string) {
 }
 ---
 
-<Layout title={[manga.title, manga.author.name].join(' - ')}>
+<Layout title={manga.title}>
     <div class="md:flex w-full">
         <div class="mb-4 md:mb-0">
             <figure class="relative my-4 md:mx-4">
                 <img
                     transition:name={`manga_image_${manga.slug}`}
-                    src={manga.image_url}
+                    src={manga.imageUrl}
                     alt={manga.title}
                     class="w-full shadow-md mx-auto min-w-64 max-w-64"
                     draggable="false"
@@ -43,7 +43,12 @@ function colorByRank(rank: string) {
         <div class="md:m-4 w-full">
             <div class="max-h-64 border-white-color border-2 p-4">
                 <h4 transition:name={`manga_title_${manga.slug}`} class="mb-0 text-2xl font-bold uppercase">{manga.title}</h4>
-                <a transition:name={`manga_author_${manga.slug}`} class="m-0" href={`/author/${manga.author.slug}`}>{manga.author.name}</a>
+                {manga.authors.map((author: any, index: number) => (
+                    <>
+                        <a transition:name={`manga_${manga.slug}_author_${author.slug}`} class="m-0" href={`/author/${author.slug}`}>{author.name}</a>
+                        {index !== manga.authors.length - 1 ? (index === manga.authors.length - 2 ? ' & ' : ', ') : ''}
+                    </>
+                ))}
             </div>
             <div class="p-4 mx-2 sm:mx-4">
                 <div class="flex flex-col w-full">
@@ -63,8 +68,13 @@ function colorByRank(rank: string) {
                         <p class="my-2"><b>Estreno del próximo capitulo:</b> {Astro.locals.formatDate(manga.next_chapter_at)}</p>
                     }
                     <p>
-                        <b>Autor: </b>
-                        <a class="link" href={`/author`}>{manga.author.name}</a>
+                        <b>Autor(es): </b>
+                        {manga.authors.map((author: any, index: number) => (
+                            <>
+                                <a class="m-0" href={`/author/${author.slug}`}>{author.name}</a>
+                                {index !== manga.authors.length - 1 ? (index === manga.authors.length - 2 ? ' & ' : ', ') : ''}
+                            </>
+                        ))}
                     </p>
                     <p>
                         <b>Demografia:</b>
@@ -99,7 +109,7 @@ function colorByRank(rank: string) {
                                     <div class={`chat ${index % 2 == 0 ? "chat-start" : "chat-end"}`}>
                                         <div class="chat-header">
                                             { ranking?.user?.username || "Anónim@" }
-                                            <time class="text-xs opacity-50">{Astro.locals.formatDate(ranking.created_at)}</time>
+                                            <time class="text-xs opacity-50">{Astro.locals.formatDate(ranking.createdAt)}</time>
                                         </div>
                                         <div class="chat-bubble">
                                             <span class={`mr-2 font-bold text-2xl text-font-djb ${colorByRank(ranking.rank)}`}>{ranking.rank}</span>
@@ -127,11 +137,11 @@ function colorByRank(rank: string) {
                     {manga.chapters.map((chapter: any) => (
                         <li class="p-2" data-chapter_id={chapter.id}>
                             <a
-                                href={`/manga/${manga.slug}/chapter/${chapter.slug}`}
+                                href={`/manga/${manga.slug}/chapters/${chapter.number}`}
                                 class="flex w-full md:p-2 border-2 border-transparent hover:border-base-content grayscale hover:grayscale-0 transition-all">
                                 <figure class="self-center">
                                     <img
-                                        src={chapter.image_url || manga.image_url}
+                                        src={chapter.imageUrl || manga.imageUrl}
                                         alt={manga.title}
                                         class="min-w-32 max-w-32 min-h-20 max-h-20 object-cover"
                                         draggable="false"
@@ -140,7 +150,7 @@ function colorByRank(rank: string) {
                                 <div class="my-auto ml-4">
                                     <h4 class="text-xl font-semibold uppercase">#{chapter.number.toString().padStart(3, '0')}</h4>
                                     <p>{chapter.title}</p>
-                                    <p class="text-xs text-info-content">{Astro.locals.formatDate(manga.created_at)}</p>
+                                    <p class="text-xs text-info-content">{Astro.locals.formatDate(chapter.createdAt)}</p>
                                 </div>
                             </a>
                         </li>

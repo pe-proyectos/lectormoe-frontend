@@ -1,0 +1,20 @@
+---
+import Layout from './Layout.astro';
+import { AdminSidebar } from '../components/admin/AdminSidebar.jsx';
+
+if (!Astro.locals.logged) {
+  Astro.redirect("/login");
+}
+const { title, page } = Astro.props;
+---
+
+<Layout title={title + " - Admin"} useTransitions={false} >
+    <div class="flex">
+        <div class="min-w-[320px]">
+            <AdminSidebar page={page} client:only />
+        </div>
+        <div class="w-full h-full p-4">
+            <slot />
+        </div>
+    </div>
+</Layout>
