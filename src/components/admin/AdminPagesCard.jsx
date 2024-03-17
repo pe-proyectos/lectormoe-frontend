@@ -168,6 +168,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
                 onChange={(files) => setChapterNewImages(files)}
                 showPreviews={true}
                 showFileNamesInPreview={true}
+                filesLimit={100}
             />
         </Card>
     );

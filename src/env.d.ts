@@ -15,6 +15,7 @@ type Organization = {
     title: string,
     imageUrl: string,
     description: string,
+    googleAdsMetaContent?: string,
 }
 
 interface Window {

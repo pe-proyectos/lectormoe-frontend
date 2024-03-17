@@ -8,7 +8,7 @@ if (!Astro.locals.logged) {
 const { title, page } = Astro.props;
 ---
 
-<Layout title={title + " - Admin"} useTransitions={false} >
+<Layout title={title + " - Admin"} isAdmin={false} >
     <div class="flex">
         <div class="min-w-[320px]">
             <AdminSidebar page={page} client:only />

@@ -7,10 +7,10 @@ import 'react-toastify/dist/ReactToastify.css';
 
 interface Props {
 	title: string;
-	useTransitions?: boolean;
+	isAdmin?: boolean;
 }
 
-const { title, useTransitions } = Astro.props;
+const { title, isAdmin } = Astro.props;
 const { theme } = Astro.locals;
 ---
 
@@ -26,7 +26,13 @@ const { theme } = Astro.locals;
 		<!-- hidden organization info -->
 		<meta id="meta-organization" data-organization={JSON.stringify(Astro.locals.organization)} />
 		{
-			useTransitions !== false && <ViewTransitions />
+			isAdmin !== false && <ViewTransitions />
+		}
+		<!-- Google Ads -->
+		{
+			isAdmin !== false && Astro.locals.organization.googleAdsMetaContent && (
+				<meta name="google-adsense-account" content={Astro.locals.organization.googleAdsMetaContent}>
+			)
 		}
 	</head>
 	<body>

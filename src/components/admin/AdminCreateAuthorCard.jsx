@@ -27,19 +27,13 @@ export function AdminCreateAuthorCard() {
         if (!name) {
             return toast.error('El nombre es obligatorio');
         }
-        if (!shortDescription) {
-            return toast.error('La descripción corta es obligatoria');
-        }
-        if (!description) {
-            return toast.error('La descripción es obligatoria');
-        }
         if (!coverImageFile) {
             return toast.error('La imagen del autor es obligatoria');
         }
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('shortDescription', shortDescription);
-        formData.append('description', description);
+        if (shortDescription) formData.append('shortDescription', shortDescription);
+        if (description) formData.append('description', description);
         formData.append('image', coverImageFile);
         callAPI('/api/author', {
             method: 'POST',
