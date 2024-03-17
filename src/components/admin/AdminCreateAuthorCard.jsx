@@ -71,16 +71,16 @@ export function AdminCreateAuthorCard() {
                         onChange={(e) => setName(e.target.value)}
                     />
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Descripción corta
+                        Rol del autor (Opcional)
                     </Typography>
                     <Textarea
                         size="md"
-                        label="Una descripción de menos de 100 caracteres..."
+                        label="Ejemplo: Mangaka, Escritor, Ilustrador, etc."
                         value={shortDescription}
                         onChange={(e) => setShortDescription(e.target.value)}
                     />
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Descripción
+                        Descripción (Opcional)
                     </Typography>
                     <Textarea
                         size="lg"
@@ -89,7 +89,7 @@ export function AdminCreateAuthorCard() {
                         onChange={(e) => setDescription(e.target.value)}
                     />
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Imagen del autor 
+                        Imagen del autor
                     </Typography>
                     <DropzoneArea
                         filesLimit={1}

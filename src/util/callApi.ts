@@ -7,7 +7,7 @@ export const callAPI = async (url: string, fetchOptions?: RequestInit) => {
         const token = await cookieStore.get('token');
         const response = await fetch(API_URL + url, {
             headers: {
-                ...(fetchOptions?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+                ...((!fetchOptions?.body) || (fetchOptions?.body instanceof FormData) ? {} : { 'Content-Type': 'application/json' }),
                 'Authorization': token?.value ? `Bearer ${token?.value}` : ''
             },
             ...(fetchOptions || {})

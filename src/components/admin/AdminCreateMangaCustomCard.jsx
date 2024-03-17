@@ -30,7 +30,7 @@ export function AdminCreateMangaCustomCard() {
     useEffect(() => {
         callAPI(`/api/manga/autocomplete`)
             .then(result => setMangas(result))
-            .catch(error => toast.error('Error al cargar las demografias'));
+            .catch(error => toast.error('Error al cargar el autocompletado de mangas'));
     }, []);
 
     useEffect(() => {
@@ -41,7 +41,7 @@ export function AdminCreateMangaCustomCard() {
                 setShortDescription(result.shortDescription);
                 setDescription(result.description);
             })
-            .catch(error => toast.error('Error al cargar las demografias'));
+            .catch(error => toast.error('Error al cargar el perfil de manga'));
     }, [manga]);
 
     const handleSubmit = async (event) => {
@@ -138,7 +138,7 @@ export function AdminCreateMangaCustomCard() {
                         disabled={!manga}
                     />
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Fecha de publicación
+                        Fecha de publicación (Opcional)
                     </Typography>
                     <DatePicker
                         value={releasedDate}
@@ -146,7 +146,7 @@ export function AdminCreateMangaCustomCard() {
                         disabled={!manga}
                     />
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Fecha del próximo capitulo
+                        Fecha del próximo capitulo (Opcional)
                     </Typography>
                     <DatePicker
                         value={nextChapterDate}
