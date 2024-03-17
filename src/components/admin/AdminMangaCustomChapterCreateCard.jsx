@@ -35,11 +35,10 @@ export function AdminMangaCustomChapterCreateCard({ manga }) {
             return toast.error('La imagen del autor es obligatoria');
         }
         const formData = new FormData();
-        formData.append('mangaCustomId', manga.id);
         formData.append('title', title);
         formData.append('number', number);
         formData.append('image', chapterImageFile);
-        callAPI(`/api/organization/${window.organization.slug}/chapter`, {
+        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter`, {
             method: 'POST',
             body: formData,
         })
