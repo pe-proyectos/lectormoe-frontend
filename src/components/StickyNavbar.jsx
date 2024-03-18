@@ -57,7 +57,7 @@ export function StickyNavbar({ username }) {
           href="/"
           className="mr-4 cursor-pointer py-1.5 font-medium"
         >
-          {organization.title}
+          {window.organization.title}
         </Typography>
         <div className="hidden items-center lg:flex">
           <div className="relative flex w-full gap-2 md:w-max">
