@@ -8,7 +8,7 @@ export function AdminMangaCustomGrid() {
     const [status, setStatus] = useState("loading");
 
     useEffect(() => {
-        callAPI(`/api/organization/${window.organization.slug}/manga-custom`)
+        callAPI(`/api/manga-custom`)
             .then(result => {
                 setStatus("success");
                 setMangaList(result);
@@ -20,7 +20,7 @@ export function AdminMangaCustomGrid() {
     }, []);
 
     return (
-        <div className="flex w-full justify-center my-4">
+        <div className="flex w-full justify-center my-4 gap-4">
             <div className="max-w-lg">
                 {status === "loading" && <Spinner />}
                 {status === "error" && <p>No se pudo obtener los mangas</p>}

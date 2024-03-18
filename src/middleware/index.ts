@@ -10,11 +10,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const callAPI = async (url: string, fetchOptions?: RequestInit) => {
         const API_URL = Bun.env["PUBLIC_API_URL"] || '';
         const response = await fetch(API_URL + url, {
+            ...(fetchOptions || {}),
             headers: {
+                'organization-domain': context.url.hostname,
                 'Content-Type': 'application/json',
-                'Authorization': context.locals.token ? `Bearer ${context.locals.token}` : ''
+                'Authorization': context.locals.token ? `Bearer ${context.locals.token}` : '',
+                ...(fetchOptions?.headers || {}),
             },
-            ...(fetchOptions || {})
         });
         const data = await response.json();
         return data;
@@ -47,11 +49,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.formatDate = formatDate;
 
     try {
-        const domain = context.url.hostname;
-
         const [authCheck, organizationCheck] = await Promise.all([
             callAPI('/api/auth/check'),
-            callAPI(`/api/organization/check?domain=${domain}`),
+            callAPI(`/api/organization/check?domain=${context.url.hostname}`),
         ]);
 
         if (authCheck?.status !== true) {
@@ -69,6 +69,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
         }
 
         context.locals.logged = context.locals.token ? true : false;
+
+        if (!context.locals.logged && context.url.pathname.startsWith('/admin')) {
+            return context.redirect("/login");
+        }
 
         return await next();
     } catch (error) {

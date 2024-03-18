@@ -2,16 +2,16 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
 import { AdminMangaCustomGrid } from "../../components/admin/AdminMangaCustomGrid.jsx";
-import { AdminCreateMangaCustomButton } from "../../components/admin/AdminCreateMangaCustomButton.jsx";
+import { AdminCreateMangaCustomDialog } from "../../components/admin/AdminCreateMangaCustomDialog.jsx";
 ---
 
 <AdminLayout title="Mangas" page="mangas">
   <AdminMangasBreadcrumb client:only />
   <div class="py-2"></div>
   <h1>Mangas</h1>
-  <AdminCreateMangaCustomButton client:only />
   <p>
-    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quisquam, quos.
+    Administra los mangas de tu organización. Puedes crear, editar y eliminar
   </p>
+  <AdminCreateMangaCustomDialog client:only />
   <AdminMangaCustomGrid client:only />
 </AdminLayout>

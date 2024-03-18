@@ -2,21 +2,14 @@
 import Layout from '../layouts/Layout.astro';
 import Card from '../components/MangaCard.astro';
 
-const { data: mangas } = await Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom`);
+const { data: mangas } = await Astro.locals.callAPI(`/api/manga-custom`);
 
-const { data: demographies } = await Astro.locals.callAPI(`/api/demography`);
+// const { data: demographies } = await Astro.locals.callAPI(`/api/demography`);
 
 ---
 
 <Layout title="Tus mangas en latino">
 	<div class="mx-auto max-w-screen-md py-12">
-		<div class="flex flex-wrap w-full place-content-around">
-			{demographies && demographies.map((demography: any) => {
-				return <a href={`/demography/${demography.slug}`} class="tooltip tooltip-bottom w-full cursor-pointer sm:w-auto mt-2 mx-4" data-tip={demography.description}>
-					<span class="label-text mr-2">{demography.name}</span>
-				</a>
-			})}
-		</div>
 		<div class="flex w-full justify-center">
 			<div class="flex flex-wrap justify-center">
 				{mangas && mangas.map((manga: any) => {

@@ -2,9 +2,6 @@
 import Layout from './Layout.astro';
 import { AdminSidebar } from '../components/admin/AdminSidebar.jsx';
 
-if (!Astro.locals.logged) {
-  Astro.redirect("/login");
-}
 const { title, page } = Astro.props;
 ---
 

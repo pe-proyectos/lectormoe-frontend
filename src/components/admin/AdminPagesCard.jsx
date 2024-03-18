@@ -81,7 +81,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
         images.forEach(image => {
             formData.append('images', image);
         });
-        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter/${chapter.number}/pages`, {
+        callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapter.number}/pages`, {
             method: 'POST',
             body: formData,
         })
@@ -98,7 +98,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
     }
 
     const saveNewOrder = async () => {
-        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter/${chapter.number}/pages/order`, {
+        callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapter.number}/pages/order`, {
             method: 'POST',
             body: JSON.stringify(data.map((page, index) => ({
                 id: page.id,
@@ -118,7 +118,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
     }
 
     const deletePage = async (id) => {
-        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter/${chapter.number}/pages/${id}`, {
+        callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapter.number}/pages/${id}`, {
             method: 'DELETE',
         })
             .then(response => {

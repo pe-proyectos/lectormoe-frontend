@@ -6,11 +6,13 @@ export const callAPI = async (url: string, fetchOptions?: RequestInit) => {
         // @ts-ignore
         const token = await cookieStore.get('token');
         const response = await fetch(API_URL + url, {
+            ...(fetchOptions || {}),
             headers: {
+                'organization-domain': location.hostname,
                 ...((!fetchOptions?.body) || (fetchOptions?.body instanceof FormData) ? {} : { 'Content-Type': 'application/json' }),
-                'Authorization': token?.value ? `Bearer ${token?.value}` : ''
+                'Authorization': token?.value ? `Bearer ${token?.value}` : '',
+                ...(fetchOptions?.headers || {}),
             },
-            ...(fetchOptions || {})
         });
         const result = await response.json();
         if (result?.status === false) {

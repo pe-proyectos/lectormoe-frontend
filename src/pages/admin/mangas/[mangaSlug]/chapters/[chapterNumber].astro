@@ -9,8 +9,8 @@ const [
     { status: mangaStatus, data: manga },
     { status: chapterStatus, data: chapter },
 ] = await Promise.all([
-    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}`),
-    Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
+    Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`),
+    Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
 ]);
 
 if (!mangaStatus) {

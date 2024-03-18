@@ -38,7 +38,7 @@ export function AdminMangaCustomChapterCreateCard({ manga }) {
         formData.append('title', title);
         formData.append('number', number);
         formData.append('image', chapterImageFile);
-        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter`, {
+        callAPI(`/api/manga-custom/${manga.slug}/chapter`, {
             method: 'POST',
             body: formData,
         })

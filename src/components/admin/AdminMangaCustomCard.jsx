@@ -13,16 +13,16 @@ export function AdminMangaCustomCard({ slug, imageUrl, title, description }) {
         <Card className="w-96">
             <CardHeader floated={false} color="blue-gray" className="relative h-56">
                 <img
-                    src={imageUrl}
+                    src={imageUrl || ""}
                     alt="card-image"
                 />
             </CardHeader>
             <CardBody>
                 <Typography variant="h5" color="blue-gray" className="mb-2">
-                    {title}
+                    {title || ""}
                 </Typography>
                 <Typography>
-                    {description}
+                    {description || ""}
                 </Typography>
             </CardBody>
             <CardFooter className="pt-0 w-full flex justify-end">

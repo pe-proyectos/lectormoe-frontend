@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 
 const { mangaSlug } = Astro.params;
 
-const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/organization/${Astro.locals.organization.slug}/manga-custom/${mangaSlug}`);
+const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`);
 
 if (!mangaStatus) {
     return Astro.redirect('/404');

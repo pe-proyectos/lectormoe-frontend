@@ -1,9 +1,10 @@
 ---
 import { ThemeProvider } from "../components/ThemeProvider.jsx";
-import { StickyNavbar } from '../components/StickyNavbar.jsx';
-import { ViewTransitions } from "astro:transitions";
+import { StickyNavbar } from "../components/StickyNavbar.jsx";
+import { Footer } from "../components/Footer.jsx";
+// import { ViewTransitions } from "astro:transitions";
 import { ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
 interface Props {
 	title: string;
@@ -11,7 +12,7 @@ interface Props {
 }
 
 const { title, isAdmin } = Astro.props;
-const { theme } = Astro.locals;
+const { theme, organization } = Astro.locals;
 ---
 
 <!doctype html>
@@ -23,24 +24,38 @@ const { theme } = Astro.locals;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title} - {Astro.locals.organization.title}</title>
-		<!-- hidden organization info -->
-		<meta id="meta-organization" data-organization={JSON.stringify(Astro.locals.organization)} />
+		{/* hidden organization info */}
+		<meta
+			id="meta-organization"
+			data-organization={JSON.stringify(organization)}
+		/>
+		{/* Google Ads */}
 		{
-			isAdmin !== false && <ViewTransitions />
-		}
-		<!-- Google Ads -->
-		{
-			isAdmin !== false && Astro.locals.organization.googleAdsMetaContent && (
-				<meta name="google-adsense-account" content={Astro.locals.organization.googleAdsMetaContent}>
+			isAdmin !== false && organization.googleAdsMetaContent && (
+				<meta
+					name="google-adsense-account"
+					content={organization.googleAdsMetaContent}
+				/>
 			)
+		}
+		{/* view transitions */}
+		{
+			/*
+			isAdmin !== false && <ViewTransitions />
+		*/
 		}
 	</head>
 	<body>
-        <ThemeProvider>
-            <StickyNavbar username={Astro.locals.username} client:only />
+		<ThemeProvider>
+			<StickyNavbar username={Astro.locals.username} client:only />
 			<slot />
-            <ToastContainer client:load/>
-        </ThemeProvider>
+			{
+				isAdmin !== false && (
+					<Footer organization={organization} client:only />
+				)
+			}
+			<ToastContainer client:only />
+		</ThemeProvider>
 	</body>
 </html>
 
@@ -49,15 +64,15 @@ const { theme } = Astro.locals;
 	@tailwind components;
 	@tailwind utilities;
 	@font-face {
-        font-family: "DJB Me and My Shadow";
-        src: url('/fonts/djb.ttf') format('truetype');
-    }
-    .text-font-djb {
-        font-family: "DJB Me and My Shadow";
-    }
+		font-family: "DJB Me and My Shadow";
+		src: url("/fonts/djb.ttf") format("truetype");
+	}
+	.text-font-djb {
+		font-family: "DJB Me and My Shadow";
+	}
 </style>
 
 <script>
 	// @ts-ignore
-	window.organization = JSON.parse(document.getElementById('meta-organization').dataset.organization);
+	window.organization = JSON.parse(document.getElementById("meta-organization").dataset.organization);
 </script>

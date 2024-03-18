@@ -34,7 +34,7 @@ export function AdminMangaCustomChapterEditCard({ chapter, manga }) {
         formData.append('title', title);
         formData.append('number', number);
         if (chapterImageFile) formData.append('image', chapterImageFile);
-        callAPI(`/api/organization/${window.organization.slug}/manga-custom/${manga.slug}/chapter/${chapter.number}`, {
+        callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapter.number}`, {
             method: 'PATCH',
             body: formData,
         })
