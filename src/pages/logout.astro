@@ -11,21 +11,17 @@ Astro.cookies.delete("user_slug");
 </Layout>
 
 <script>
-    import 'cookie-store';
-	async function load() {
-		if (!document.querySelector("#logout")) {
-			return;
-		}
-		await Promise.all([
+	import "cookie-store";
+	if (document.querySelector("#logout")) {
+		Promise.all([
 			// @ts-ignore
 			cookieStore.delete("token"),
 			// @ts-ignore
 			cookieStore.delete("username"),
 			// @ts-ignore
 			cookieStore.delete("user_slug"),
-		]);
-		window.location.href = "/";
+		]).then(() => {
+			window.location.href = "/";
+		});
 	}
-    document.addEventListener('astro:page-load', load, { once: false });
 </script>
-

@@ -1,7 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../../components/admin/AdminMangasBreadcrumb.jsx";
-import { AdminMangaCustomDetailsCard } from "../../../components/admin/AdminMangaCustomDetailsCard.jsx";
+import { AdminMangaCustomChapters } from "../../../components/admin/AdminMangaCustomChapters.jsx";
 
 const { mangaSlug } = Astro.params;
 
@@ -15,5 +15,5 @@ if (!mangaStatus) {
 <AdminLayout title="Crear manga" page="mangas">
   <AdminMangasBreadcrumb client:only />
   <div class="py-2"></div>
-  <AdminMangaCustomDetailsCard manga={manga} client:only />
+  <AdminMangaCustomChapters initialMangaCustom={manga} client:only />
 </AdminLayout>

@@ -1,30 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Spinner } from "@material-tailwind/react";
+import {
+    Alert,
+    Spinner,
+    Button,
+} from "@material-tailwind/react";
 import { AdminMangaCustomCard } from './AdminMangaCustomCard';
+import { AdminMangaCustomDialog } from './AdminMangaCustomDialog';
 import { callAPI } from '../../util/callApi';
 
 export function AdminMangaCustomGrid() {
     const [mangaList, setMangaList] = useState([]);
-    const [status, setStatus] = useState("loading");
+    const [loading, setLoading] = useState(false);
+    const [selectedManga, setSelectedManga] = useState(null);
+    const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] = useState(false);
 
     useEffect(() => {
-        callAPI(`/api/manga-custom`)
-            .then(result => {
-                setStatus("success");
-                setMangaList(result);
-            })
-            .catch(error => {
-                setStatus("error");
-                toast.error('Error al cargar los autores');
-            });
+        refreshMangaProfile();
     }, []);
 
+    useEffect(() => {
+        if (!isCreateMangaCustomDialogOpen) refreshMangaProfile();
+    }, [isCreateMangaCustomDialogOpen]);
+
+    const refreshMangaProfile = () => {
+        callAPI(`/api/manga-custom`)
+            .then(result => setMangaList(result))
+            .catch(error => toast.error(error?.message || 'Error al cargar los autores'));
+    }
+
+    const handleCardClick = (mangaCustom) => {
+        setSelectedManga(mangaCustom);
+        setIsCreateMangaCustomDialogOpen(true);
+    }
+
     return (
-        <div className="flex w-full justify-center my-4 gap-4">
+        <div className="w-full my-4">
+            <AdminMangaCustomDialog
+                open={isCreateMangaCustomDialogOpen}
+                setOpen={setIsCreateMangaCustomDialogOpen}
+                mangaCustom={selectedManga}
+                setMangaCustom={setSelectedManga}
+            />
+            <Button
+                variant="outlined"
+                className="flex items-center gap-3 h-full ml-2"
+                onClick={() => setIsCreateMangaCustomDialogOpen(true)}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Agregar Manga
+            </Button>
             <div className="max-w-lg">
-                {status === "loading" && <Spinner />}
-                {status === "error" && <p>No se pudo obtener los mangas</p>}
-                {status === "success" && mangaList.length === 0 &&
+                {loading && <Spinner />}
+                {!loading && mangaList.length === 0 &&
                     <Alert>
                         No hay mangas disponibles,
                         <a href="/admin/mangas/create" className='hover:text-light-blue-200'>{" crea uno "}</a>
@@ -32,17 +60,15 @@ export function AdminMangaCustomGrid() {
                     </Alert>
                 }
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {mangaList.map(manga => (
+            <div className="flex flex-wrap gap-4">
+                {mangaList.map(mangaCustom => (
                     <AdminMangaCustomCard
-                        key={manga.id}
-                        slug={manga.slug}
-                        imageUrl={manga.imageUrl}
-                        title={manga.title}
-                        description={manga.description}
+                        key={mangaCustom.id}
+                        mangaCustom={mangaCustom}
+                        onClick={() => handleCardClick(mangaCustom)}
                     />
                 ))}
-            </div>          
+            </div>
         </div>
     );
 }

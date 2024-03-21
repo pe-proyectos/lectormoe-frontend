@@ -2,13 +2,11 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
 import { AdminAuthorGrid } from "../../components/admin/AdminAuthorGrid.jsx";
-import { AdminCreateAuthorButton } from "../../components/admin/AdminCreateAuthorButton.jsx";
 ---
 
 <AdminLayout title="Autores" page="authors">
   <AdminMangasBreadcrumb client:only />
   <div class="py-2"></div>
   <h1>Autores</h1>
-  <AdminCreateAuthorButton client:only />
   <AdminAuthorGrid client:only />
 </AdminLayout>

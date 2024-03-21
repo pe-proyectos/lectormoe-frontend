@@ -23,6 +23,7 @@ import {
     ChartBarIcon,
     ChatBubbleLeftRightIcon,
     InboxIcon,
+    AcademicCapIcon,
     PowerIcon,
 } from "@heroicons/react/24/solid";
 import {
@@ -139,7 +140,7 @@ export function AdminSidebar({ page }) {
                 <a href="/admin/authors">
                     <ListItem selected={page === "authors"}>
                         <ListItemPrefix>
-                            <BookOpenIcon className="h-5 w-5" />
+                            <AcademicCapIcon className="h-5 w-5" />
                         </ListItemPrefix>
                         Autores
                     </ListItem>

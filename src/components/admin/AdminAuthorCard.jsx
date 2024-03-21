@@ -10,12 +10,12 @@ import {
 
 export function AdminAuthorCard({ name, imageUrl, shortDescription, description }) {
     return (
-        <Card className="w-64">
+        <Card className="w-56">
             <CardHeader floated={false} color="blue-gray" className="relative h-56">
                 <img
                     src={imageUrl}
-                    className='object-fill m-auto'
-                    alt="card-image"
+                    className='min-h-full object-cover'
+                    alt={name}
                 />
             </CardHeader>
             <CardBody>

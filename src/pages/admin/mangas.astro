@@ -2,7 +2,6 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
 import { AdminMangaCustomGrid } from "../../components/admin/AdminMangaCustomGrid.jsx";
-import { AdminCreateMangaCustomDialog } from "../../components/admin/AdminCreateMangaCustomDialog.jsx";
 ---
 
 <AdminLayout title="Mangas" page="mangas">
@@ -12,6 +11,5 @@ import { AdminCreateMangaCustomDialog } from "../../components/admin/AdminCreate
   <p>
     Administra los mangas de tu organización. Puedes crear, editar y eliminar
   </p>
-  <AdminCreateMangaCustomDialog client:only />
   <AdminMangaCustomGrid client:only />
 </AdminLayout>
