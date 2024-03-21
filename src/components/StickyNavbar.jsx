@@ -18,7 +18,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/solid";
 
-export function StickyNavbar({ username }) {
+export function StickyNavbar({ organization, username }) {
   const [openNav, setOpenNav] = React.useState(false);
 
   React.useEffect(() => {
@@ -57,7 +57,7 @@ export function StickyNavbar({ username }) {
           href="/"
           className="mr-4 cursor-pointer py-1.5 font-medium"
         >
-          {window.organization.title}
+          {organization.title}
         </Typography>
         <div className="hidden items-center lg:flex">
           <div className="relative flex w-full gap-2 md:w-max">

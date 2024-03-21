@@ -24,11 +24,6 @@ const { theme, organization } = Astro.locals;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title} - {Astro.locals.organization.title}</title>
-		{/* hidden organization info */}
-		<meta
-			id="meta-organization"
-			data-organization={JSON.stringify(organization)}
-		/>
 		{/* Google Ads */}
 		{
 			isAdmin !== false && organization.googleAdsMetaContent && (
@@ -47,11 +42,11 @@ const { theme, organization } = Astro.locals;
 	</head>
 	<body>
 		<ThemeProvider>
-			<StickyNavbar username={Astro.locals.username} client:only />
+			<StickyNavbar organization={organization} username={Astro.locals.username} client:load />
 			<slot />
 			{
 				isAdmin !== false && (
-					<Footer organization={organization} client:only />
+					<Footer organization={organization} client:load />
 				)
 			}
 			<ToastContainer client:only />
@@ -71,8 +66,3 @@ const { theme, organization } = Astro.locals;
 		font-family: "DJB Me and My Shadow";
 	}
 </style>
-
-<script>
-	// @ts-ignore
-	window.organization = JSON.parse(document.getElementById("meta-organization").dataset.organization);
-</script>
