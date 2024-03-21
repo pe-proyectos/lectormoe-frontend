@@ -23,7 +23,7 @@ const { theme, organization } = Astro.locals;
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title} - {Astro.locals.organization.title}</title>
+		<title>{title} - {organization.title}</title>
 		{/* Google Ads */}
 		{
 			isAdmin !== false && organization.googleAdsMetaContent && (

@@ -3,8 +3,6 @@ import { Typography } from "@material-tailwind/react";
 const currentYear = new Date().getFullYear();
 
 export function Footer({ organization }) {
-    console.log("organization");
-    console.log(organization);
     return (
         <footer className="relative w-full">
             <div className="mx-auto w-full max-w-7xl px-8">
