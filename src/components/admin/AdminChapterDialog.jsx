@@ -61,6 +61,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
         if (chapter) {
             setTitle(chapter.title);
             setNumber(chapter.number);
+            setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
                 .then(chapterPages => setPages(chapterPages))
@@ -87,7 +88,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
         const formData = new FormData();
         formData.append('title', title);
         formData.append('number', number);
-        if (chapterImageFile) formData.append('image', chapterImageFile);
+        if (chapterImageFile || chapter) formData.append('image', chapterImageFile);
         pages.forEach((page) => {
             formData.append('pages', page instanceof File ? page : page?.imageUrl);
         });
@@ -158,7 +159,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             Miniatura del capitulo (Opcional)
                         </Typography>
                         <ImageDropzone
-                            value={chapterImageFile || chapter?.imageUrl}
+                            value={chapterImageFile}
                             label={'Arrastra y suelta una imagen para el capítulo'}
                             alt={'Miniatura del capítulo'}
                             onChange={(files) => files[0] ? setChapterImageFile(files[0]) : null}
