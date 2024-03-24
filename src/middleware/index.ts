@@ -53,6 +53,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
             callAPI('/api/auth/check'),
             callAPI(`/api/organization/check?domain=${context.url.hostname}`),
         ]);
+        console.log(organizationCheck);
+        
 
         if (authCheck?.status !== true) {
             context.locals.token = undefined;
@@ -72,6 +74,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         if (!context.locals.logged && context.url.pathname.startsWith('/admin')) {
             return context.redirect("/login");
+        }
+
+        // Social Redirects
+        if (context.url.pathname === "/facebook") {
+            return context.redirect(organizationCheck?.data?.facebookUrl || "/");
+        } else if (context.url.pathname === "/instagram") {
+            return context.redirect(organizationCheck?.data?.instagramUrl || "/");
+        } else if (context.url.pathname === "/x") {
+            return context.redirect(organizationCheck?.data?.twitterUrl || "/");
+        } else if (context.url.pathname === "/youtube") {
+            return context.redirect(organizationCheck?.data?.youtubeUrl || "/");
+        } else if (context.url.pathname === "/patreon") {
+            return context.redirect(organizationCheck?.data?.patreonUrl || "/");
+        } else if (context.url.pathname === "/discord") {
+            return context.redirect(organizationCheck?.data?.discordUrl || "/");
+        } else if (context.url.pathname === "/tiktok") {
+            return context.redirect(organizationCheck?.data?.tiktokUrl || "/");
+        } else if (context.url.pathname === "/twitch") {
+            return context.redirect(organizationCheck?.data?.twitchUrl || "/");
         }
 
         return await next();

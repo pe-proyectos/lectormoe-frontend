@@ -20,7 +20,7 @@ import { AdminChaptersTable } from './AdminChaptersTable';
 import { AdminChapterDialog } from './AdminChapterDialog';
 
 export function AdminMangaCustomChapters({ initialMangaCustom }) {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [chapter, setChapter] = useState(null);
     const [mangaCustom, setMangaCustom] = useState(initialMangaCustom);
     const [isAdminChapterDialogOpen, setIsAdminChapterDialogOpen] = useState(false);
@@ -37,6 +37,7 @@ export function AdminMangaCustomChapters({ initialMangaCustom }) {
     }, [chapter]);
 
     const refreshMangaCustom = () => {
+        setLoading(true);
         callAPI(`/api/manga-custom/${mangaCustom.slug}`)
             .then(result => setMangaCustom(result))
             .catch(error => toast.error(error?.message))

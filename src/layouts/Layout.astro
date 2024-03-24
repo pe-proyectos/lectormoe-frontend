@@ -40,10 +40,12 @@ const { theme, organization } = Astro.locals;
 		*/
 		}
 	</head>
-	<body>
+	<body class="bg-gray-50">
 		<ThemeProvider>
 			<StickyNavbar organization={organization} username={Astro.locals.username} client:load />
-			<slot />
+			<div class="min-h-[80vh]">
+				<slot />
+			</div>
 			{
 				isAdmin !== false && (
 					<Footer organization={organization} client:load />

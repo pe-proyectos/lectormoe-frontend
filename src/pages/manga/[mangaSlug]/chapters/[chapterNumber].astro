@@ -1,57 +1,21 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
-import ClickReader from "../../../../components/ClickReader.astro";
-import ChapterNavigation from "../../../../components/ChapterNavigation.astro";
-import ModalTutorial from "../../../../components/ModalTutorial.astro";
-import ModalLastChapter from "../../../../components/ModalLastChapter.astro";
+import { Reader } from "../../../../components/Reader";
 
 const { mangaSlug, chapterNumber } = Astro.params;
+const { callAPI } = Astro.locals;
 
-const [
-    { status: mangaStatus, data: manga },
-    { status: chapterStatus, data: chapter },
-    { status: pagesStatus, data: pages },
-] = await Promise.all([
-    Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`),
-    Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
-    Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages`),
-]);
+const { status: mangaStatus, data: manga } = await callAPI(`/api/manga-custom/${mangaSlug}`);
 
 if (!mangaStatus) {
     return Astro.redirect("/404");
 }
-
-if (!chapterStatus) {
-    return Astro.redirect("/404");
-}
-
-if (!pagesStatus) {
-    return Astro.redirect('/404');
-}
-
-const currentPageNumber = parseInt(Astro.url.searchParams.get("page") || "1");
 ---
 
 <Layout title={manga.title}>
-    <ChapterNavigation
-        isTop={true}
-        manga={manga}
-        chapter={chapter}
-        pages={pages}
-        currentPageNumber={currentPageNumber}
+    <Reader
+        mangaSlug={mangaSlug}
+        chapterNumber={chapterNumber}
+        client:only
     />
-    <div id="viewer-container">
-        <ClickReader
-            manga={manga}
-            chapter={chapter}
-            pages={pages}
-            currentPageNumber={currentPageNumber}
-        />
-    </div>
-    <ModalTutorial
-        manga={manga}
-        chapter={chapter} />
-    <ModalLastChapter
-        manga={manga}
-        chapter={chapter} />
 </Layout>

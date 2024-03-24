@@ -9,15 +9,12 @@ import {
 } from "@heroicons/react/24/solid";
 
 export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
-    useEffect(() => {
-        console.log("VALUE CHANGED TO ", value)
-    }, [value]);
     return (
         <div className="flex items-center gap-2">
             <DropzoneArea
                 useChipsForPreview
                 filesLimit={1}
-                dropzoneClass="!min-h-56 !p-2"
+                dropzoneClass="!min-h-56 !p-2 !bg-blue-gray-50"
                 Icon={''}
                 dropzoneText={label}
                 dropzoneParagraphClass="!text-base"
@@ -27,8 +24,8 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
                 onDelete={(file) => onDelete(file)}
             />
             {value && (
-                <div className='relative max-w-[50%] h-56'>
-                    <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                <div className='relative max-w-[50%] max-h-72'>
+                    <div className="absolute top-0 right-0">
                         <IconButton
                             variant="outlined"
                             className="rounded-full bg-white bg-opacity-90 shadow-md"
@@ -45,7 +42,7 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
                                 : value
                         }
                         alt={alt}
-                        className="w-full object-cover rounded-md"
+                        className="w-full max-h-72 object-cover rounded-md p-4"
                     />
                 </div>
             )}

@@ -27,7 +27,7 @@ import { set } from "date-fns";
 
 export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
     // dialog
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isCreateAuthorDialogOpen, setIsCreateAuthorDialogOpen] = useState(false);
     // lists
     const [demographies, setDemographies] = useState([]);
@@ -41,9 +41,11 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
 
     useEffect(() => {
         refreshAutors();
+        setLoading(true);
         callAPI(`/api/demography`)
             .then(result => setDemographies(result))
-            .catch(error => toast.error(error?.message));
+            .catch(error => toast.error(error?.message))
+            .finally(() => setLoading(false));
     }, []);
 
     useEffect(() => {
@@ -51,7 +53,7 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
     }, [isCreateAuthorDialogOpen]);
 
     const refreshAutors = () => {
-        callAPI(`/api/author`)
+        return callAPI(`/api/author`)
             .then(result => setAuthors(result))
             .catch(error => toast.error(error?.message));
     };

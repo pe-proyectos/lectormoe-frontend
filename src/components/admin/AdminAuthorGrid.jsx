@@ -9,7 +9,7 @@ import { AdminCreateAuthorDialog } from './AdminCreateAuthorDialog';
 import { callAPI } from '../../util/callApi';
 
 export function AdminAuthorGrid() {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [authors, setAuthors] = useState([]);
     const [isCreateAuthorDialogOpen, setIsCreateAuthorDialogOpen] = useState(false);
 
@@ -18,6 +18,7 @@ export function AdminAuthorGrid() {
     }, [isCreateAuthorDialogOpen]);
 
     const refreshAutors = () => {
+        setLoading(true);
         callAPI(`/api/author`)
             .then(result => setAuthors(result))
             .catch(error => toast.error(error?.message || 'Error al cargar los autores'))
@@ -28,7 +29,7 @@ export function AdminAuthorGrid() {
         <div className="w-full my-4">
             <Button
                 variant="outlined"
-                className="flex items-center gap-3 h-full ml-2"
+                className="flex items-center gap-3 h-full sm:m-4"
                 onClick={() => setIsCreateAuthorDialogOpen(true)}
             >
                 Agregar autor
@@ -38,7 +39,7 @@ export function AdminAuthorGrid() {
             </Button>
             <AdminCreateAuthorDialog open={isCreateAuthorDialogOpen} setOpen={setIsCreateAuthorDialogOpen} />
             <div className="max-w-lg">
-                {loading && <Spinner />}
+                {loading && <Spinner className='m-4 w-full' />}
                 {!loading && authors.length === 0 &&
                     <Alert>
                         No hay autores disponibles,

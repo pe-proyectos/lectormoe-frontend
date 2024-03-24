@@ -31,7 +31,7 @@ import { callAPI } from '../../util/callApi';
 
 export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
     // dialog
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     // form
     const [title, setTitle] = useState('');
     const [number, setNumber] = useState(1);
@@ -75,6 +75,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
             setTitle(`Capítulo ${lastChapterNumber + 1}`);
             setChapterImageFile(null);
             setPages([]);
+            setLoading(false);
         }
     }, [chapter, mangaCustom]);
 
@@ -222,10 +223,10 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             filesLimit={100}
                         />
                         <div className="flex flex-wrap gap-2 justify-start mx-4 h-[36rem] max-h-[36rem] p-2 overflow-y-auto bg-white bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
-                            {loading && <Spinner />}
+                            {loading && <Spinner className='m-4 w-full' />}
                             {pages.length === 0 && !loading && (
-                                <Typography variant="paragraph" color="blue-gray">
-                                    No hay páginas subidas
+                                <Typography variant="paragraph" color="blue-gray" className="w-full m-auto text-center">
+                                    Este capítulo no tiene páginas, arrastra y suelta imágenes en el recuadro de arriba para subir
                                 </Typography>
                             )}
                             {pages.map((page, index) => (

@@ -30,7 +30,7 @@ import { callAPI } from '../../util/callApi';
 
 export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCustom }) {
     // dialog
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isCreateMangaProfileDialogOpen, setIsCreateMangaProfileDialogOpen] = useState(false);
     // lists
     const [mangas, setMangas] = useState([]);
@@ -46,7 +46,6 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
 
     useEffect(() => {
         if (!mangaCustom) return;
-        console.log(mangaCustom);
         setMangaProfile(mangas.find(manga => manga.id === mangaCustom.mangaId));
         setTitle(mangaCustom?.title || '');
         setShortDescription(mangaCustom?.shortDescription || '');
@@ -66,16 +65,17 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
     }, [isCreateMangaProfileDialogOpen]);
 
     const refreshMangaProfile = () => {
+        setLoading(true);
         callAPI(`/api/manga/autocomplete`)
-            .then(result => {
-                setMangas(result)
-            })
-            .catch(error => toast.error(error?.message));
+            .then(result => setMangas(result))
+            .catch(error => toast.error(error?.message))
+            .finally(() => setLoading(false));
     }
 
     useEffect(() => {
         if (!mangaProfile) return;
         if(mangaCustom) return;
+        setLoading(true);
         callAPI(`/api/manga/${mangaProfile.slug}`)
             .then(result => {
                 if(mangaCustom) return;
@@ -83,7 +83,8 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                 setShortDescription(result.shortDescription);
                 setDescription(result.description);
             })
-            .catch(error => toast.error(error?.message));
+            .catch(error => toast.error(error?.message))
+            .finally(() => setLoading(false));
     }, [mangaProfile]);
 
     const handleSubmit = async (event) => {

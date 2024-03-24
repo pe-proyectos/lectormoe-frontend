@@ -13,10 +13,21 @@ type Organization = {
     slug: string,
     name: string,
     title: string,
-    imageUrl: string,
-    description: string,
+    domain: string,
+    logoUrl?: string,
+    imageUrl?: string,
+    bannerUrl?: string,
+    description?: string,
     googleAdsMetaContent?: string,
     googleAdsAdsTxtContent?: string,
+    facebookUrl?: string,
+    twitterUrl?: string,
+    instagramUrl?: string,
+    youtubeUrl?: string,
+    patreonUrl?: string,
+    tiktokUrl?: string,
+    discordUrl?: string,
+    twitchUrl?: string,
 }
 
 interface Window {

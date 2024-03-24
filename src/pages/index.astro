@@ -1,20 +1,20 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Card from '../components/MangaCard.astro';
+import Layout from "../layouts/Layout.astro";
+import Card from "../components/MangaCard.astro";
 
 const { data: mangas } = await Astro.locals.callAPI(`/api/manga-custom`);
-
-// const { data: demographies } = await Astro.locals.callAPI(`/api/demography`);
-
 ---
 
 <Layout title="Tus mangas en latino">
 	<div class="mx-auto max-w-screen-md py-12">
 		<div class="flex w-full justify-center">
 			<div class="flex flex-wrap justify-center">
-				{mangas && mangas.map((manga: any) => {
-					return <Card manga={manga} />
-				})}
+				{
+					mangas &&
+						mangas.map((manga: any) => {
+							return <Card manga={manga} />;
+						})
+				}
 			</div>
 		</div>
 	</div>

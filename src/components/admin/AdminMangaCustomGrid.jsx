@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import {
     Alert,
     Spinner,
@@ -10,7 +11,7 @@ import { callAPI } from '../../util/callApi';
 
 export function AdminMangaCustomGrid() {
     const [mangaList, setMangaList] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [selectedManga, setSelectedManga] = useState(null);
     const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] = useState(false);
 
@@ -23,9 +24,11 @@ export function AdminMangaCustomGrid() {
     }, [isCreateMangaCustomDialogOpen]);
 
     const refreshMangaProfile = () => {
+        setLoading(true);
         callAPI(`/api/manga-custom`)
             .then(result => setMangaList(result))
-            .catch(error => toast.error(error?.message || 'Error al cargar los autores'));
+            .catch(error => toast.error(error?.message || 'Error al cargar los autores'))
+            .finally(() => setLoading(false));
     }
 
     const handleCardClick = (mangaCustom) => {
@@ -43,7 +46,7 @@ export function AdminMangaCustomGrid() {
             />
             <Button
                 variant="outlined"
-                className="flex items-center gap-3 h-full ml-2"
+                className="flex items-center gap-3 h-full sm:m-4"
                 onClick={() => setIsCreateMangaCustomDialogOpen(true)}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -51,7 +54,7 @@ export function AdminMangaCustomGrid() {
                 Agregar Manga
             </Button>
             <div className="max-w-lg">
-                {loading && <Spinner />}
+                {loading && <Spinner className='m-4 w-full' />}
                 {!loading && mangaList.length === 0 &&
                     <Alert>
                         No hay mangas disponibles,
