@@ -4,7 +4,6 @@ import {
     Spinner,
     Button,
     ButtonGroup,
-    Select,
     Option,
     Card,
     Tabs,
@@ -12,7 +11,17 @@ import {
     TabsBody,
     Tab,
     TabPanel,
+    Accordion,
+    AccordionHeader,
+    AccordionBody,
 } from "@material-tailwind/react";
+import {
+    FormHelperText,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select
+} from '@mui/material';
 import { callAPI } from '../util/callApi';
 
 export function Reader({ organization, manga, chapterNumber }) {
@@ -23,6 +32,7 @@ export function Reader({ organization, manga, chapterNumber }) {
     const [pages, setPages] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
+    const [currentPageNumber, setCurrentPageNumber] = useState(1);
     const [loadedPages, setLoadedPages] = useState([]);
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(false);
 
@@ -70,14 +80,40 @@ export function Reader({ organization, manga, chapterNumber }) {
         const y = evt.clientY - rect.top;
         if (readType === 'horizontal') {
             if (x > rect.width / 2) {
-                setCurrentPage(oldValue => pages?.[pageIndex + 1]?.id || oldValue);
-                setCurrentPageIndex(oldValue => pages?.[pageIndex + 1] ? pageIndex + 1 : oldValue);
+                const page = pages?.[pageIndex + 1];
+                if (page) {
+                    setCurrentPage(oldValue => page.id);
+                    setCurrentPageIndex(oldValue => pageIndex + 1);
+                    setCurrentPageNumber(oldValue => page.number || oldValue);
+                }
             } else {
-                setCurrentPage(oldValue => pages?.[pageIndex - 1]?.id || oldValue);
-                setCurrentPageIndex(oldValue => pages?.[pageIndex - 1] ? pageIndex - 1 : oldValue);
+                const page = pages?.[pageIndex - 1];
+                if (page) {
+                    setCurrentPage(oldValue => page.id);
+                    setCurrentPageIndex(oldValue => pageIndex - 1);
+                    setCurrentPageNumber(oldValue => page.number || oldValue);
+                }
             }
         }
     }
+
+    useEffect(() => {
+        if (currentPageIndex === 0) {
+            return;
+        }
+        const page = pages[currentPageIndex];
+        if (page) {
+            const targetElement = document.querySelector(`#page-${page.id}`);
+            if (targetElement) {
+                const offset = -80;
+                const topPos = targetElement.getBoundingClientRect().top + window.pageYOffset + offset;
+                window.scrollTo({
+                    top: topPos,
+                    behavior: 'smooth',
+                });
+            }
+        }
+    }, [currentPage]);
 
     useEffect(() => {
         setLoading(true);
@@ -93,6 +129,7 @@ export function Reader({ organization, manga, chapterNumber }) {
                 if (pages.length > 0) {
                     setCurrentPage(pages[0].id);
                     setCurrentPageIndex(0);
+                    setCurrentPageNumber(pages[0].number);
                 }
             })
             .catch(error => toast.error(error?.message))
@@ -137,60 +174,79 @@ export function Reader({ organization, manga, chapterNumber }) {
                         </Tabs>
                     </div>
                 </div>
-                <div className='flex flex-wrap w-full justify-center my-2 gap-4'>
-                    {readType === 'horizontal' && pages.map((page, pageIndex) => (
-                        <Button
-                            key={page.id}
-                            className={"py-2 px-4 mx-2 border-b-2 border-gray-900 " + (page.id === currentPage ? ' border-red-900 ' : '')}
-                            onClick={() => {
-                                setCurrentPage(page.id);
-                                setCurrentPageIndex(pageIndex);
-                            }}
-                        >
-                            {page.number}
-                        </Button>
-                    ))}
+                <div className='flex flex-wrap w-full justify-center my-4'>
+                    {readType === 'horizontal' && (
+                        <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
+                            <InputLabel id="top-page-select-label">Página</InputLabel>
+                            <Select
+                                labelId="top-page-select-label"
+                                displayEmpty
+                                value={currentPage}
+                                onChange={(evt) => {
+                                    const pageIndex = pages.findIndex(page => page.id === evt.target.value);
+                                    setCurrentPageIndex(pageIndex);
+                                    setCurrentPage(pages[pageIndex].id);
+                                    setCurrentPageNumber(pages[pageIndex].number);
+                                }}
+                            >
+                                {pages.map((page, pageIndex) => (
+                                    <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
                 </div>
                 {pages.map((page, pageIndex) => (
                     <div
                         key={page.id}
+                        id={`page-${page.id}`}
                         className={
                             'w-full flex justify-center cursor-pointer'
                             + (shouldShowPage(page.id) ? '' : ' hidden')
                         }
                         onClick={(evt) => handlePageClick(evt, page.id, pageIndex)}
                     >
-                        <div className='max-w-[100vw] m-0 2xl:max-w-[95vw] 2xl:mx-auto'>
+                        <div className='max-w-[100vw] m-0 2xl:max-w-[95vw] 2xl:mx-auto select-none'>
                             {!loadedPages.includes(page.id) && (
                                 <img
                                     width={`${page.imageWidth}px`}
                                     height={`${page.imageHeight}px`}
-                                    className="bg-gray-300 my-1 !opacity-20 animate-pulse"
+                                    className="bg-gray-300 !opacity-20 animate-pulse"
                                 />
                             )}
                             <img
                                 src={page.imageUrl}
                                 onLoad={() => handlePageLoad(page.id)}
-                                className='max-w-full mx-auto my-1'
+                                className='max-w-full mx-auto pointer-events-none'
                                 alt={`Pagina ${page.number}`}
                                 hidden={!loadedPages.includes(page.id)}
                             />
                         </div>
                     </div>
                 ))}
-                <div className='flex flex-wrap w-full justify-center my-2 gap-2'>
-                    {readType === 'horizontal' && pages.map((page, pageIndex) => (
-                        <Button
-                            key={page.id}
-                            className={"py-2 px-4 mx-2 border-b-2 border-gray-900 " + (page.id === currentPage ? ' border-red-900 ' : '')}
-                            onClick={() => {
-                                setCurrentPage(page.id);
-                                setCurrentPageIndex(pageIndex);
-                            }}
-                        >
-                            {page.number}
-                        </Button>
-                    ))}
+                <div className='flex flex-wrap w-full justify-center my-4'>
+                    {readType === 'horizontal' && (
+                        <div className='flex flex-wrap w-full justify-center my-4'>
+                            <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
+                                <InputLabel id="bottom-page-select-label">Página</InputLabel>
+                                <Select
+                                    labelId="bottom-page-select-label"
+                                    displayEmpty
+                                    value={currentPage}
+                                    onChange={(evt) => {
+                                        const pageIndex = pages.findIndex(page => page.id === evt.target.value);
+                                        setCurrentPageIndex(pageIndex);
+                                        setCurrentPage(pages[pageIndex].id);
+                                        setCurrentPageNumber(pages[pageIndex].number);
+                                    }}
+                                >
+                                    {pages.map((page, pageIndex) => (
+                                        <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </div>
+                    )}
                 </div>
                 <div className='w-full text-center mt-2'>
                     {((currentPageIndex === pages.length - 1) || readType === 'vertical') && (
@@ -241,8 +297,20 @@ export function Reader({ organization, manga, chapterNumber }) {
                 {/* Disqus Comments */}
                 {organization?.enableDisqusIntegration && (
                     <div className='w-full text-center'>
-                        <div className='max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto bg-gray-800 shadow-sm my-4 p-4 rounded-md'>
-                            <div id="disqus_thread"></div>
+                        <div className='max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md'>
+                            <Accordion open={openCommentsAccordion}>
+                                <AccordionHeader
+                                    onClick={() => setOpenCommentsAccordion(oldValue => !oldValue)}
+                                >
+                                    <h3 className='text-xl font-bold text-gray-300'>
+                                        {openCommentsAccordion ? 'Ocultar' : 'Mostrar'} comentarios
+                                    </h3>
+                                </AccordionHeader>
+                                <AccordionBody className="bg-gray-100 my-2 p-4 rounded-md">
+                                    <div id="disqus_thread" />
+                                </AccordionBody>
+                            </Accordion>
+
                         </div>
                     </div>
                 )}
