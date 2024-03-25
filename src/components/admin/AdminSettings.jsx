@@ -18,6 +18,7 @@ import {
     Accordion,
     AccordionHeader,
     AccordionBody,
+    Switch,
 } from "@material-tailwind/react";
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
@@ -35,6 +36,9 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
     const [name, setName] = useState('');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [enableGoogleAds, setEnableGoogleAds] = useState(false);
+    const [enableDisqusIntegration, setEnableDisqusIntegration] = useState(false);
+    const [disqusEmbedUrl, setDisqusEmbedUrl] = useState('');
     const [logoImageFile, setLogoImageFile] = useState(null);
     const [imageImageFile, setImageImageFile] = useState(null);
     const [bannerImageFile, setBannerImageFile] = useState(null);
@@ -48,10 +52,12 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
     const [twitchUrl, setTwitchUrl] = useState('');
     // accordion
     const [openInformationAccordion, setOpenInformationAccordion] = useState(true);
+    const [openIntegrationsAccordion, setOpenIntegrationsAccordion] = useState(false);
     const [openImagesAccordion, setOpenImagesAccordion] = useState(false);
     const [openSocialAccordion, setOpenSocialAccordion] = useState(false);
 
     const handleInformationAccordion = () => setOpenInformationAccordion(!openInformationAccordion);
+    const handleIntegrationsAccordion = () => setOpenIntegrationsAccordion(!openIntegrationsAccordion);
     const handleImagesAccordion = () => setOpenImagesAccordion(!openImagesAccordion);
     const handleSocialAccordion = () => setOpenSocialAccordion(!openSocialAccordion);
 
@@ -67,6 +73,10 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                 setName(organization.name || '');
                 setTitle(organization.title || '');
                 setDescription(organization.description || '');
+                // Integrations
+                setEnableGoogleAds(organization.enableGoogleAds || false);
+                setEnableDisqusIntegration(organization.enableDisqusIntegration || false);
+                setDisqusEmbedUrl(organization.disqusEmbedUrl || '');
                 // Social
                 setFacebookUrl(organization.facebookUrl || '');
                 setTwitterUrl(organization.twitterUrl || '');
@@ -93,6 +103,9 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
         formData.append('name', name);
         formData.append('title', title);
         formData.append('description', description);
+        formData.append('enableGoogleAds', enableGoogleAds);
+        formData.append('enableDisqusIntegration', enableDisqusIntegration);
+        formData.append('disqusEmbedUrl', disqusEmbedUrl);
         formData.append('facebookUrl', facebookUrl);
         formData.append('twitterUrl', twitterUrl);
         formData.append('instagramUrl', instagramUrl);
@@ -157,6 +170,37 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                                 onChange={(e) => setDescription(e.target.value)}
                             />
 
+                        </div>
+                    </AccordionBody>
+                </Accordion>
+                <Accordion open={openIntegrationsAccordion}>
+                    <AccordionHeader onClick={handleIntegrationsAccordion}>Integraciones</AccordionHeader>
+                    <AccordionBody>
+                        <div className="flex flex-col gap-4 sm:ml-4">
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Anuncios
+                            </Typography>
+                            <Switch
+                                label="Activar anuncios de Google Ads"
+                                checked={enableGoogleAds}
+                                onChange={(e) => setEnableGoogleAds(e.target.checked)}
+                            />
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Comentarios
+                            </Typography>
+                            <Switch
+                                label="Activar comentarios de Disqus"
+                                checked={enableDisqusIntegration}
+                                onChange={(e) => setEnableDisqusIntegration(e.target.checked)}
+                            />
+                            <Input
+                                size="lg"
+                                label="URL Embed de Disqus"
+                                autoComplete='off'
+                                value={disqusEmbedUrl}
+                                onChange={(e) => setDisqusEmbedUrl(e.target.value)}
+                                disabled={!enableDisqusIntegration}
+                            />
                         </div>
                     </AccordionBody>
                 </Accordion>

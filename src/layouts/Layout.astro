@@ -26,7 +26,7 @@ const { theme, organization } = Astro.locals;
 		<title>{title} - {organization?.title}</title>
 		{/* Google Ads */}
 		{
-			isAdmin !== false && organization?.googleAdsMetaContent && (
+			isAdmin !== false && organization?.enableGoogleAds && (
 				<meta
 					name="google-adsense-account"
 					content={organization?.googleAdsMetaContent}

@@ -1,1 +1,5 @@
-{Astro.locals.organization.googleAdsAdsTxtContent || ""}
+{
+    Astro.locals.organization?.enableGoogleAds
+        ? Astro.locals.organization?.googleAdsAdsTxtContent || ""
+        : ""
+}

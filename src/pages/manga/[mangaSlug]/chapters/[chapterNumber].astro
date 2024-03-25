@@ -3,9 +3,11 @@ import Layout from "../../../../layouts/Layout.astro";
 import { Reader } from "../../../../components/Reader";
 
 const { mangaSlug, chapterNumber } = Astro.params;
-const { callAPI } = Astro.locals;
+const { organization, callAPI } = Astro.locals;
 
-const { status: mangaStatus, data: manga } = await callAPI(`/api/manga-custom/${mangaSlug}`);
+const { status: mangaStatus, data: manga } = await callAPI(
+    `/api/manga-custom/${mangaSlug}`,
+);
 
 if (!mangaStatus) {
     return Astro.redirect("/404");
@@ -14,7 +16,8 @@ if (!mangaStatus) {
 
 <Layout title={manga.title}>
     <Reader
-        mangaSlug={mangaSlug}
+        organization={organization}
+        manga={manga}
         chapterNumber={chapterNumber}
         client:only
     />

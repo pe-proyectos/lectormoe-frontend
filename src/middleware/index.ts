@@ -53,8 +53,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
             callAPI('/api/auth/check'),
             callAPI(`/api/organization/check?domain=${context.url.hostname}`),
         ]);
-        console.log(organizationCheck);
-        
 
         if (authCheck?.status !== true) {
             context.locals.token = undefined;
