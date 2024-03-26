@@ -14,6 +14,7 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
             <DropzoneArea
                 useChipsForPreview
                 filesLimit={1}
+                maxFileSize={25 * 1024 * 1024}
                 dropzoneClass="!min-h-56 !p-2 !bg-blue-gray-50"
                 Icon={''}
                 dropzoneText={label}

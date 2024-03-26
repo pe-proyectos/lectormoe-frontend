@@ -171,7 +171,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
                 acceptedFiles={['image/*']}
                 cancelButtonText={"Cancelar"}
                 submitButtonText={"Subir"}
-                maxFileSize={5000000}
+                maxFileSize={25 * 1024 * 1024}
                 open={openUploadImagesDialog}
                 onClose={() => setOpenUploadImagesDialog(false)}
                 onSave={(files) => saveUploadImagesDialog(files)}

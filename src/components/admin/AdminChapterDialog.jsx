@@ -215,7 +215,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             Icon={''}
                             cancelButtonText={"Cancelar"}
                             submitButtonText={"Subir"}
-                            maxFileSize={5000000}
+                            maxFileSize={25 * 1024 * 1024}
                             showAlerts={false}
                             onDrop={(files) => setPages([...pages, ...files])}
                             showPreviews={false}
