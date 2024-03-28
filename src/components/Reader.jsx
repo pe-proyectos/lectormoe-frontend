@@ -98,6 +98,12 @@ export function Reader({ organization, manga, chapterNumber }) {
     }
 
     useEffect(() => {
+        callAPI(`/api/views/manga-custom/${manga.slug}/chapter/${chapterNumber}`, {
+            includeIp: true,
+        }).catch((error) => {});
+    }, []);
+
+    useEffect(() => {
         if (currentPageIndex === 0) {
             return;
         }
@@ -206,7 +212,7 @@ export function Reader({ organization, manga, chapterNumber }) {
                         }
                         onClick={(evt) => handlePageClick(evt, page.id, pageIndex)}
                     >
-                        <div className='max-w-[100vw] m-0 2xl:max-w-[95vw] 2xl:mx-auto select-none'>
+                        <div className='relative max-w-[100vw] m-0 2xl:max-w-[95vw] 2xl:mx-auto select-none'>
                             {!loadedPages.includes(page.id) && (
                                 <img
                                     width={`${page.imageWidth}px`}

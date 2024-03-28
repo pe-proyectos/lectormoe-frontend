@@ -18,7 +18,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/solid";
 
-export function StickyNavbar({ organization, username }) {
+export function StickyNavbar({ organization, username, userSlug, member }) {
   const [openNav, setOpenNav] = React.useState(false);
 
   React.useEffect(() => {
@@ -29,7 +29,8 @@ export function StickyNavbar({ organization, username }) {
   }, []);
 
   const navOptions = [
-    { name: "Mangas", href: "/" },
+    { name: "Mangas", href: "/mangas" },
+    { name: "Noticias", href: "/news" },
   ]
 
   const navList = (
@@ -132,10 +133,14 @@ export function StickyNavbar({ organization, username }) {
                   </IconButton>
                 </MenuHandler>
                 <MenuList>
-                  <MenuItem>Mi Perfil</MenuItem>
-                  <a href="/admin">
-                    <MenuItem>Administrador</MenuItem>
+                  <a href={`/profile/${userSlug}`}>
+                    <MenuItem>Mi Perfil</MenuItem>
                   </a>
+                  {member && (
+                    <a href="/admin">
+                      <MenuItem>Administrador</MenuItem>
+                    </a>
+                  )}
                   <a href="/logout">
                     <MenuItem>Cerrar sesión</MenuItem>
                   </a>

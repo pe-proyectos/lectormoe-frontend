@@ -27,17 +27,18 @@ export function LoginCard() {
                 method: "POST",
                 body: formData,
             });
-            const { status, data } = await response.json();
+            const { status, data, message } = await response.json();
 
             if (!status) {
-                toast.error(data?.message ?? "Error al iniciar sesión", {
+                toast.error(message ?? "Error al iniciar sesión", {
                     position: "bottom-right",
                 });
             } else {
                 await Promise.all([
                     cookieStore.set("token", data.token),
                     cookieStore.set("username", data.username),
-                    cookieStore.set("user_slug", data.user_slug),
+                    cookieStore.set("userSlug", data.userSlug),
+                    data?.member ? cookieStore.set("member", JSON.stringify(data.member)) : null,
                 ]);
                 // Redirect to homepage after successful login
                 window.location.href = "/";
@@ -64,7 +65,7 @@ export function LoginCard() {
             <form onSubmit={handleSubmit} className="mt-8 mb-2 w-80 max-w-screen-lg sm:w-96">
                 <div className="mb-1 flex flex-col gap-6">
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Correo electrónico
+                        Usuario o Correo electrónico
                     </Typography>
                     <Input
                         size="lg"

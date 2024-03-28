@@ -12,14 +12,14 @@ interface Props {
 }
 
 const { title, isAdmin } = Astro.props;
-const { theme, organization } = Astro.locals;
+const { theme, organization, userSlug, member } = Astro.locals;
 ---
 
 <!doctype html>
 <html data-theme={theme} lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="description" content="Astro description" />
+		<meta name="description" content={organization?.description || "Mangas"} />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
@@ -42,7 +42,13 @@ const { theme, organization } = Astro.locals;
 	</head>
 	<body class="bg-gray-50">
 		<ThemeProvider>
-			<StickyNavbar organization={organization} username={Astro.locals.username} client:load />
+			<StickyNavbar
+				organization={organization}
+				username={Astro.locals.username}
+				member={member}
+				userSlug={userSlug}
+				client:load
+			/>
 			<div class="min-h-[80vh]">
 				<slot />
 			</div>

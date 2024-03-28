@@ -5,9 +5,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     context.locals.token = context.cookies.get('token')?.value;
     context.locals.username = context.cookies.get('username')?.value;
-    context.locals.user_slug = context.cookies.get('user_slug')?.value;
+    context.locals.userSlug = context.cookies.get('userSlug')?.value;
+    
+    try {
+        context.locals.member = context.cookies.get('member')?.value ? JSON.parse(context.cookies.get('member')?.value!) : undefined;
+    } catch (error) {
+    }
 
-    const callAPI = async (url: string, fetchOptions?: RequestInit) => {
+    const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> & { includeIp?: any }) => {
         const API_URL = Bun.env["PUBLIC_API_URL"] || '';
         const response = await fetch(API_URL + url, {
             ...(fetchOptions || {}),
@@ -54,13 +59,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
             callAPI(`/api/organization/check?domain=${context.url.hostname}`),
         ]);
 
-        if (authCheck?.status !== true) {
+        if (authCheck?.status === true) {
+            context.locals.token = authCheck.data.token;
+            context.locals.username = authCheck.data.username;
+            context.locals.userSlug = authCheck.data.userSlug;
+            context.locals.member = authCheck.data.member;
+            context.cookies.set('token', authCheck.data.token, { maxAge: 60 * 60 * 24 * 7 });
+            context.cookies.set('username', authCheck.data.username, { maxAge: 60 * 60 * 24 * 7 });
+            context.cookies.set('userSlug', authCheck.data.userSlug, { maxAge: 60 * 60 * 24 * 7 });
+            context.cookies.set('member', JSON.stringify(authCheck.data.member), { maxAge: 60 * 60 * 24 * 7 });
+            context.locals.logged = true;
+        } else {
             context.locals.token = undefined;
             context.locals.username = undefined;
-            context.locals.user_slug = undefined;
+            context.locals.userSlug = undefined;
+            context.locals.member = undefined;
             context.cookies.set('token', '', { maxAge: 0 });
             context.cookies.set('username', '', { maxAge: 0 });
-            context.cookies.set('user_slug', '', { maxAge: 0 });
+            context.cookies.set('userSlug', '', { maxAge: 0 });
+            context.cookies.set('member', '', { maxAge: 0 });
             context.locals.logged = false;
         }
 

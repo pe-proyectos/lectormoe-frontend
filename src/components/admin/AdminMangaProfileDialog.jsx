@@ -163,20 +163,21 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
                     onChange={(e) => setTitle(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Descripción corta (Opcional)
+                    Descripción corta ({shortDescription.length.toString().padStart(3, "0")}/300 caracteres) (Opcional)
                 </Typography>
                 <Textarea
                     size="md"
-                    label="Una descripción de menos de 100 caracteres..."
+                    label="Una descripción de menos de 300 caracteres..."
+                    maxLength={300}
                     value={shortDescription}
                     onChange={(e) => setShortDescription(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Descripción (Opcional)
+                    Sinopsis (Opcional)
                 </Typography>
                 <Textarea
                     size="lg"
-                    label="Argumento de la obra..."
+                    label="Sinopsis de la obra..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                 />

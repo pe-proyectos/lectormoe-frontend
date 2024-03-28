@@ -151,9 +151,9 @@ export function AdminSidebar({ page }) {
                             <BookOpenIcon className="h-5 w-5" />
                         </ListItemPrefix>
                         Mangas
-                        <ListItemSuffix>
+                        {/* <ListItemSuffix>
                             <Chip value="14" size="sm" variant="ghost" color="blue-gray" className="rounded-full" />
-                        </ListItemSuffix>
+                        </ListItemSuffix> */}
                     </ListItem>
                 </a>
                 <a href="/admin/news">

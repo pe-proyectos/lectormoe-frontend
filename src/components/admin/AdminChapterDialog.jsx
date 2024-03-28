@@ -245,7 +245,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                                                 : page?.imageUrl
                                         }
                                         alt={`Página ${index + 1}`}
-                                        className="w-full object-cover rounded-md"
+                                        className="w-full max-w-full h-56 max-h-56 object-cover rounded-md bg-gray-900"
                                     />
                                     <CardFooter className="p-0">
                                         <div className="flex justify-between items-center gap-2 p-2">

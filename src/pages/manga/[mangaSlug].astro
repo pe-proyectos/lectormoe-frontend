@@ -1,4 +1,5 @@
 ---
+import { MangaView } from '../../components/MangaView';
 import Layout from '../../layouts/Layout.astro';
 
 const { mangaSlug } = Astro.params;
@@ -25,6 +26,7 @@ function colorByRank(rank: string) {
 ---
 
 <Layout title={manga.title}>
+    <MangaView manga={manga} client:only/>
     <div class="md:flex w-full">
         <div class="mb-4 md:mb-0">
             <figure class="relative my-4 md:mx-4">

@@ -18,17 +18,23 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             {
                 accessorKey: 'imageUrl',
                 header: 'Miniatura',
-                Cell: ({ row }) => (
+                size: 50,
+                Cell: ({ row }) => row.original.imageUrl ? (
                     <img
                         src={row.original.imageUrl}
                         alt={row.original.title || row.original.number || "Sin miniatura"}
                         className='max-w-24'
                     />
+                ) : (
+                    <Typography variant="h6" color="blue-gray" className="-mb-3">
+                        Sin miniatura
+                    </Typography>
                 ),
             },
             {
                 accessorKey: 'number',
                 header: 'Número',
+                size: 50,
                 Cell: ({ row }) => (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
                         {row.original.number}
@@ -45,10 +51,29 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
                 ),
             },
             {
+                accessorKey: 'views',
+                header: 'Visualizaciones',
+                size: 50,
+                Cell: ({ row }) => (
+                    <Typography variant="h6" color="blue-gray" className="-mb-3">
+                        {row.original.views}
+                    </Typography>
+                ),
+            },
+            {
                 accessorKey: 'createdAt',
-                header: 'Fecha de creación',
+                header: 'Fecha creación',
+                size: 50,
                 Cell: ({ row }) => (
                     <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>
+                ),
+            },
+            {
+                accessorKey: 'updatedAt',
+                header: 'Fecha actualización',
+                size: 50,
+                Cell: ({ row }) => (
+                    <span>{new Date(row.original.updatedAt).toLocaleDateString()}</span>
                 ),
             },
             {
@@ -91,6 +116,8 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
     }
 
     return (
-        <MRT_TableContainer table={table} />
+        <div className='max-w-full'>
+            <MRT_TableContainer table={table} />
+        </div>
     );
 }

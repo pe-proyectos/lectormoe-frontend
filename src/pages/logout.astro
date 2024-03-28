@@ -3,7 +3,8 @@ import Layout from "../layouts/Layout.astro";
 
 Astro.cookies.delete("token");
 Astro.cookies.delete("username");
-Astro.cookies.delete("user_slug");
+Astro.cookies.delete("userSlug");
+Astro.cookies.delete("member");
 ---
 
 <Layout title="Tus mangas en latino">
@@ -19,7 +20,9 @@ Astro.cookies.delete("user_slug");
 			// @ts-ignore
 			cookieStore.delete("username"),
 			// @ts-ignore
-			cookieStore.delete("user_slug"),
+			cookieStore.delete("userSlug"),
+			// @ts-ignore
+			cookieStore.delete("member"),
 		]).then(() => {
 			window.location.href = "/";
 		});

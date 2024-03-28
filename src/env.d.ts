@@ -42,12 +42,41 @@ declare namespace App {
         theme: 'light' | 'black',
         token: string | undefined,
         username: string | undefined,
-        user_slug: string | undefined,
+        userSlug: string | undefined,
+        member: undefined | {
+            // Organization
+            canEditOrganization: boolean,
+            canDeleteOrganization: boolean,
+            // Organization Members
+            canInviteMember: boolean,
+            canEditMember: boolean,
+            canDeleteMember: boolean,
+            // Author
+            canCreateAuthor: boolean,
+            // Manga Profile
+            canCreateMangaProfile: boolean,
+            // Manga Custom
+            canCreateMangaCustom: boolean,
+            canEditMangaCustom: boolean,
+            canDeleteMangaCustom: boolean,
+            // Genre
+            canCreateGenre: boolean,
+            canEditGenre: boolean,
+            canDeleteGenre: boolean,
+            // Chapter
+            canCreateChapter: boolean,
+            canEditChapter: boolean,
+            canDeleteChapter: boolean,
+            // Pages
+            canCreatePage: boolean,
+            canEditPage: boolean,
+            canDeletePage: boolean,
+        },
         logged: boolean,
 
         organization: Organization,
 
-        callAPI: (url: string, fetchOptions?: RequestInit) => Promise<any>,
+        callAPI: (url: string, fetchOptions?: Partial<RequestInit> & { includeIp?: any }) => Promise<any>,
         formatDate: (dateString: string) => string,
     }
 }

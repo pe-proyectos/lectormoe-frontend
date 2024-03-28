@@ -1,12 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Card from "../components/MangaCard.astro";
-
-const { data: mangas } = await Astro.locals.callAPI(`/api/manga-custom`);
+// import Card from "../components/MangaCard.astro";
+import { MangaGrid } from "../components/MangaGrid.jsx";
 ---
 
 <Layout title="Tus mangas en latino">
-	<div class="mx-auto max-w-screen-md py-12">
+	<MangaGrid client:only />
+	<!-- <div class="mx-auto max-w-screen-md py-12">
 		<div class="flex w-full justify-center">
 			<div class="flex flex-wrap justify-center">
 				{
@@ -17,5 +17,5 @@ const { data: mangas } = await Astro.locals.callAPI(`/api/manga-custom`);
 				}
 			</div>
 		</div>
-	</div>
+	</div> -->
 </Layout>
