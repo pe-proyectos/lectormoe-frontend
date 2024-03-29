@@ -7,11 +7,13 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 interface Props {
-	title: string;
+	title?: string;
+	imageUrl?: string;
+	description?: string;
 	isAdmin?: boolean;
 }
 
-const { title, isAdmin } = Astro.props;
+const { title, isAdmin, imageUrl, description } = Astro.props;
 const { theme, organization, userSlug, member } = Astro.locals;
 ---
 
@@ -23,7 +25,7 @@ const { theme, organization, userSlug, member } = Astro.locals;
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title} - {organization?.title}</title>
+		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google Ads */}
 		{
 			isAdmin !== false && organization?.enableGoogleAds && (
@@ -39,6 +41,15 @@ const { theme, organization, userSlug, member } = Astro.locals;
 			isAdmin !== false && <ViewTransitions />
 		*/
 		}
+		{/* Metadata General */}
+		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
+		<meta name="description" content={description || organization?.description || organization?.title || "Mangas"}>
+		<meta property="og:title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
+		<meta property="og:description" content={description || organization?.description || organization?.title || "Mangas"}>
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={Astro.url} />
+		<meta property="og:image" content={imageUrl || organization?.imageUrl} />
+		<meta name="theme-color" content="#ffccff">
 	</head>
 	<body class="bg-gray-50">
 		<ThemeProvider>

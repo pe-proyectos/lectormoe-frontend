@@ -5,16 +5,28 @@ import { Reader } from "../../../../components/Reader";
 const { mangaSlug, chapterNumber } = Astro.params;
 const { organization, callAPI } = Astro.locals;
 
-const { status: mangaStatus, data: manga } = await callAPI(
-    `/api/manga-custom/${mangaSlug}`,
-);
+const [
+    { status: mangaStatus, data: manga },
+    { status: chapterStatus, data: chapter },
+] = await Promise.all([
+    callAPI(`/api/manga-custom/${mangaSlug}`),
+    callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
+]);
 
 if (!mangaStatus) {
     return Astro.redirect("/404");
 }
+
+if (!chapterStatus) {
+    return Astro.redirect("/404");
+}
 ---
 
-<Layout title={manga.title}>
+<Layout
+    title={`${chapter.title} - ${manga.title} #${chapter.number}`}
+    imageUrl={manga.imageUrl}
+    description={`Lee el capítulo ${chapter.number} de ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || "Click aqui!"}`}
+>
     <Reader
         organization={organization}
         manga={manga}

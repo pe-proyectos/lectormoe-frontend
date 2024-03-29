@@ -3,21 +3,29 @@ import { toast } from 'react-toastify';
 import {
     Alert,
     Spinner,
+    Typography,
+    IconButton,
     Button,
 } from "@material-tailwind/react";
+import {
+    ArrowLeftIcon,
+    ArrowRightIcon,
+} from "@heroicons/react/24/solid";
 import { AdminMangaCustomCard } from './AdminMangaCustomCard';
 import { AdminMangaCustomDialog } from './AdminMangaCustomDialog';
 import { callAPI } from '../../util/callApi';
 
 export function AdminMangaCustomGrid() {
-    const [mangaList, setMangaList] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [mangaList, setMangaList] = useState([]);
+    const [page, setPage] = useState(1);
+    const [maxPage, setMaxPage] = useState(1);
     const [selectedManga, setSelectedManga] = useState(null);
     const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] = useState(false);
 
     useEffect(() => {
         refreshMangaProfile();
-    }, []);
+    }, [page]);
 
     useEffect(() => {
         if (!isCreateMangaCustomDialogOpen) refreshMangaProfile();
@@ -25,9 +33,16 @@ export function AdminMangaCustomGrid() {
 
     const refreshMangaProfile = () => {
         setLoading(true);
-        callAPI(`/api/manga-custom`)
-            .then(result => setMangaList(result))
-            .catch(error => toast.error(error?.message || 'Error al cargar los autores'))
+        const query = new URLSearchParams({
+            page,
+            limit: 20,
+        });
+        callAPI(`/api/manga-custom?${query}`)
+            .then(({ data, maxPage }) => {
+                setMangaList(data);
+                setMaxPage(maxPage);
+            })
+            .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
     }
 
@@ -53,6 +68,32 @@ export function AdminMangaCustomGrid() {
                 </svg>
                 Agregar Manga
             </Button>
+            {!loading && mangaList.length > 0 && (
+                <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
+                    <div className="flex items-center gap-8">
+                        <IconButton
+                            size="sm"
+                            variant="outlined"
+                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                            disabled={page === 1}
+                        >
+                            <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
+                        </IconButton>
+                        <Typography color="gray" className="font-normal">
+                            Page <strong className="text-gray-900">{page}</strong> of{" "}
+                            <strong className="text-gray-900">{maxPage}</strong>
+                        </Typography>
+                        <IconButton
+                            size="sm"
+                            variant="outlined"
+                            onClick={() => setPage(prev => Math.min(prev + 1, 10))}
+                            disabled={page === maxPage}
+                        >
+                            <ArrowRightIcon strokeWidth={2} className="h-4 w-4" />
+                        </IconButton>
+                    </div>
+                </div>
+            )}
             <div className="max-w-lg">
                 {loading && <Spinner className='m-4 w-full' />}
                 {!loading && mangaList.length === 0 &&

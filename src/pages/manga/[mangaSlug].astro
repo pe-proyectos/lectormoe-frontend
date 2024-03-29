@@ -25,7 +25,7 @@ function colorByRank(rank: string) {
 }
 ---
 
-<Layout title={manga.title}>
+<Layout title={manga.title} imageUrl={manga.imageUrl} description={manga.shortDescription}>
     <MangaView manga={manga} client:only/>
     <div class="md:flex w-full">
         <div class="mb-4 md:mb-0">
@@ -34,7 +34,7 @@ function colorByRank(rank: string) {
                     transition:name={`manga_image_${manga.slug}`}
                     src={manga.imageUrl}
                     alt={manga.title}
-                    class="w-full shadow-md mx-auto min-w-64 max-w-64"
+                    class="w-56 max-h-96 shadow-md object-cover"
                     draggable="false"
                 />
             </figure>

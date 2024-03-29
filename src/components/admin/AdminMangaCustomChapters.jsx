@@ -47,7 +47,7 @@ export function AdminMangaCustomChapters({ initialMangaCustom }) {
     return (
         <Card color="transparent" shadow={false}>
             <div className="flex gap-4 my-2">
-                <img src={mangaCustom.imageUrl} className="w-56" alt="cover" />
+                <img src={mangaCustom.imageUrl} className="w-56 max-h-96 object-cover" alt="cover" />
                 <div>
                     <Typography variant="h2" color="blue-gray">
                         {mangaCustom.title}

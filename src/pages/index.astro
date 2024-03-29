@@ -1,21 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
-// import Card from "../components/MangaCard.astro";
 import { MangaGrid } from "../components/MangaGrid.jsx";
 ---
 
-<Layout title="Tus mangas en latino">
+<Layout>
 	<MangaGrid client:only />
-	<!-- <div class="mx-auto max-w-screen-md py-12">
-		<div class="flex w-full justify-center">
-			<div class="flex flex-wrap justify-center">
-				{
-					mangas &&
-						mangas.map((manga: any) => {
-							return <Card manga={manga} />;
-						})
-				}
-			</div>
-		</div>
-	</div> -->
 </Layout>

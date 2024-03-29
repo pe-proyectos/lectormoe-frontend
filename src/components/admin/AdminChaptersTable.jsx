@@ -23,7 +23,7 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
                     <img
                         src={row.original.imageUrl}
                         alt={row.original.title || row.original.number || "Sin miniatura"}
-                        className='max-w-24'
+                        className='max-w-24 max-h-36 mx-auto'
                     />
                 ) : (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">

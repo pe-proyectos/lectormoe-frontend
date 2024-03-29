@@ -11,8 +11,10 @@ import {
     TabsBody,
     Tab,
     TabPanel,
+    Typography,
     Accordion,
     AccordionHeader,
+    Switch,
     AccordionBody,
 } from "@material-tailwind/react";
 import {
@@ -27,6 +29,7 @@ import { callAPI } from '../util/callApi';
 export function Reader({ organization, manga, chapterNumber }) {
     const [loading, setLoading] = useState(true);
     const [readType, setReadType] = useState(localStorage.getItem('readType') || 'horizontal');
+    const [limitPageHeight, setLimitPageHeight] = useState(false);
     const [mangaCustom, setMangaCustom] = useState(null);
     const [chapter, setChapter] = useState(null);
     const [pages, setPages] = useState([]);
@@ -100,7 +103,7 @@ export function Reader({ organization, manga, chapterNumber }) {
     useEffect(() => {
         callAPI(`/api/views/manga-custom/${manga.slug}/chapter/${chapterNumber}`, {
             includeIp: true,
-        }).catch((error) => {});
+        }).catch((error) => { });
     }, []);
 
     useEffect(() => {
@@ -111,7 +114,7 @@ export function Reader({ organization, manga, chapterNumber }) {
         if (page) {
             const targetElement = document.querySelector(`#page-${page.id}`);
             if (targetElement) {
-                const offset = -80;
+                const offset = -75;
                 const topPos = targetElement.getBoundingClientRect().top + window.pageYOffset + offset;
                 window.scrollTo({
                     top: topPos,
@@ -156,52 +159,79 @@ export function Reader({ organization, manga, chapterNumber }) {
     }, []);
 
     return (
-        <div className='w-full'>
-            <div className='bg-gray-900 flex flex-col w-full justify-center'>
-                <div className='w-full text-center mt-10'>
-                    <a
-                        href={`/manga/${manga.slug}`}
-                        className='text-white'
-                    >
-                        {mangaCustom?.title}
-                    </a>
-                    <h1 className='text-white text-sm'>Capítulo {chapter?.number}</h1>
-                    <h2 className='text-white text-4xl'>{chapter?.title}</h2>
-                    <div className="w-72 max-w-full mx-auto mt-6">
-                        <Tabs value={readType}>
-                            <TabsHeader>
-                                <Tab value="horizontal" onClick={() => handleSetReadType('horizontal')} >
-                                    Paginado
-                                </Tab>
-                                <Tab value="vertical" onClick={() => handleSetReadType('vertical')}>
-                                    Cascada
-                                </Tab>
-                            </TabsHeader>
-                        </Tabs>
+        <div id="top" className='w-full'>
+            <div className='bg-gray-900 flex flex-wrap w-full min-h-[90vh] justify-center'>
+                <div className='flex flex-wrap w-full sm:max-w-[46rem] p-2 mt-10 items-center bg-white bg-opacity-40 backdrop-blur-sm rounded-2xl'>
+                    <div className='w-full md:w-1/2 p-4'>
+                        <div className="flex flex-col-2 gap-4">
+                            <div className='mt-auto'>
+                                <h1 className='font-bold text-white text-8xl'>{chapter?.number}</h1>
+                            </div>
+                            <div className='my-auto'>
+                                <h2 className='text-white text-4xl'>{chapter?.title}</h2>
+                                <a href={`/manga/${manga.slug}`} className='text-white text-xl ml-1'>{mangaCustom?.title}</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="w-full md:w-1/2 p-4">
+                        {pages.length <= 0 ? (
+                            <h4 className='text-white'>
+                                {mangaCustom?.nextChapterAt
+                                    ? `El próximo capítulo de ${mangaCustom?.title} será publicado el ${dateToText(mangaCustom?.nextChapterAt)}`
+                                    : `El próximo capítulo de ${mangaCustom?.title} será publicado próximamente`
+                                }
+                            </h4>
+                        ) : (
+                            <>
+                                <div className='w-full my-2 mx-4'>
+                                    <Switch
+                                        label={
+                                            <Typography className='text-gray-100'>
+                                                Limitar altura de página
+                                            </Typography>
+                                        }
+                                        checked={limitPageHeight}
+                                        onChange={(evt) => setLimitPageHeight(evt.target.checked)}
+                                    />
+                                </div>
+                                <Tabs value={readType}>
+                                    <TabsHeader>
+                                        <Tab value="horizontal" onClick={() => handleSetReadType('horizontal')} >
+                                            Paginado
+                                        </Tab>
+                                        <Tab value="vertical" onClick={() => handleSetReadType('vertical')}>
+                                            Cascada
+                                        </Tab>
+                                    </TabsHeader>
+                                </Tabs>
+                            </>
+                        )}
                     </div>
                 </div>
-                <div className='flex flex-wrap w-full justify-center my-4'>
-                    {readType === 'horizontal' && (
-                        <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
-                            <InputLabel id="top-page-select-label">Página</InputLabel>
-                            <Select
-                                labelId="top-page-select-label"
-                                displayEmpty
-                                value={currentPage}
-                                onChange={(evt) => {
-                                    const pageIndex = pages.findIndex(page => page.id === evt.target.value);
-                                    setCurrentPageIndex(pageIndex);
-                                    setCurrentPage(pages[pageIndex].id);
-                                    setCurrentPageNumber(pages[pageIndex].number);
-                                }}
-                            >
-                                {pages.map((page, pageIndex) => (
-                                    <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    )}
-                </div>
+                {pages.length > 0 && (
+                    <div className='flex flex-wrap w-full justify-center my-4'>
+                        {readType === 'horizontal' && (
+                            <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
+                                <InputLabel id="top-page-select-label">Página</InputLabel>
+                                <Select
+                                    labelId="top-page-select-label"
+                                    displayEmpty
+                                    value={currentPage}
+                                    onChange={(evt) => {
+                                        const pageIndex = pages.findIndex(page => page.id === evt.target.value);
+                                        setCurrentPageIndex(pageIndex);
+                                        setCurrentPage(pages[pageIndex].id);
+                                        setCurrentPageNumber(pages[pageIndex].number);
+                                    }}
+                                >
+                                    {pages.map((page, pageIndex) => (
+                                        <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
+                    </div>
+                )}
                 {pages.map((page, pageIndex) => (
                     <div
                         key={page.id}
@@ -218,6 +248,11 @@ export function Reader({ organization, manga, chapterNumber }) {
                                     width={`${page.imageWidth}px`}
                                     height={`${page.imageHeight}px`}
                                     className="bg-gray-300 !opacity-20 animate-pulse"
+                                    style={
+                                        limitPageHeight
+                                            ? { maxHeight: 'calc(100vh - 80px)' }
+                                            : {}
+                                    }
                                 />
                             )}
                             <img
@@ -226,41 +261,48 @@ export function Reader({ organization, manga, chapterNumber }) {
                                 className='max-w-full mx-auto pointer-events-none'
                                 alt={`Pagina ${page.number}`}
                                 hidden={!loadedPages.includes(page.id)}
+                                style={
+                                    limitPageHeight
+                                        ? { maxHeight: 'calc(100vh - 80px)' }
+                                        : {}
+                                }
                             />
                         </div>
                     </div>
                 ))}
-                <div className='flex flex-wrap w-full justify-center my-4'>
-                    {readType === 'horizontal' && (
-                        <div className='flex flex-wrap w-full justify-center my-4'>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
-                                <InputLabel id="bottom-page-select-label">Página</InputLabel>
-                                <Select
-                                    labelId="bottom-page-select-label"
-                                    displayEmpty
-                                    value={currentPage}
-                                    onChange={(evt) => {
-                                        const pageIndex = pages.findIndex(page => page.id === evt.target.value);
-                                        setCurrentPageIndex(pageIndex);
-                                        setCurrentPage(pages[pageIndex].id);
-                                        setCurrentPageNumber(pages[pageIndex].number);
-                                    }}
-                                >
-                                    {pages.map((page, pageIndex) => (
-                                        <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </div>
-                    )}
-                </div>
+                {pages.length > 0 && (
+                    <div className='flex flex-wrap w-full justify-center my-4'>
+                        {readType === 'horizontal' && (
+                            <div className='flex flex-wrap w-full justify-center'>
+                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
+                                    <InputLabel id="bottom-page-select-label">Página</InputLabel>
+                                    <Select
+                                        labelId="bottom-page-select-label"
+                                        displayEmpty
+                                        value={currentPage}
+                                        onChange={(evt) => {
+                                            const pageIndex = pages.findIndex(page => page.id === evt.target.value);
+                                            setCurrentPageIndex(pageIndex);
+                                            setCurrentPage(pages[pageIndex].id);
+                                            setCurrentPageNumber(pages[pageIndex].number);
+                                        }}
+                                    >
+                                        {pages.map((page, pageIndex) => (
+                                            <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </div>
+                        )}
+                    </div>
+                )}
                 <div className='w-full text-center mt-2'>
-                    {((currentPageIndex === pages.length - 1) || readType === 'vertical') && (
+                    {((currentPageIndex === pages.length - 1) || readType === 'vertical') && pages.length > 0 && (
                         <h4 className='text-white'>
                             Haz terminado de leer el capítulo {chapter?.number} de {mangaCustom?.title}: {chapter?.title}
                         </h4>
                     )}
-                    {!chapter?.nextChapter && (
+                    {!chapter?.nextChapter && pages.length > 0 && (
                         <h4 className='text-white'>
                             {mangaCustom?.nextChapterAt
                                 ? `El próximo capítulo será publicado el ${dateToText(mangaCustom?.nextChapterAt)}`
@@ -270,35 +312,33 @@ export function Reader({ organization, manga, chapterNumber }) {
                     )}
                 </div>
                 <div className='flex w-full justify-center mt-2'>
-                    <div className='max-w-sm m-2'>
+                    <div className=' m-2'>
                         <ButtonGroup>
-                            {chapter?.previousChapter
-                                ? (
-                                    <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`}>
-                                        Capítulo anterior
-                                        #{chapter?.previousChapter?.number} {chapter?.previousChapter?.title}
-                                    </Button>
-                                )
-                                : (
-                                    <Button onClick={() => location.href = `/manga/${manga.slug}`}>
-                                        Volver al listado de capítulos
-                                    </Button>
-                                )
-                            }
-                            {chapter?.nextChapter
-                                ? (
-                                    <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`}>
-                                        #{chapter?.nextChapter?.number} - {chapter?.nextChapter?.title}
-                                    </Button>
-                                )
-                                : (
-                                    <Button onClick={() => location.href = `/manga/${manga.slug}`}>
-                                        Volver al listado de capítulos
-                                    </Button>
-                                )
-                            }
+                            {chapter?.previousChapter && (
+                                <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`}>
+                                    Capítulo anterior
+                                    #{chapter?.previousChapter?.number} {chapter?.previousChapter?.title}
+                                </Button>
+                            )}
+                            <Button onClick={() => location.href = `/manga/${manga.slug}`}>
+                                Volver al listado de capítulos
+                            </Button>
+                            {chapter?.nextChapter && (
+                                <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`}>
+                                    Próximo capítulo
+                                </Button>
+                            )}
                         </ButtonGroup>
                     </div>
+                </div>
+                <div className='flex w-full justify-center mt-2 mb-8'>
+                    {readType === 'vertical' && pages.length > 0 && (
+                        <a href="#top" className='text-white text-xl'>
+                            <Button>
+                                Volver al inicio
+                            </Button>
+                        </a>
+                    )}
                 </div>
                 {/* Disqus Comments */}
                 {organization?.enableDisqusIntegration && (
@@ -321,7 +361,7 @@ export function Reader({ organization, manga, chapterNumber }) {
                     </div>
                 )}
                 {/* Progress Bar */}
-                {readType === 'horizontal' && (
+                {readType === 'horizontal' && pages.length > 0 && (
                     <div className='sticky bottom-0 left-0 w-full h-1 bg-black'>
                         <div
                             className='h-1 bg-red-500'
