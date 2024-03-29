@@ -121,6 +121,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
             size="xl"
             open={open}
             handler={() => setOpen(previousState => !previousState)}
+            className="max-h-[95vh]"
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
@@ -131,7 +132,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                     }
                 </Typography>
             </DialogHeader>
-            <DialogBody className="max-h-[80vh] overflow-y-auto">
+            <DialogBody className="max-h-[65vh] overflow-y-scroll">
                 <div className="flex gap-2">
                     <div className="max-w-[30%] w-[30%] flex flex-col gap-4">
                         <Typography className="-mb-2" variant="h5" color="blue-gray">

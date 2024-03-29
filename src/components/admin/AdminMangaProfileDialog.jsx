@@ -97,13 +97,14 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
             size="md"
             open={open}
             handler={() => setOpen(previousState => !previousState)}
+            className="max-h-[95vh]"
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
                     Crear perfil de manga
                 </Typography>
             </DialogHeader>
-            <DialogBody className="max-h-[80vh] overflow-y-auto flex flex-col gap-4">
+            <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <Typography className="-mb-2" variant="h6" color="gray">
                     {selectedAuthors.length > 1 ? 'Autores' : 'Autor'} ({selectedAuthors.length}/4)
                 </Typography>

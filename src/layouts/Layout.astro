@@ -23,7 +23,7 @@ const { theme, organization, userSlug, member } = Astro.locals;
 		<meta charset="UTF-8" />
 		<meta name="description" content={organization?.description || "Mangas"} />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/svg+xml" href={organization?.faviconUrl || "/favicon.svg"} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google Ads */}

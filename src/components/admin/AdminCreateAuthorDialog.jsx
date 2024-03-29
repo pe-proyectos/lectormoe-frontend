@@ -65,13 +65,14 @@ export function AdminCreateAuthorDialog({ open, setOpen }) {
             size="sm"
             open={open}
             handler={() => setOpen(previousState => !previousState)}
+            className="max-h-[95vh]"
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
                     Crear autor
                 </Typography>
             </DialogHeader>
-            <DialogBody className="max-h-[80vh] overflow-y-auto flex flex-col gap-4">
+            <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <Typography className="-mb-2" variant="h6" color="gray">
                     Nombre
                 </Typography>

@@ -42,6 +42,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
     const [logoImageFile, setLogoImageFile] = useState(null);
     const [imageImageFile, setImageImageFile] = useState(null);
     const [bannerImageFile, setBannerImageFile] = useState(null);
+    const [faviconImageFile, setFaviconImageFile] = useState(null);
     const [facebookUrl, setFacebookUrl] = useState('');
     const [twitterUrl, setTwitterUrl] = useState('');
     const [instagramUrl, setInstagramUrl] = useState('');
@@ -90,6 +91,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                 setLogoImageFile(organization.logoUrl);
                 setImageImageFile(organization.imageUrl);
                 setBannerImageFile(organization.bannerUrl);
+                setFaviconImageFile(organization.faviconUrl);
             })
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
@@ -117,6 +119,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
         formData.append('logo', logoImageFile);
         formData.append('image', imageImageFile);
         formData.append('banner', bannerImageFile);
+        formData.append('favicon', faviconImageFile);
         setLoading(true);
         callAPI('/api/organization', {
             method: 'PATCH',
@@ -324,6 +327,16 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                                 alt='Banner'
                                 onChange={(files) => files[0] ? setBannerImageFile(files[0]) : null}
                                 onDelete={(file) => setBannerImageFile(null)}
+                            />
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Favicon
+                            </Typography>
+                            <ImageDropzone
+                                value={faviconImageFile}
+                                label='Arrastra y suelta la imagen de favicon'
+                                alt='Favicon'
+                                onChange={(files) => files[0] ? setFaviconImageFile(files[0]) : null}
+                                onDelete={(file) => setFaviconImageFile(null)}
                             />
                         </div>
                     </AccordionBody>

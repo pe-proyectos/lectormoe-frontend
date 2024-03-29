@@ -4,6 +4,8 @@ import {
     CardBody,
     CardFooter,
     Typography,
+    Chip,
+    Tooltip,
 } from "@material-tailwind/react";
 
 export function MangaCard({ manga }) {
@@ -23,6 +25,20 @@ export function MangaCard({ manga }) {
                     alt={manga.title}
                     className="absolute inset-0 w-full h-full object-cover"
                 />
+                {/* if lastChapterAt was released in the last 3 days show a chip */}
+                {manga?.lastChapterAt && new Date(manga.lastChapterAt) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
+                    <div className="absolute top-2 right-2">
+                        <a href={manga?.lastChapterNumbers?.[0] ? `/manga/${manga.slug}/chapters/${manga?.lastChapterNumbers?.[0]}` : `/manga/${manga.slug}`}>
+                            <Tooltip content={
+                                new Date(manga.lastChapterAt) > new Date().setHours(0, 0, 0, 0)
+                                    ? `El capítulo ${manga?.lastChapterNumbers?.[0] || "mas reciente"} fue lanzado hoy`
+                                    : `El capítulo ${manga?.lastChapterNumbers?.[0] || "mas reciente"} fue lanzado el ${new Date(manga.lastChapterAt).toLocaleDateString()}`
+                            }>
+                                <Chip color="green" value="Nuevo Capítulo" />
+                            </Tooltip>
+                        </a>
+                    </div>
+                )}
             </CardHeader>
             <CardBody className="relative py-14 px-6 md:px-12">
                 <figcaption className="absolute bottom-8 left-1/2 flex flex-col w-[12rem] -translate-x-1/2

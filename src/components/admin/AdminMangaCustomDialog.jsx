@@ -129,13 +129,14 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
             size="md"
             open={open}
             handler={() => setOpen(previousState => !previousState)}
+            className="max-h-[95vh]"
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
                     {mangaCustom?.title || "Crear manga"}
                 </Typography>
             </DialogHeader>
-            <DialogBody className="max-h-[80vh] overflow-y-auto flex flex-col gap-4">
+            <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 {!mangaCustom &&
                     <>
                         <Typography className="-mb-2" variant="h6" color="gray">

@@ -17,6 +17,7 @@ type Organization = {
     logoUrl?: string,
     imageUrl?: string,
     bannerUrl?: string,
+    faviconUrl?: string,
     description?: string,
     enableGoogleAds?: boolean,
     googleAdsMetaContent?: string,
