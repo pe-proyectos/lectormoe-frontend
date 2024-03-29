@@ -18,13 +18,11 @@ export function MangaCard({ manga }) {
                 color="transparent"
                 className="absolute inset-0 m-0 h-full w-full rounded-none bg-black"
             >
-                <a href={`/manga/${manga.slug}`}>
-                    <img
-                        src={manga.imageUrl}
-                        alt={manga.title}
-                        className="absolute inset-0 w-full h-full object-cover"
-                    />
-                </a>
+                <img
+                    src={manga.imageUrl}
+                    alt={manga.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                />
             </CardHeader>
             <CardBody className="relative py-14 px-6 md:px-12">
                 <figcaption className="absolute bottom-8 left-1/2 flex flex-col w-[12rem] -translate-x-1/2

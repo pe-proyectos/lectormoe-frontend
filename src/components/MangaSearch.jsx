@@ -34,6 +34,11 @@ export function MangaSearch() {
     const firstRender = useRef(true);
 
     useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialSearch = urlParams.get('q');
+        if (initialSearch) {
+            setSearch(initialSearch || '');
+        }
         const interval = setInterval(() => {
             setDebounceTimer(prev => Math.max(prev - 10, 0));
         }, 10);
@@ -90,6 +95,7 @@ export function MangaSearch() {
                         labelProps={{
                             className: "before:content-none after:content-none",
                         }}
+                        value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                     <div className="!absolute left-3 top-[13px]">
