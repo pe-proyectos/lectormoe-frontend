@@ -1,8 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { MangaGrid } from "../components/MangaGrid.jsx";
+
+const { organization, logged } = Astro.locals;
 ---
 
 <Layout>
-	<MangaGrid client:only />
+	<MangaGrid organization={organization} logged={logged} client:only />
 </Layout>

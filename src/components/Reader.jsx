@@ -124,6 +124,29 @@ export function Reader({ organization, manga, chapterNumber }) {
         }
     }, [currentPage]);
 
+    // useEffect on page change
+    useEffect(() => {
+        if (!chapter) {
+            return;
+        }
+        if (!pages) {
+            return;
+        }
+        const page = pages[currentPageIndex];
+        if (!page) {
+            return;
+        }
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('page', page.number);
+            window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
+        } catch (error) {
+            console.error('Failed to update page in URL', error);
+        }
+        callAPI(`/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${page.number}`)
+            .catch((error) => { console.error('Failed to save chapter history', error); });
+    }, [currentPage]);
+
     useEffect(() => {
         setLoading(true);
         Promise.all([
@@ -136,9 +159,12 @@ export function Reader({ organization, manga, chapterNumber }) {
                 setChapter(chapter);
                 setPages(pages);
                 if (pages.length > 0) {
-                    setCurrentPage(pages[0].id);
-                    setCurrentPageIndex(0);
-                    setCurrentPageNumber(pages[0].number);
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const initialPageNumber = urlParams.get('page') ? parseInt(urlParams.get('page')) : 1;
+                    const pageIndex = pages.findIndex(page => page.number === initialPageNumber) || 0;
+                    setCurrentPage(pages[pageIndex].id);
+                    setCurrentPageIndex(pageIndex);
+                    setCurrentPageNumber(pages[pageIndex].number);
                 }
             })
             .catch(error => toast.error(error?.message))

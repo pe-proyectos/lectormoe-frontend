@@ -29,8 +29,6 @@ export function MangaCardsScroller({ children }) {
                 e.preventDefault();
             }
             isDraggingRef.current = false;
-        } else {
-            console.log('Regular click');
         }
     };
 
