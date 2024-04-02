@@ -1,0 +1,70 @@
+---
+const { organization } = Astro.locals;
+const { mangaSlug } = Astro.params;
+const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(
+    `/api/manga-custom/${mangaSlug}`,
+);
+if (!mangaStatus) {
+    return Astro.redirect("/404");
+}
+---
+
+<div class="relative flex h-[630px] w-[1200px] text-gray-50">
+    <img
+        src={manga.imageUrl}
+        alt={manga.title}
+        class="absolute object-cover inset-0 w-full h-full filter brightness-50 -z-20"
+        draggable="false"
+    />
+    <img
+        src={manga.imageUrl}
+        alt={manga.title}
+        class="absolute object-cover inset-0 w-full h-full filter brightness-50 bg-black blur-sm -z-10"
+        draggable="false"
+    />
+    <div class="relative max-h-full w-1/2 overflow-hidden">
+        <img
+            src={manga.imageUrl}
+            alt={manga.title}
+            class="absolute max-h-[90%] max-w-[95%] rounded-md shadow-lg z-10 top-1/2 right-0 transform -translate-y-1/2"
+            draggable="false"
+        />
+    </div>
+    <div class="relative m-6 ml-4 w-full bg-black bg-opacity-50 p-4 rounded-lg">
+        <div class="border-white-color border-2 p-4">
+            <h4 class="mb-0 text-6xl font-bold uppercase">
+                {manga.title}
+            </h4>
+            <span class="text-2xl">
+                {
+                    manga.authors.map((author: any, index: number) => (
+                        <>
+                            <a
+                                transition:name={`manga_${manga.slug}_author_${author.slug}`}
+                                class="m-1"
+                                href={`/author/${author.slug}`}
+                            >
+                                {author.name}
+                            </a>
+                            {index !== manga.authors.length - 1
+                                ? index === manga.authors.length - 2
+                                    ? " & "
+                                    : ", "
+                                : ""}
+                        </>
+                    ))
+                }
+            </span>
+        </div>
+        <div class="p-8">
+            <p class="text-xl">
+                {manga?.shortDescription || ""}
+            </p>
+        </div>
+        <div class="absolute bottom-2 right-4 m-4 flex flex-col">
+            <p class="uppercase font-extrabold text-4xl">
+                {organization?.title || ""}
+            </p>
+        </div>
+    </div>
+</div>

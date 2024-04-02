@@ -44,12 +44,24 @@ const { theme, organization, userSlug, member } = Astro.locals;
 		{/* Metadata General */}
 		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
 		<meta name="description" content={description || organization?.description || organization?.title || "Mangas"}>
+		<meta property="og:site_name" content={organization?.title || "Mangas"}>
 		<meta property="og:title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
 		<meta property="og:description" content={description || organization?.description || organization?.title || "Mangas"}>
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content={Astro.url} />
-		<meta property="og:image" content={imageUrl || organization?.imageUrl} />
-		<meta name="theme-color" content="#ffccff">
+		<meta property="og:image" content={imageUrl || organization?.bannerUrl} />
+		<meta property="og:image:width" content="1200">
+		<meta property="og:image:height" content="630">
+		<meta property="og:image:alt" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
+		<meta property="og:locale" content="es_ES">
+		<meta name="twitter:title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
+		<meta name="twitter:description" content={description || organization?.description || organization?.title || "Mangas"}>
+		<meta name="twitter:site" content={"@" + (organization?.title || "Mangas")}>
+		<meta name="twitter:domain" content={organization?.domain || Astro.url}>
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:image:src" content={imageUrl || organization?.bannerUrl}>
+		<meta property="og:locale:alternate" content="es_ES">
+		<meta name="theme-color" content="#ff1a1a">
 	</head>
 	<body class="bg-gray-50">
 		<ThemeProvider>
