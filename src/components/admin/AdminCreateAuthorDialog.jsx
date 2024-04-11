@@ -118,7 +118,7 @@ export function AdminCreateAuthorDialog({ open, setOpen }) {
                     Guardar autor
                 </Button>
             </DialogFooter>
-            <ToastContainer />
+            <ToastContainer theme="dark" />
         </Dialog>
     );
 }

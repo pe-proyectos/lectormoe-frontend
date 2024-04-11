@@ -19,7 +19,6 @@ import { MangaCard } from './MangaCard';
 import { NewsCard } from './NewsCard';
 
 export function MangaGrid({ organization, logged }) {
-    console.log(organization);
     const [loading, setLoading] = useState(true);
     const [loadingLatest, setLoadingLatest] = useState(true);
     const [mangaLatestList, setMangaLatestList] = useState([]);
@@ -124,10 +123,10 @@ export function MangaGrid({ organization, logged }) {
             < div className="grid grid-cols-1 m-2" >
                 <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                     <Typography
-                        color="gray"
+                        color="white"
                         className="font-semibold text-4xl"
                     >
-                        Top 3
+                        Más populares
                     </Typography>
                     <Typography
                         color="gray"
@@ -165,7 +164,7 @@ export function MangaGrid({ organization, logged }) {
             < div className="grid grid-cols-1 lg:grid-cols-4 gap-y-4 lg:gap-4 m-2" >
                 <div className="col-span-1 align-middle order-first lg:order-last">
                     <Typography
-                        color="gray"
+                        color="white"
                         className="font-semibold text-4xl"
                     >
                         Seguir leyendo
@@ -220,7 +219,7 @@ export function MangaGrid({ organization, logged }) {
                     )}
                     <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                         <Typography
-                            color="gray"
+                            color="white"
                             className="font-semibold text-4xl"
                         >
                             Noticias
@@ -252,7 +251,7 @@ export function MangaGrid({ organization, logged }) {
                 <div className='col-span-3 align-middle order-last lg:order-first'>
                     <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                         <Typography
-                            color="gray"
+                            color="white"
                             className="font-semibold text-4xl"
                         >
                             Populares
@@ -286,7 +285,7 @@ export function MangaGrid({ organization, logged }) {
                     </MangaCardsScroller>
                     <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                         <Typography
-                            color="gray"
+                            color="white"
                             className="font-semibold text-4xl"
                         >
                             Actualizados recientemente

@@ -41,7 +41,7 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
           <Typography
             as="li"
             variant="small"
-            color="blue-gray"
+            color="white"
             className="p-1 font-normal"
           >
             {option.name}
@@ -52,8 +52,8 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
   );
 
   return (
-    <Navbar className="sticky top-0 z-10 h-max max-w-full rounded-none px-4 py-2 lg:px-8 lg:py-4">
-      <div className="flex items-center justify-between text-blue-gray-900">
+    <Navbar className="sticky top-0 z-10 h-max max-w-full bg-black border-none rounded-none px-4 py-2 lg:px-8 lg:py-4">
+      <div className="flex items-center justify-between">
         {organization?.logoUrl && (
           <a href="/">
             <img
@@ -77,8 +77,8 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
           <div className="relative w-full gap-2 md:w-max hidden md:flex">
             <Input
               type="search"
-              color="blue-gray"
-              label="Busca manga..."
+              color="white"
+              label="Buscar manga..."
               className="pr-20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -96,14 +96,14 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
             </Button>
           </div>
           <div className="flex items-center gap-x-1">
-            <IconButton variant="text">
+            <IconButton variant="text" color="white">
               <BellIcon className="h-4 w-4" />
             </IconButton>
             <div className="hidden lg:flex">
               {username ? (
                 <Menu>
                   <MenuHandler>
-                    <IconButton variant="text">
+                    <IconButton variant="text" color="white">
                       <UserIcon className="h-4 w-4" />
                     </IconButton>
                   </MenuHandler>
@@ -112,7 +112,7 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
                       <MenuItem>Mi Perfil</MenuItem>
                     </a>
                     {member && (
-                      <a href="/admin">
+                      <a href="/admin/mangas">
                         <MenuItem>Administrador</MenuItem>
                       </a>
                     )}
@@ -126,6 +126,7 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
                   <a href="/login">
                     <Button
                       variant="text"
+                      color="white"
                       size="sm"
                       className="hidden lg:inline-block"
                     >
@@ -190,8 +191,8 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
           <div className="relative flex w-full gap-2 md:w-max">
             <Input
               type="search"
-              color="blue-gray"
-              label="Busca manga..."
+              color="white"
+              label="Buscar manga..."
               className="pr-20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -211,7 +212,12 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
         </div>
         {!username && (
           <div className="flex items-center gap-x-1">
-            <Button fullWidth variant="text" size="sm" className="">
+            <Button
+              fullWidth
+              variant="text"
+              color="white"
+              size="sm"
+            >
               <span>Iniciar sesión</span>
             </Button>
             <Button fullWidth variant="gradient" size="sm" className="">

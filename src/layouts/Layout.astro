@@ -1,8 +1,6 @@
 ---
-import { ThemeProvider } from "../components/ThemeProvider.jsx";
 import { StickyNavbar } from "../components/StickyNavbar.jsx";
 import { Footer } from "../components/Footer.jsx";
-// import { ViewTransitions } from "astro:transitions";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -14,7 +12,7 @@ interface Props {
 }
 
 const { title, isAdmin, imageUrl, description } = Astro.props;
-const { theme, organization, userSlug, member } = Astro.locals;
+const { theme, organization, userSlug, username, member } = Astro.locals;
 ---
 
 <!doctype html>
@@ -34,12 +32,6 @@ const { theme, organization, userSlug, member } = Astro.locals;
 					content={organization?.googleAdsMetaContent}
 				/>
 			)
-		}
-		{/* view transitions */}
-		{
-			/*
-			isAdmin !== false && <ViewTransitions />
-		*/
 		}
 		{/* Metadata General */}
 		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
@@ -63,25 +55,23 @@ const { theme, organization, userSlug, member } = Astro.locals;
 		<meta property="og:locale:alternate" content="es_ES">
 		<meta name="theme-color" content="#ff1a1a">
 	</head>
-	<body class="bg-gray-50">
-		<ThemeProvider>
-			<StickyNavbar
-				organization={organization}
-				username={Astro.locals.username}
-				member={member}
-				userSlug={userSlug}
-				client:load
-			/>
-			<div class="min-h-[80vh]">
-				<slot />
-			</div>
-			{
-				isAdmin !== false && (
-					<Footer organization={organization} client:load />
-				)
-			}
-			<ToastContainer client:only />
-		</ThemeProvider>
+	<body class={isAdmin ? "" : "bg-brand-primary-content-900 text-brand-primary-50"}>
+		<StickyNavbar
+			organization={organization}
+			username={username}
+			member={member}
+			userSlug={userSlug}
+			client:only
+		/>
+		<div class="min-h-[80vh]">
+			<slot />
+		</div>
+		{
+			!isAdmin && (
+				<Footer organization={organization} client:only />
+			)
+		}
+		<ToastContainer client:only theme="dark" />
 	</body>
 </html>
 
@@ -89,11 +79,4 @@ const { theme, organization, userSlug, member } = Astro.locals;
 	@tailwind base;
 	@tailwind components;
 	@tailwind utilities;
-	@font-face {
-		font-family: "DJB Me and My Shadow";
-		src: url("/fonts/djb.ttf") format("truetype");
-	}
-	.text-font-djb {
-		font-family: "DJB Me and My Shadow";
-	}
 </style>

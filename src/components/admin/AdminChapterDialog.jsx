@@ -306,7 +306,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                     Guardar capítulo
                 </Button>
             </DialogFooter>
-            <ToastContainer />
+            <ToastContainer theme="dark" />
         </Dialog>
     );
 }

@@ -13,18 +13,16 @@ Astro.cookies.delete("member");
 
 <script>
 	import "cookie-store";
-	if (document.querySelector("#logout")) {
-		Promise.all([
-			// @ts-ignore
-			cookieStore.delete("token"),
-			// @ts-ignore
-			cookieStore.delete("username"),
-			// @ts-ignore
-			cookieStore.delete("userSlug"),
-			// @ts-ignore
-			cookieStore.delete("member"),
-		]).then(() => {
-			window.location.href = "/";
-		});
-	}
+	Promise.all([
+		// @ts-ignore
+		cookieStore.delete("token").catch((e) => console.error(e)),
+		// @ts-ignore
+		cookieStore.delete("username").catch((e) => console.error(e)),
+		// @ts-ignore
+		cookieStore.delete("userSlug").catch((e) => console.error(e)),
+		// @ts-ignore
+		cookieStore.delete("member").catch((e) => console.error(e)),
+	]).then(() => {
+		window.location.href = "/";
+	});
 </script>

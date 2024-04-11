@@ -41,8 +41,8 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
     const [description, setDescription] = useState('');
     const [releasedDate, setReleasedDate] = useState(null);
     const [nextChapterDate, setNextChapterDate] = useState(null);
-    const [imageUrl, setImageUrl] = useState('');
     const [coverImageFile, setCoverImageFile] = useState(null);
+    const [bannerImageFile, setBannerImageFile] = useState(null);
 
     useEffect(() => {
         if (!mangaCustom) return;
@@ -52,8 +52,8 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
         setDescription(mangaCustom?.description || '');
         setReleasedDate(mangaCustom?.releasedAt || null);
         setNextChapterDate(mangaCustom?.nextChapterAt || null);
-        setImageUrl(mangaCustom?.imageUrl || '');
-        setCoverImageFile(null);
+        setCoverImageFile(mangaCustom?.imageUrl || null);
+        setBannerImageFile(mangaCustom?.bannerUrl || null);
     }, [mangaCustom]);
 
     useEffect(() => {
@@ -102,7 +102,8 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
         if (description) formData.append('description', description);
         if (releasedDate) formData.append('releasedAt', releasedDate);
         if (nextChapterDate) formData.append('nextChapterAt', nextChapterDate);
-        if (coverImageFile) formData.append('image', coverImageFile);
+        formData.append('image', coverImageFile);
+        formData.append('banner', bannerImageFile);
         setLoading(true);
         callAPI(mangaCustom ? `/api/manga-custom/${mangaCustom.slug}` : `/api/manga-custom`, {
             method: mangaCustom ? 'PATCH' : 'POST',
@@ -118,6 +119,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                 setReleasedDate(null);
                 setNextChapterDate(null);
                 setCoverImageFile(null);
+                setBannerImageFile(null);
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -244,11 +246,21 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                     Portada del manga (Opcional)
                 </Typography>
                 <ImageDropzone
-                    value={coverImageFile || mangaCustom?.imageUrl}
+                    value={coverImageFile}
                     label={'Arrastra y suelta la imagen de portada del manga'}
                     alt={'Imagen de portada'}
                     onChange={(files) => files[0] ? setCoverImageFile(files[0]) : null}
                     onDelete={(file) => setCoverImageFile(null)}
+                />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    Banner del manga (Opcional)
+                </Typography>
+                <ImageDropzone
+                    value={bannerImageFile}
+                    label={'Arrastra y suelta la imagen de banner del manga'}
+                    alt={'Banner de manga'}
+                    onChange={(files) => files[0] ? setBannerImageFile(files[0]) : null}
+                    onDelete={(file) => setBannerImageFile(null)}
                 />
             </DialogBody>
             <DialogFooter className="space-x-2">
@@ -256,7 +268,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                     Guardar manga
                 </Button>
             </DialogFooter>
-            <ToastContainer />
+            <ToastContainer theme="dark" />
         </Dialog>
     );
 }

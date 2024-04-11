@@ -171,11 +171,10 @@ export function Reader({ organization, manga, chapterNumber }) {
             .finally(() => setLoading(false));
         // Disqus
         if (organization?.enableDisqusIntegration) {
-            const disqus_config = function () {
+            window.disqus_config = function () {
                 this.page.url = `https://${organization?.domain}/manga/${manga.slug}/chapters/${chapterNumber}`;
                 this.page.identifier = `${manga.slug}_${chapterNumber}`;
                 this.page.title = `${manga.title} - Capítulo ${chapterNumber} - ${chapter.title}`;
-                this.page.category_id = `${manga.slug}`;
             };
             const script = document.createElement('script');
             script.src = organization?.disqusEmbedUrl || 'https://lat-manga.disqus.com/embed.js';
@@ -378,7 +377,7 @@ export function Reader({ organization, manga, chapterNumber }) {
                                         {openCommentsAccordion ? 'Ocultar' : 'Mostrar'} comentarios
                                     </h3>
                                 </AccordionHeader>
-                                <AccordionBody className="bg-gray-100 my-2 p-4 rounded-md">
+                                <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
                                     <div id="disqus_thread" />
                                 </AccordionBody>
                             </Accordion>

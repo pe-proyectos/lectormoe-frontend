@@ -19,6 +19,21 @@ export function MangaCard({ manga }) {
             </Card>
         )
     }
+
+    const formatDate = (date) => {
+        // "hoy" "hace 1 día" "hace 2 días" "hace 1 semana"
+        const diff = new Date() - new Date(date);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const weeks = Math.floor(days / 7);
+        if (days === 0) return "hoy";
+        if (days === 1) return "hace 1 día";
+        if (days > 1 && days < 7) return `hace ${days} días`;
+        if (weeks === 1) return "hace 1 semana";
+        if (weeks > 1) return `hace ${weeks} semanas`;
+        return "";
+    }
+
+
     return (
         <Card
             shadow={false}
@@ -68,26 +83,6 @@ export function MangaCard({ manga }) {
                         </Typography>
                     </div>
                     <div className='flex flex-wrap gap-2 justify-center'>
-                        {manga?.lastChapters?.[1] && (
-                            <div>
-                                <Typography
-                                    as='a'
-                                    href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
-                                    color="gray"
-                                    className="font-normal text-xs hover:underline cursor-pointer"
-                                >
-                                    Cápitulo {manga?.lastChapters?.[1]?.number}
-                                </Typography>
-                                <Typography
-                                    as='a'
-                                    href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
-                                    color="gray"
-                                    className="font-normal text-xs hover:underline cursor-pointer"
-                                >
-                                    {new Date(manga?.lastChapters?.[1]?.createdAt).toLocaleDateString()}
-                                </Typography>
-                            </div>
-                        )}
                         {manga?.lastChapters?.[0] && (
                             <div>
                                 <Typography
@@ -104,7 +99,27 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                                 >
-                                    {new Date(manga?.lastChapters?.[0]?.createdAt).toLocaleDateString()}
+                                    {formatDate(manga?.lastChapters?.[0]?.createdAt)}
+                                </Typography>
+                            </div>
+                        )}
+                        {manga?.lastChapters?.[1] && (
+                            <div>
+                                <Typography
+                                    as='a'
+                                    href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                                    color="gray"
+                                    className="font-normal text-xs hover:underline cursor-pointer"
+                                >
+                                    Cápitulo {manga?.lastChapters?.[1]?.number}
+                                </Typography>
+                                <Typography
+                                    as='a'
+                                    href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                                    color="gray"
+                                    className="font-normal text-xs hover:underline cursor-pointer"
+                                >
+                                    {formatDate(manga?.lastChapters?.[1]?.createdAt)}
                                 </Typography>
                             </div>
                         )}

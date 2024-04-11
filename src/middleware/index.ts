@@ -63,11 +63,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
             context.locals.token = authCheck.data.token;
             context.locals.username = authCheck.data.username;
             context.locals.userSlug = authCheck.data.userSlug;
-            context.locals.member = authCheck.data.member;
+            if (authCheck.data.member) {
+                context.locals.member = authCheck.data.member;
+            }
             context.cookies.set('token', authCheck.data.token, { maxAge: 60 * 60 * 24 * 7 });
             context.cookies.set('username', authCheck.data.username, { maxAge: 60 * 60 * 24 * 7 });
             context.cookies.set('userSlug', authCheck.data.userSlug, { maxAge: 60 * 60 * 24 * 7 });
-            context.cookies.set('member', JSON.stringify(authCheck.data.member), { maxAge: 60 * 60 * 24 * 7 });
+            if (authCheck.data.member) {
+                context.cookies.set('member', JSON.stringify(authCheck.data.member), { maxAge: 60 * 60 * 24 * 7 });
+            }
             context.locals.logged = true;
         } else {
             context.locals.token = undefined;

@@ -23,7 +23,7 @@ import {
 import { callAPI } from '../util/callApi';
 import { MangaCard } from './MangaCard';
 
-export function MangaSearch() {
+export function NewsSearch() {
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
     const [search, setSearch] = useState('');
@@ -83,9 +83,6 @@ export function MangaSearch() {
 
     return (
         <div>
-            <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
-
-                </div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
                 <div className="relative flex w-full gap-2 md:w-max mx-4 bg-white z-10 rounded-lg">
                     <Input

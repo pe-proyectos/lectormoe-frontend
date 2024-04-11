@@ -9,14 +9,15 @@ export function Footer({ organization }) {
                 <div className="mt-2 flex w-full flex-col items-center justify-center border-t border-blue-gray-50 py-4 md:flex-row md:justify-between">
                     <Typography
                         variant="small"
-                        className="mb-4 text-center font-normal text-blue-gray-900 md:mb-0"
+                        color="gray"
+                        className="mb-4 text-center font-normal md:mb-0"
                     >
                         &copy; {currentYear} <a href="/">{organization?.name}</a>.
                         Todos los derechos reservados.
                     </Typography>
                     <div className="flex gap-4 text-blue-gray-900 sm:justify-center">
                         {organization?.facebookUrl && (
-                            <Typography as="a" href="/facebook" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/facebook" color="blue" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path
                                         fillRule="evenodd"
@@ -27,7 +28,7 @@ export function Footer({ organization }) {
                             </Typography>
                         )}
                         {organization?.instagramUrl && (
-                            <Typography as="a" href="/instagram" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/instagram" color="pink" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path
                                         fillRule="evenodd"
@@ -38,14 +39,14 @@ export function Footer({ organization }) {
                             </Typography>
                         )}
                         {organization?.twitterUrl && (
-                            <Typography as="a" href="/x" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/x" color="blue" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                                 </svg>
                             </Typography>
                         )}
                         {organization?.youtubeUrl && (
-                            <Typography as="a" href="/youtube" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/youtube" color="red" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg fill="currentColor" className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                                     <path fillRule="evenodd" d="M21.7 8.037a4.26 4.26 0 0 0-.789-1.964 2.84 2.84 0 0 0-1.984-.839c-2.767-.2-6.926-.2-6.926-.2s-4.157 0-6.928.2a2.836 2.836 0 0 0-1.983.839 4.225 4.225 0 0 0-.79 1.965 30.146 30.146 0 0 0-.2 3.206v1.5a30.12 30.12 0 0 0 .2 3.206c.094.712.364 1.39.784 1.972.604.536 1.38.837 2.187.848 1.583.151 6.731.2 6.731.2s4.161 0 6.928-.2a2.844 2.844 0 0 0 1.985-.84 4.27 4.27 0 0 0 .787-1.965 30.12 30.12 0 0 0 .2-3.206v-1.516a30.672 30.672 0 0 0-.202-3.206Zm-11.692 6.554v-5.62l5.4 2.819-5.4 2.801Z" clipRule="evenodd" />
                                 </svg>
@@ -53,7 +54,7 @@ export function Footer({ organization }) {
                             </Typography>
                         )}
                         {organization?.patreonUrl && (
-                            <Typography as="a" href="/patreon" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/patreon" color="orange" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="currentColor"
@@ -64,7 +65,7 @@ export function Footer({ organization }) {
                             </Typography>
                         )}
                         {organization?.discordUrl && (
-                            <Typography as="a" href="/discord" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/discord" color="indigo" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg fill="currentColor" className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                                     <path d="M18.942 5.556a16.3 16.3 0 0 0-4.126-1.3 12.04 12.04 0 0 0-.529 1.1 15.175 15.175 0 0 0-4.573 0 11.586 11.586 0 0 0-.535-1.1 16.274 16.274 0 0 0-4.129 1.3 17.392 17.392 0 0 0-2.868 11.662 15.785 15.785 0 0 0 4.963 2.521c.41-.564.773-1.16 1.084-1.785a10.638 10.638 0 0 1-1.706-.83c.143-.106.283-.217.418-.331a11.664 11.664 0 0 0 10.118 0c.137.114.277.225.418.331-.544.328-1.116.606-1.71.832a12.58 12.58 0 0 0 1.084 1.785 16.46 16.46 0 0 0 5.064-2.595 17.286 17.286 0 0 0-2.973-11.59ZM8.678 14.813a1.94 1.94 0 0 1-1.8-2.045 1.93 1.93 0 0 1 1.8-2.047 1.918 1.918 0 0 1 1.8 2.047 1.929 1.929 0 0 1-1.8 2.045Zm6.644 0a1.94 1.94 0 0 1-1.8-2.045 1.93 1.93 0 0 1 1.8-2.047 1.919 1.919 0 0 1 1.8 2.047 1.93 1.93 0 0 1-1.8 2.045Z" />
                                 </svg>
@@ -72,7 +73,7 @@ export function Footer({ organization }) {
                             </Typography>
                         )}
                         {organization?.tiktokUrl && (
-                            <Typography as="a" href="/tiktok" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/tiktok" color="teal" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg
                                     viewBox="0 0 448 512"
                                     fill="currentColor"
@@ -83,7 +84,7 @@ export function Footer({ organization }) {
                             </Typography>
                         )}
                         {organization?.twitchUrl && (
-                            <Typography as="a" href="/twitch" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
+                            <Typography as="a" href="/twitch" color="deep-purple" target="_blank" className="opacity-80 transition-opacity hover:opacity-100">
                                 <svg
                                     fill="currentColor"
                                     viewBox="0 0 16 16"
