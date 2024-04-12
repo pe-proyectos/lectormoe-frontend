@@ -75,7 +75,7 @@ export function MangaSearch() {
         callAPI(`/api/manga-custom?${query}`)
             .then(({ data, maxPage }) => {
                 setMangaList(data);
-                setMaxPage(maxPage);
+                setMaxPage(maxPage || 1);
             })
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
@@ -84,8 +84,15 @@ export function MangaSearch() {
     return (
         <div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
-
-                </div>
+                <p>
+                    Explora todos los mangas disponibles en nuestra plataforma. Puedes buscar por nombre o navegar por las categorías disponibles.
+                </p>
+            </div>
+            <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-6 pb-0'>
+                <p className='text-6xl font-bold'>
+                    Buscar Mangas
+                </p>
+            </div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
                 <div className="relative flex w-full gap-2 md:w-max mx-4 bg-white z-10 rounded-lg">
                     <Input
@@ -135,18 +142,20 @@ export function MangaSearch() {
                     <IconButton
                         size="sm"
                         variant="outlined"
+                        color='white'
                         onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                         disabled={page === 1}
                     >
                         <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
                     </IconButton>
-                    <Typography color="gray" className="font-normal">
-                        Page <strong className="text-gray-900">{page}</strong> of{" "}
-                        <strong className="text-gray-900">{maxPage}</strong>
+                    <Typography color="white" className="font-normal">
+                        Page <strong className="text-gray-400">{page}</strong> of{" "}
+                        <strong className="text-gray-400">{maxPage}</strong>
                     </Typography>
                     <IconButton
                         size="sm"
                         variant="outlined"
+                        color='white'
                         onClick={() => setPage(prev => Math.min(prev + 1, 10))}
                         disabled={page === maxPage}
                     >
@@ -159,7 +168,7 @@ export function MangaSearch() {
                     loading && (
                         <div className="w-full m-4 text-center">
                             <Typography
-                                color="gray"
+                                color="white"
                                 className="font-light text-xl"
                             >
                                 Cargando...
@@ -170,7 +179,7 @@ export function MangaSearch() {
                 {!loading && mangaList.length === 0 && (
                     <div className="w-full m-4 text-center">
                         <Typography
-                            color="gray"
+                            color="white"
                             className="font-light text-xl"
                         >
                             No hay mangas para mostrar
@@ -178,6 +187,32 @@ export function MangaSearch() {
                     </div>
                 )}
                 {mangaList.map(manga => <MangaCard key={manga.id} manga={manga} />)}
+            </div>
+            <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
+                <div className="flex items-center gap-8">
+                    <IconButton
+                        size="sm"
+                        variant="outlined"
+                        color='white'
+                        onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                        disabled={page <= 1 || loading || mangaList.length === 0}
+                    >
+                        <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
+                    </IconButton>
+                    <Typography color="white" className="font-normal">
+                        Page <strong className="text-gray-400">{page}</strong> of{" "}
+                        <strong className="text-gray-400">{maxPage}</strong>
+                    </Typography>
+                    <IconButton
+                        size="sm"
+                        variant="outlined"
+                        color='white'
+                        onClick={() => setPage(prev => Math.min(prev + 1, 10))}
+                        disabled={page >= maxPage || loading || mangaList.length === 0}
+                    >
+                        <ArrowRightIcon strokeWidth={2} className="h-4 w-4" />
+                    </IconButton>
+                </div>
             </div>
         </div>
     );

@@ -45,7 +45,7 @@ export function AdminMangaCustomCard({ mangaCustom, onClick }) {
                 <div>
                     <a href={`/admin/mangas/${mangaCustom.slug}`}>
                         <Button variant="text" className="px-2" size="sm">
-                            Cápitulos
+                            Capítulos
                         </Button>
                     </a>
                     <Tooltip content="Editar">

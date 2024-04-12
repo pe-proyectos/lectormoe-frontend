@@ -91,7 +91,7 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                                 >
-                                    Cápitulo {manga?.lastChapters?.[0]?.number}
+                                    Capítulo {manga?.lastChapters?.[0]?.number}
                                 </Typography>
                                 <Typography
                                     as='a'
@@ -111,7 +111,7 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-xs hover:underline cursor-pointer"
                                 >
-                                    Cápitulo {manga?.lastChapters?.[1]?.number}
+                                    Capítulo {manga?.lastChapters?.[1]?.number}
                                 </Typography>
                                 <Typography
                                     as='a'

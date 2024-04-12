@@ -31,7 +31,7 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
 
   const navOptions = [
     { name: "Mangas", href: "/mangas" },
-    { name: "Noticias", href: "/news" },
+    // { name: "Noticias", href: "/news" },
   ]
 
   const navList = (
@@ -74,7 +74,12 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
         )}
         <div className="flex items-center gap-4">
           <div className="mr-4 hidden lg:block">{navList}</div>
-          <div className="relative w-full gap-2 md:w-max hidden md:flex">
+          <div
+            className={
+              location.pathname === "/mangas"
+                ? "relative w-full gap-2 md:w-max hidden"
+                : "relative w-full gap-2 md:w-max hidden md:flex"
+            }>
             <Input
               type="search"
               color="white"
@@ -82,6 +87,11 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
               className="pr-20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  location.href = `/mangas?q=${search}`;
+                }
+              }}
               containerProps={{
                 className: "min-w-[288px]",
               }}
@@ -99,7 +109,7 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
             <IconButton variant="text" color="white">
               <BellIcon className="h-4 w-4" />
             </IconButton>
-            <div className="hidden lg:flex">
+            <div>
               {username ? (
                 <Menu>
                   <MenuHandler>
@@ -108,9 +118,10 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
                     </IconButton>
                   </MenuHandler>
                   <MenuList>
-                    <a href={`/profile/${userSlug}`}>
+                    <MenuItem disabled>{username}</MenuItem>
+                    {/* <a href={`/profile/${userSlug}`}>
                       <MenuItem>Mi Perfil</MenuItem>
-                    </a>
+                    </a> */}
                     {member && (
                       <a href="/admin/mangas">
                         <MenuItem>Administrador</MenuItem>
@@ -188,7 +199,11 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
       <Collapse open={openNav}>
         {navList}
         <div className="flex items-center gap-x-1 pb-4 justify-center">
-          <div className="relative flex w-full gap-2 md:w-max">
+          <div className={
+              location.pathname === "/mangas"
+                ? "relative w-full gap-2 md:w-max hidden"
+                : "relative w-full gap-2 md:w-max"
+            }>
             <Input
               type="search"
               color="white"

@@ -8,6 +8,7 @@ import {
     Button,
     Typography,
 } from "@material-tailwind/react";
+import { callAPI } from '../util/callApi';
 
 export function RegisterCard() {
     const [email, setEmail] = useState('');
@@ -25,14 +26,13 @@ export function RegisterCard() {
         formData.append('password', password);
 
         try {
-            const response = await fetch(`${import.meta.env.PUBLIC_API_URL}/api/auth/register`, {
+            const { registered } = await callAPI(`/api/auth/register`, {
                 method: "POST",
                 body: formData,
             });
-            const { status, data } = await response.json();
 
-            if (!status) {
-                toast.error(data?.message ?? "Error al registrar usuario", {
+            if (!registered) {
+                toast.error("Error al registrar usuario, intente nuevamente", {
                     position: "bottom-right",
                 });
             } else {
@@ -40,8 +40,7 @@ export function RegisterCard() {
                 window.location.href = "/login";
             }
         } catch (error) {
-            console.error('Error registering user:', error);
-            toast.error("Error al registrar usuario", {
+            toast.error(error?.message || "Error al registrar usuario", {
                 position: "bottom-right",
             });
         } finally {

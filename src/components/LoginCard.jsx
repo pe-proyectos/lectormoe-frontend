@@ -47,7 +47,7 @@ export function LoginCard() {
             }
         } catch (error) {
             console.error('Error logging in:', error);
-            toast.error("Error al iniciar sesión", {
+            toast.error(error?.message || "Error al iniciar sesión", {
                 position: "bottom-right",
             }).showToast();
         } finally {
