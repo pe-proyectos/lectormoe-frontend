@@ -9,9 +9,10 @@ interface Props {
 	imageUrl?: string;
 	description?: string;
 	isAdmin?: boolean;
+	staticNavbar?: boolean;
 }
 
-const { title, isAdmin, imageUrl, description } = Astro.props;
+const { title, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
 const { theme, organization, userSlug, username, member } = Astro.locals;
 ---
 
@@ -61,6 +62,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 			username={username}
 			member={member}
 			userSlug={userSlug}
+			staticNavbar={staticNavbar}
 			client:only
 		/>
 		<div class="min-h-[80vh]">

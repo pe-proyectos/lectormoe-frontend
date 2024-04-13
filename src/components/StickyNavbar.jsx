@@ -18,7 +18,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/solid";
 
-export function StickyNavbar({ organization, username, userSlug, member }) {
+export function StickyNavbar({ organization, username, userSlug, member, staticNavbar }) {
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -50,9 +50,14 @@ export function StickyNavbar({ organization, username, userSlug, member }) {
       ))}
     </ul>
   );
-
   return (
-    <Navbar className="sticky top-0 z-10 h-max max-w-full bg-black border-none rounded-none px-4 py-2 lg:px-8 lg:py-4">
+    <Navbar
+      id="main-navbar"
+      className={
+        "top-0 z-10 h-max max-w-full bg-black border-none rounded-none px-4 py-2 lg:px-8 lg:py-4 " +
+        (staticNavbar ? "" : "sticky")
+      }
+    >
       <div className="flex items-center justify-between">
         {organization?.logoUrl && (
           <a href="/">

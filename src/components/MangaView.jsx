@@ -15,7 +15,6 @@ export function MangaView({ manga, organization, logged }) {
     const [chapterGroups, setChapterGroups] = useState({});
     const [selectedChapterGroup, setSelectedChapterGroup] = useState('');
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(true);
-    console.log(manga);
     useEffect(() => {
         callAPI(`/api/views/manga-custom/${manga.slug}`, {
             includeIp: true,

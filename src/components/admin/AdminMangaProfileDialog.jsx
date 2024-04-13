@@ -188,7 +188,7 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
                     Guardar perfil de manga
                 </Button>
             </DialogFooter>
-            <ToastContainer />
+            <ToastContainer theme="dark" />
         </Dialog>
     );
 }

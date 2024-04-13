@@ -26,6 +26,7 @@ if (!chapterStatus) {
     title={`${chapter.title} - ${manga.title} #${chapter.number}`}
     imageUrl={manga.imageUrl}
     description={`Lee el capítulo ${chapter.number} de ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || "Click aqui!"}`}
+    staticNavbar={true}
 >
     <Reader
         organization={organization}

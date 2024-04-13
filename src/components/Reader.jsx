@@ -16,7 +16,22 @@ import {
     AccordionHeader,
     Switch,
     AccordionBody,
+    SpeedDial,
+    SpeedDialHandler,
+    SpeedDialContent,
+    SpeedDialAction,
+    IconButton,
+    Tooltip,
+    Dialog,
+    CardBody,
 } from "@material-tailwind/react";
+import {
+    ChevronUpIcon,
+    AdjustmentsHorizontalIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ListBulletIcon,
+} from "@heroicons/react/24/outline";
 import {
     FormHelperText,
     FormControl,
@@ -27,17 +42,32 @@ import {
 import { callAPI } from '../util/callApi';
 
 export function Reader({ organization, manga, chapterNumber }) {
+    const readTypes = {
+        PAGINATED: 'paginated',
+        CASCADE: 'cascade',
+    }
+
     const [loading, setLoading] = useState(true);
-    const [readType, setReadType] = useState(localStorage.getItem('readType') || 'horizontal');
-    const [limitPageHeight, setLimitPageHeight] = useState(false);
+    const [readType, setReadType] = useState(() => localStorage.getItem('readType') || readTypes.PAGINATED);
+    const [limitPageHeight, setLimitPageHeight] = useState(() => localStorage.getItem('limitPageHeight') === "true");
+    const [showFloatButtons, setShowFloatButtons] = useState(() => localStorage.getItem('showFloatButtons') !== "false");
     const [mangaCustom, setMangaCustom] = useState(null);
     const [chapter, setChapter] = useState(null);
     const [pages, setPages] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [currentPageIndex, setCurrentPageIndex] = useState(0);
     const [currentPageNumber, setCurrentPageNumber] = useState(1);
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const [readScrollPercentage, setReadScrollPercentage] = useState(0);
     const [loadedPages, setLoadedPages] = useState([]);
-    const [openCommentsAccordion, setOpenCommentsAccordion] = useState(false);
+    const [openCommentsAccordion, setOpenCommentsAccordion] = useState(() => localStorage.getItem('showChapterComments') !== "false");
+    const [openSettingsAccordion, setOpenSettingsAccordion] = useState(() => localStorage.getItem('chapterSettings') !== "false");
+    const [openPagesDialog, setOpenPagesDialog] = useState(false);
+
+    const labelProps = {
+        variant: "small",
+        className: "absolute top-2/4 -left-2/4 -translate-y-2/4 -translate-x-3/4 font-normal text-white bg-black bg-opacity-80 px-4 py-1 rounded-3xl",
+    };
 
     const handlePageLoad = (pageId) => {
         setLoadedPages(oldValue => [...oldValue, pageId]);
@@ -63,7 +93,7 @@ export function Reader({ organization, manga, chapterNumber }) {
     }
 
     const shouldShowPage = (pageId) => {
-        if (readType === 'vertical') {
+        if (readType === readTypes.CASCADE) {
             return true;
         }
         if (currentPage === pageId) {
@@ -73,31 +103,71 @@ export function Reader({ organization, manga, chapterNumber }) {
     }
 
     const handleSetReadType = (type) => {
-        setReadType(type);
         localStorage.setItem('readType', type);
+        setReadType(type);
+    }
+
+    const handleToggleSettings = () => {
+        localStorage.setItem('chapterSettings', !openSettingsAccordion ? "true" : "false");
+        setOpenSettingsAccordion(oldValue => !oldValue);
+    }
+
+    const handleToggleComments = () => {
+        localStorage.setItem('showChapterComments', !openCommentsAccordion ? "true" : "false");
+        setOpenCommentsAccordion(oldValue => !oldValue);
+    }
+
+    const handleToggleFloatButtons = () => {
+        localStorage.setItem('showFloatButtons', !showFloatButtons ? "true" : "false");
+        setShowFloatButtons(oldValue => !oldValue);
+    }
+
+    const handleLimitPageHeight = () => {
+        localStorage.setItem('limitPageHeight', !limitPageHeight ? "true" : "false");
+        setLimitPageHeight(oldValue => !oldValue);
+    }
+
+    const handlePagesDialog = () => {
+        setOpenPagesDialog(oldValue => !oldValue);
     }
 
     const handlePageClick = (evt, pageId, pageIndex) => {
         const rect = evt.target.getBoundingClientRect();
         const x = evt.clientX - rect.left;
         const y = evt.clientY - rect.top;
-        if (readType === 'horizontal') {
-            if (x > rect.width / 2) {
-                const page = pages?.[pageIndex + 1];
-                if (page) {
-                    setCurrentPage(oldValue => page.id);
-                    setCurrentPageIndex(oldValue => pageIndex + 1);
-                    setCurrentPageNumber(oldValue => page.number || oldValue);
-                }
-            } else {
-                const page = pages?.[pageIndex - 1];
-                if (page) {
-                    setCurrentPage(oldValue => page.id);
-                    setCurrentPageIndex(oldValue => pageIndex - 1);
-                    setCurrentPageNumber(oldValue => page.number || oldValue);
-                }
+        if (x > rect.width / 2) {
+            const page = pages?.[pageIndex + 1];
+            if (page) {
+                setCurrentPage(oldValue => page.id);
+                setCurrentPageIndex(oldValue => pageIndex + 1);
+                setCurrentPageNumber(oldValue => page.number || oldValue);
+                location.href = `#page-${page.id}`;
+            }
+        } else {
+            const page = pages?.[pageIndex - 1];
+            if (page) {
+                setCurrentPage(oldValue => page.id);
+                setCurrentPageIndex(oldValue => pageIndex - 1);
+                setCurrentPageNumber(oldValue => page.number || oldValue);
+                location.href = `#page-${page.id}`;
             }
         }
+    }
+
+    const formatDate = (date) => {
+        if (!date) return '';
+        const dt = new Date(date);
+        const diff = new Date() - dt;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        const weeks = Math.floor(days / 7);
+        const months = Math.floor(days / 30);
+        if (months > 0) return `Publicado hace ${months} Mes${months > 1 ? 'es' : ''}`;
+        if (weeks > 0) return `Publicado hace ${weeks} Semana${weeks > 1 ? 's' : ''}`;
+        if (days > 0) return `Publicado hace ${days} Día${days > 1 ? 's' : ''}`;
+        return 'Publicado hoy';
     }
 
     useEffect(() => {
@@ -106,26 +176,11 @@ export function Reader({ organization, manga, chapterNumber }) {
         }).catch((error) => { });
     }, []);
 
-    useEffect(() => {
-        if (currentPageIndex === 0) {
-            return;
-        }
-        const page = pages[currentPageIndex];
-        if (page) {
-            const targetElement = document.querySelector(`#page-${page.id}`);
-            if (targetElement) {
-                const offset = -75;
-                const topPos = targetElement.getBoundingClientRect().top + window.pageYOffset + offset;
-                window.scrollTo({
-                    top: topPos,
-                    behavior: 'smooth',
-                });
-            }
-        }
-    }, [currentPage]);
-
     // useEffect on page change
     useEffect(() => {
+        if (readType !== readTypes.PAGINATED) {
+            return;
+        }
         if (!chapter) {
             return;
         }
@@ -147,6 +202,37 @@ export function Reader({ organization, manga, chapterNumber }) {
             .catch((error) => { console.error('Failed to save chapter history', error); });
     }, [currentPage]);
 
+    // useEffect on scroll to determine what page is being read in cascade mode
+    useEffect(() => {
+        if (readType !== readTypes.CASCADE) {
+            return;
+        }
+        const firstPageImage = document.getElementById(`page-${pages[0]?.id}-img`);
+        const lastPageImage = document.getElementById(`page-${pages[pages.length - 1]?.id}-img`);
+        if (!firstPageImage || !lastPageImage) {
+            return;
+        }
+        const scrollY = window.scrollY;
+        const pageTopY = firstPageImage.getBoundingClientRect().top + window.scrollY;
+        const pageBottomY = lastPageImage.getBoundingClientRect().bottom + window.scrollY - window.innerHeight;
+        const readPercentage = (Math.min(100, Math.max(0, ((scrollY - pageTopY) / (pageBottomY - pageTopY)) * 100)));
+        if (readPercentage === readScrollPercentage) {
+            return;
+        }
+        setReadScrollPercentage(readPercentage);
+    }, [scrollPosition]);
+    const handleScroll = () => {
+        const currentScrollY = window.scrollY;
+        setScrollPosition(currentScrollY);
+    };
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    // useEffect on initial load
     useEffect(() => {
         setLoading(true);
         Promise.all([
@@ -154,8 +240,8 @@ export function Reader({ organization, manga, chapterNumber }) {
             callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapterNumber}`),
             callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages`),
         ])
-            .then(([manga, chapter, pages]) => {
-                setMangaCustom(manga);
+            .then(([mangaCustom, chapter, pages]) => {
+                setMangaCustom(mangaCustom);
                 setChapter(chapter);
                 setPages(pages);
                 if (pages.length > 0) {
@@ -174,7 +260,7 @@ export function Reader({ organization, manga, chapterNumber }) {
             window.disqus_config = function () {
                 this.page.url = `https://${organization?.domain}/manga/${manga.slug}/chapters/${chapterNumber}`;
                 this.page.identifier = `${manga.slug}_${chapterNumber}`;
-                this.page.title = `${manga.title} - Capítulo ${chapterNumber} - ${chapter.title}`;
+                this.page.title = `${manga.title} - Capítulo ${chapterNumber} - ${chapter?.title}`;
             };
             const script = document.createElement('script');
             script.src = organization?.disqusEmbedUrl || 'https://lat-manga.disqus.com/embed.js';
@@ -183,91 +269,181 @@ export function Reader({ organization, manga, chapterNumber }) {
         }
     }, []);
 
+    const PreviousChapterArrow = ({ ...props }) => (
+        <div
+            className='flex flex-grow items-center h-full justify-center group/nav'
+            onClick={() => { if (chapter?.previousChapter?.number) location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`; }}
+            {...props}
+        >
+            <Tooltip
+                content={
+                    chapter?.previousChapter
+                        ? "Haz click aqui para ir al capítulo anterior"
+                        : "Estas en el primer capítulo publicado"
+                }
+                placement="bottom"
+            >
+                <ChevronLeftIcon
+                    className={
+                        chapter?.previousChapter
+                            ? 'h-16 w-16 text-white cursor-pointer opacity-20 group-hover/nav:opacity-80 transition-all duration-300 group-hover/nav:scale-150 transform'
+                            : 'h-16 w-16 text-white opacity-20 cursor-not-allowed'
+                    }
+                />
+            </Tooltip>
+        </div>
+    )
+
+    const NextChapterArrow = ({ ...props }) => (
+        <div
+            className='flex flex-grow items-center h-full justify-center group/nav'
+            onClick={() => { if (chapter?.nextChapter?.number) location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`; }}
+            {...props}
+        >
+            <Tooltip
+                content={
+                    chapter?.nextChapter
+                        ? "Haz click aqui para ir al próximo capítulo"
+                        : "Estas en el último capítulo publicado"
+                }
+                placement="bottom"
+            >
+                <ChevronRightIcon
+                    className={
+                        chapter?.nextChapter
+                            ? 'h-16 w-16 text-white cursor-pointer opacity-20 group-hover/nav:opacity-80 transition-all duration-300 group-hover/nav:scale-150 transform'
+                            : 'h-16 w-16 text-white opacity-20 cursor-not-allowed'
+                    }
+                />
+            </Tooltip>
+        </div>
+    )
+
     return (
-        <div id="top" className='w-full'>
-            <div className='bg-gray-900 flex flex-wrap w-full min-h-[90vh] justify-center'>
-                <div className='flex flex-wrap w-full sm:max-w-[46rem] p-2 mt-10 items-center bg-white bg-opacity-40 backdrop-blur-sm rounded-2xl'>
-                    <div className='w-full md:w-1/2 p-4'>
-                        <div className="flex flex-col-2 gap-4">
-                            <div className='mt-auto'>
-                                <h1 className='font-bold text-white text-8xl'>{chapter?.number}</h1>
+        <div id="reader-top">
+            <div className='relative w-full min-h-44 group py-4'>
+                <img src={manga?.bannerUrl || manga?.imageUrl} className='absolute -z-10 top-1/2 -translate-y-1/2 w-full min-w-full min-h-full blur-sm opacity-10 group-hover:opacity-15 object-cover transition-all duration-500 group-hover:scale-[101%]' />
+                <div className='flex h-full w-full min-h-44 px-4 mx-auto items-center justify-around'>
+                    <PreviousChapterArrow className='hidden md:flex' />
+                    <div className='flex flex-grow flex-col max-w-5xl mx-auto'>
+                        <div className="flex md:hidden w-full">
+                            <PreviousChapterArrow />
+                            <a
+                                href={`/manga/${mangaCustom?.slug}`}
+                                className='flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors'
+                            >
+                                <Tooltip content="Haz click aqui para ir a la lista de capítulos" placement="bottom">
+                                    <span className='text-3xl sm:text-6xl'>{chapter?.number}</span>
+                                </Tooltip>
+                            </a>
+                            <NextChapterArrow />
+                        </div>
+                        <div className='flex w-full items-center gap-x-4'>
+                            <a
+                                href={`/manga/${mangaCustom?.slug}`}
+                                className='hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors'
+                            >
+                                <Tooltip content="Haz click aqui para ir a la lista de capítulos" placement="bottom">
+                                    <span className='text-2xl md:text-6xl'>{chapter?.number}</span>
+                                </Tooltip>
+                            </a>
+                            <div className='flex flex-grow flex-wrap items-center justify-start'>
+                                <span className='w-full text-xl md:text-3xl'>
+                                    <a href={`/manga/${mangaCustom?.slug}`} className='transition-colors hover:text-red-100'>{mangaCustom?.title}</a>
+                                </span>
+                                <span className='text-md md:text-2xl'>{chapter?.title}</span>
                             </div>
-                            <div className='my-auto'>
-                                <h2 className='text-white text-4xl'>{chapter?.title}</h2>
-                                <a href={`/manga/${manga.slug}`} className='text-white text-xl ml-1'>{mangaCustom?.title}</a>
+                            <div>
+                                <AdjustmentsHorizontalIcon
+                                    className='h-6 w-6 sm:h-8 sm:w-8 cursor-pointer hover:text-gray-300 transition-all duration-300 hover:-rotate-90 transform'
+                                    onClick={handleToggleSettings}
+                                />
                             </div>
                         </div>
                     </div>
-                    <div className="w-full md:w-1/2 p-4">
-                        {pages.length <= 0 ? (
-                            <h4 className='text-white'>
-                                {mangaCustom?.nextChapterAt
-                                    ? `El próximo capítulo de ${mangaCustom?.title} será publicado el ${dateToText(mangaCustom?.nextChapterAt)}`
-                                    : `El próximo capítulo de ${mangaCustom?.title} será publicado próximamente`
-                                }
-                            </h4>
-                        ) : (
-                            <>
-                                <div className='w-full my-2 mx-4'>
-                                    <Switch
-                                        label={
-                                            <Typography className='text-gray-100'>
-                                                Limitar altura de página
-                                            </Typography>
-                                        }
-                                        checked={limitPageHeight}
-                                        onChange={(evt) => setLimitPageHeight(evt.target.checked)}
-                                    />
-                                </div>
-                                <Tabs value={readType}>
-                                    <TabsHeader>
-                                        <Tab value="horizontal" onClick={() => handleSetReadType('horizontal')} >
-                                            Paginado
-                                        </Tab>
-                                        <Tab value="vertical" onClick={() => handleSetReadType('vertical')}>
-                                            Cascada
-                                        </Tab>
-                                    </TabsHeader>
-                                </Tabs>
-                            </>
-                        )}
-                    </div>
+                    <NextChapterArrow className='hidden md:flex' />
                 </div>
-                {pages.length > 0 && (
-                    <div className='flex flex-wrap w-full justify-center my-4'>
-                        {readType === 'horizontal' && (
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
-                                <InputLabel id="top-page-select-label">Página</InputLabel>
-                                <Select
-                                    labelId="top-page-select-label"
-                                    displayEmpty
-                                    value={currentPage}
-                                    onChange={(evt) => {
-                                        const pageIndex = pages.findIndex(page => page.id === evt.target.value);
-                                        setCurrentPageIndex(pageIndex);
-                                        setCurrentPage(pages[pageIndex].id);
-                                        setCurrentPageNumber(pages[pageIndex].number);
-                                    }}
-                                >
-                                    {pages.map((page, pageIndex) => (
-                                        <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        )}
-                    </div>
-                )}
-                {pages.map((page, pageIndex) => (
-                    <div
-                        key={page.id}
-                        id={`page-${page.id}`}
-                        className={
-                            'w-full flex justify-center cursor-pointer'
-                            + (shouldShowPage(page.id) ? '' : ' hidden')
-                        }
-                        onClick={(evt) => handlePageClick(evt, page.id, pageIndex)}
-                    >
-                        <div className='relative max-w-[100vw] m-0 2xl:max-w-[95vw] 2xl:mx-auto select-none'>
+                <div className='flex w-full max-w-5xl mx-auto items-center'>
+                    <Accordion open={openSettingsAccordion}>
+                        <AccordionBody className='py-6 px-4'>
+                            <div className='flex flex-wrap w-full justify-between items-center gap-x-4'>
+                                <div>
+                                    <div className='my-2 mx-4'>
+                                        <Switch
+                                            color='red'
+                                            label={
+                                                <Typography className='text-gray-100'>
+                                                    Limitar altura de página
+                                                </Typography>
+                                            }
+                                            checked={limitPageHeight}
+                                            onChange={() => handleLimitPageHeight()}
+                                        />
+                                    </div>
+                                    <div className='my-2 mx-4'>
+                                        <Switch
+                                            color='green'
+                                            label={
+                                                <Typography className='text-gray-100'>
+                                                    Mostrar botones flotantes
+                                                </Typography>
+                                            }
+                                            checked={showFloatButtons}
+                                            onChange={() => handleToggleFloatButtons()}
+                                        />
+                                    </div>
+                                </div>
+                                <div className='mx-auto sm:mx-0'>
+                                    <p className='text-gray-400 ml-1'>
+                                        Modo de lectura
+                                    </p>
+                                    <Tabs value={readType}>
+                                        <TabsHeader>
+                                            <Tab
+                                                value={readTypes.PAGINATED}
+                                                onClick={() => handleSetReadType(readTypes.PAGINATED)}
+                                                className='text-sm'
+                                            >
+                                                Paginado
+                                            </Tab>
+                                            <Tab
+                                                value={readTypes.CASCADE}
+                                                onClick={() => handleSetReadType(readTypes.CASCADE)}
+                                                className='text-sm'
+                                            >
+                                                Cascada
+                                            </Tab>
+                                        </TabsHeader>
+                                    </Tabs>
+                                </div>
+                            </div>
+                        </AccordionBody>
+                    </Accordion>
+                </div>
+            </div>
+            <div className='flex flex-wrap w-full min-h-[90vh] justify-center'>
+                {/* PAGINAS */}
+                <div id="manga-pages-top" className='w-full select-none backdrop-blur-sm bg-black bg-opacity-50'>
+                    {pages.length === 0 && loading && (
+                        <div className='flex w-full justify-center py-4'>
+                            <Spinner color="red" size="xl" />
+                        </div>
+                    )}
+                    {pages.length === 0 && !loading && (
+                        <div className='flex w-full justify-center py-4'>
+                            <h3 className='text-white'>No se encontraron páginas para este capítulo</h3>
+                        </div>
+                    )}
+                    {pages.map((page, pageIndex) => (
+                        <div
+                            key={page.id}
+                            id={`page-${page.id}`}
+                            className={
+                                'w-full flex justify-center select-none cursor-pointer'
+                                + (shouldShowPage(page.id) ? '' : ' hidden')
+                            }
+                            onClick={(evt) => handlePageClick(evt, page.id, pageIndex)}
+                        >
                             {!loadedPages.includes(page.id) && (
                                 <img
                                     width={`${page.imageWidth}px`}
@@ -275,12 +451,13 @@ export function Reader({ organization, manga, chapterNumber }) {
                                     className="bg-gray-300 !opacity-20 animate-pulse"
                                     style={
                                         limitPageHeight
-                                            ? { maxHeight: 'calc(100vh - 80px)' }
+                                            ? { maxHeight: '100vh' }
                                             : {}
                                     }
                                 />
                             )}
                             <img
+                                id={`page-${page.id}-img`}
                                 src={page.imageUrl}
                                 onLoad={() => handlePageLoad(page.id)}
                                 className='max-w-full mx-auto pointer-events-none'
@@ -288,54 +465,27 @@ export function Reader({ organization, manga, chapterNumber }) {
                                 hidden={!loadedPages.includes(page.id)}
                                 style={
                                     limitPageHeight
-                                        ? { maxHeight: 'calc(100vh - 80px)' }
+                                        ? { maxHeight: '100vh' }
                                         : {}
                                 }
                             />
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+                {/* Progress Bar */}
                 {pages.length > 0 && (
-                    <div className='flex flex-wrap w-full justify-center my-4'>
-                        {readType === 'horizontal' && (
-                            <div className='flex flex-wrap w-full justify-center'>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} className='bg-gray-100 rounded-md'>
-                                    <InputLabel id="bottom-page-select-label">Página</InputLabel>
-                                    <Select
-                                        labelId="bottom-page-select-label"
-                                        displayEmpty
-                                        value={currentPage}
-                                        onChange={(evt) => {
-                                            const pageIndex = pages.findIndex(page => page.id === evt.target.value);
-                                            setCurrentPageIndex(pageIndex);
-                                            setCurrentPage(pages[pageIndex].id);
-                                            setCurrentPageNumber(pages[pageIndex].number);
-                                        }}
-                                    >
-                                        {pages.map((page, pageIndex) => (
-                                            <MenuItem key={page.id} value={page.id}>Página {page.number}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </div>
-                        )}
+                    <div className='sticky bottom-0 left-0 w-full h-1 bg-black'>
+                        <div
+                            className='h-1 bg-red-500'
+                            style={{
+                                width: readType === readTypes.PAGINATED
+                                    ? `${(currentPageIndex / (pages.length - 1)) * 100}%`
+                                    : `${readScrollPercentage}%`,
+                                transition: readType === readTypes.PAGINATED ? 'width 0.25s' : '',
+                            }}
+                        />
                     </div>
                 )}
-                <div className='w-full text-center mt-2'>
-                    {((currentPageIndex === pages.length - 1) || readType === 'vertical') && pages.length > 0 && (
-                        <h4 className='text-white'>
-                            Haz terminado de leer el capítulo {chapter?.number} de {mangaCustom?.title}: {chapter?.title}
-                        </h4>
-                    )}
-                    {!chapter?.nextChapter && pages.length > 0 && (
-                        <h4 className='text-white'>
-                            {mangaCustom?.nextChapterAt
-                                ? `El próximo capítulo será publicado el ${dateToText(mangaCustom?.nextChapterAt)}`
-                                : "El próximo capítulo será publicado próximamente"
-                            }
-                        </h4>
-                    )}
-                </div>
                 <div className='flex w-full justify-center mt-2'>
                     <div className=' m-2'>
                         <ButtonGroup>
@@ -357,8 +507,8 @@ export function Reader({ organization, manga, chapterNumber }) {
                     </div>
                 </div>
                 <div className='flex w-full justify-center mt-2 mb-8'>
-                    {readType === 'vertical' && pages.length > 0 && (
-                        <a href="#top" className='text-white text-xl'>
+                    {readType === readTypes.CASCADE && pages.length > 0 && (
+                        <a href="#manga-pages-top" className='text-white text-xl'>
                             <Button>
                                 Volver al inicio
                             </Button>
@@ -371,7 +521,7 @@ export function Reader({ organization, manga, chapterNumber }) {
                         <div className='max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md'>
                             <Accordion open={openCommentsAccordion}>
                                 <AccordionHeader
-                                    onClick={() => setOpenCommentsAccordion(oldValue => !oldValue)}
+                                    onClick={handleToggleComments}
                                 >
                                     <h3 className='text-xl font-bold text-gray-300'>
                                         {openCommentsAccordion ? 'Ocultar' : 'Mostrar'} comentarios
@@ -385,16 +535,77 @@ export function Reader({ organization, manga, chapterNumber }) {
                         </div>
                     </div>
                 )}
-                {/* Progress Bar */}
-                {readType === 'horizontal' && pages.length > 0 && (
-                    <div className='sticky bottom-0 left-0 w-full h-1 bg-black'>
-                        <div
-                            className='h-1 bg-red-500'
-                            style={{ width: `${(currentPageIndex / (pages.length - 1)) * 100}%` }}
-                        />
-                    </div>
-                )}
             </div>
+            {/* Speed Dial */}
+            {showFloatButtons && (
+                <>
+                    <div className="fixed bottom-5 right-5">
+                        <SpeedDial>
+                            <Tooltip content="Lista de páginas" placement="left">
+                                <SpeedDialHandler
+                                    className='cursor-pointer'
+                                    onClick={() => handlePagesDialog()}
+                                >
+                                    <IconButton size="lg" className="rounded-full">
+                                        <ListBulletIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
+                                    </IconButton>
+                                </SpeedDialHandler>
+                            </Tooltip>
+                        </SpeedDial>
+                    </div>
+                    <div className="fixed bottom-20 right-5">
+                        <SpeedDial>
+                            <Tooltip content="Volver al inicio" placement="left">
+                                <SpeedDialHandler>
+                                    <a href="#main-navbar">
+                                        <IconButton size="lg" className="rounded-full">
+                                            <ChevronUpIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
+                                        </IconButton>
+                                    </a>
+                                </SpeedDialHandler>
+                            </Tooltip>
+                        </SpeedDial>
+                    </div>
+                </>
+            )}
+            {/* Pages Dialog */}
+            <Dialog
+                size="xs"
+                open={openPagesDialog}
+                handler={handlePagesDialog}
+                className="bg-transparent shadow-none"
+            >
+                <Card className="bg-gray-900 bg-opacity-90 mx-auto w-full max-w-[24rem]">
+                    <CardBody className="flex flex-col gap-2">
+                        <div className="flex flex-wrap justify-between items-center">
+                            <span className='text-2xl text-white'>Lista de Páginas</span>
+                            <span className='text-base text-white'>{mangaCustom?.title}</span>
+                        </div>
+                        <span className='text-lg text-white'>Capítulo {chapter?.number}</span>
+                        <span className='text-base text-white'>{chapter?.title}</span>
+                        <div className="flex flex-wrap gap-2 my-2">
+                            {pages.map((page, index) => (
+                                <span
+                                    key={page.id}
+                                    onClick={() => {
+                                        if (readType === readTypes.PAGINATED) {
+                                            setCurrentPage(oldValue => page.id);
+                                            setCurrentPageIndex(oldValue => index);
+                                            setCurrentPageNumber(oldValue => page.number);
+                                        } else {
+                                            location.href = `#page-${page.id}`;
+                                        }
+                                        handlePagesDialog();
+                                    }}
+                                    className="px-4 text-white bg-gray-800 odd:bg-gray-700 hover:bg-orange-900 hover:cursor-pointer shadow-sm rounded-md"
+                                >
+                                    {`Página ${page.number}`}
+                                </span>
+                            ))}
+                        </div>
+                    </CardBody>
+                </Card>
+            </Dialog>
         </div>
     );
 }

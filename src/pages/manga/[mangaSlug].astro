@@ -7,8 +7,6 @@ const { organization, logged } = Astro.locals;
 
 const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`);
 
-console.log(manga);
-
 if (!mangaStatus) {
     return Astro.redirect('/404');
 }
