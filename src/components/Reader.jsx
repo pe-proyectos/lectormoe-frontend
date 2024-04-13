@@ -324,7 +324,7 @@ export function Reader({ organization, manga, chapterNumber }) {
             <div className='relative w-full min-h-44 group py-4'>
                 <img src={manga?.bannerUrl || manga?.imageUrl} className='absolute -z-10 top-1/2 -translate-y-1/2 w-full min-w-full min-h-full blur-sm opacity-10 group-hover:opacity-15 object-cover transition-all duration-500 group-hover:scale-[101%]' />
                 <div className='flex h-full w-full min-h-44 px-4 mx-auto items-center justify-around'>
-                    <PreviousChapterArrow className='hidden md:flex' />
+                    <PreviousChapterArrow className='hidden md:flex flex-grow items-center h-full justify-center group/nav' />
                     <div className='flex flex-grow flex-col max-w-5xl mx-auto'>
                         <div className="flex md:hidden w-full">
                             <PreviousChapterArrow />
@@ -361,7 +361,7 @@ export function Reader({ organization, manga, chapterNumber }) {
                             </div>
                         </div>
                     </div>
-                    <NextChapterArrow className='hidden md:flex' />
+                    <NextChapterArrow className='hidden md:flex flex-grow items-center h-full justify-center group/nav' />
                 </div>
                 <div className='flex w-full max-w-5xl mx-auto items-center'>
                     <Accordion open={openSettingsAccordion}>
