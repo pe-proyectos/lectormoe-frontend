@@ -31,13 +31,14 @@ export function MangaGrid({ organization, logged }) {
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [userChapterHistoryList, setUserChapterHistoryList] = useState([]);
     const [userChapterHistoryTotal, setUserChapterHistoryTotal] = useState([]);
+    const [showAllChapterHistoryList, setShowAllChapterHistoryList] = useState(false);
 
     useEffect(() => {
         refreshNewsList();
         refreshUserChapterHistory();
         // Latest
         setLoadingLatest(true);
-        callAPI(`/api/manga-custom?order=latest&limit=8`)
+        callAPI(`/api/manga-custom?order=latest&limit=9`)
             .then(({ data }) => setMangaLatestList(data))
             .catch(error => toast.error(error?.message))
             .finally(() => setLoadingLatest(false));
@@ -49,7 +50,7 @@ export function MangaGrid({ organization, logged }) {
             .finally(() => setLoadingFeatured(false));
         // Popular
         setLoadingPopular(true);
-        callAPI(`/api/manga-custom?order=popular&limit=8`)
+        callAPI(`/api/manga-custom?order=popular&limit=9`)
             .then(({ data }) => setMangaPopularList(data))
             .catch(error => toast.error(error?.message))
             .finally(() => setLoadingPopular(false));
@@ -184,7 +185,7 @@ export function MangaGrid({ organization, logged }) {
                                     </div>
                                 )
                             }
-                            {userChapterHistoryList.map((history) => (
+                            {(showAllChapterHistoryList ? userChapterHistoryList : userChapterHistoryList.slice(0, 6)).map((history) => (
                                 <a
                                     key={history.id}
                                     className='w-full'
@@ -192,13 +193,21 @@ export function MangaGrid({ organization, logged }) {
                                 >
                                     <Alert
                                         variant="ghost"
-                                        className='w-full hover:bg-gray-300'
+                                        className='w-full bg-gray-400 hover:bg-gray-300'
                                     >
                                         <p className='font-semibold'>{history.chapter.mangaCustom.title}</p>
                                         <span className='text-xs'>Capítulo {history.chapter.number} página {history.pageNumber}, leído {formatDate(history.lastReadAt)}</span>
                                     </Alert>
                                 </a>
                             ))}
+                            {userChapterHistoryList.length > 6 && (
+                                <Button
+                                    color="gray"
+                                    onClick={() => setShowAllChapterHistoryList(!showAllChapterHistoryList)}
+                                >
+                                    {showAllChapterHistoryList ? "Ver menos" : "Ver más"}
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="flex flex-wrap gap-4 justify-center mb-4">
@@ -217,7 +226,7 @@ export function MangaGrid({ organization, logged }) {
                             </div>
                         </div>
                     )}
-                    <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
+                    {/* <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                         <Typography
                             color="white"
                             className="font-semibold text-4xl"
@@ -230,9 +239,9 @@ export function MangaGrid({ organization, logged }) {
                         >
                             Ver todas
                         </a>
-                    </div>
-                    <div className="w-full h-1 bg-gray-200 rounded-sm my-4" />
-                    <div className="flex flex-wrap gap-4 justify-center">
+                    </div> */}
+                    {/* <div className="w-full h-1 bg-gray-200 rounded-sm my-4" /> */}
+                    {/* <div className="flex flex-wrap gap-4 justify-center">
                         {
                             !loadingNews && newsList.length === 0 && (
                                 <div className="flex flex-col items-center justify-center w-full h-full">
@@ -246,7 +255,7 @@ export function MangaGrid({ organization, logged }) {
                             )
                         }
                         {newsList.map((news) => <NewsCard news={news} key={news.id} />)}
-                    </div>
+                    </div> */}
                 </div>
                 <div className='col-span-3 align-middle order-last lg:order-first'>
                     <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
@@ -269,6 +278,7 @@ export function MangaGrid({ organization, logged }) {
                             Ver todos
                         </a>
                     </div>
+                    <div className="w-full h-1 bg-gray-200 rounded-sm my-4" />
                     <MangaCardsScroller>
                         {!loadingPopular && mangaPopularList.length === 0 && (
                             <div className="m-4">
@@ -280,8 +290,12 @@ export function MangaGrid({ organization, logged }) {
                                 </Typography>
                             </div>
                         )}
-                        {loadingPopular && ("12345678".split("").map(n => <MangaCard key={n} manga={null} />))}
-                        {mangaPopularList.map(manga => <MangaCard key={manga.id} manga={manga} />)}
+                        {loadingPopular && ("123456789".split("").map(n => <MangaCard key={n} manga={null} />))}
+                        {mangaPopularList.map((manga, index) => (
+                            <div className={index === 8 && "hidden md:block"} >
+                                <MangaCard key={manga.id} manga={manga} />
+                            </div>
+                        ))}
                     </MangaCardsScroller>
                     <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                         <Typography
@@ -297,6 +311,7 @@ export function MangaGrid({ organization, logged }) {
                             Ver todos
                         </a>
                     </div>
+                    <div className="w-full h-1 bg-gray-200 rounded-sm my-4" />
                     <MangaCardsScroller>
                         {!loadingLatest && mangaLatestList.length === 0 && (
                             <div className="m-4">
@@ -308,8 +323,12 @@ export function MangaGrid({ organization, logged }) {
                                 </Typography>
                             </div>
                         )}
-                        {loadingLatest && ("12345678".split("").map(n => <MangaCard key={n} manga={null} />))}
-                        {mangaLatestList.map(manga => <MangaCard key={manga.id} manga={manga} />)}
+                        {loadingLatest && ("123456789".split("").map(n => <MangaCard key={n} manga={null} />))}
+                        {mangaLatestList.map((manga, index) => (
+                            <div className={index === 8 && "hidden md:block"} >
+                                <MangaCard key={manga.id} manga={manga} />
+                            </div>
+                        ))}
                     </MangaCardsScroller>
                 </div>
             </div >

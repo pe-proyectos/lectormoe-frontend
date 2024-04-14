@@ -144,7 +144,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                       variant="text"
                       color="white"
                       size="sm"
-                      className="hidden lg:inline-block"
+                      className="hidden lg:inline-block mx-1"
                     >
                       <span>Iniciar sesión</span>
                     </Button>
@@ -153,7 +153,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                     <Button
                       variant="gradient"
                       size="sm"
-                      className="hidden lg:inline-block"
+                      className="hidden lg:inline-block mx-1"
                     >
                       <span>Registro</span>
                     </Button>
@@ -205,10 +205,10 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
         {navList}
         <div className="flex items-center gap-x-1 pb-4 justify-center">
           <div className={
-              location.pathname === "/mangas"
-                ? "relative w-full gap-2 md:w-max hidden"
-                : "relative w-full gap-2 md:w-max"
-            }>
+            location.pathname === "/mangas"
+              ? "relative w-full gap-2 md:w-max hidden"
+              : "relative w-full gap-2 md:w-max"
+          }>
             <Input
               type="search"
               color="white"
@@ -231,18 +231,22 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
           </div>
         </div>
         {!username && (
-          <div className="flex items-center gap-x-1">
-            <Button
-              fullWidth
-              variant="text"
-              color="white"
-              size="sm"
-            >
-              <span>Iniciar sesión</span>
-            </Button>
-            <Button fullWidth variant="gradient" size="sm" className="">
-              <span>Registro</span>
-            </Button>
+          <div className="flex items-center justify-center gap-x-1">
+            <a href="/login">
+              <Button
+                fullWidth
+                variant="text"
+                color="white"
+                size="sm"
+              >
+                <span>Iniciar sesión</span>
+              </Button>
+            </a>
+            <a href="/register">
+              <Button fullWidth variant="gradient" size="sm" className="">
+                <span>Registro</span>
+              </Button>
+            </a>
           </div>
         )}
       </Collapse>

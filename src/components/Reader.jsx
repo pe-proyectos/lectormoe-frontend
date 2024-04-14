@@ -63,6 +63,7 @@ export function Reader({ organization, manga, chapterNumber }) {
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(() => localStorage.getItem('showChapterComments') !== "false");
     const [openSettingsAccordion, setOpenSettingsAccordion] = useState(() => localStorage.getItem('chapterSettings') !== "false");
     const [openPagesDialog, setOpenPagesDialog] = useState(false);
+    const [lastSaveUrl, setLastSaveUrl] = useState('');
 
     const labelProps = {
         variant: "small",
@@ -154,6 +155,16 @@ export function Reader({ organization, manga, chapterNumber }) {
         }
     }
 
+    useEffect(() => {
+        const url = `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${currentPageNumber}`;
+        if (lastSaveUrl === url) {
+            return;
+        }
+        setLastSaveUrl(url);
+        callAPI(url)
+            .catch((error) => { console.error('Failed to save chapter history', error); });
+    }, [currentPageNumber]);
+
     const formatDate = (date) => {
         if (!date) return '';
         const dt = new Date(date);
@@ -198,8 +209,6 @@ export function Reader({ organization, manga, chapterNumber }) {
         } catch (error) {
             console.error('Failed to update page in URL', error);
         }
-        callAPI(`/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${page.number}`)
-            .catch((error) => { console.error('Failed to save chapter history', error); });
     }, [currentPage]);
 
     // useEffect on scroll to determine what page is being read in cascade mode
@@ -220,6 +229,15 @@ export function Reader({ organization, manga, chapterNumber }) {
             return;
         }
         setReadScrollPercentage(readPercentage);
+        // setCurrentPage
+        const pageIndex = Math.ceil((readPercentage / 100) * (pages.length - 1));
+        const page = pages[pageIndex];
+        if (!page) {
+            return;
+        }
+        setCurrentPage(page.id);
+        setCurrentPageIndex(pageIndex);
+        setCurrentPageNumber(page.number);
     }, [scrollPosition]);
     const handleScroll = () => {
         const currentScrollY = window.scrollY;
