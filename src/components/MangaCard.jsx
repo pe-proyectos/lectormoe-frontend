@@ -21,18 +21,23 @@ export function MangaCard({ manga }) {
     }
 
     const formatDate = (date) => {
-        // "hoy" "hace 1 día" "hace 2 días" "hace 1 semana"
-        const diff = new Date() - new Date(date);
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        if (!date) return '';
+        const dt = new Date(date);
+        const diff = new Date() - dt;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
         const weeks = Math.floor(days / 7);
-        if (days === 0) return "hoy";
-        if (days === 1) return "hace 1 día";
-        if (days > 1 && days < 7) return `hace ${days} días`;
-        if (weeks === 1) return "hace 1 semana";
-        if (weeks > 1) return `hace ${weeks} semanas`;
-        return "";
+        const months = Math.floor(days / 30);
+        if (months > 0) return `hace ${months} mes${months > 1 ? 'es' : ''}`;
+        if (weeks > 0) return `hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
+        if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
+        if (hours > 0) return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) return `hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+        if (seconds > 0) return `hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
+        return 'hoy';
     }
-
 
     return (
         <Card

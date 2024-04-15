@@ -41,7 +41,7 @@ import {
 } from '@mui/material';
 import { callAPI } from '../util/callApi';
 
-export function Reader({ organization, manga, chapterNumber }) {
+export function Reader({ organization, manga, chapterNumber, logged }) {
     const readTypes = {
         PAGINATED: 'paginated',
         CASCADE: 'cascade',
@@ -61,7 +61,7 @@ export function Reader({ organization, manga, chapterNumber }) {
     const [readScrollPercentage, setReadScrollPercentage] = useState(0);
     const [loadedPages, setLoadedPages] = useState([]);
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(() => localStorage.getItem('showChapterComments') !== "false");
-    const [openSettingsAccordion, setOpenSettingsAccordion] = useState(() => localStorage.getItem('chapterSettings') !== "false");
+    const [openSettingsAccordion, setOpenSettingsAccordion] = useState(() => localStorage.getItem('chapterSettings') === "true");
     const [openPagesDialog, setOpenPagesDialog] = useState(false);
     const [lastSaveUrl, setLastSaveUrl] = useState('');
 
@@ -156,6 +156,9 @@ export function Reader({ organization, manga, chapterNumber }) {
     }
 
     useEffect(() => {
+        if (!logged) {
+            return;
+        }
         const url = `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${currentPageNumber}`;
         if (lastSaveUrl === url) {
             return;
@@ -178,6 +181,9 @@ export function Reader({ organization, manga, chapterNumber }) {
         if (months > 0) return `Publicado hace ${months} Mes${months > 1 ? 'es' : ''}`;
         if (weeks > 0) return `Publicado hace ${weeks} Semana${weeks > 1 ? 's' : ''}`;
         if (days > 0) return `Publicado hace ${days} Día${days > 1 ? 's' : ''}`;
+        if (hours > 0) return `Publicado hace ${hours} hora${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) return `Publicado hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+        if (seconds > 0) return `Publicado hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
         return 'Publicado hoy';
     }
 

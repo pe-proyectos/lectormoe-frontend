@@ -10,6 +10,7 @@ import {
 } from "@material-tailwind/react";
 
 export function NewsCard({ news, props }) {
+
     const formatDate = (date) => {
         if (!date) return '';
         const dt = new Date(date);
@@ -20,9 +21,12 @@ export function NewsCard({ news, props }) {
         const days = Math.floor(hours / 24);
         const weeks = Math.floor(days / 7);
         const months = Math.floor(days / 30);
-        if (months > 0) return `Hace ${months} Mes${months > 1 ? 'es' : ''}`;
-        if (weeks > 0) return `Hace ${weeks} Semana${weeks > 1 ? 's' : ''}`;
-        if (days > 0) return `Hace ${days} Día${days > 1 ? 's' : ''}`;
+        if (months > 0) return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
+        if (weeks > 0) return `Hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
+        if (days > 0) return `Hace ${days} día${days > 1 ? 's' : ''}`;
+        if (hours > 0) return `Hace ${hours} hora${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) return `Hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+        if (seconds > 0) return `Hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
         return 'Hoy';
     }
 

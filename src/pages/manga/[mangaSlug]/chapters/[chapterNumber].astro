@@ -3,7 +3,7 @@ import Layout from "../../../../layouts/Layout.astro";
 import { Reader } from "../../../../components/Reader";
 
 const { mangaSlug, chapterNumber } = Astro.params;
-const { organization, callAPI } = Astro.locals;
+const { organization, callAPI, logged } = Astro.locals;
 
 const [
     { status: mangaStatus, data: manga },
@@ -32,6 +32,7 @@ if (!chapterStatus) {
         organization={organization}
         manga={manga}
         chapterNumber={chapterNumber}
+        logged={logged}
         client:only
     />
 </Layout>

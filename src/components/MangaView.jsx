@@ -36,9 +36,12 @@ export function MangaView({ manga, organization, logged }) {
         const days = Math.floor(hours / 24);
         const weeks = Math.floor(days / 7);
         const months = Math.floor(days / 30);
-        if (months > 0) return `Publicado hace ${months} Mes${months > 1 ? 'es' : ''}`;
-        if (weeks > 0) return `Publicado hace ${weeks} Semana${weeks > 1 ? 's' : ''}`;
-        if (days > 0) return `Publicado hace ${days} Día${days > 1 ? 's' : ''}`;
+        if (months > 0) return `Publicado hace ${months} mes${months > 1 ? 'es' : ''}`;
+        if (weeks > 0) return `Publicado hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
+        if (days > 0) return `Publicado hace ${days} día${days > 1 ? 's' : ''}`;
+        if (hours > 0) return `Publicado hace ${hours} hora${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) return `Publicado hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+        if (seconds > 0) return `Publicado hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
         return 'Publicado hoy';
     }
 

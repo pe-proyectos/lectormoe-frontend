@@ -92,6 +92,9 @@ export function MangaGrid({ organization, logged }) {
         if (months > 0) return `hace ${months} mes${months > 1 ? 'es' : ''}`;
         if (weeks > 0) return `hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
         if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
+        if (hours > 0) return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) return `hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+        if (seconds > 0) return `hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
         return 'hoy';
     }
 
