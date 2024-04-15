@@ -278,8 +278,7 @@ export function MangaGrid({ organization, logged }) {
                             Ver todos
                         </a>
                     </div>
-                    <div className="w-full h-1 bg-gray-200 rounded-sm my-4" />
-                    <MangaCardsScroller>
+                    <MangaCardsScroller useSideScroll={true} >
                         {!loadingPopular && mangaPopularList.length === 0 && (
                             <div className="m-4">
                                 <Typography
