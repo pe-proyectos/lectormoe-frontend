@@ -299,6 +299,13 @@ export function MangaGrid({ organization, logged }) {
                             </div>
                         ))}
                     </MangaCardsScroller>
+                    <div className='flex md:hidden w-full items-center justify-center'>
+                        <a href="/mangas?sort=popular">
+                            <Button color="gray" className="m-4">
+                                Ver todos los mangas populares
+                            </Button>
+                        </a>
+                    </div>
                     <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
                         <Typography
                             color="white"
@@ -332,6 +339,13 @@ export function MangaGrid({ organization, logged }) {
                             </div>
                         ))}
                     </MangaCardsScroller>
+                    <div className='flex w-full items-center justify-center'>
+                        <a href="/mangas?sort=latest">
+                            <Button color="gray" className="m-4">
+                                Ver todos los mangas actualizados recientemente
+                            </Button>
+                        </a>
+                    </div>
                 </div>
             </div >
         </div >

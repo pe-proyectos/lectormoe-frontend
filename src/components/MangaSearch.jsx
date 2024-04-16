@@ -26,19 +26,28 @@ import { MangaCard } from './MangaCard';
 export function MangaSearch() {
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
-    const [search, setSearch] = useState('');
-    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('q') || '';
+    });
+    const [orderBy, setOrderBy] = useState(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('order') || 'latest';
+    });
+    const [lastSearchQuery, setLastSearchQuery] = useState('');
+    const [page, setPage] = useState(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return Number(urlParams.get('page')) || 1;
+    });
     const [maxPage, setMaxPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const [limit, setLimit] = useState(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return Number(urlParams.get('limit')) || 24;
+    });
     const [debounceTimer, setDebounceTimer] = useState(0);
     const firstRender = useRef(true);
 
     useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const initialSearch = urlParams.get('q');
-        if (initialSearch) {
-            setSearch(initialSearch || '');
-        }
         const interval = setInterval(() => {
             setDebounceTimer(prev => Math.max(prev - 10, 0));
         }, 10);
@@ -60,18 +69,27 @@ export function MangaSearch() {
 
     useEffect(() => {
         refreshMangaProfile();
-    }, [
-        page,
-        limit,
-    ]);
+    }, [page, orderBy, limit]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [orderBy]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [limit]);
 
     const refreshMangaProfile = () => {
         setLoading(true);
         const query = new URLSearchParams({
             page,
-            limit: 20,
-            title: search || "",
+            limit: limit,
+            order: orderBy,
         });
+        if (search) {
+            query.set('q', search);
+        }
+        window.history.replaceState({}, '', `${window.location.pathname}?${query}`);
         callAPI(`/api/manga-custom?${query}`)
             .then(({ data, maxPage }) => {
                 setMangaList(data);
@@ -97,6 +115,7 @@ export function MangaSearch() {
                 <div className="relative flex w-full gap-2 md:w-max mx-4 bg-white z-10 rounded-lg">
                     <Input
                         type="search"
+                        size='lg'
                         placeholder="Buscar mangas por nombre..."
                         containerProps={{
                             className: "w-full md:min-w-[26rem]",
@@ -137,6 +156,58 @@ export function MangaSearch() {
                     />
                 </div>
             </div>
+            <div className='relative w-full flex flex-wrap items-center justify-evenly gap-x-2 gap-y-4 px-2 py-12'>
+                <div className="flex items-center gap-4">
+                    <Typography color="white" className="font-normal">
+                        Ordenar por:
+                    </Typography>
+                    <Button
+                        color="red"
+                        size="sm"
+                        onClick={() => setOrderBy('latest')}
+                        disabled={orderBy === 'latest'}
+                    >
+                        Más recientes
+                    </Button>
+                    <Button
+                        color="red"
+                        size="sm"
+                        onClick={() => setOrderBy('popular')}
+                        disabled={orderBy === 'popular'}
+                    >
+                        Más populares
+                    </Button>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Typography color="white" className="font-normal">
+                        Mostrar:
+                    </Typography>
+                    <Button
+                        color="red"
+                        size="sm"
+                        onClick={() => setLimit(12)}
+                        disabled={limit === 12}
+                    >
+                        12
+                    </Button>
+                    <Button
+                        color="red"
+                        size="sm"
+                        onClick={() => setLimit(24)}
+                        disabled={limit === 24}
+                    >
+                        24
+                    </Button>
+                    <Button
+                        color="red"
+                        size="sm"
+                        onClick={() => setLimit(36)}
+                        disabled={limit === 36}
+                    >
+                        36
+                    </Button>
+                </div>
+            </div>
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
                 <div className="flex items-center gap-8">
                     <IconButton
@@ -149,7 +220,7 @@ export function MangaSearch() {
                         <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
                     </IconButton>
                     <Typography color="white" className="font-normal">
-                        Page <strong className="text-gray-400">{page}</strong> of{" "}
+                        Página <strong className="text-gray-400">{page}</strong> de{" "}
                         <strong className="text-gray-400">{maxPage}</strong>
                     </Typography>
                     <IconButton
@@ -163,7 +234,7 @@ export function MangaSearch() {
                     </IconButton>
                 </div>
             </div>
-            <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4'>
+            <div className='flex flex-wrap items-center justify-evenly mx-auto gap-2 sm:gap-4'>
                 {
                     loading && (
                         <div className="w-full m-4 text-center">
@@ -200,7 +271,7 @@ export function MangaSearch() {
                         <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
                     </IconButton>
                     <Typography color="white" className="font-normal">
-                        Page <strong className="text-gray-400">{page}</strong> of{" "}
+                        Página <strong className="text-gray-400">{page}</strong> de{" "}
                         <strong className="text-gray-400">{maxPage}</strong>
                     </Typography>
                     <IconButton

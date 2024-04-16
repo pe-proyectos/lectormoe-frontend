@@ -4,6 +4,7 @@ import {
     Tooltip,
     Chip,
     Button,
+    ButtonGroup,
     Accordion,
     AccordionHeader,
     AccordionBody,
@@ -15,6 +16,10 @@ export function MangaView({ manga, organization, logged }) {
     const [chapterGroups, setChapterGroups] = useState({});
     const [selectedChapterGroup, setSelectedChapterGroup] = useState('');
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(true);
+
+    const firstChapter = manga?.chapters?.sort((a, b) => a.number - b.number)?.[0];
+    const lastChapter = manga?.chapters?.sort((a, b) => b.number - a.number)?.[0];
+
     useEffect(() => {
         callAPI(`/api/views/manga-custom/${manga.slug}`, {
             includeIp: true,
@@ -79,7 +84,6 @@ export function MangaView({ manga, organization, logged }) {
         }
         setChapterGroups(groups);
         setSelectedChapterGroup(lastLabel);
-
     }, []);
 
     return (
@@ -166,6 +170,26 @@ export function MangaView({ manga, organization, logged }) {
                                     ))}
                                 </div>
                             </div>
+                            <div className="flex flex-wrap justify-center items-center my-4">
+                                <ButtonGroup color="white" variant="outlined">
+                                    {firstChapter && (
+                                        <Button
+                                            className="text-[0.6rem]"
+                                            onClick={() => location.href = `/manga/${manga.slug}/chapters/${firstChapter?.number}`}
+                                        >
+                                            Ir al primer capítulo
+                                        </Button>
+                                    )}
+                                    {lastChapter && (
+                                        <Button
+                                            className="text-[0.6rem]"
+                                            onClick={() => location.href = `/manga/${manga.slug}/chapters/${lastChapter?.number}`}
+                                        >
+                                            Ir al ultimo capítulo
+                                        </Button>
+                                    )}
+                                </ButtonGroup>
+                            </div>
                             {/* <div className="flex flex-nowrap justify-between items-center my-2">
                             <span className="text-xl font-bold">
                                 Mangas Similares:
@@ -190,9 +214,9 @@ export function MangaView({ manga, organization, logged }) {
                         </p>
                         {/* Chapters */}
                         <span className="text-4xl mb-2 font-extrabold">
-                            Capitulos
+                            Capítulos
                             <span className="text-xs ml-2 mb-1 text-gray-600">
-                                ({manga?.chapters.length} Capitulos disponibles)
+                                ({manga?.chapters.length} Capítulos disponibles)
                             </span>
                         </span>
                         <div className="flex w-full items-start gap-1">
@@ -210,7 +234,7 @@ export function MangaView({ manga, organization, logged }) {
                                             <div className="flex flex-wrap grow items-center justify-between">
                                                 <div className="">
                                                     <p className="flex flex-wrap items-center gap-x-2">
-                                                        <span className="text-xs lg:text-lg text-gray-400">Capitulo {chapter.number}</span>
+                                                        <span className="text-xs lg:text-lg text-gray-400">Capítulo {chapter.number}</span>
                                                         <span className="text-[0.7rem] font-extralight text-gray-500">{formatDate(chapter.createdAt)}</span>
                                                     </p>
                                                     <p className="text-xl lg:text-2xl">
@@ -250,7 +274,8 @@ export function MangaView({ manga, organization, logged }) {
                     </div>
                 </div>
             </div>
-            <div className="w-full px-1 sm:px-4 md:px-8">
+            {/* <div className="w-full px-1 sm:px-4 md:px-8"> */}
+            <div className='2xl:max-w-[1320px] 2xl:mx-auto px-1 sm:px-4 transition-all duration-500'>
                 {/* Disqus Comments */}
                 {organization?.enableDisqusIntegration && (
                     <div className='w-full md:my-4 text-center'>

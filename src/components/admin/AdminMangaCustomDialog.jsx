@@ -235,7 +235,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                     disabled={!mangaProfile}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Fecha del próximo capitulo (Opcional)
+                    Fecha del próximo capítulo (Opcional)
                 </Typography>
                 <DatePicker
                     value={nextChapterDate}

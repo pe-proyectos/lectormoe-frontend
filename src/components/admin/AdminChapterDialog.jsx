@@ -142,7 +142,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             Número
                         </Typography>
                         <Input
-                            label="Número del capitulo"
+                            label="Número del capítulo"
                             autoComplete='off'
                             value={number}
                             onChange={(e) => setNumber(e.target.value)}
@@ -152,13 +152,13 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             Título
                         </Typography>
                         <Input
-                            label="Título del capitulo"
+                            label="Título del capítulo"
                             autoComplete='off'
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                         />
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Miniatura del capitulo (Opcional)
+                            Miniatura del capítulo (Opcional)
                         </Typography>
                         <ImageDropzone
                             value={chapterImageFile}
