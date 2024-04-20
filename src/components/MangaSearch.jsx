@@ -81,15 +81,20 @@ export function MangaSearch() {
 
     const refreshMangaProfile = () => {
         setLoading(true);
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('page', page);
+        urlParams.set('limit', limit);
+        urlParams.set('order', orderBy);
         const query = new URLSearchParams({
             page,
             limit: limit,
             order: orderBy,
         });
         if (search) {
-            query.set('q', search);
+            query.set('title', search);
+            urlParams.set('q', search);
         }
-        window.history.replaceState({}, '', `${window.location.pathname}?${query}`);
+        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
         callAPI(`/api/manga-custom?${query}`)
             .then(({ data, maxPage }) => {
                 setMangaList(data);
