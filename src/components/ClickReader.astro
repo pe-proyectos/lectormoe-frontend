@@ -24,6 +24,8 @@ const { chapter, pages, currentPageNumber } = Astro.props;
                 alt={`Página ${page.number}`}
                 id={`page-${page.number}`}
                 data-number={page.number}
+                decoding="async"
+                loading="lazy"
                 draggable="false"
                 class={
                     "manga-page min-h-36 w-full max-w-[900px] skeleton"

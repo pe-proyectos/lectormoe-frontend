@@ -64,6 +64,8 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
             <img
               src={organization?.logoUrl}
               alt={organization?.title}
+              decoding="async"
+              loading="lazy"
               className="max-h-8"
             />
           </a>
@@ -127,7 +129,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                     {/* <a href={`/profile/${userSlug}`}>
                       <MenuItem>Mi Perfil</MenuItem>
                     </a> */}
-                    {member && (
+                    {member?.canSeeAdminPanel === true && (
                       <a href="/admin/mangas">
                         <MenuItem>Administrador</MenuItem>
                       </a>

@@ -13,12 +13,16 @@ if (!mangaStatus) {
     <img
         src={manga.imageUrl}
         alt={manga.title}
+        decoding="async"
+        loading="lazy"
         class="absolute object-cover inset-0 w-full h-full filter brightness-50 -z-20"
         draggable="false"
     />
     <img
         src={manga.imageUrl}
         alt={manga.title}
+        decoding="async"
+        loading="lazy"
         class="absolute object-cover inset-0 w-full h-full filter brightness-50 bg-black blur-sm -z-10"
         draggable="false"
     />
@@ -26,6 +30,8 @@ if (!mangaStatus) {
         <img
             src={manga.imageUrl}
             alt={manga.title}
+            decoding="async"
+            loading="lazy"
             class="absolute max-h-[90%] max-w-[95%] rounded-md shadow-lg z-10 top-1/2 right-0 transform -translate-y-1/2"
             draggable="false"
         />

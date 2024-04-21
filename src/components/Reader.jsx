@@ -346,7 +346,12 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
     return (
         <div id="reader-top">
             <div className='relative w-full min-h-44 group py-4'>
-                <img src={manga?.bannerUrl || manga?.imageUrl} className='absolute -z-10 top-1/2 -translate-y-1/2 w-full min-w-full min-h-full blur-sm opacity-10 group-hover:opacity-15 object-cover transition-all duration-500 group-hover:scale-[101%]' />
+                <img
+                    src={manga?.bannerUrl || manga?.imageUrl}
+                    decoding="async"
+                    loading="lazy"
+                    className='absolute -z-10 top-1/2 -translate-y-1/2 w-full min-w-full min-h-full blur-sm opacity-10 group-hover:opacity-15 object-cover transition-all duration-500 group-hover:scale-[101%]'
+                />
                 <div className='flex h-full w-full min-h-44 px-4 mx-auto items-center justify-around'>
                     <PreviousChapterArrow className='hidden md:flex flex-grow items-center h-full justify-center group/nav' />
                     <div className='flex flex-grow flex-col max-w-5xl mx-auto'>
@@ -472,6 +477,8 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 <img
                                     width={`${page.imageWidth}px`}
                                     height={`${page.imageHeight}px`}
+                                    decoding="async"
+                                    loading="lazy"
                                     className="bg-gray-300 !opacity-20 animate-pulse"
                                     style={
                                         limitPageHeight
@@ -484,6 +491,8 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 id={`page-${page.id}-img`}
                                 src={page.imageUrl}
                                 onLoad={() => handlePageLoad(page.id)}
+                                decoding="async"
+                                loading="lazy"
                                 className='max-w-full mx-auto pointer-events-none'
                                 alt={`Pagina ${page.number}`}
                                 hidden={!loadedPages.includes(page.id)}

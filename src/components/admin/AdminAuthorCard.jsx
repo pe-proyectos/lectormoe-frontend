@@ -15,6 +15,8 @@ export function AdminAuthorCard({ name, imageUrl, shortDescription, description 
                 <img
                     src={imageUrl}
                     className='min-h-full object-cover'
+                    decoding="async"
+                    loading="lazy"
                     alt={name}
                 />
             </CardHeader>

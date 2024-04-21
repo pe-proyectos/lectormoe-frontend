@@ -43,6 +43,8 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
                                 : value
                         }
                         alt={alt}
+                        decoding="async"
+                        loading="lazy"
                         className="w-full max-h-72 object-cover rounded-md p-4"
                     />
                 </div>

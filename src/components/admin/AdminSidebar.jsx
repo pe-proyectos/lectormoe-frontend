@@ -21,7 +21,7 @@ import {
     NewspaperIcon,
     BookOpenIcon,
     ChartBarIcon,
-    ChatBubbleLeftRightIcon,
+    UsersIcon,
     InboxIcon,
     AcademicCapIcon,
     PowerIcon,
@@ -164,12 +164,12 @@ export function AdminSidebar({ page }) {
                         Noticias
                     </ListItem>
                 </a>
-                <a href="/admin/interactions">
-                    <ListItem selected={page === "interactions"}>
+                <a href="/admin/users">
+                    <ListItem selected={page === "users"}>
                         <ListItemPrefix>
-                            <ChatBubbleLeftRightIcon className="h-5 w-5" />
+                            <UsersIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Interacciones
+                        Usuarios
                     </ListItem>
                 </a>
                 <a href="/admin/storage">

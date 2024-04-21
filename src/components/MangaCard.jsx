@@ -53,6 +53,8 @@ export function MangaCard({ manga }) {
                 <img
                     src={manga.imageUrl}
                     alt={manga.title}
+                    decoding="async"
+                    loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300 group-hover:filter group-hover:brightness-90 select-none"
                 />
                 {/* if lastChapterAt was released in the last 3 days show a chip */}
@@ -104,7 +106,7 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                                 >
-                                    {formatDate(manga?.lastChapters?.[0]?.createdAt)}
+                                    {formatDate(manga?.lastChapters?.[0]?.releasedAt)}
                                 </Typography>
                             </div>
                         )}
@@ -124,7 +126,7 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-xs hover:underline cursor-pointer"
                                 >
-                                    {formatDate(manga?.lastChapters?.[1]?.createdAt)}
+                                    {formatDate(manga?.lastChapters?.[1]?.releasedAt)}
                                 </Typography>
                             </div>
                         )}

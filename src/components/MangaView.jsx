@@ -89,7 +89,12 @@ export function MangaView({ manga, organization, logged }) {
     return (
         <div>
             <div className='relative w-full h-[24rem] group overflow-hidden bg-black shadow-lg'>
-                <img src={manga?.bannerUrl || manga?.imageUrl} className='absolute top-1/2 -translate-y-1/2 w-full min-w-full min-h-full object-cover transition-transform duration-500 group-hover:scale-[101%]' />
+                <img
+                    src={manga?.bannerUrl || manga?.imageUrl}
+                    decoding="async"
+                    loading="lazy"
+                    className='absolute top-1/2 -translate-y-1/2 w-full min-w-full min-h-full object-cover transition-transform duration-500 group-hover:scale-[101%]'
+                />
             </div>
             <div className='2xl:max-w-[1320px] 2xl:mx-auto transition-all duration-500'>
                 <div className="flex flex-wrap md:flex-nowrap gap-2 mx-4">
@@ -97,8 +102,18 @@ export function MangaView({ manga, organization, logged }) {
                         <StickyBox offsetTop={150} offsetBottom={150}>
                             <div className="relative w-[18rem] min-w-[18rem] h-[26rem] group -translate-y-64 md:-translate-y-16 -mb-64 md:-mb-16 overflow-hidden rounded-md">
                                 {/* <img src={manga?.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 filter brightness-50" /> */}
-                                <img src={manga?.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-80 blur-sm filter brightness-75 transition-transform duration-500 group-hover:scale-[110%]" />
-                                <img src={manga?.imageUrl} className="absolute inset-0 w-full h-full object-contain max-w-full max-h-full m-auto transition-transform duration-500 group-hover:scale-[104%]" />
+                                <img
+                                    src={manga?.imageUrl}
+                                    decoding="async"
+                                    loading="lazy"
+                                    className="absolute inset-0 w-full h-full object-cover opacity-80 blur-sm filter brightness-75 transition-transform duration-500 group-hover:scale-[110%]"
+                                />
+                                <img
+                                    src={manga?.imageUrl}
+                                    decoding="async"
+                                    loading="lazy"
+                                    className="absolute inset-0 w-full h-full object-contain max-w-full max-h-full m-auto transition-transform duration-500 group-hover:scale-[104%]"
+                                />
                             </div>
                             <div className="w-full mt-6 mb-6">
                                 <Button
@@ -229,13 +244,18 @@ export function MangaView({ manga, organization, logged }) {
                                     >
                                         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center justify-center">
                                             <div className="w-32 h-20 relative">
-                                                <img src={chapter?.imageUrl || manga?.imageUrl} className="w-full h-full object-cover rounded-lg grayscale group-hover:grayscale-0" />
+                                                <img
+                                                    src={chapter?.imageUrl || manga?.imageUrl}
+                                                    decoding="async"
+                                                    loading="lazy"
+                                                    className="w-full h-full object-cover rounded-lg grayscale group-hover:grayscale-0"
+                                                />
                                             </div>
                                             <div className="flex flex-wrap grow items-center justify-between">
                                                 <div className="">
                                                     <p className="flex flex-wrap items-center gap-x-2">
                                                         <span className="text-xs lg:text-lg text-gray-400">Capítulo {chapter.number}</span>
-                                                        <span className="text-[0.7rem] font-extralight text-gray-500">{formatDate(chapter.createdAt)}</span>
+                                                        <span className="text-[0.7rem] font-extralight text-gray-500">{formatDate(chapter.releasedAt)}</span>
                                                     </p>
                                                     <p className="text-xl lg:text-2xl">
                                                         {chapter.title}

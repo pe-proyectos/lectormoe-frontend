@@ -43,6 +43,8 @@ export function NewsCard({ news, props }) {
                         src={news?.imageUrl}
                         className='h-40 object-cover w-full'
                         alt={news?.title}
+                        decoding="async"
+                        loading="lazy"
                     />
                 </CardHeader>
             )}

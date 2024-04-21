@@ -33,9 +33,26 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
     // dialog
     const [loading, setLoading] = useState(true);
     // form
-    const [title, setTitle] = useState('');
-    const [number, setNumber] = useState(1);
-    const [chapterImageFile, setChapterImageFile] = useState(null);
+    const [title, setTitle] = useState(() => {
+        if (chapter) return chapter.title;
+        return `Capítulo ${mangaCustom?.chapters?.length + 1}`;
+    });
+    const [number, setNumber] = useState(() => {
+        if (chapter) return chapter.number;
+        return mangaCustom?.chapters?.length + 1;
+    });
+    const [releasedAt, setReleasedAt] = useState(() => {
+        if (chapter) return new Date(chapter.releasedAt);
+        return new Date();
+    });
+    const [chapterImageFile, setChapterImageFile] = useState(() => {
+        if (chapter) return chapter.imageUrl;
+        return null;
+    });
+    const [isSubscription, setIsSubscription] = useState(() => {
+        if (chapter) return chapter.isSubscription;
+        return false;
+    });
     const [pages, setPages] = useState([]);
     const [dragId, setDragId] = useState();
 
@@ -57,10 +74,27 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
         setPages(newPages);
     };
 
+    const minusDays = (date, days) => {
+        const newDate = new Date(date);
+        newDate.setDate(date.getDate() - days);
+        return newDate;
+    };
+
+    const formatDateToInput = (date) => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = (date.getDate()).toString().padStart(2, "0");
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
     useEffect(() => {
         if (chapter) {
             setTitle(chapter.title);
             setNumber(chapter.number);
+            setReleasedAt(new Date(chapter.releasedAt));
+            setIsSubscription(chapter.isSubscription);
             setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
@@ -73,6 +107,8 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
             }, 0);
             setNumber((lastChapterNumber + 1));
             setTitle(`Capítulo ${lastChapterNumber + 1}`);
+            setReleasedAt(new Date());
+            setIsSubscription(false);
             setChapterImageFile(null);
             setPages([]);
             setLoading(false);
@@ -89,6 +125,8 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
         const formData = new FormData();
         formData.append('title', title);
         formData.append('number', number);
+        formData.append('releasedAt', releasedAt);
+        formData.append('isSubscription', isSubscription);
         if (chapterImageFile || chapter) formData.append('image', chapterImageFile);
         pages.forEach((page) => {
             formData.append('pages', page instanceof File ? page : page?.imageUrl);
@@ -171,38 +209,34 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             Opciones
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Visibilidad
+                            Fecha de salida
                         </Typography>
-                        <Select
-                            size="md"
-                            label="Visibilidad"
-                            value={"Publico"}
-                            onChange={() => { }}
-                            disabled
-                        >
-                            <Option>Publico</Option>
-                            <Option>Privado</Option>
-                            <Option>No listado</Option>
-                        </Select>
+                        <input
+                            type="datetime-local"
+                            //   The specified value "2024-04-05T01:54:00.000Z" does not conform to the required format.  The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
+                            value={formatDateToInput(releasedAt)}
+                            onChange={(e) => setReleasedAt(new Date(e.target.value))}
+                        />
+                        <Typography variant="small" color="gray" className="font-normal">
+                            Ningun usuario podrá leer este capítulo hasta la fecha de salida
+                        </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
                             Suscriptores
                         </Typography>
                         <Switch
+                            checked={isSubscription}
+                            onChange={(e) => setIsSubscription(e.target.checked)}
                             label={
                                 <div>
                                     <Typography color="blue-gray" className="font-medium">
                                         Solo para suscriptores
                                     </Typography>
-                                    <Typography variant="small" color="gray" className="font-normal">
-                                        Los usuarios que no estén suscritos no podrán ver este capítulo
-                                    </Typography>
                                 </div>
                             }
-                            containerProps={{
-                                className: "-mt-5",
-                            }}
-                            disabled
                         />
+                        <Typography variant="small" color="gray" className="font-normal">
+                            Si se activa los suscriptores podrán leer este capítulo antes de la fecha de salida
+                        </Typography>
                     </div>
                     <div className="max-w-[70%] w-[70%] flex flex-col gap-4">
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
@@ -246,6 +280,8 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                                                 : page?.imageUrl
                                         }
                                         alt={`Página ${index + 1}`}
+                                        decoding="async"
+                                        loading="lazy"
                                         className="w-full max-w-full h-56 max-h-56 object-cover rounded-md bg-gray-900"
                                     />
                                     <CardFooter className="p-0">

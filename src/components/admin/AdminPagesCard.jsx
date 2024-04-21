@@ -38,6 +38,8 @@ export function AdminPagesCard({ manga, chapter, pages }) {
                     <img
                         src={row.original.imageUrl}
                         alt={row.index + 1}
+                        decoding="async"
+                        loading="lazy"
                         width="100"
                     />
                 ),

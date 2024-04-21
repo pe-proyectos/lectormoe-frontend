@@ -156,6 +156,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                                             <img
                                                 loading="lazy"
                                                 width="20"
+                                                decoding="async"
                                                 srcSet={option.imageUrl || ""}
                                                 src={option.imageUrl || ""}
                                                 alt=""

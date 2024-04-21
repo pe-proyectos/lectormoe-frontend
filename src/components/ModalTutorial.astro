@@ -16,6 +16,8 @@ const { manga, chapter } = Astro.props;
         <img
             src="/images/orden.png"
             alt="Orden de lectura: De derecha a izquierda, de arriba a abajo"
+            decoding="async"
+            loading="lazy"
             class="mx-auto">
         <div class="bg-red-500 bg-opacity-20 hover:bg-opacity-40 w-6/12 h-full absolute top-0 left-0">
             <div class="flex items-center justify-center h-full w-full">

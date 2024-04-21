@@ -91,8 +91,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         context.locals.logged = context.locals.token ? true : false;
 
-        if (!context.locals.logged && context.url.pathname.startsWith('/admin')) {
-            return context.redirect("/login");
+        if (context.url.pathname.startsWith('/admin')) {
+            if (!context.locals.logged) {
+                return context.redirect("/login");
+            }
+            if (!context.locals.member?.canSeeAdminPanel) {
+                return context.redirect("/");
+            }
         }
 
         // Social Redirects

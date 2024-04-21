@@ -22,6 +22,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { callAPI } from '../util/callApi';
 import { MangaCard } from './MangaCard';
+import { PageNavigation } from './PageNavigation';
 
 export function MangaSearch() {
     const [loading, setLoading] = useState(true);
@@ -215,28 +216,13 @@ export function MangaSearch() {
             </div>
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
                 <div className="flex items-center gap-8">
-                    <IconButton
-                        size="sm"
-                        variant="outlined"
-                        color='white'
-                        onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                        disabled={page === 1}
-                    >
-                        <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
-                    </IconButton>
-                    <Typography color="white" className="font-normal">
-                        Página <strong className="text-gray-400">{page}</strong> de{" "}
-                        <strong className="text-gray-400">{maxPage}</strong>
-                    </Typography>
-                    <IconButton
-                        size="sm"
-                        variant="outlined"
-                        color='white'
-                        onClick={() => setPage(prev => Math.min(prev + 1, 10))}
-                        disabled={page === maxPage}
-                    >
-                        <ArrowRightIcon strokeWidth={2} className="h-4 w-4" />
-                    </IconButton>
+                    <PageNavigation
+                        page={page}
+                        maxPage={maxPage}
+                        setPage={setPage}
+                        loading={loading}
+                        data={mangaList}
+                    />
                 </div>
             </div>
             <div className='flex flex-wrap items-center justify-evenly mx-auto gap-2 sm:gap-4'>
@@ -265,30 +251,13 @@ export function MangaSearch() {
                 {mangaList.map(manga => <MangaCard key={manga.id} manga={manga} />)}
             </div>
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
-                <div className="flex items-center gap-8">
-                    <IconButton
-                        size="sm"
-                        variant="outlined"
-                        color='white'
-                        onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                        disabled={page <= 1 || loading || mangaList.length === 0}
-                    >
-                        <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
-                    </IconButton>
-                    <Typography color="white" className="font-normal">
-                        Página <strong className="text-gray-400">{page}</strong> de{" "}
-                        <strong className="text-gray-400">{maxPage}</strong>
-                    </Typography>
-                    <IconButton
-                        size="sm"
-                        variant="outlined"
-                        color='white'
-                        onClick={() => setPage(prev => Math.min(prev + 1, 10))}
-                        disabled={page >= maxPage || loading || mangaList.length === 0}
-                    >
-                        <ArrowRightIcon strokeWidth={2} className="h-4 w-4" />
-                    </IconButton>
-                </div>
+                <PageNavigation
+                    page={page}
+                    maxPage={maxPage}
+                    setPage={setPage}
+                    loading={loading}
+                    data={mangaList}
+                />
             </div>
         </div>
     );

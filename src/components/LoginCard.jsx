@@ -10,6 +10,7 @@ import {
     Typography,
 } from "@material-tailwind/react";
 import 'cookie-store';
+import { callAPI } from '../util/callApi';
 
 export function LoginCard() {
     const [email, setEmail] = useState('');
@@ -25,26 +26,19 @@ export function LoginCard() {
         formData.append('password', password);
 
         try {
-            const response = await fetch(`${import.meta.env.PUBLIC_API_URL}/api/auth/login`, {
+            const data = await callAPI('/api/auth/login', {
                 method: "POST",
                 body: formData,
             });
-            const { status, data, message } = await response.json();
 
-            if (!status) {
-                toast.error(message ?? "Error al iniciar sesión", {
-                    position: "bottom-right",
-                });
-            } else {
-                await Promise.all([
-                    cookieStore.set("token", data.token),
-                    cookieStore.set("username", data.username),
-                    cookieStore.set("userSlug", data.userSlug),
-                    data?.member ? cookieStore.set("member", JSON.stringify(data.member)) : null,
-                ]);
-                // Redirect to homepage after successful login
-                window.location.href = "/";
-            }
+            await Promise.all([
+                cookieStore.set("token", data.token),
+                cookieStore.set("username", data.username),
+                cookieStore.set("userSlug", data.userSlug),
+                data?.member ? cookieStore.set("member", JSON.stringify(data.member)) : null,
+            ]);
+            // Redirect to homepage after successful login
+            window.location.href = "/";
         } catch (error) {
             console.error('Error logging in:', error);
             toast.error(error?.message || "Error al iniciar sesión", {

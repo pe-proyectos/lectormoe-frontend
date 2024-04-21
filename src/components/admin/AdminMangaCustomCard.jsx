@@ -18,13 +18,22 @@ export function AdminMangaCustomCard({ mangaCustom, onClick }) {
     return (
         <Card className="w-56">
             <CardHeader floated={false} color="blue-gray" className="relative h-56">
-                {mangaCustom.imageUrl && (
-                    <img
-                        src={mangaCustom.imageUrl || ""}
-                        className='min-h-full object-cover'
-                        alt={mangaCustom.title || "Sin título"}
-                    />
-                )}
+                {mangaCustom.imageUrl
+                    ? (
+                        <img
+                            src={mangaCustom.imageUrl || ""}
+                            className='min-h-full object-cover'
+                            decoding="async"
+                            loading="lazy"
+                            alt={mangaCustom.title || "Sin título"}
+                        />
+                    )
+                    : (
+                        <Typography variant="h5" color="blue-gray" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            Sin imagen
+                        </Typography>
+                    )
+                }
             </CardHeader>
             <CardBody className='pt-2 pb-0'>
                 <Typography variant="h5" color="blue-gray" className="mb-2">

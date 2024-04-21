@@ -105,6 +105,8 @@ export function MangaGrid({ organization, logged }) {
                 <img
                     src={organization?.bannerUrl || "https://cdn.pixabay.com/photo/2016/11/29/12/54/banner-1868728_960_720.jpg"}
                     alt="Manga"
+                    decoding="async"
+                    loading="lazy"
                     className="absolute object-cover w-full h-full"
                 />
                 <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50" />
@@ -294,7 +296,7 @@ export function MangaGrid({ organization, logged }) {
                         )}
                         {loadingPopular && ("123456789".split("").map(n => <MangaCard key={n} manga={null} />))}
                         {mangaPopularList.map((manga, index) => (
-                            <div className={index === 8 && "hidden md:block"} >
+                            <div key={manga.id} className={index === 8 ? "hidden md:block" : undefined} >
                                 <MangaCard key={manga.id} manga={manga} />
                             </div>
                         ))}
@@ -334,7 +336,7 @@ export function MangaGrid({ organization, logged }) {
                         )}
                         {loadingLatest && ("123456789".split("").map(n => <MangaCard key={n} manga={null} />))}
                         {mangaLatestList.map((manga, index) => (
-                            <div className={index === 8 && "hidden md:block"} >
+                            <div key={manga.id} className={index === 8 ? "hidden md:block" : undefined} >
                                 <MangaCard key={manga.id} manga={manga} />
                             </div>
                         ))}

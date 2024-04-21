@@ -46,6 +46,7 @@ declare namespace App {
         userSlug: string | undefined,
         member: undefined | {
             // Organization
+            canSeeAdminPanel: boolean,
             canEditOrganization: boolean,
             canDeleteOrganization: boolean,
             // Organization Members

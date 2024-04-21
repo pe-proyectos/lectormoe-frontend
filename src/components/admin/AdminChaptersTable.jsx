@@ -23,6 +23,8 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
                     <img
                         src={row.original.imageUrl}
                         alt={row.original.title || row.original.number || "Sin miniatura"}
+                        decoding="async"
+                        loading="lazy"
                         className='max-w-24 max-h-36 mx-auto'
                     />
                 ) : (
@@ -61,11 +63,11 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
                 ),
             },
             {
-                accessorKey: 'createdAt',
-                header: 'Fecha creación',
+                accessorKey: 'releasedAt',
+                header: 'Fecha de salida',
                 size: 50,
                 Cell: ({ row }) => (
-                    <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>
+                    <span>{new Date(row.original.releasedAt).toLocaleDateString()}</span>
                 ),
             },
             {
