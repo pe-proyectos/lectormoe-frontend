@@ -142,7 +142,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                 setCurrentPage(oldValue => page.id);
                 setCurrentPageIndex(oldValue => pageIndex + 1);
                 setCurrentPageNumber(oldValue => page.number || oldValue);
-                location.href = `#page-${page.id}`;
+                location.href = readType === readTypes.PAGINATED ? '#manga-pages-top' : `#page-${page.id}`;
             }
         } else {
             const page = pages?.[pageIndex - 1];
@@ -150,7 +150,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                 setCurrentPage(oldValue => page.id);
                 setCurrentPageIndex(oldValue => pageIndex - 1);
                 setCurrentPageNumber(oldValue => page.number || oldValue);
-                location.href = `#page-${page.id}`;
+                location.href = readType === readTypes.PAGINATED ? '#manga-pages-top' : `#page-${page.id}`;
             }
         }
     }
@@ -621,9 +621,8 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                             setCurrentPage(oldValue => page.id);
                                             setCurrentPageIndex(oldValue => index);
                                             setCurrentPageNumber(oldValue => page.number);
-                                        } else {
-                                            location.href = `#page-${page.id}`;
                                         }
+                                        location.href = readType === readTypes.PAGINATED ? '#manga-pages-top' : `#page-${page.id}`;
                                         handlePagesDialog();
                                     }}
                                     className="px-4 text-white bg-gray-800 odd:bg-gray-700 hover:bg-orange-900 hover:cursor-pointer shadow-sm rounded-md"
