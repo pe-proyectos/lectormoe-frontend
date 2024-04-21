@@ -477,8 +477,6 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 <img
                                     width={`${page.imageWidth}px`}
                                     height={`${page.imageHeight}px`}
-                                    decoding="async"
-                                    loading="lazy"
                                     className="bg-gray-300 !opacity-20 animate-pulse"
                                     style={
                                         limitPageHeight
@@ -491,8 +489,6 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 id={`page-${page.id}-img`}
                                 src={page.imageUrl}
                                 onLoad={() => handlePageLoad(page.id)}
-                                decoding="async"
-                                loading="lazy"
                                 className='max-w-full mx-auto pointer-events-none'
                                 alt={`Pagina ${page.number}`}
                                 hidden={!loadedPages.includes(page.id)}
