@@ -26,6 +26,21 @@ export function MangaView({ manga, organization, logged }) {
         }).catch((error) => { });
     }, []);
 
+    useEffect(() => {
+        callAPI('/api/analytics', {
+            method: 'POST',
+            includeIp: true,
+            body: JSON.stringify({
+                event: 'view_manga_profile',
+                path: window.location.pathname,
+                userAgent: window.navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                payload: {},
+            }),
+        }).catch(err => console.error(err));
+    }, []);
+
     const listFormatter = new Intl.ListFormat('es', {
         style: 'long',
         type: 'conjunction',

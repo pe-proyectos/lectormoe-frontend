@@ -16,6 +16,21 @@ export function LoginCard() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    useEffect(() => {
+        callAPI('/api/analytics', {
+            method: 'POST',
+            includeIp: true,
+            body: JSON.stringify({
+                event: 'view_login_page',
+                path: window.location.pathname,
+                userAgent: window.navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                payload: {},
+            }),
+        }).catch(err => console.error(err));
+    }, []);
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         // Disable button to prevent multiple submissions

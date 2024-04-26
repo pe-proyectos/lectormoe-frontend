@@ -49,6 +49,25 @@ export function MangaSearch() {
     const firstRender = useRef(true);
 
     useEffect(() => {
+        callAPI('/api/analytics', {
+            method: 'POST',
+            includeIp: true,
+            body: JSON.stringify({
+                event: 'view_manga_search',
+                path: window.location.pathname,
+                userAgent: window.navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                payload: {
+                    search,
+                    orderBy,
+                    limit,
+                },
+            }),
+        }).catch(err => console.error(err));
+    }, []);
+
+    useEffect(() => {
         const interval = setInterval(() => {
             setDebounceTimer(prev => Math.max(prev - 10, 0));
         }, 10);
@@ -103,6 +122,23 @@ export function MangaSearch() {
             })
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
+        callAPI('/api/analytics', {
+            method: 'POST',
+            includeIp: true,
+            body: JSON.stringify({
+                event: 'action_search_manga',
+                path: window.location.pathname,
+                userAgent: window.navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                payload: {
+                    page,
+                    title: search,
+                    order: orderBy,
+                    limit,
+                },
+            }),
+        }).catch(err => console.error(err));
     }
 
     return (

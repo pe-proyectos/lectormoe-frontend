@@ -156,6 +156,27 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
     }
 
     useEffect(() => {
+        callAPI('/api/analytics', {
+            method: 'POST',
+            includeIp: true,
+            body: JSON.stringify({
+                event: 'view_manga_chapter',
+                path: window.location.pathname,
+                userAgent: window.navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                payload: {
+                    manga: manga.slug,
+                    chapter: chapterNumber,
+                    showFloatButtons,
+                    readType,
+                    limitPageHeight,
+                },
+            }),
+        }).catch(err => console.error(err));
+    }, []);
+
+    useEffect(() => {
         if (!logged) {
             return;
         }
