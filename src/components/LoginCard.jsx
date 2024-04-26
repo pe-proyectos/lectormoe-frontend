@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import {
     Card,
@@ -41,6 +41,19 @@ export function LoginCard() {
         formData.append('password', password);
 
         try {
+            callAPI('/api/analytics', {
+                method: 'POST',
+                includeIp: true,
+                body: JSON.stringify({
+                    event: 'action_login',
+                    path: window.location.pathname,
+                    userAgent: window.navigator.userAgent,
+                    screenWidth: window.screen.width,
+                    screenHeight: window.screen.height,
+                    payload: {},
+                }),
+            }).catch(err => console.error(err));
+
             const data = await callAPI('/api/auth/login', {
                 method: "POST",
                 body: formData,

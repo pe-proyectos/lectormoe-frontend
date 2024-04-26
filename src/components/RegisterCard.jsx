@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import {
     Card,
@@ -15,6 +15,21 @@ export function RegisterCard() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
+    useEffect(() => {
+        callAPI('/api/analytics', {
+            method: 'POST',
+            includeIp: true,
+            body: JSON.stringify({
+                event: 'view_register_page',
+                path: window.location.pathname,
+                userAgent: window.navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                payload: {},
+            }),
+        }).catch(err => console.error(err));
+    }, []);
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         // Disable button to prevent multiple submissions
@@ -26,6 +41,19 @@ export function RegisterCard() {
         formData.append('password', password);
 
         try {
+            callAPI('/api/analytics', {
+                method: 'POST',
+                includeIp: true,
+                body: JSON.stringify({
+                    event: 'action_register',
+                    path: window.location.pathname,
+                    userAgent: window.navigator.userAgent,
+                    screenWidth: window.screen.width,
+                    screenHeight: window.screen.height,
+                    payload: {},
+                }),
+            }).catch(err => console.error(err));
+
             const { registered } = await callAPI(`/api/auth/register`, {
                 method: "POST",
                 body: formData,
