@@ -55,22 +55,22 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 		<meta name="twitter:image:src" content={imageUrl || organization?.bannerUrl}>
 		<meta property="og:locale:alternate" content="es_ES">
 		<meta name="theme-color" content="#ff1a1a">
-		{
+		{/*
 			!isAdmin && (
 				<script
 					type='text/javascript'
 					src='//pl23164527.highcpmgate.com/49/87/d5/4987d5265e0e4031443cf6b865192948.js'
 				></script>
 			)
-		}
-		{
+		*/}
+		{/*
 			!isAdmin && (
 				<script
 					type='text/javascript'
 					src='//pl23165906.highcpmgate.com/c8/8f/78/c88f78ff7be3993492ef078516302d3c.js'
 				></script>
 			)
-		}
+		*/}
 	</head>
 	<body class={isAdmin ? "" : "bg-brand-primary-content-900 text-brand-primary-50"}>
 		<StickyNavbar
