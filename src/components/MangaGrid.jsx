@@ -227,7 +227,7 @@ export function MangaGrid({ organization, logged }) {
                                     <a href='/login' className='hover:underline'>
                                         Inicia sesión
                                     </a>
-                                    &nbsp;para ver guardar tu historial
+                                    &nbsp;para ver y guardar tu historial
                                 </span>
                             </div>
                         </div>

@@ -10,6 +10,7 @@ export function LazyImage({ src, alt, ...rest }) {
     useEffect(() => {
         let observer;
         let didCancel = false;
+        let timeout;
 
         if (imageRef.current && highQualitySrc) {
             if (IntersectionObserver) {
@@ -18,7 +19,10 @@ export function LazyImage({ src, alt, ...rest }) {
                         entries.forEach((entry) => {
                             if (!didCancel && (entry.intersectionRatio > 0 || entry.isIntersecting)) {
                                 setImageSrc(highQualitySrc);
-                                observer.unobserve(imageRef.current);
+                                clearTimeout(timeout);
+                                if (observer && observer.unobserve && imageRef && imageRef.current) {
+                                    observer.unobserve(imageRef.current);
+                                }
                             }
                         });
                     },
@@ -31,13 +35,18 @@ export function LazyImage({ src, alt, ...rest }) {
             } else {
                 // Fallback for browsers without IntersectionObserver support
                 setImageSrc(highQualitySrc);
-                console.log("Switching to high-quality image");
             }
         }
 
+        // Set timeout to switch to high-quality image if low-quality image fails to load
+        timeout = setTimeout(() => {
+            setImageSrc(highQualitySrc);
+        }, 2000);
+
         return () => {
             didCancel = true;
-            if (observer && observer.unobserve) {
+            clearTimeout(timeout);
+            if (observer && observer.unobserve && imageRef && imageRef.current) {
                 observer.unobserve(imageRef.current);
             }
         };

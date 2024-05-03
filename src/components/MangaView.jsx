@@ -12,11 +12,13 @@ import {
 import StickyBox from "react-sticky-box";
 import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
+import { toast } from 'react-toastify';
 
 export function MangaView({ manga, organization, logged }) {
     const [chapterGroups, setChapterGroups] = useState({});
     const [selectedChapterGroup, setSelectedChapterGroup] = useState('');
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(true);
+    const [userChapterHistoryList, setUserChapterHistoryList] = useState([]);
 
     const firstChapter = manga?.chapters?.sort((a, b) => a.number - b.number)?.[0];
     const lastChapter = manga?.chapters?.sort((a, b) => b.number - a.number)?.[0];
@@ -25,6 +27,13 @@ export function MangaView({ manga, organization, logged }) {
         callAPI(`/api/views/manga-custom/${manga.slug}`, {
             includeIp: true,
         }).catch((error) => { });
+        if (logged) {
+            callAPI(`/api/user-chapter-history?limit=1000&include_finished=true&manga_slug=${manga.slug}`)
+                .then(({ data }) => {
+                    setUserChapterHistoryList(data);
+                })
+                .catch(error => toast.error(error?.message));
+        }
     }, []);
 
     useEffect(() => {
@@ -64,6 +73,24 @@ export function MangaView({ manga, organization, logged }) {
         if (minutes > 0) return `Publicado hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
         if (seconds > 0) return `Publicado hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
         return 'Publicado hoy';
+    }
+
+    const getChapterHistory = (chapterNumber) => {
+        if (!logged) return null;
+        return userChapterHistoryList.find(c => c?.chapter?.number == chapterNumber);
+    }
+
+    const getChapterLabel = (chapterNumber) => {
+        const history = getChapterHistory(chapterNumber);
+        if (!history) {
+            return 'Leer';
+        }
+
+        if (!history.finishedAt) {
+            return 'Continuar Leyendo';
+        }
+
+        return 'Leído';
     }
 
     useEffect(() => {
@@ -247,7 +274,11 @@ export function MangaView({ manga, organization, logged }) {
                         <span className="text-4xl mb-2 font-extrabold">
                             Capítulos
                             <span className="text-xs ml-2 mb-1 text-gray-600">
-                                ({manga?.chapters.length} Capítulos disponibles)
+                                {
+                                    logged
+                                    ? `${manga?.chapters.length} publicados (${userChapterHistoryList.filter(v => v?.finishedAt).length} leídos)`
+                                    : `${manga?.chapters.length} publicados`
+                                }
                             </span>
                         </span>
                         <div className="flex w-full items-start gap-1">
@@ -255,8 +286,44 @@ export function MangaView({ manga, organization, logged }) {
                                 {chapterGroups[selectedChapterGroup]?.chapters.sort((a, b) => b.number - a.number).map((chapter) => (
                                     <a
                                         key={chapter.number}
-                                        href={`/manga/${manga.slug}/chapters/${chapter.number}`}
-                                        className="p-2 bg-white bg-opacity-10 hover:bg-opacity-15 w-full rounded-xl group"
+                                        href={
+                                            logged
+                                            ? (
+                                                getChapterHistory(chapter.number)
+                                                ? (
+                                                    getChapterHistory(chapter.number)?.finishedAt
+                                                    ? `/manga/${manga.slug}/chapters/${chapter.number}`
+                                                    : `/manga/${manga.slug}/chapters/${chapter.number}?page=${getChapterHistory(chapter.number)?.pageNumber}`
+                                                )
+                                                : `/manga/${manga.slug}/chapters/${chapter.number}`
+                                            )
+                                            : `/manga/${manga.slug}/chapters/${chapter.number}`
+                                        }
+                                        className={
+                                            "p-2 w-full rounded-xl group "
+                                            + (
+                                                logged
+                                                ? (
+                                                    getChapterHistory(chapter.number)
+                                                    ? (
+                                                        getChapterHistory(chapter.number)?.finishedAt
+                                                            ? "bg-black bg-opacity-40 hover:bg-opacity-15"
+                                                            : "bg-orange-600 bg-opacity-10 hover:bg-opacity-15"
+
+                                                    )
+                                                    : (
+                                                        new Date(chapter.releasedAt) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+                                                        ? "bg-green-400 bg-opacity-10 hover:bg-opacity-15"
+                                                        : "bg-white bg-opacity-10 hover:bg-opacity-15"
+                                                    )
+                                                )
+                                                : (
+                                                    new Date(chapter.releasedAt) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+                                                    ? "bg-green-400 bg-opacity-10 hover:bg-opacity-15"
+                                                    : "bg-white bg-opacity-10 hover:bg-opacity-15"
+                                                )
+                                            )
+                                        }
                                     >
                                         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center justify-center">
                                             <div className="w-32 h-20 relative">
@@ -278,8 +345,9 @@ export function MangaView({ manga, organization, logged }) {
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    {/* <span className="text-gray-500 mr-4">Leido</span> */}
-                                                    <span className="text-xs lg:text-base text-gray-100 lg:mr-4">Leer</span>
+                                                    <span className="text-xs lg:text-base text-gray-100 lg:mr-4">
+                                                        {getChapterLabel(chapter.number)}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

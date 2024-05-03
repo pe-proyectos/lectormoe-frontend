@@ -11,7 +11,7 @@ export function FeaturedMangaCard({ manga, ...props }) {
             <div {...props}>
                 <a href={manga?.slug ? `/manga/${manga?.slug}` : '#'}>
                     <div
-                        className="relative w-full h-full bg-gray-300 group overflow-hidden rounded-md shadow-md hover:scale-[101%] transition-transform duration-300"
+                        className="relative w-full h-full bg-gray-900 group overflow-hidden rounded-md shadow-md hover:scale-[101%] transition-transform duration-300"
                     >
                     </div>
                 </a>

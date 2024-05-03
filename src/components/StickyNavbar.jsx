@@ -67,7 +67,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
               alt={organization?.title}
               decoding="async"
               loading="lazy"
-              className="max-h-8"
+              className="max-h-8 scale-[110%] hover:scale-[105%] transition-transform"
             />
           </a>
         )}
