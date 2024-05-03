@@ -20,7 +20,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 <html data-theme={theme} lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="description" content={organization?.description || "Mangas"} />
+		<meta name="description" content={description || organization?.description || "Mangas"} />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href={organization?.faviconUrl || "/favicon.svg"} />
 		<meta name="generator" content={Astro.generator} />
