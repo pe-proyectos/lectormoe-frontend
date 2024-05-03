@@ -7,6 +7,7 @@ import {
     Chip,
     Tooltip,
 } from "@material-tailwind/react";
+import { LazyImage } from "./LazyImage";
 
 export function MangaCard({ manga }) {
     if (!manga) {
@@ -50,7 +51,7 @@ export function MangaCard({ manga }) {
                 color="transparent"
                 className="absolute inset-0 m-0 h-full w-full rounded-none bg-black"
             >
-                <img
+                <LazyImage
                     src={manga.imageUrl}
                     alt={manga.title}
                     decoding="async"

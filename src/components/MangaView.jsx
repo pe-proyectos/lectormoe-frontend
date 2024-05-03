@@ -11,6 +11,7 @@ import {
 } from "@material-tailwind/react";
 import StickyBox from "react-sticky-box";
 import { callAPI } from "../util/callApi";
+import { LazyImage } from "./LazyImage";
 
 export function MangaView({ manga, organization, logged }) {
     const [chapterGroups, setChapterGroups] = useState({});
@@ -104,7 +105,7 @@ export function MangaView({ manga, organization, logged }) {
     return (
         <div>
             <div className='relative w-full h-[24rem] group overflow-hidden bg-black shadow-lg'>
-                <img
+                <LazyImage
                     src={manga?.bannerUrl || manga?.imageUrl}
                     decoding="async"
                     loading="lazy"
@@ -116,14 +117,14 @@ export function MangaView({ manga, organization, logged }) {
                     <div className="w-[18rem] min-w-[18rem] mx-auto">
                         <StickyBox offsetTop={150} offsetBottom={150}>
                             <div className="relative w-[18rem] min-w-[18rem] h-[26rem] group -translate-y-64 md:-translate-y-16 -mb-64 md:-mb-16 overflow-hidden rounded-md">
-                                {/* <img src={manga?.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 filter brightness-50" /> */}
-                                <img
+                                {/* <LazyImage src={manga?.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 filter brightness-50" /> */}
+                                <LazyImage
                                     src={manga?.imageUrl}
                                     decoding="async"
                                     loading="lazy"
                                     className="absolute inset-0 w-full h-full object-cover opacity-80 blur-sm filter brightness-75 transition-transform duration-500 group-hover:scale-[110%]"
                                 />
-                                <img
+                                <LazyImage
                                     src={manga?.imageUrl}
                                     decoding="async"
                                     loading="lazy"
@@ -259,7 +260,7 @@ export function MangaView({ manga, organization, logged }) {
                                     >
                                         <div className="flex flex-wrap gap-x-4 gap-y-2 items-center justify-center">
                                             <div className="w-32 h-20 relative">
-                                                <img
+                                                <LazyImage
                                                     src={chapter?.imageUrl || manga?.imageUrl}
                                                     decoding="async"
                                                     loading="lazy"

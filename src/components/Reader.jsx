@@ -40,6 +40,7 @@ import {
     Select
 } from '@mui/material';
 import { callAPI } from '../util/callApi';
+import { LazyImage } from "./LazyImage";
 
 export function Reader({ organization, manga, chapterNumber, logged }) {
     const readTypes = {
@@ -367,7 +368,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
     return (
         <div id="reader-top">
             <div className='relative w-full min-h-44 group py-4'>
-                <img
+                <LazyImage
                     src={manga?.bannerUrl || manga?.imageUrl}
                     decoding="async"
                     loading="lazy"
@@ -473,14 +474,14 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
             </div>
             <div className='flex flex-wrap w-full min-h-[90vh] justify-center'>
                 {/* PAGINAS */}
-                <div id="manga-pages-top" className='w-full select-none backdrop-blur-sm bg-black bg-opacity-50'>
+                <div id="manga-pages-top" className='w-full min-h-[100vh] select-none backdrop-blur-sm bg-black bg-opacity-50'>
                     {pages.length === 0 && loading && (
-                        <div className='flex w-full justify-center py-4'>
+                        <div className='flex min-h-full w-full justify-center py-4'>
                             <Spinner color="red" size="xl" />
                         </div>
                     )}
                     {pages.length === 0 && !loading && (
-                        <div className='flex w-full justify-center py-4'>
+                        <div className='flex min-h-full w-full justify-center py-4'>
                             <h3 className='text-white'>No se encontraron páginas para este capítulo</h3>
                         </div>
                     )}
@@ -489,7 +490,11 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                             key={page.id}
                             id={`page-${page.id}`}
                             className={
-                                'w-full flex justify-center select-none cursor-pointer'
+                                (
+                                    readType === readTypes.CASCADE
+                                    ? 'w-full flex justify-center select-none cursor-pointer '
+                                    : 'w-full h-full flex justify-center select-none cursor-pointer '
+                                )
                                 + (shouldShowPage(page.id) ? '' : ' hidden')
                             }
                             onClick={(evt) => handlePageClick(evt, page.id, pageIndex)}
@@ -506,11 +511,11 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                     }
                                 />
                             )}
-                            <img
+                            <LazyImage
                                 id={`page-${page.id}-img`}
                                 src={page.imageUrl}
                                 onLoad={() => handlePageLoad(page.id)}
-                                className='max-w-full mx-auto pointer-events-none'
+                                className='max-w-full m-auto pointer-events-none'
                                 alt={`Pagina ${page.number}`}
                                 hidden={!loadedPages.includes(page.id)}
                                 style={

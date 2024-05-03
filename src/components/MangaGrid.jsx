@@ -17,6 +17,7 @@ import { MangaCardsScroller } from './MangaCardsScroller';
 import { FeaturedMangaCard } from './FeaturedMangaCard';
 import { MangaCard } from './MangaCard';
 import { NewsCard } from './NewsCard';
+import { LazyImage } from "./LazyImage";
 
 export function MangaGrid({ organization, logged }) {
     const [loading, setLoading] = useState(true);
@@ -102,7 +103,7 @@ export function MangaGrid({ organization, logged }) {
         <div className='2xl:max-w-[1320px] 2xl:mx-auto transition-all duration-500'>
             {/* Search bar */}
             <div className="relative h-80 w-full mt-8 mb-16 2xl:rounded-lg overflow-hidden">
-                <img
+                <LazyImage
                     src={organization?.bannerUrl || "https://cdn.pixabay.com/photo/2016/11/29/12/54/banner-1868728_960_720.jpg"}
                     alt="Manga"
                     decoding="async"

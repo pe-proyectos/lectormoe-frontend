@@ -15,7 +15,7 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
         const response = await fetch(API_URL + url, {
             ...(fetchOptions || {}),
             headers: {
-                'organization-domain': location.hostname,
+                'organization-domain': import.meta.env.PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN || location.hostname,
                 ...((!fetchOptions?.body) || (fetchOptions?.body instanceof FormData) ? {} : { 'Content-Type': 'application/json' }),
                 'Authorization': token?.value ? `Bearer ${token?.value}` : '',
                 ...(fetchOptions?.headers || {}),

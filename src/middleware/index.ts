@@ -17,7 +17,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         const response = await fetch(API_URL + url, {
             ...(fetchOptions || {}),
             headers: {
-                'organization-domain': context.url.hostname,
+                'organization-domain': Bun.env["PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN"] || context.url.hostname,
                 'Content-Type': 'application/json',
                 'Authorization': context.locals.token ? `Bearer ${context.locals.token}` : '',
                 ...(fetchOptions?.headers || {}),
@@ -56,7 +56,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     try {
         const [authCheck, organizationCheck] = await Promise.all([
             callAPI('/api/auth/check'),
-            callAPI(`/api/organization/check?domain=${context.url.hostname}`),
+            callAPI(`/api/organization/check?domain=${Bun.env["PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN"] || context.url.hostname}`),
         ]);
 
         if (authCheck?.status === true) {

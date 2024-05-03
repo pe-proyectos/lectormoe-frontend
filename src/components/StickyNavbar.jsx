@@ -17,6 +17,7 @@ import {
   Cog6ToothIcon,
   UserIcon,
 } from "@heroicons/react/24/solid";
+import { LazyImage } from "./LazyImage";
 
 export function StickyNavbar({ organization, username, userSlug, member, staticNavbar }) {
   const [openNav, setOpenNav] = React.useState(false);
@@ -61,7 +62,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
       <div className="flex items-center justify-between">
         {organization?.logoUrl && (
           <a href="/">
-            <img
+            <LazyImage
               src={organization?.logoUrl}
               alt={organization?.title}
               decoding="async"
