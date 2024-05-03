@@ -25,7 +25,7 @@ if (!chapterStatus) {
 <Layout
     title={`${chapter.title} - ${manga.title} #${chapter.number}`}
     imageUrl={manga.imageUrl}
-    description={`Lee el capítulo ${chapter.number} de ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || "Click aqui!"}`}
+    description={`Lee el capítulo ${chapter.number} de ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || "Click aqui!"}`}
     staticNavbar={true}
 >
     <Reader
