@@ -41,7 +41,7 @@ export function LazyImage({ src, alt, ...rest }) {
         // Set timeout to switch to high-quality image if low-quality image fails to load
         timeout = setTimeout(() => {
             setImageSrc(highQualitySrc);
-        }, 2000);
+        }, 30000);
 
         return () => {
             didCancel = true;
