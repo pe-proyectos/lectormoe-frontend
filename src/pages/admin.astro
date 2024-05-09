@@ -1,12 +1,14 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import { AdminSidebar } from '../components/admin/AdminSidebar.jsx';
+import AdminLayout from '../layouts/AdminLayout.astro';
+import { AdminDashboard } from '../components/admin/AdminDashboard.jsx';
 
-if (!Astro.locals.logged) {
+const { logged } = Astro.locals;
+
+if (!logged) {
   Astro.redirect("/login");
 }
 ---
 
-<Layout title="Administrador">
-    <AdminSidebar page="dashboard" client:only />
-</Layout>
+<AdminLayout title="Administrador">
+    <AdminDashboard client:only />
+</AdminLayout>
