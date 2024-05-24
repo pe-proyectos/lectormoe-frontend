@@ -1,70 +1,76 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
-export function LazyImage({ src, alt, ...rest }) {
-    const lowQualitySrc = src + "/preview";
-    const highQualitySrc = src;
-    const [imageSrc, setImageSrc] = useState(lowQualitySrc);
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const imageRef = useRef();
+window.LazyImageQueue = window.LazyImageQueue || [];
+window.isLoading = window.isLoading || false;
 
-    useEffect(() => {
-        let observer;
-        let didCancel = false;
-        let timeout;
-
-        if (imageRef.current && highQualitySrc) {
-            if (IntersectionObserver) {
-                observer = new IntersectionObserver(
-                    (entries) => {
-                        entries.forEach((entry) => {
-                            if (!didCancel && (entry.intersectionRatio > 0 || entry.isIntersecting)) {
-                                setImageSrc(highQualitySrc);
-                                clearTimeout(timeout);
-                                if (observer && observer.unobserve && imageRef && imageRef.current) {
-                                    observer.unobserve(imageRef.current);
-                                }
-                            }
-                        });
-                    },
-                    {
-                        threshold: 0.01,
-                        rootMargin: '75%'
-                    }
-                );
-                observer.observe(imageRef.current);
-            } else {
-                // Fallback for browsers without IntersectionObserver support
-                setImageSrc(highQualitySrc);
-            }
-        }
-
-        // Set timeout to switch to high-quality image if low-quality image fails to load
-        timeout = setTimeout(() => {
-            setImageSrc(highQualitySrc);
-        }, 30000);
-
-        return () => {
-            didCancel = true;
-            clearTimeout(timeout);
-            if (observer && observer.unobserve && imageRef && imageRef.current) {
-                observer.unobserve(imageRef.current);
-            }
-        };
-    }, [highQualitySrc]);
-
-    const handleImageLoad = () => {
-        setImageLoaded(true);
-    };
-
-    return (
-        <img
-            src={imageSrc}
-            ref={imageRef}
-            alt={alt}
-            onLoad={handleImageLoad}
-            {...rest}
-        />
-    );
+const processQueue = () => {
+  if (!window.isLoading && window.LazyImageQueue.length > 0) {
+    window.isLoading = true;
+    const image = window.LazyImageQueue.shift();
+    if (image && image.load) {
+      image.load().then(() => {
+        window.isLoading = false;
+        processQueue();
+      }).catch((error) => {
+        console.error("Error loading image:", error);
+        window.isLoading = false;
+        processQueue();
+      });
+    } else {
+      console.error("Error: Image load function is undefined.");
+      window.isLoading = false;
+      processQueue();
+    }
+  }
 };
 
-export default LazyImage;
+const addToQueue = (image) => {
+  if (image && typeof image.load === 'function') {
+    window.LazyImageQueue.push(image);
+    processQueue();
+  } else {
+    console.error("Invalid image object or load function missing.");
+  }
+};
+
+export const LazyImage = ({ src, alt, ...rest }) => {
+  const [imageSrc, setImageSrc] = useState("");
+
+  const loadImage = useCallback(async () => {
+    try {
+      const cache = await caches.open('image-cache');
+      const cachedResponse = await cache.match(src, {
+        ignoreVary: true,
+        ignoreMethod: true,
+        ignoreSearch: true,
+      });
+      if (cachedResponse) {
+        const blob = await cachedResponse.blob();
+        const imageObjectURL = URL.createObjectURL(blob);
+        setImageSrc(imageObjectURL);
+      } else {
+        const response = await fetch(src);
+        cache.put(src, response.clone());
+        const blob = await response.blob();
+        const imageObjectURL = URL.createObjectURL(blob);
+        setImageSrc(imageObjectURL);
+      }
+    } catch (error) {
+      console.error("Error fetching image:", error);
+      setImageSrc(src);
+    }
+  }, [src, alt]);
+
+  useEffect(() => {
+    const image = { load: loadImage };
+    addToQueue(image);
+  }, [loadImage]);
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      {...rest}
+    />
+  );
+};
