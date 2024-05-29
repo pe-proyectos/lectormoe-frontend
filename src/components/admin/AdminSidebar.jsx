@@ -22,6 +22,7 @@ import {
     BookOpenIcon,
     ChartBarIcon,
     UsersIcon,
+    TicketIcon,
     InboxIcon,
     AcademicCapIcon,
     PowerIcon,
@@ -170,6 +171,14 @@ export function AdminSidebar({ page }) {
                             <UsersIcon className="h-5 w-5" />
                         </ListItemPrefix>
                         Usuarios
+                    </ListItem>
+                </a>
+                <a href="/admin/subscriptions">
+                    <ListItem selected={page === "subscriptions"}>
+                        <ListItemPrefix>
+                            <TicketIcon className="h-5 w-5" />
+                        </ListItemPrefix>
+                        Suscripciones
                     </ListItem>
                 </a>
                 <a href="/admin/storage">

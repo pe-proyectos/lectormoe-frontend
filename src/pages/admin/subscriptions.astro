@@ -1,0 +1,12 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
+import { AdminSubscriptionsGrid } from "../../components/admin/AdminSubscriptionsGrid.jsx";
+---
+
+<AdminLayout title="Suscripciones" page="subscriptions">
+  <AdminMangasBreadcrumb client:only />
+  <div class="py-2"></div>
+  <h1>Suscripciones</h1>
+  <AdminSubscriptionsGrid client:only />
+</AdminLayout>

@@ -74,6 +74,14 @@ declare namespace App {
             canCreatePage: boolean,
             canEditPage: boolean,
             canDeletePage: boolean,
+            // Subscription
+            canCreateSubscription: boolean,
+            canEditSubscription: boolean,
+            canDeleteSubscription: boolean,
+            // Subscription Model
+            canCreateSubscriptionModel: boolean,
+            canEditSubscriptionModel: boolean,
+            canDeleteSubscriptionModel: boolean,
         },
         logged: boolean,
 

@@ -85,6 +85,7 @@ export function AdminUsersGrid() {
         callAPI(`/api/member?${query}`)
             .then(({ data, total, maxPage }) => {
                 setTotal(total);
+                console.log(data);
                 setMemberList(data);
                 setMaxPage(maxPage || 1);
             })
@@ -179,12 +180,15 @@ export function AdminUsersGrid() {
                                 Email: {member.user.email}
                             </Typography>
                             <Typography>
+                                Rol: {member.user.email}
+                            </Typography>
+                            <Typography>
                                 Fecha Registro: {new Date(member.user.createdAt).toLocaleString()}
                             </Typography>
                         </CardBody>
-                        {/* <CardFooter className="pt-0">
-                            <Button>Ver Detalles</Button>
-                        </CardFooter> */}
+                        <CardFooter className="pt-0">
+                            <Button>Editar</Button>
+                        </CardFooter>
                     </Card>
                 ))}
             </div>
