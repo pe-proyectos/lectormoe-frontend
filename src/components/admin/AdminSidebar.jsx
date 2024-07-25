@@ -165,12 +165,12 @@ export function AdminSidebar({ page }) {
                         Noticias
                     </ListItem>
                 </a>
-                <a href="/admin/users">
-                    <ListItem selected={page === "users"}>
+                <a href="/admin/members">
+                    <ListItem selected={page === "members"}>
                         <ListItemPrefix>
                             <UsersIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Usuarios
+                        Miembros
                     </ListItem>
                 </a>
                 <a href="/admin/subscriptions">

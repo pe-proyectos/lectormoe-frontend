@@ -1,8 +1,8 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import { AdminUsersGrid } from "../../components/admin/AdminUsersGrid.jsx";
+import { AdminMembersGrid } from "../../components/admin/AdminMembersGrid";
 ---
 
 <AdminLayout title="Usuarios" page="users">
-  <AdminUsersGrid client:only />
+  <AdminMembersGrid client:only />
 </AdminLayout>

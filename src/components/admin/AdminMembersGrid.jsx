@@ -14,15 +14,17 @@ import {
 } from "@material-tailwind/react";
 import { AdminMangaCustomCard } from './AdminMangaCustomCard';
 import { AdminMangaCustomDialog } from './AdminMangaCustomDialog';
+import { AdminMemberDialog } from './AdminMemberDialog';
 import { PageNavigation } from '../PageNavigation';
 import { callAPI } from '../../util/callApi';
 
-export function AdminUsersGrid() {
+export function AdminMembersGrid() {
     const [loading, setLoading] = useState(true);
     const [memberList, setMemberList] = useState([]);
     const [total, setTotal] = useState(0);
     const [selectedManga, setSelectedManga] = useState(null);
-    const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] = useState(false);
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
     const [email, setEmail] = useState(() => {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('email') || '';
@@ -62,6 +64,15 @@ export function AdminUsersGrid() {
         setPage(1);
     }, [limit]);
 
+    useEffect(() => {
+        if (!isMemberDialogOpen) refreshMemberList();
+    }, [isMemberDialogOpen]);
+    
+    const handleCardClick = (member) => {
+        setSelectedMember(member);
+        setIsMemberDialogOpen(true);
+    }
+
     const refreshMemberList = () => {
         setLoading(true);
         const urlParams = new URLSearchParams(window.location.search);
@@ -96,7 +107,7 @@ export function AdminUsersGrid() {
     return (
         <div className="w-full my-4">
             <div className='w-full flex flex-col gap-2 sm:gap-4 select-none my-4'>
-                <p className='font-semibold text-xl'>Lista de usuarios ({total || '-'})</p>
+                <p className='font-semibold text-xl'>Lista de miembros ({total || '-'})</p>
                 <div className="w-80">
                     <Input
                         label="Buscar Email"
@@ -122,6 +133,8 @@ export function AdminUsersGrid() {
                         <Option value="createdAt_asc" selected={orderBy === 'createdAt_asc'}>Fecha de Registro (Mas antiguo primero)</Option>
                         <Option value="username_asc" selected={orderBy === 'username_asc'}>Nombre de Usuario (A-Z)</Option>
                         <Option value="username_desc" selected={orderBy === 'username_desc'}>Nombre de Usuario (Z-A)</Option>
+                        <Option value="coins_desc" selected={orderBy === 'coins_desc'}>Monedas (De mayor a menor)</Option>
+                        <Option value="coins_asc" selected={orderBy === 'coins_asc'}>Monedas (De menor a mayor)</Option>
                     </Select>
                 </div>
                 <div className="w-80">
@@ -155,6 +168,12 @@ export function AdminUsersGrid() {
                     />
                 </div>
             </div>
+            <AdminMemberDialog
+                open={isMemberDialogOpen}
+                setOpen={setIsMemberDialogOpen}
+                member={selectedMember}
+                setMember={setSelectedMember}
+            />
             <div className="max-w-lg">
                 {loading && <Spinner className='m-4 w-full' />}
                 {!loading && memberList.length === 0 &&
@@ -177,17 +196,21 @@ export function AdminUsersGrid() {
                                 Rol: {member.role}
                             </Typography>
                             <Typography>
-                                Email: {member.user.email}
+                                Correo: {member.user.email}
                             </Typography>
                             <Typography>
-                                Rol: {member.user.email}
+                                Monedas: {member.coins}
                             </Typography>
                             <Typography>
                                 Fecha Registro: {new Date(member.user.createdAt).toLocaleString()}
                             </Typography>
                         </CardBody>
                         <CardFooter className="pt-0">
-                            <Button>Editar</Button>
+                            <Button
+                                onClick={() => handleCardClick(member)}
+                            >
+                                Editar
+                            </Button>
                         </CardFooter>
                     </Card>
                 ))}

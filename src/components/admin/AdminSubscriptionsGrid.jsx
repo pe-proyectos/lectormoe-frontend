@@ -13,11 +13,11 @@ export function AdminSubscriptionsGrid() {
     const [loading, setLoading] = useState(true);
     const [subscriptions, setSubscriptions] = useState([]);
     const [selectedSubscription, setSelectedSubscription] = useState(null);
-    const [isCreateSubscriptionDialogOpen, setIsCreateSubscriptionDialogOpen] = useState(false);
+    const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
 
     useEffect(() => {
-        if (!isCreateSubscriptionDialogOpen) refreshSubscriptions();
-    }, [isCreateSubscriptionDialogOpen]);
+        if (!isSubscriptionDialogOpen) refreshSubscriptions();
+    }, [isSubscriptionDialogOpen]);
 
     const refreshSubscriptions = () => {
         setLoading(true);
@@ -32,7 +32,7 @@ export function AdminSubscriptionsGrid() {
 
     const handleCardClick = (subscription) => {
         setSelectedSubscription(subscription);
-        setIsCreateSubscriptionDialogOpen(true);
+        setIsSubscriptionDialogOpen(true);
     }
 
     return (
@@ -40,7 +40,7 @@ export function AdminSubscriptionsGrid() {
             <Button
                 variant="outlined"
                 className="flex items-center gap-3 h-full sm:m-4"
-                onClick={() => setIsCreateSubscriptionDialogOpen(true)}
+                onClick={() => setIsSubscriptionDialogOpen(true)}
             >
                 Agregar suscripción
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -48,8 +48,8 @@ export function AdminSubscriptionsGrid() {
                 </svg>
             </Button>
             <AdminSubscriptionDialog
-                open={isCreateSubscriptionDialogOpen}
-                setOpen={setIsCreateSubscriptionDialogOpen}
+                open={isSubscriptionDialogOpen}
+                setOpen={setIsSubscriptionDialogOpen}
                 subscription={selectedSubscription}
                 setSubscription={setSelectedSubscription}
             />
