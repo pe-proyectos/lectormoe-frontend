@@ -1,12 +1,12 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
-import { AdminSubscriptionsGrid } from "../../components/admin/AdminSubscriptionsGrid.jsx";
+import { AdminCoinPackGrid } from "../../components/admin/AdminCoinPackGrid.jsx";
 ---
 
-<AdminLayout title="Suscripciones" page="subscriptions">
+<AdminLayout title="Paquetes de monedas" page="coinpacks">
   <AdminMangasBreadcrumb client:only />
   <div class="py-2"></div>
-  <h1>Suscripciones</h1>
-  <AdminSubscriptionsGrid client:only />
+  <h1>Paquetes de monedas</h1>
+  <AdminCoinPackGrid client:only />
 </AdminLayout>

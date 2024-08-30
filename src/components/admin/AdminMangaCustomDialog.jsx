@@ -15,6 +15,8 @@ import {
     Typography,
     Input,
     Checkbox,
+    Select,
+    Option,
     Accordion,
     AccordionHeader,
     AccordionBody,
@@ -36,6 +38,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
     const [mangas, setMangas] = useState([]);
     // form
     const [mangaProfile, setMangaProfile] = useState(null);
+    const [status, setStatus] = useState('ongoing');
     const [title, setTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
@@ -47,6 +50,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
     useEffect(() => {
         if (!mangaCustom) return;
         setMangaProfile(mangas.find(manga => manga.id === mangaCustom.mangaId));
+        setStatus(mangaCustom?.status || 'ongoing');
         setTitle(mangaCustom?.title || '');
         setShortDescription(mangaCustom?.shortDescription || '');
         setDescription(mangaCustom?.description || '');
@@ -79,6 +83,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
         callAPI(`/api/manga/${mangaProfile.slug}`)
             .then(result => {
                 if(mangaCustom) return;
+                setStatus(result.status);
                 setTitle(result.title);
                 setShortDescription(result.shortDescription);
                 setDescription(result.description);
@@ -97,6 +102,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
         const formData = new FormData();
         if (!mangaCustom) formData.append('mangaId', mangaProfile.id);
         if (mangaCustom) formData.append('mangaCustomId', mangaCustom.id);
+        if (status) formData.append('status', status);
         if (title) formData.append('title', title);
         if (shortDescription) formData.append('shortDescription', shortDescription);
         if (description) formData.append('description', description);
@@ -113,6 +119,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                 toast.success('Manga creado');
                 setMangaProfile(null);
                 setMangaCustom(null);
+                setStatus('ongoing');
                 setTitle('');
                 setShortDescription('');
                 setDescription('');
@@ -227,6 +234,20 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={!mangaProfile}
                 />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    Estado de la obra
+                </Typography>
+                <div>
+                    <Select
+                        label="Estado"
+                        value={status}
+                        onChange={(val) => setStatus(val)}
+                    >
+                        <Option value="ongoing" selected={status === 'ongoing'}>En emisión</Option>
+                        <Option value="hiatus" selected={status === 'hiatus'}>Hiatus</Option>
+                        <Option value="finished" selected={status === 'finished'}>Finalizado</Option>
+                    </Select>
+                </div>
                 <Typography className="-mb-2" variant="h6" color="gray">
                     Fecha de publicación (Opcional)
                 </Typography>

@@ -15,6 +15,8 @@ import {
     Typography,
     Input,
     Checkbox,
+    Select,
+    Option,
     Accordion,
     AccordionHeader,
     AccordionBody,
@@ -36,6 +38,10 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
     const [name, setName] = useState('');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [language, setLanguage] = useState('');
+    const [enableMangaSection, setEnableMangaSection] = useState(false);
+    const [enableManhuaSection, setEnableManhuaSection] = useState(false);
+    const [enableManhwaSection, setEnableManhwaSection] = useState(false);
     const [enableGoogleAds, setEnableGoogleAds] = useState(false);
     const [enableDisqusIntegration, setEnableDisqusIntegration] = useState(false);
     const [disqusEmbedUrl, setDisqusEmbedUrl] = useState('');
@@ -74,6 +80,10 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                 setName(organization.name || '');
                 setTitle(organization.title || '');
                 setDescription(organization.description || '');
+                setLanguage(organization.language || 'es');
+                setEnableMangaSection(organization.enableMangaSection || false);
+                setEnableManhuaSection(organization.enableManhuaSection || false);
+                setEnableManhwaSection(organization.enableManhwaSection || false);
                 // Integrations
                 setEnableGoogleAds(organization.enableGoogleAds || false);
                 setEnableDisqusIntegration(organization.enableDisqusIntegration || false);
@@ -105,6 +115,10 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
         formData.append('name', name);
         formData.append('title', title);
         formData.append('description', description);
+        formData.append('language', language);
+        formData.append('enableMangaSection', enableMangaSection);
+        formData.append('enableManhuaSection', enableManhuaSection);
+        formData.append('enableManhwaSection', enableManhwaSection);
         formData.append('enableGoogleAds', enableGoogleAds);
         formData.append('enableDisqusIntegration', enableDisqusIntegration);
         formData.append('disqusEmbedUrl', disqusEmbedUrl);
@@ -172,7 +186,44 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
-
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Idioma
+                            </Typography>
+                            <div className="w-80">
+                                <Select
+                                    label="Idioma"
+                                    value={language}
+                                    onChange={(val) => setLanguage(val)}
+                                >
+                                    <Option value="es" selected={language === 'es'}>Español</Option>
+                                    <Option value="en" selected={language === 'en'}>Ingles</Option>
+                                    <Option value="pt" selected={language === 'pt'}>Portugues</Option>
+                                </Select>
+                            </div>
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Sección de Mangas
+                            </Typography>
+                            <Switch
+                                label="Activar sección de mangas"
+                                checked={enableMangaSection}
+                                onChange={(e) => setEnableMangaSection(e.target.checked)}
+                            />
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Sección de Manhuas
+                            </Typography>
+                            <Switch
+                                label="Activar sección de manhuas"
+                                checked={enableManhuaSection}
+                                onChange={(e) => setEnableManhuaSection(e.target.checked)}
+                            />
+                            <Typography className="-mb-2" variant="h6" color="gray">
+                                Sección de Manhwas
+                            </Typography>
+                            <Switch
+                                label="Activar sección de manhwas"
+                                checked={enableManhwaSection}
+                                onChange={(e) => setEnableManhwaSection(e.target.checked)}
+                            />
                         </div>
                     </AccordionBody>
                 </Accordion>

@@ -49,12 +49,9 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
         canCreatePage: false,
         canEditPage: false,
         canDeletePage: false,
-        canCreateSubscription: false,
-        canEditSubscription: false,
-        canDeleteSubscription: false,
-        canCreateSubscriptionModel: false,
-        canEditSubscriptionModel: false,
-        canDeleteSubscriptionModel: false,
+        canCreateCoinpack: false,
+        canEditCoinpack: false,
+        canDeleteCoinpack: false,
     });
     const [coinpacks, setCoinpacks] = useState([]);
 
@@ -93,12 +90,9 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
             canCreatePage: member.canCreatePage,
             canEditPage: member.canEditPage,
             canDeletePage: member.canDeletePage,
-            canCreateSubscription: member.canCreateSubscription,
-            canEditSubscription: member.canEditSubscription,
-            canDeleteSubscription: member.canDeleteSubscription,
-            canCreateSubscriptionModel: member.canCreateSubscriptionModel,
-            canEditSubscriptionModel: member.canEditSubscriptionModel,
-            canDeleteSubscriptionModel: member.canDeleteSubscriptionModel,
+            canCreateCoinpack: member.canCreateCoinpack,
+            canEditCoinpack: member.canEditCoinpack,
+            canDeleteCoinpack: member.canDeleteCoinpack,
         });
     }, [member]);
 
@@ -153,7 +147,7 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
                 <ButtonGroup>
                     <Button onClick={() => setCurrentTab('member')}>General</Button>
                     <Button onClick={() => setCurrentTab('permissions')}>Permisos</Button>
-                    <Button onClick={() => setCurrentTab('subscriptions')}>Suscripciones</Button>
+                    <Button onClick={() => setCurrentTab('coinpacks')}>Paquetes de monedas</Button>
                 </ButtonGroup>
                 </div>
 
@@ -271,45 +265,27 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
                         onChange={(e) => setPermissions({ ...permissions, canDeletePage: e.target.checked })}
                     />
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Suscripciones
+                        Paquetes de monedas
                     </Typography>
                     <Checkbox
-                        label="Puede crear una suscripción de usuario"
-                        checked={permissions.canCreateSubscription}
-                        onChange={(e) => setPermissions({ ...permissions, canCreateSubscription: e.target.checked })}
+                        label="Puede crear un paquete de monedas"
+                        checked={permissions.canCreateCoinpack}
+                        onChange={(e) => setPermissions({ ...permissions, canCreateCoinpack: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar una suscripción de usuario"
-                        checked={permissions.canEditSubscription}
-                        onChange={(e) => setPermissions({ ...permissions, canEditSubscription: e.target.checked })}
+                        label="Puede editar un paquete de monedas"
+                        checked={permissions.canEditCoinpack}
+                        onChange={(e) => setPermissions({ ...permissions, canEditCoinpack: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar una suscripción de usuario"
-                        checked={permissions.canDeleteSubscription}
-                        onChange={(e) => setPermissions({ ...permissions, canDeleteSubscription: e.target.checked })}
-                    />
-                    <Typography className="-mb-2" variant="h6" color="gray">
-                        Modelos de suscripción
-                    </Typography>
-                    <Checkbox
-                        label="Puede crear un modelo de suscripción"
-                        checked={permissions.canCreateSubscriptionModel}
-                        onChange={(e) => setPermissions({ ...permissions, canCreateSubscriptionModel: e.target.checked })}
-                    />
-                    <Checkbox
-                        label="Puede editar un modelo de suscripción"
-                        checked={permissions.canEditSubscriptionModel}
-                        onChange={(e) => setPermissions({ ...permissions, canEditSubscriptionModel: e.target.checked })}
-                    />
-                    <Checkbox
-                        label="Puede eliminar un modelo de suscripción"
-                        checked={permissions.canDeleteSubscriptionModel}
-                        onChange={(e) => setPermissions({ ...permissions, canDeleteSubscriptionModel: e.target.checked })}
+                        label="Puede eliminar un paquete de monedas"
+                        checked={permissions.canDeleteCoinpack}
+                        onChange={(e) => setPermissions({ ...permissions, canDeleteCoinpack: e.target.checked })}
                     />
                 </div>
-                <div className={`flex flex-col gap-4 ${currentTab === 'subscriptions' ? 'block' : 'hidden'}`}>
+                <div className={`flex flex-col gap-4 ${currentTab === 'coinpacks' ? 'block' : 'hidden'}`}>
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Suscripciones
+                        Paquetes de monedas
                     </Typography>
                 </div>
             </DialogBody>

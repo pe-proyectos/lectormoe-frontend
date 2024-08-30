@@ -20,6 +20,10 @@ type Organization = {
     bannerUrl?: string,
     faviconUrl?: string,
     description?: string,
+    language?: string,
+    enableMangaSection?: boolean,
+    enableManhuaSection?: boolean,
+    enableManhwaSection?: boolean,
     enableGoogleAds?: boolean,
     googleAdsMetaContent?: string,
     googleAdsAdsTxtContent?: string,
@@ -74,14 +78,10 @@ declare namespace App {
             canCreatePage: boolean,
             canEditPage: boolean,
             canDeletePage: boolean,
-            // Subscription
-            canCreateSubscription: boolean,
-            canEditSubscription: boolean,
-            canDeleteSubscription: boolean,
-            // Subscription Model
-            canCreateSubscriptionModel: boolean,
-            canEditSubscriptionModel: boolean,
-            canDeleteSubscriptionModel: boolean,
+            // Coinpack
+            canCreateCoinpack: boolean,
+            canEditCoinpack: boolean,
+            canDeleteCoinpack: boolean,
         },
         logged: boolean,
 

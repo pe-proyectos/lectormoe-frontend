@@ -30,12 +30,14 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
     const [loading, setLoading] = useState(true);
     const [isCreateAuthorDialogOpen, setIsCreateAuthorDialogOpen] = useState(false);
     // lists
+    const [bookTypes, setBookTypes] = useState([]);
     const [demographies, setDemographies] = useState([]);
     const [authors, setAuthors] = useState([]);
     // form
     const [demography, setDemography] = useState(null);
     const [selectedAuthors, setSelectedAuthors] = useState([]);
     const [title, setTitle] = useState('');
+    const [bookType, setBookType] = useState(null);
     const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
 
@@ -46,6 +48,12 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
             .then(result => setDemographies(result))
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+        callAPI(`/api/book_type`)
+            .then(result => setBookTypes(result))
+            .catch(error => toast.error(error?.message));
     }, []);
 
     useEffect(() => {
@@ -68,12 +76,16 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
         if (!demography) {
             return toast.error('La demografia es obligatoria');
         }
+        if (!bookType) {
+            return toast.error('El tipo de obra es obligatorio');
+        }
         setLoading(true);
         callAPI('/api/manga', {
             method: 'POST',
             body: JSON.stringify({
                 title,
                 authorIds: selectedAuthors.map(author => author.id),
+                bookTypeId: bookType.id,
                 demographyId: demography.id,
                 shortDescription,
                 description,
@@ -83,6 +95,7 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
                 toast.success('Perfil de manga creado');
                 setTitle('');
                 setDemography(null);
+                setBookType(null);
                 setSelectedAuthors([]);
                 setShortDescription('');
                 setDescription('');
@@ -152,6 +165,17 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
                     renderInput={(params) => <TextField {...params} label="Demografia" />}
                     value={demography}
                     onChange={(event, newValue) => setDemography(newValue)}
+                />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    Tipo de obra
+                </Typography>
+                <Autocomplete
+                    disablePortal
+                    options={bookTypes}
+                    getOptionLabel={(option) => option.name}
+                    renderInput={(params) => <TextField {...params} label="Tipo de obra" />}
+                    value={bookType}
+                    onChange={(event, newValue) => setBookType(newValue)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
                     Titulo

@@ -173,12 +173,12 @@ export function AdminSidebar({ page }) {
                         Miembros
                     </ListItem>
                 </a>
-                <a href="/admin/subscriptions">
-                    <ListItem selected={page === "subscriptions"}>
+                <a href="/admin/coinpacks">
+                    <ListItem selected={page === "coinpacks"}>
                         <ListItemPrefix>
                             <TicketIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Suscripciones
+                        Paquetes de monedas
                     </ListItem>
                 </a>
                 <a href="/admin/storage">

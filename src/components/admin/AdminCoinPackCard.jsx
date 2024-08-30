@@ -7,12 +7,12 @@ import {
     Typography,
 } from "@material-tailwind/react";
 
-export function AdminSubscriptionCard({ subscription, onClick }) {
+export function AdminCoinPackCard({ coinpack, onClick }) {
     return (
         <Card className="w-64 mt-6">
             <CardHeader color="blue" className="p-4">
                 <Typography variant="h5" color="white">
-                    {subscription.title || "Sin título"}
+                    {coinpack.name || "Sin nombre"}
                 </Typography>
             </CardHeader>
             <CardBody>
@@ -20,39 +20,33 @@ export function AdminSubscriptionCard({ subscription, onClick }) {
                     Descripción
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    {subscription.description || "Sin descripción"}
+                    {coinpack.description || "Sin descripción"}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Beneficios
+                    Precio sin descuento
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    {subscription.benefits || "Sin beneficios"}
+                    ${coinpack.priceWithoutDiscount.toFixed(2)}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Precio mensual
+                    Precio con descuento
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    ${subscription.monthlyPrice.toFixed(2)}
+                    ${coinpack.price.toFixed(2)}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Precio anual
+                    Monedas
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    ${subscription.yearlyPrice.toFixed(2)}
-                </Typography>
-                <Typography color="black" className="font-bold">
-                    Horas de anticipación
-                </Typography>
-                <Typography color="blue-gray" className="mb-2">
-                    {subscription.readAnticipationHours} horas
+                    {coinpack.coins}
                 </Typography>
                 <Typography color="black" className="font-bold">
                     Estado
                 </Typography>
-                <Typography color={subscription.active ? "green" : "red"}>
-                    {subscription.active ? "Activo" : "Inactivo"}
+                <Typography color={coinpack.active ? "green" : "red"}>
+                    {coinpack.active ? "Activo" : "Inactivo"}
                 </Typography>
-                <Button color="blue" className="mt-4" onClick={() => onClick(subscription)}>
+                <Button color="blue" className="mt-4" onClick={() => onClick(coinpack)}>
                     Editar
                 </Button>
             </CardBody>
