@@ -24,12 +24,20 @@ import { callAPI } from '../util/callApi';
 import { MangaCard } from './MangaCard';
 import { PageNavigation } from './PageNavigation';
 
-export function MangaSearch() {
+export function BookSearch() {
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
     const [search, setSearch] = useState(() => {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('q') || '';
+    });
+    const [bookTypeCode, setBookTypeCode] = useState(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('type');
+        if (['manga', 'manhua', 'manhwa'].includes(code)) {
+            return code;
+        }
+        return 'manga';
     });
     const [orderBy, setOrderBy] = useState(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -60,6 +68,7 @@ export function MangaSearch() {
                 screenHeight: window.screen.height,
                 payload: {
                     search,
+                    bookTypeCode,
                     orderBy,
                     limit,
                 },
@@ -89,7 +98,7 @@ export function MangaSearch() {
 
     useEffect(() => {
         refreshMangaProfile();
-    }, [page, orderBy, limit]);
+    }, [page, orderBy, bookTypeCode, limit]);
 
     useEffect(() => {
         setPage(1);
@@ -98,6 +107,10 @@ export function MangaSearch() {
     useEffect(() => {
         setPage(1);
     }, [limit]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [bookTypeCode]);
 
     const refreshMangaProfile = () => {
         setLoading(true);
@@ -114,6 +127,10 @@ export function MangaSearch() {
             query.set('title', search);
             urlParams.set('q', search);
         }
+        if (bookTypeCode) {
+            query.set('type', bookTypeCode);
+            urlParams.set('type', bookTypeCode);
+        }
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
         callAPI(`/api/manga-custom?${query}`)
             .then(({ data, maxPage }) => {
@@ -126,7 +143,7 @@ export function MangaSearch() {
             method: 'POST',
             includeIp: true,
             body: JSON.stringify({
-                event: 'action_search_manga',
+                event: 'action_search_' + bookTypeCode,
                 path: window.location.pathname,
                 userAgent: window.navigator.userAgent,
                 screenWidth: window.screen.width,
@@ -136,21 +153,31 @@ export function MangaSearch() {
                     title: search,
                     order: orderBy,
                     limit,
+                    bookTypeCode,
                 },
             }),
         }).catch(err => console.error(err));
     }
 
+    const titles = {
+        'manga': 'Manga',
+        'manhua': 'Manhua',
+        'manhwa': 'Manhwa',
+    }
+
+    const bookType = titles[bookTypeCode];
+    const bookTypes = titles[bookTypeCode] + 's';
+
     return (
         <div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
                 <p>
-                    Explora todos los mangas disponibles en nuestra plataforma. Puedes buscar por nombre o navegar por las categorías disponibles.
+                    Explora todos los {bookTypes.toLowerCase()} disponibles en nuestra plataforma. Puedes buscar por nombre o navegar por las categorías disponibles.
                 </p>
             </div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-6 pb-0'>
                 <p className='text-6xl font-bold'>
-                    Buscar Mangas
+                    Buscador de {bookTypes}
                 </p>
             </div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
@@ -158,7 +185,7 @@ export function MangaSearch() {
                     <Input
                         type="search"
                         size='lg'
-                        placeholder="Buscar mangas por nombre..."
+                        placeholder={`Buscar ${bookTypes.toLowerCase()} por nombre...`}
                         containerProps={{
                             className: "w-full md:min-w-[26rem]",
                         }}
@@ -280,7 +307,7 @@ export function MangaSearch() {
                             color="white"
                             className="font-light text-xl"
                         >
-                            No hay mangas para mostrar
+                            No hay {bookTypes.toLowerCase()} para mostrar
                         </Typography>
                     </div>
                 )}

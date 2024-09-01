@@ -278,7 +278,7 @@ export function MangaGrid({ organization, logged }) {
                             (Más visitados en las últimas 24 horas)
                         </Typography>
                         <a
-                            href='/mangas?order=popular'
+                            href='/search?order=popular'
                             className="hidden md:block font-normal text-gray-500 text-md hover:underline ml-auto mr-4"
                         >
                             Ver todos
@@ -303,7 +303,7 @@ export function MangaGrid({ organization, logged }) {
                         ))}
                     </MangaCardsScroller>
                     <div className='flex md:hidden w-full items-center justify-center'>
-                        <a href="/mangas?sort=popular">
+                        <a href="/search?sort=popular">
                             <Button color="gray" className="m-4">
                                 Ver todos los mangas populares
                             </Button>
@@ -317,7 +317,7 @@ export function MangaGrid({ organization, logged }) {
                             Actualizados recientemente
                         </Typography>
                         <a
-                            href='/mangas?order=latest'
+                            href='/search?order=latest'
                             className="hidden md:block font-normal text-gray-500 text-md hover:underline ml-auto mr-4"
                         >
                             Ver todos
@@ -343,7 +343,7 @@ export function MangaGrid({ organization, logged }) {
                         ))}
                     </MangaCardsScroller>
                     <div className='flex w-full items-center justify-center'>
-                        <a href="/mangas?sort=latest">
+                        <a href="/search?sort=latest">
                             <Button color="gray" className="m-4">
                                 Ver todos los mangas actualizados recientemente
                             </Button>

@@ -207,7 +207,7 @@ export function MangaView({ manga, organization, logged }) {
                                         </span>
                                     )}
                                     {manga?.demography && (
-                                        <a key={manga?.demography.slug} href={`/mangas?genres=${manga?.demography.slug}`} className="text-sm font-semibold px-2 text-center">
+                                        <a key={manga?.demography.slug} href={`/search?genres=${manga?.demography.slug}`} className="text-sm font-semibold px-2 text-center">
                                             {manga?.demography.name}
                                         </a>
                                     )}
@@ -224,7 +224,7 @@ export function MangaView({ manga, organization, logged }) {
                                         </span>
                                     )}
                                     {manga?.genres?.map(genre => (
-                                        <a key={genre.slug} href={`/mangas?genres=${genre.slug}`} className="text-sm font-semibold px-2 text-center">{genre.name}</a>
+                                        <a key={genre.slug} href={`/search?genres=${genre.slug}`} className="text-sm font-semibold px-2 text-center">{genre.name}</a>
                                     ))}
                                 </div>
                             </div>
