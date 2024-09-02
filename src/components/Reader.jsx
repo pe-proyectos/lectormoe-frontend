@@ -49,7 +49,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
     }
 
     const [loading, setLoading] = useState(true);
-    const [readType, setReadType] = useState(() => localStorage.getItem('readType') || readTypes.PAGINATED);
+    const [readType, setReadType] = useState(() => localStorage.getItem('readType') || manga?.bookType?.default_read_type || readTypes.PAGINATED);
     const [limitPageHeight, setLimitPageHeight] = useState(() => localStorage.getItem('limitPageHeight') === "true");
     const [showFloatButtons, setShowFloatButtons] = useState(() => localStorage.getItem('showFloatButtons') !== "false");
     const [mangaCustom, setMangaCustom] = useState(null);
