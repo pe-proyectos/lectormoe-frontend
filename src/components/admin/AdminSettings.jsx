@@ -32,7 +32,7 @@ import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
 export function AdminSettings({ organization: { domain: organizationDomain, language: organizationLanguage } }) {
-    const _ = getTranslator(organization.language);
+    const _ = getTranslator(organizationLanguage);
 
     // dialog
     const [loading, setLoading] = useState(false);
