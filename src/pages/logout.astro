@@ -1,5 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { getTranslator } from "../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 
 Astro.cookies.delete("token");
 Astro.cookies.delete("username");
@@ -7,7 +11,7 @@ Astro.cookies.delete("userSlug");
 Astro.cookies.delete("member");
 ---
 
-<Layout title="Cerrando sesión">
+<Layout title={_("logout_title")}>
 	<div id="logout"></div>
 </Layout>
 

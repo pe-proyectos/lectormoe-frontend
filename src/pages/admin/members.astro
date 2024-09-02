@@ -1,8 +1,12 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMembersGrid } from "../../components/admin/AdminMembersGrid";
+import { getTranslator } from "../../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<AdminLayout title="Usuarios" page="users">
-  <AdminMembersGrid client:only />
+<AdminLayout title={_("admin_members_title")} page="users">
+  <AdminMembersGrid organization={organization} client:only />
 </AdminLayout>

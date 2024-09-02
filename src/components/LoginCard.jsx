@@ -11,8 +11,11 @@ import {
 } from "@material-tailwind/react";
 import 'cookie-store';
 import { callAPI } from '../util/callApi';
+import { getTranslator } from "../util/translate";
 
-export function LoginCard() {
+export function LoginCard({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -69,7 +72,7 @@ export function LoginCard() {
             window.location.href = "/";
         } catch (error) {
             console.error('Error logging in:', error);
-            toast.error(error?.message || "Error al iniciar sesión", {
+            toast.error(error?.message || _("error_logging_in"), {
                 position: "bottom-right",
             }).showToast();
         } finally {
@@ -85,17 +88,17 @@ export function LoginCard() {
                 className="mb-4 grid h-28 p-2 place-items-center bg-gradient-to-r from-blue-900 to-pink-900 text-white"
             >
                 <Typography className='text-2xl sm:text-5xl font-extrabold'>
-                    Iniciar sesión
+                    {_("login")}
                 </Typography>
                 <Typography className="font-normal p-2 hidden sm:block">
-                    Para poder calificar, comentar y leer tus mangas favoritos.
+                    {_("login_description")}
                 </Typography>
             </CardHeader>
             <CardBody className="flex flex-col gap-4">
                 <form onSubmit={handleSubmit} className="mt-8 mb-2 max-w-80 mx-auto">
                     <div className="mb-1 flex flex-col gap-6">
                         <Typography variant="h6" color="blue-gray" className="-mb-3">
-                            Usuario o Correo electrónico
+                            {_("username_or_email")}
                         </Typography>
                         <Input
                             size="lg"
@@ -109,7 +112,7 @@ export function LoginCard() {
                             onChange={(e) => setEmail(e.target.value)}
                         />
                         <Typography variant="h6" color="blue-gray" className="-mb-3">
-                            Contraseña
+                            {_("password")}
                         </Typography>
                         <Input
                             type="password"
@@ -125,12 +128,12 @@ export function LoginCard() {
                         />
                     </div>
                     <Button type="submit" className="mt-6" fullWidth>
-                        Iniciar sesión
+                        {_("login")}
                     </Button>
                     <Typography color="gray" className="mt-4 text-center font-normal">
-                        No tienes una cuenta?{" "}
+                        {_("dont_have_an_account")}{" "}
                         <a href="#" className="font-medium text-gray-900">
-                            ¡Registrate aqui!
+                            {_("register_here")}
                         </a>
                     </Typography>
                 </form>

@@ -33,8 +33,11 @@ import {
     ChevronRightIcon,
     ChevronDownIcon
 } from "@heroicons/react/24/outline";
+import { getTranslator } from "../../util/translate";
 
-export function AdminSidebar({ page }) {
+export function AdminSidebar({ organization, page }) {
+    const _ = getTranslator(organization.language);
+
     const initialOpen = (page === "analytics" || page === "members") ? 1 : 0;
     const [open, setOpen] = React.useState(initialOpen);
     const [openAlert, setOpenAlert] = React.useState(true);
@@ -47,7 +50,7 @@ export function AdminSidebar({ page }) {
         <Card className="sticky top-[calc(5rem)] h-[calc(100vh-100px)] w-full max-w-[20rem] p-4 shadow-xl shadow-blue-gray-900/5">
             <div className="mb-2 p-4">
                 <Typography variant="h5" color="blue-gray">
-                    Administrador
+                    {_("administrator")}
                 </Typography>
             </div>
             <List>
@@ -66,7 +69,7 @@ export function AdminSidebar({ page }) {
                                 <PresentationChartBarIcon className="h-5 w-5" />
                             </ListItemPrefix>
                             <Typography color="blue-gray" className="mr-auto font-normal">
-                                Organización
+                                {_("organization")}
                             </Typography>
                         </AccordionHeader>
                     </ListItem>
@@ -77,7 +80,7 @@ export function AdminSidebar({ page }) {
                                     <ListItemPrefix>
                                         <UserCircleIcon strokeWidth={3} className="h-3 w-5" />
                                     </ListItemPrefix>
-                                    Miembros
+                                    {_("members")}
                                 </ListItem>
                             </a>
                             <a href="/admin/organization/analytics">
@@ -85,7 +88,7 @@ export function AdminSidebar({ page }) {
                                     <ListItemPrefix>
                                         <ChartPieIcon strokeWidth={3} className="h-3 w-5" />
                                     </ListItemPrefix>
-                                    Estadísticas
+                                    {_("analytics")}
                                 </ListItem>
                             </a>
                         </List>
@@ -135,7 +138,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <ChartBarIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Dashboard
+                        {_("dashboard")}
                     </ListItem>
                 </a>
                 <a href="/admin/authors">
@@ -143,7 +146,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <AcademicCapIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Autores
+                        {_("authors")}
                     </ListItem>
                 </a>
                 <a href="/admin/mangas">
@@ -151,7 +154,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <BookOpenIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Mangas
+                        {_("mangas")}
                         {/* <ListItemSuffix>
                             <Chip value="14" size="sm" variant="ghost" color="blue-gray" className="rounded-full" />
                         </ListItemSuffix> */}
@@ -162,7 +165,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <NewspaperIcon strokeWidth={3} className="h-5 w-5" />
                         </ListItemPrefix>
-                        Noticias
+                        {_("news")}
                     </ListItem>
                 </a>
                 <a href="/admin/members">
@@ -170,7 +173,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <UsersIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Miembros
+                        {_("members")}
                     </ListItem>
                 </a>
                 <a href="/admin/coinpacks">
@@ -178,7 +181,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <TicketIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Paquetes de monedas
+                        {_("coin_packs")}
                     </ListItem>
                 </a>
                 <a href="/admin/storage">
@@ -186,7 +189,7 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <ServerStackIcon strokeWidth={3} className="h-5 w-5" />
                         </ListItemPrefix>
-                        Almacenamiento
+                        {_("storage")}
                     </ListItem>
                 </a>
                 <a href="/admin/settings">
@@ -194,17 +197,17 @@ export function AdminSidebar({ page }) {
                         <ListItemPrefix>
                             <Cog6ToothIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        Opciones
+                        {_("settings")}
                     </ListItem>
                 </a>
             </List>
             <Alert open={openAlert} className="mt-auto hidden" onClose={() => setOpenAlert(false)}>
                 <CubeTransparentIcon className="mb-4 h-12 w-12" />
                 <Typography variant="h6" className="mb-1">
-                    Actualiza a un sitio PRO
+                    {_("upgrade_to_pro")}
                 </Typography>
                 <Typography variant="small" className="font-normal opacity-80">
-                    Necesitas anuncios o más capacidad? Obtén acceso a todas las características y herramientas que necesitas para hacer crecer tu organización.
+                    {_("upgrade_to_pro_description")}
                 </Typography>
                 <div className="mt-4 flex gap-3">
                     <Typography
@@ -214,10 +217,10 @@ export function AdminSidebar({ page }) {
                         className="font-medium opacity-80"
                         onClick={() => setOpenAlert(false)}
                     >
-                        Ocultar
+                        {_("hide")}
                     </Typography>
                     <Typography as="a" href="/pro" variant="small" className="font-medium">
-                        Saber más
+                        {_("learn_more")}
                     </Typography>
                 </div>
             </Alert>

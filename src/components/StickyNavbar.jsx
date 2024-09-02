@@ -18,8 +18,11 @@ import {
   UserIcon,
 } from "@heroicons/react/24/solid";
 import { LazyImage } from "./LazyImage";
+import { getTranslator } from "../util/translate";
 
 export function StickyNavbar({ organization, username, userSlug, member, staticNavbar }) {
+  const _ = getTranslator(organization.language);
+
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -34,21 +37,21 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
 
   if (organization.enableMangaSection) {
     navOptions.push({
-      name: "Mangas",
+      name: _("mangas"),
       href: "/search?type=manga"
     });
   }
 
   if (organization.enableManhuaSection) {
     navOptions.push({
-      name: "Manhuas",
+      name: _("manhuas"),
       href: "/search?type=manhua"
     });
   }
 
   if (organization.enableManhwaSection) {
     navOptions.push({
-      name: "Manhwas",
+      name: _("manhwas"),
       href: "/search?type=manhwa"
     });
   }
@@ -109,7 +112,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
             <Input
               type="search"
               color="white"
-              label="Buscar manga..."
+              label={_("search_manga")}
               className="pr-20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -128,7 +131,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
               className="!absolute right-1 top-1 rounded"
               onClick={() => { location.href = `/search?q=${search}`; }}
             >
-              Search
+              {_("search")}
             </Button>
           </div>
           <div className="flex items-center gap-x-1">
@@ -146,15 +149,15 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                   <MenuList>
                     <MenuItem disabled>{username}</MenuItem>
                     {/* <a href={`/profile/${userSlug}`}>
-                      <MenuItem>Mi Perfil</MenuItem>
+                      <MenuItem>{_("my_profile")}</MenuItem>
                     </a> */}
                     {member?.canSeeAdminPanel === true && (
                       <a href="/admin/mangas">
-                        <MenuItem>Administrador</MenuItem>
+                        <MenuItem>{_("admin")}</MenuItem>
                       </a>
                     )}
                     <a href="/logout">
-                      <MenuItem>Cerrar sesión</MenuItem>
+                      <MenuItem>{_("logout")}</MenuItem>
                     </a>
                   </MenuList>
                 </Menu>
@@ -167,7 +170,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                       size="sm"
                       className="hidden lg:inline-block mx-1"
                     >
-                      <span>Iniciar sesión</span>
+                      <span>{_("login")}</span>
                     </Button>
                   </a>
                   <a href="/register">
@@ -176,7 +179,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                       size="sm"
                       className="hidden lg:inline-block mx-1"
                     >
-                      <span>Registro</span>
+                      <span>{_("register")}</span>
                     </Button>
                   </a>
                 </>
@@ -233,7 +236,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
             <Input
               type="search"
               color="white"
-              label="Buscar manga..."
+              label={_("search_manga")}
               className="pr-20"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -247,7 +250,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
               className="!absolute right-1 top-1 rounded"
               onClick={() => { location.href = `/search?q=${search}`; }}
             >
-              Search
+              {_("search")}
             </Button>
           </div>
         </div>
@@ -260,12 +263,12 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                 color="white"
                 size="sm"
               >
-                <span>Iniciar sesión</span>
+                <span>{_("login")}</span>
               </Button>
             </a>
             <a href="/register">
               <Button fullWidth variant="gradient" size="sm" className="">
-                <span>Registro</span>
+                <span>{_("register")}</span>
               </Button>
             </a>
           </div>

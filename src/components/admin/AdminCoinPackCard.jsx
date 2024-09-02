@@ -6,48 +6,51 @@ import {
     CardBody,
     Typography,
 } from "@material-tailwind/react";
+import { getTranslator } from "../../util/translate";
 
-export function AdminCoinPackCard({ coinpack, onClick }) {
+export function AdminCoinPackCard({ organization, coinpack, onClick }) {
+    const _ = getTranslator(organization.language);
+
     return (
         <Card className="w-64 mt-6">
             <CardHeader color="blue" className="p-4">
                 <Typography variant="h5" color="white">
-                    {coinpack.name || "Sin nombre"}
+                    {coinpack.name || _("no_name")}
                 </Typography>
             </CardHeader>
             <CardBody>
                 <Typography color="black" className="font-bold">
-                    Descripción
+                    {_("description")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    {coinpack.description || "Sin descripción"}
+                    {coinpack.description || _("no_description")}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Precio sin descuento
+                    {_("full_price")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
                     ${coinpack.priceWithoutDiscount.toFixed(2)}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Precio con descuento
+                    {_("discount_price")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
                     ${coinpack.price.toFixed(2)}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Monedas
+                    {_("coins")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
                     {coinpack.coins}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    Estado
+                    {_("status")}
                 </Typography>
                 <Typography color={coinpack.active ? "green" : "red"}>
-                    {coinpack.active ? "Activo" : "Inactivo"}
+                    {coinpack.active ? _("active") : _("inactive")}
                 </Typography>
                 <Button color="blue" className="mt-4" onClick={() => onClick(coinpack)}>
-                    Editar
+                    {_("edit")}
                 </Button>
             </CardBody>
         </Card>

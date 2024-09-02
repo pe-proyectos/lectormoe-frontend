@@ -27,10 +27,12 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { DropzoneArea } from 'material-ui-dropzone';
 import { DatePicker } from '../DatePicker';
 import { ImageDropzone } from '../ImageDropzone';
-import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminDashboard() {
+export function AdminDashboard({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(false);
     const [stats, setStats] = useState(null);
 
@@ -88,7 +90,7 @@ export function AdminDashboard() {
                 }}
                 series={[
                     {
-                        name: "Vistas",
+                        name: _("views"),
                         data: data || []
                     }
                 ]}
@@ -103,9 +105,10 @@ export function AdminDashboard() {
             <div className="flex flex-wrap gap-2 mb-4">
                 <div>
                     <Typography variant="h6" color="gray">
-                        Desde
+                        {_("from")}
                     </Typography>
                     <DatePicker
+                        organization={organization}
                         value={from}
                         onChange={setFrom}
                         disabled={loading}
@@ -113,9 +116,10 @@ export function AdminDashboard() {
                 </div>
                 <div>
                     <Typography variant="h6" color="gray">
-                        Hasta
+                        {_("to")}
                     </Typography>
                     <DatePicker
+                        organization={organization}
                         value={to}
                         onChange={setTo}
                         disabled={loading}
@@ -126,7 +130,7 @@ export function AdminDashboard() {
             <div className="flex flex-wrap gap-4 justify-around">
                 <div className="shadow-md rounded-md p-4">
                     <Typography className="mb-4" variant="h4" color="blue-gray">
-                        Caja de Popularidad (Por vistas)
+                        {_("popularity_box_by_views")}
                     </Typography>
                     <Chart
                         options={{}}
@@ -138,7 +142,7 @@ export function AdminDashboard() {
                 </div>
                 <div className="shadow-md rounded-md p-4">
                     <Typography className="mb-4" variant="h4" color="blue-gray">
-                        Dona de Popularidad (Top 6 con mas vistas)
+                        {_("popularity_donut_top_6_most_views")}
                     </Typography>
                     <Chart
                         options={{
@@ -156,45 +160,45 @@ export function AdminDashboard() {
             </div>
             <div className="flex flex-wrap gap-4 justify-around">
                 <LineChartCard
-                    title="Vistas de Perfil de Manga"
+                    title={_("manga_profile_views")}
                     data={stats?.view_manga_profile?.series || []}
                     labels={stats?.view_manga_profile?.labels || []}
                 />
                 <LineChartCard
-                    title="Vistas del Buscador de Mangas"
+                    title={_("manga_search_views")}
                     data={stats?.view_manga_search?.series || []}
                     labels={stats?.view_manga_search?.labels || []}
                 />
                 <LineChartCard
-                    title="Vistas del Login"
+                    title={_("login_views")}
                     data={stats?.view_login_page?.series || []}
                     labels={stats?.view_login_page?.labels || []}
                 />
                 <LineChartCard
-                    title="Vistas del Registro"
+                    title={_("register_views")}
                     data={stats?.view_register_page?.series || []}
                     labels={stats?.view_register_page?.labels || []}
                 />
                 <LineChartCard
-                    title="Busquedas de mangas"
+                    title={_("manga_searches")}
                     data={stats?.action_search_manga?.series || []}
                     labels={stats?.action_search_manga?.labels || []}
                     type="bar"
                 />
                 <LineChartCard
-                    title="Lecturas de Cápitulos"
+                    title={_("chapter_reads")}
                     data={stats?.view_manga_chapter?.series || []}
                     labels={stats?.view_manga_chapter?.labels || []}
                     type="bar"
                 />
                 <LineChartCard
-                    title="Inicios de Sesión"
+                    title={_("logins")}
                     data={stats?.action_login?.series || []}
                     labels={stats?.action_login?.labels || []}
                     type="bar"
                 />
                 <LineChartCard
-                    title="Registros de Usuarios"
+                    title={_("user_registrations")}
                     data={stats?.action_register?.series || []}
                     labels={stats?.action_register?.labels || []}
                     type="bar"

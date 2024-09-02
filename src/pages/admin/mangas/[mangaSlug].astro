@@ -2,8 +2,11 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../../components/admin/AdminMangasBreadcrumb.jsx";
 import { AdminMangaCustomChapters } from "../../../components/admin/AdminMangaCustomChapters.jsx";
+import { getTranslator } from "../../../util/translate";
 
+const { organization } = Astro.locals;
 const { mangaSlug } = Astro.params;
+const _ = getTranslator(organization.language);
 
 const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`);
 
@@ -12,8 +15,8 @@ if (!mangaStatus) {
 }
 ---
 
-<AdminLayout title="Crear manga" page="mangas">
-  <AdminMangasBreadcrumb client:only />
+<AdminLayout title={_("admin_manga_title")} page="mangas">
+  <AdminMangasBreadcrumb organization={organization} client:only />
   <div class="py-2"></div>
-  <AdminMangaCustomChapters initialMangaCustom={manga} client:only />
+  <AdminMangaCustomChapters organization={organization} initialMangaCustom={manga} client:only />
 </AdminLayout>

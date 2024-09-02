@@ -87,6 +87,57 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         if (organizationCheck?.status === true) {
             context.locals.organization = organizationCheck.data;
+            context.locals.formatDate = (dateString: string) => {
+                const date = new Date(dateString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const months: { [key: number]: string } = ({
+                    es: {
+                        0: 'ENE',
+                        1: 'FEB',
+                        2: 'MAR',
+                        3: 'ABR',
+                        4: 'MAY',
+                        5: 'JUN',
+                        6: 'JUL',
+                        7: 'AGO',
+                        8: 'SEP',
+                        9: 'OCT',
+                        10: 'NOV',
+                        11: 'DIC',
+                    },
+                    en: {
+                        0: 'JAN',
+                        1: 'FEB',
+                        2: 'MAR',
+                        3: 'APR',
+                        4: 'MAY',
+                        5: 'JUN',
+                        6: 'JUL',
+                        7: 'AUG',
+                        8: 'SEP',
+                        9: 'OCT',
+                        10: 'NOV',
+                        11: 'DEC',
+                    },
+                    pt: {
+                        0: 'JAN',
+                        1: 'FEV',
+                        2: 'MAR',
+                        3: 'ABR',
+                        4: 'MAI',
+                        5: 'JUN',
+                        6: 'JUL',
+                        7: 'AGO',
+                        8: 'SET',
+                        9: 'OUT',
+                        10: 'NOV',
+                        11: 'DEZ',
+                    },
+                } as any)[context.locals.organization.language];
+                const month = months[date.getMonth()];
+                const year = date.getFullYear();
+                return `${day} ${month} ${year}`;
+            };
         }
 
         context.locals.logged = context.locals.token ? true : false;

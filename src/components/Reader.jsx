@@ -41,8 +41,11 @@ import {
 } from '@mui/material';
 import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
+import { getTranslator } from "../util/translate";
 
 export function Reader({ organization, manga, chapterNumber, logged }) {
+    const _ = getTranslator(organization.language);
+
     const readTypes = {
         PAGINATED: 'paginated',
         CASCADE: 'cascade',
@@ -78,20 +81,20 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
     const dateToText = (date) => {
         const dt = new Date(date);
         const months = [
-            "Enero",
-            "Febrero",
-            "Marzo",
-            "Abril",
-            "Mayo",
-            "Junio",
-            "Julio",
-            "Agosto",
-            "Septiembre",
-            "Octubre",
-            "Noviembre",
-            "Diciembre",
+            _("january"),
+            _("february"),
+            _("march"),
+            _("april"),
+            _("may"),
+            _("june"),
+            _("july"),
+            _("august"),
+            _("september"),
+            _("october"),
+            _("november"),
+            _("december"),
         ];
-        return `${dt.getDate()} de ${months[dt.getMonth()]} de ${dt.getFullYear()}`;
+        return `${dt.getDate()} ${_("of")} ${months[dt.getMonth()]} ${_("of")} ${dt.getFullYear()}`;
     }
 
     const shouldShowPage = (pageId) => {
@@ -200,9 +203,26 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
         const days = Math.floor(hours / 24);
         const weeks = Math.floor(days / 7);
         const months = Math.floor(days / 30);
-        if (months > 0) return `Publicado hace ${months} Mes${months > 1 ? 'es' : ''}`;
-        if (weeks > 0) return `Publicado hace ${weeks} Semana${weeks > 1 ? 's' : ''}`;
-        if (days > 0) return `Publicado hace ${days} Día${days > 1 ? 's' : ''}`;
+        if (organization.language === 'en') {
+            if (months > 0) return `Published ${months} month${months > 1 ? 's' : ''} ago`;
+            if (weeks > 0) return `Published ${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            if (days > 0) return `Published ${days} day${days > 1 ? 's' : ''} ago`;
+            if (hours > 0) return `Published ${hours} hour${hours > 1 ? 's' : ''} ago`;
+            if (minutes > 0) return `Published ${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            if (seconds > 0) return `Published ${seconds} second${seconds > 1 ? 's' : ''} ago`;
+            return 'Published today';
+        } else if (organization.language === 'pt') {
+            if (months > 0) return `Publicado há ${months} mes${months > 1 ? 'es' : ''}`;
+            if (weeks > 0) return `Publicado há ${weeks} semana${weeks > 1 ? 's' : ''}`;
+            if (days > 0) return `Publicado há ${days} dia${days > 1 ? 's' : ''}`;
+            if (hours > 0) return `Publicado há ${hours} hora${hours > 1 ? 's' : ''}`;
+            if (minutes > 0) return `Publicado há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            if (seconds > 0) return `Publicado há ${seconds} segundo${seconds > 1 ? 's' : ''}`;
+            return 'Publicado hoje';
+        }
+        if (months > 0) return `Publicado hace ${months} mes${months > 1 ? 'es' : ''}`;
+        if (weeks > 0) return `Publicado hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
+        if (days > 0) return `Publicado hace ${days} día${days > 1 ? 's' : ''}`;
         if (hours > 0) return `Publicado hace ${hours} hora${hours > 1 ? 's' : ''}`;
         if (minutes > 0) return `Publicado hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
         if (seconds > 0) return `Publicado hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
@@ -324,8 +344,8 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
             <Tooltip
                 content={
                     chapter?.previousChapter
-                        ? "Haz click aqui para ir al capítulo anterior"
-                        : "Estas en el primer capítulo publicado"
+                        ? _("click_to_previous_chapter")
+                        : _("you_are_in_first_chapter")
                 }
                 placement="bottom"
             >
@@ -349,8 +369,8 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
             <Tooltip
                 content={
                     chapter?.nextChapter
-                        ? "Haz click aqui para ir al próximo capítulo"
-                        : "Estas en el último capítulo publicado"
+                        ? _("click_to_next_chapter")
+                        : _("you_are_in_last_chapter")
                 }
                 placement="bottom"
             >
@@ -383,7 +403,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 href={`/manga/${mangaCustom?.slug}`}
                                 className='flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors'
                             >
-                                <Tooltip content="Haz click aqui para ir a la lista de capítulos" placement="bottom">
+                                <Tooltip content={_("click_here_chapter_list")} placement="bottom">
                                     <span className='text-3xl sm:text-6xl'>{chapter?.number}</span>
                                 </Tooltip>
                             </a>
@@ -394,7 +414,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 href={`/manga/${mangaCustom?.slug}`}
                                 className='hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors'
                             >
-                                <Tooltip content="Haz click aqui para ir a la lista de capítulos" placement="bottom">
+                                <Tooltip content={_("click_here_chapter_list")} placement="bottom">
                                     <span className='text-2xl md:text-6xl'>{chapter?.number}</span>
                                 </Tooltip>
                             </a>
@@ -424,7 +444,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                             color='red'
                                             label={
                                                 <Typography className='text-gray-100'>
-                                                    Limitar altura de página
+                                                    {_("limit_page_height")}
                                                 </Typography>
                                             }
                                             checked={limitPageHeight}
@@ -436,7 +456,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                             color='green'
                                             label={
                                                 <Typography className='text-gray-100'>
-                                                    Mostrar botones flotantes
+                                                    {_("show_float_buttons")}
                                                 </Typography>
                                             }
                                             checked={showFloatButtons}
@@ -446,7 +466,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 </div>
                                 <div className='mx-auto sm:mx-0'>
                                     <p className='text-gray-400 ml-1'>
-                                        Modo de lectura
+                                        {_("read_type")}
                                     </p>
                                     <Tabs value={readType}>
                                         <TabsHeader>
@@ -455,14 +475,14 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                                 onClick={() => handleSetReadType(readTypes.PAGINATED)}
                                                 className='text-sm'
                                             >
-                                                Paginado
+                                                {_("paginated")}
                                             </Tab>
                                             <Tab
                                                 value={readTypes.CASCADE}
                                                 onClick={() => handleSetReadType(readTypes.CASCADE)}
                                                 className='text-sm'
                                             >
-                                                Cascada
+                                                {_("cascade")}
                                             </Tab>
                                         </TabsHeader>
                                     </Tabs>
@@ -482,7 +502,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                     )}
                     {pages.length === 0 && !loading && (
                         <div className='flex min-h-full w-full justify-center py-4'>
-                            <h3 className='text-white'>No se encontraron páginas para este capítulo</h3>
+                            <h3 className='text-white'>{_("no_pages_found")}</h3>
                         </div>
                     )}
                     {pages.map((page, pageIndex) => (
@@ -516,7 +536,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                 src={page.imageUrl}
                                 onLoad={() => handlePageLoad(page.id)}
                                 className='max-w-full m-auto pointer-events-none'
-                                alt={`Pagina ${page.number}`}
+                                alt={`${_("page")} ${page.number}`}
                                 hidden={!loadedPages.includes(page.id)}
                                 style={
                                     limitPageHeight
@@ -546,16 +566,16 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                         <ButtonGroup>
                             {chapter?.previousChapter && (
                                 <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`}>
-                                    Capítulo anterior
+                                    {_("previous_chapter")}
                                     #{chapter?.previousChapter?.number} {chapter?.previousChapter?.title}
                                 </Button>
                             )}
                             <Button onClick={() => location.href = `/manga/${manga.slug}`}>
-                                Volver al listado de capítulos
+                                {_("back_to_chapter_list")}
                             </Button>
                             {chapter?.nextChapter && (
                                 <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`}>
-                                    Próximo capítulo
+                                    {_("next_chapter")}
                                 </Button>
                             )}
                         </ButtonGroup>
@@ -565,7 +585,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                     {readType === readTypes.CASCADE && pages.length > 0 && (
                         <a href="#manga-pages-top" className='text-white text-xl'>
                             <Button>
-                                Volver al inicio
+                                {_("back_to_start")}
                             </Button>
                         </a>
                     )}
@@ -579,7 +599,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                     onClick={handleToggleComments}
                                 >
                                     <h3 className='text-xl font-bold text-gray-300'>
-                                        {openCommentsAccordion ? 'Ocultar' : 'Mostrar'} comentarios
+                                        {openCommentsAccordion ? _("hide") : _("show")} {_("comments")}
                                     </h3>
                                 </AccordionHeader>
                                 <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
@@ -596,7 +616,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                 <>
                     <div className="fixed bottom-5 right-5">
                         <SpeedDial>
-                            <Tooltip content="Lista de páginas" placement="left">
+                            <Tooltip content={_("pages_list")} placement="left">
                                 <SpeedDialHandler
                                     className='cursor-pointer'
                                     onClick={() => handlePagesDialog()}
@@ -610,7 +630,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                     </div>
                     <div className="fixed bottom-20 right-5">
                         <SpeedDial>
-                            <Tooltip content="Volver al inicio" placement="left">
+                            <Tooltip content={_("back_to_start")} placement="left">
                                 <SpeedDialHandler>
                                     <a href="#main-navbar">
                                         <IconButton size="lg" className="rounded-full">
@@ -633,10 +653,10 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                 <Card className="bg-gray-900 bg-opacity-90 mx-auto w-full max-w-[24rem]">
                     <CardBody className="flex flex-col gap-2">
                         <div className="flex flex-wrap justify-between items-center">
-                            <span className='text-2xl text-white'>Lista de Páginas</span>
+                            <span className='text-2xl text-white'>{_("pages_list")}</span>
                             <span className='text-base text-white'>{mangaCustom?.title}</span>
                         </div>
-                        <span className='text-lg text-white'>Capítulo {chapter?.number}</span>
+                        <span className='text-lg text-white'>{_("chapter")} {chapter?.number}</span>
                         <span className='text-base text-white'>{chapter?.title}</span>
                         <div className="flex flex-wrap gap-2 my-2">
                             {pages.map((page, index) => (
@@ -653,7 +673,7 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                                     }}
                                     className="px-4 text-white bg-gray-800 odd:bg-gray-700 hover:bg-orange-900 hover:cursor-pointer shadow-sm rounded-md"
                                 >
-                                    {`Página ${page.number}`}
+                                    {`${_("page")} ${page.number}`}
                                 </span>
                             ))}
                         </div>

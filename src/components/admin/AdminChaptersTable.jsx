@@ -11,31 +11,34 @@ import {
     useMaterialReactTable,
 } from 'material-react-table';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelete }) {
+export function AdminChaptersTable({ organization, mangaCustom, onChapterClick, onChapterDelete }) {
+    const _ = getTranslator(organization.language);
+
     const columns = useMemo(
         () => [
             {
                 accessorKey: 'imageUrl',
-                header: 'Miniatura',
+                header: _("thumbnail"),
                 size: 50,
                 Cell: ({ row }) => row.original.imageUrl ? (
                     <img
                         src={row.original.imageUrl}
-                        alt={row.original.title || row.original.number || "Sin miniatura"}
+                        alt={row.original.title || row.original.number || _("no_thumbnail")}
                         decoding="async"
                         loading="lazy"
                         className='max-w-24 max-h-36 mx-auto'
                     />
                 ) : (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
-                        Sin miniatura
+                        {_("no_thumbnail")}
                     </Typography>
                 ),
             },
             {
                 accessorKey: 'number',
-                header: 'Número',
+                header: _("number"),
                 size: 50,
                 Cell: ({ row }) => (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
@@ -45,7 +48,7 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             },
             {
                 accessorKey: 'title',
-                header: 'Título',
+                header: _("title"),
                 Cell: ({ row }) => (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
                         {row.original.title}
@@ -54,7 +57,7 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             },
             {
                 accessorKey: 'views',
-                header: 'Visualizaciones',
+                header: _("views"),
                 size: 50,
                 Cell: ({ row }) => (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
@@ -64,7 +67,7 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             },
             {
                 accessorKey: 'releasedAt',
-                header: 'Fecha de salida',
+                header: _("release_date"),
                 size: 50,
                 Cell: ({ row }) => (
                     <span>{new Date(row.original.releasedAt).toLocaleDateString()}</span>
@@ -72,7 +75,7 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             },
             {
                 accessorKey: 'updatedAt',
-                header: 'Fecha actualización',
+                header: _("updated_date"),
                 size: 50,
                 Cell: ({ row }) => (
                     <span>{new Date(row.original.updatedAt).toLocaleDateString()}</span>
@@ -80,14 +83,14 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             },
             {
                 accessorKey: 'id',
-                header: 'Acciones',
+                header: _("actions"),
                 Cell: ({ row }) => (
                     <ButtonGroup variant="text">
                         <Button variant="text" onClick={() => onChapterClick(row.original)}>
-                            Editar
+                            {_("edit")}
                         </Button>
                         <Button variant="text" className='hover:text-red-600' onClick={() => deleteChapter(row.original)}>
-                            Eliminar
+                            {_("delete")}
                         </Button>
                     </ButtonGroup>
                 ),
@@ -109,7 +112,7 @@ export function AdminChaptersTable({ mangaCustom, onChapterClick, onChapterDelet
             method: 'DELETE',
         })
             .then(response => {
-                toast.success('Capítulo eliminado');
+                toast.success(_("chapter_deleted"));
                 onChapterDelete();
             })
             .catch(error => {

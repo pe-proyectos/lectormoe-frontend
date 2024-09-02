@@ -14,8 +14,11 @@ import {
 import { AdminMangaCustomCard } from './AdminMangaCustomCard';
 import { AdminMangaCustomDialog } from './AdminMangaCustomDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomGrid() {
+export function AdminMangaCustomGrid({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
     const [page, setPage] = useState(1);
@@ -54,6 +57,7 @@ export function AdminMangaCustomGrid() {
     return (
         <div className="w-full my-4">
             <AdminMangaCustomDialog
+                organization={organization}
                 open={isCreateMangaCustomDialogOpen}
                 setOpen={setIsCreateMangaCustomDialogOpen}
                 mangaCustom={selectedManga}
@@ -66,7 +70,7 @@ export function AdminMangaCustomGrid() {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
-                Agregar Manga
+                {_("add_manga")}
             </Button>
             {!loading && mangaList.length > 0 && (
                 <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
@@ -80,7 +84,7 @@ export function AdminMangaCustomGrid() {
                             <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
                         </IconButton>
                         <Typography color="gray" className="font-normal">
-                            Page <strong className="text-gray-900">{page}</strong> of{" "}
+                            {_("page")} <strong className="text-gray-900">{page}</strong> {_("of")}{" "}
                             <strong className="text-gray-900">{maxPage}</strong>
                         </Typography>
                         <IconButton
@@ -98,15 +102,16 @@ export function AdminMangaCustomGrid() {
                 {loading && <Spinner className='m-4 w-full' />}
                 {!loading && mangaList.length === 0 &&
                     <Alert>
-                        No hay mangas disponibles,
-                        <a href="/admin/mangas/create" className='hover:text-light-blue-200'>{" crea uno "}</a>
-                        para empezar.
+                        {_("no_mangas_available")},{" "}
+                        <a href="/admin/mangas/create" className='hover:text-light-blue-200'>{_("create_one")}</a>{" "}
+                        {_("to_start")}.
                     </Alert>
                 }
             </div>
             <div className="flex flex-wrap gap-4">
                 {mangaList.map(mangaCustom => (
                     <AdminMangaCustomCard
+                        organization={organization}
                         key={mangaCustom.id}
                         mangaCustom={mangaCustom}
                         onClick={() => handleCardClick(mangaCustom)}

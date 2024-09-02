@@ -28,10 +28,12 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { DropzoneArea } from 'material-ui-dropzone';
 import { DatePicker } from '../DatePicker';
 import { ImageDropzone } from '../ImageDropzone';
-import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminSettings({ organization: { domain: organizationDomain } }) {
+export function AdminSettings({ organization: { domain: organizationDomain, language: organizationLanguage } }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(false);
     // form
@@ -106,10 +108,9 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
     };
-
     const handleSubmit = async () => {
         if (!name) {
-            return toast.error('El nombre es obligatorio');
+            return toast.error(_('name_is_required'));
         }
         const formData = new FormData();
         formData.append('name', name);
@@ -140,7 +141,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
             body: formData,
         })
             .then(response => {
-                toast.success('Opciones guardadas con éxito');
+                toast.success(_('options_saved_successfully'));
                 refreshOrganization();
             })
             .catch(error => toast.error(error?.message))
@@ -150,77 +151,77 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
     return (
         <>
             <Typography variant="h4" color="blue-gray">
-                Opciones de la organización
+                {_('organization_options')}
             </Typography>
             <div className="max-w-lg p-4">
                 <Accordion open={openInformationAccordion}>
-                    <AccordionHeader onClick={handleInformationAccordion}>Información</AccordionHeader>
+                    <AccordionHeader onClick={handleInformationAccordion}>{_('information')}</AccordionHeader>
                     <AccordionBody>
                         <div className="flex flex-col gap-4 sm:ml-4">
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Nombre
+                                {_('name')}
                             </Typography>
                             <Input
                                 size="lg"
-                                label="Nombre"
+                                label={_('name')}
                                 autoComplete='off'
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Titulo
+                                {_('title')}
                             </Typography>
                             <Input
                                 size="md"
-                                label="Titulo"
+                                label={_('title')}
                                 autoComplete='off'
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Descripción (Opcional)
+                                {_('description_optional')}
                             </Typography>
                             <Textarea
                                 size="lg"
-                                label="Descripción"
+                                label={_('description')}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Idioma
+                                {_('language')}
                             </Typography>
                             <div className="w-80">
                                 <Select
-                                    label="Idioma"
+                                    label={_('language')}
                                     value={language}
                                     onChange={(val) => setLanguage(val)}
                                 >
-                                    <Option value="es" selected={language === 'es'}>Español</Option>
-                                    <Option value="en" selected={language === 'en'}>Ingles</Option>
-                                    <Option value="pt" selected={language === 'pt'}>Portugues</Option>
+                                    <Option value="es" selected={language === 'es'}>{_('spanish')}</Option>
+                                    <Option value="en" selected={language === 'en'}>{_('english')}</Option>
+                                    <Option value="pt" selected={language === 'pt'}>{_('portuguese')}</Option>
                                 </Select>
                             </div>
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Sección de Mangas
+                                {_('manga_section')}
                             </Typography>
                             <Switch
-                                label="Activar sección de mangas"
+                                label={_('enable_manga_section')}
                                 checked={enableMangaSection}
                                 onChange={(e) => setEnableMangaSection(e.target.checked)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Sección de Manhuas
+                                {_('manhua_section')}
                             </Typography>
                             <Switch
-                                label="Activar sección de manhuas"
+                                label={_('enable_manhua_section')}
                                 checked={enableManhuaSection}
                                 onChange={(e) => setEnableManhuaSection(e.target.checked)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Sección de Manhwas
+                                {_('manhwa_section')}
                             </Typography>
                             <Switch
-                                label="Activar sección de manhwas"
+                                label={_('enable_manhwa_section')}
                                 checked={enableManhwaSection}
                                 onChange={(e) => setEnableManhwaSection(e.target.checked)}
                             />
@@ -228,28 +229,28 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                     </AccordionBody>
                 </Accordion>
                 <Accordion open={openIntegrationsAccordion}>
-                    <AccordionHeader onClick={handleIntegrationsAccordion}>Integraciones</AccordionHeader>
+                    <AccordionHeader onClick={handleIntegrationsAccordion}>{_('integrations')}</AccordionHeader>
                     <AccordionBody>
                         <div className="flex flex-col gap-4 sm:ml-4">
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Anuncios
+                                {_('ads')}
                             </Typography>
                             <Switch
-                                label="Activar anuncios de Google Ads"
+                                label={_('enable_google_ads')}
                                 checked={enableGoogleAds}
                                 onChange={(e) => setEnableGoogleAds(e.target.checked)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Comentarios
+                                {_('comments')}
                             </Typography>
                             <Switch
-                                label="Activar comentarios de Disqus"
+                                label={_('enable_disqus_comments')}
                                 checked={enableDisqusIntegration}
                                 onChange={(e) => setEnableDisqusIntegration(e.target.checked)}
                             />
                             <Input
                                 size="lg"
-                                label="URL Embed de Disqus"
+                                label={_('disqus_embed_url')}
                                 autoComplete='off'
                                 value={disqusEmbedUrl}
                                 onChange={(e) => setDisqusEmbedUrl(e.target.value)}
@@ -259,7 +260,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                     </AccordionBody>
                 </Accordion>
                 <Accordion open={openSocialAccordion}>
-                    <AccordionHeader onClick={handleSocialAccordion}>Social</AccordionHeader>
+                    <AccordionHeader onClick={handleSocialAccordion}>{_('social')}</AccordionHeader>
                     <AccordionBody>
                         <div className="flex flex-col gap-4 sm:ml-4">
                             <Typography className="-mb-2" variant="h6" color="gray">
@@ -267,7 +268,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Facebook"
+                                label={_('facebook_url')}
                                 autoComplete='off'
                                 value={facebookUrl}
                                 onChange={(e) => setFacebookUrl(e.target.value)}
@@ -277,7 +278,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a X (Twitter)"
+                                label={_('twitter_url')}
                                 autoComplete='off'
                                 value={twitterUrl}
                                 onChange={(e) => setTwitterUrl(e.target.value)}
@@ -287,7 +288,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Instagram"
+                                label={_('instagram_url')}
                                 autoComplete='off'
                                 value={instagramUrl}
                                 onChange={(e) => setInstagramUrl(e.target.value)}
@@ -297,7 +298,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Youtube"
+                                label={_('youtube_url')}
                                 autoComplete='off'
                                 value={youtubeUrl}
                                 onChange={(e) => setYoutubeUrl(e.target.value)}
@@ -307,7 +308,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Patreon"
+                                label={_('patreon_url')}
                                 autoComplete='off'
                                 value={patreonUrl}
                                 onChange={(e) => setPatreonUrl(e.target.value)}
@@ -317,7 +318,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Tiktok"
+                                label={_('tiktok_url')}
                                 autoComplete='off'
                                 value={tiktokUrl}
                                 onChange={(e) => setTiktokUrl(e.target.value)}
@@ -327,7 +328,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Discord"
+                                label={_('discord_url')}
                                 autoComplete='off'
                                 value={discordUrl}
                                 onChange={(e) => setDiscordUrl(e.target.value)}
@@ -337,7 +338,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                             </Typography>
                             <Input
                                 size="md"
-                                label="URL a Twitch"
+                                label={_('twitch_url')}
                                 autoComplete='off'
                                 value={twitchUrl}
                                 onChange={(e) => setTwitchUrl(e.target.value)}
@@ -346,46 +347,46 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                     </AccordionBody>
                 </Accordion>
                 <Accordion open={openImagesAccordion}>
-                    <AccordionHeader onClick={handleImagesAccordion}>Imágenes</AccordionHeader>
+                    <AccordionHeader onClick={handleImagesAccordion}>{_('images')}</AccordionHeader>
                     <AccordionBody>
                         <div className="flex flex-col gap-4 sm:ml-4">
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Logo
+                                {_('logo')}
                             </Typography>
                             <ImageDropzone
                                 value={logoImageFile}
-                                label='Arrastra y suelta la imagen del logo'
-                                alt='Imagen del logo'
+                                label={_('drag_and_drop_logo_image')}
+                                alt={_('logo_image')}
                                 onChange={(files) => files[0] ? setLogoImageFile(files[0]) : null}
                                 onDelete={(file) => setLogoImageFile(null)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Imagén de portada
+                                {_('cover_image')}
                             </Typography>
                             <ImageDropzone
                                 value={imageImageFile}
-                                label='Arrastra y suelta la imagen de portada'
-                                alt='Imagen de portada'
+                                label={_('drag_and_drop_cover_image')}
+                                alt={_('cover_image')}
                                 onChange={(files) => files[0] ? setImageImageFile(files[0]) : null}
                                 onDelete={(file) => setImageImageFile(null)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Banner
+                                {_('banner')}
                             </Typography>
                             <ImageDropzone
                                 value={bannerImageFile}
-                                label='Arrastra y suelta la imagen de banner'
-                                alt='Banner'
+                                label={_('drag_and_drop_banner_image')}
+                                alt={_('banner')}
                                 onChange={(files) => files[0] ? setBannerImageFile(files[0]) : null}
                                 onDelete={(file) => setBannerImageFile(null)}
                             />
                             <Typography className="-mb-2" variant="h6" color="gray">
-                                Favicon
+                                {_('favicon')}
                             </Typography>
                             <ImageDropzone
                                 value={faviconImageFile}
-                                label='Arrastra y suelta la imagen de favicon'
-                                alt='Favicon'
+                                label={_('drag_and_drop_favicon_image')}
+                                alt={_('favicon')}
                                 onChange={(files) => files[0] ? setFaviconImageFile(files[0]) : null}
                                 onDelete={(file) => setFaviconImageFile(null)}
                             />
@@ -394,7 +395,7 @@ export function AdminSettings({ organization: { domain: organizationDomain } }) 
                 </Accordion>
                 <div className="flex self-end my-4">
                     <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                        Guardar opciones
+                        {_('save_options')}
                     </Button>
                 </div>
             </div>

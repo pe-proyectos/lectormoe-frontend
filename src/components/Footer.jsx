@@ -1,8 +1,11 @@
 import { Typography } from "@material-tailwind/react";
+import { getTranslator } from "../util/translate";
 
 const currentYear = new Date().getFullYear();
 
 export function Footer({ organization }) {
+    const _ = getTranslator(organization.language);
+
     return (
         <footer className="relative w-full">
             <div className="mx-auto w-full max-w-7xl px-8">
@@ -13,7 +16,7 @@ export function Footer({ organization }) {
                         className="mb-4 text-center font-normal md:mb-0"
                     >
                         &copy; {currentYear} <a href="/">{organization?.name}</a>.
-                        Todos los derechos reservados.
+                        {" "}{_("all_rights_reserved")}
                     </Typography>
                     <div className="flex gap-4 text-blue-gray-900 sm:justify-center">
                         {organization?.facebookUrl && (

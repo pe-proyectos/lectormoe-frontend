@@ -8,8 +8,11 @@ import {
 import { AdminCoinPackCard } from './AdminCoinPackCard';
 import { AdminCoinPackDialog } from './AdminCoinPackDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminCoinPackGrid() {
+export function AdminCoinPackGrid({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(true);
     const [coinPacks, setCoinPacks] = useState([]);
     const [selectedCoinPack, setSelectedCoinPack] = useState(null);
@@ -26,7 +29,7 @@ export function AdminCoinPackGrid() {
                 console.log(data);
                 setCoinPacks(data)
             })
-            .catch(error => toast.error(error?.message || 'Error al cargar los paquetes de monedas'))
+            .catch(error => toast.error(error?.message || _('error_loading_coin_packs')))
             .finally(() => setLoading(false));
     };
 
@@ -42,12 +45,13 @@ export function AdminCoinPackGrid() {
                 className="flex items-center gap-3 h-full sm:m-4"
                 onClick={() => setIsCoinPackDialogOpen(true)}
             >
-                Agregar paquete de monedas
+                {_('add_coin_pack')}
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
             </Button>
             <AdminCoinPackDialog
+                organization={organization}
                 open={isCoinPackDialogOpen}
                 setOpen={setIsCoinPackDialogOpen}
                 coinpack={selectedCoinPack}
@@ -57,15 +61,15 @@ export function AdminCoinPackGrid() {
                 {loading && <Spinner className='m-4 w-full' />}
                 {!loading && coinPacks.length === 0 &&
                     <Alert>
-                        No hay paquetes de monedas disponibles,
-                        <a href="/admin/coin-packs/create" className='hover:text-light-blue-200'>{" crea uno "}</a>
-                        para empezar.
+                        {_('no_coin_packs_available')},
+                        <a href="/admin/coin-packs/create" className='hover:text-light-blue-200'>{_('create_one_to_start')}</a>
                     </Alert>
                 }
             </div>
             <div className="flex flex-wrap gap-4">
                 {coinPacks.map(coinPack => (
                     <AdminCoinPackCard
+                        organization={organization}
                         key={coinPack.id}
                         coinpack={coinPack}
                         onClick={() => handleCardClick(coinPack)}

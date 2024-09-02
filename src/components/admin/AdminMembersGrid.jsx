@@ -12,13 +12,14 @@ import {
     Option,
     Input,
 } from "@material-tailwind/react";
-import { AdminMangaCustomCard } from './AdminMangaCustomCard';
-import { AdminMangaCustomDialog } from './AdminMangaCustomDialog';
 import { AdminMemberDialog } from './AdminMemberDialog';
 import { PageNavigation } from '../PageNavigation';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminMembersGrid() {
+export function AdminMembersGrid({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(true);
     const [memberList, setMemberList] = useState([]);
     const [total, setTotal] = useState(0);
@@ -107,39 +108,39 @@ export function AdminMembersGrid() {
     return (
         <div className="w-full my-4">
             <div className='w-full flex flex-col gap-2 sm:gap-4 select-none my-4'>
-                <p className='font-semibold text-xl'>Lista de miembros ({total || '-'})</p>
+                <p className='font-semibold text-xl'>{_("member_list")} ({total || '-'})</p>
                 <div className="w-80">
                     <Input
-                        label="Buscar Email"
-                        placeholder="Buscar por Email"
+                        label={_("search_email")}
+                        placeholder={_("search_by_email")}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </div>
                 <div className="w-80">
                     <Input
-                        label="Buscar Nombre de Usuario"
-                        placeholder="Buscar por Nombre de Usuario"
+                        label={_("search_username")}
+                        placeholder={_("search_by_username")}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 </div>
                 <div className="w-80">
                     <Select
-                        label="Ordenar por"
+                        label={_("order_by")}
                         onChange={(val) => setOrderBy(val)}
                     >
-                        <Option value="createdAt_desc" selected={orderBy === 'createdAt_desc'}>Fecha de Registro (Mas reciente primero)</Option>
-                        <Option value="createdAt_asc" selected={orderBy === 'createdAt_asc'}>Fecha de Registro (Mas antiguo primero)</Option>
-                        <Option value="username_asc" selected={orderBy === 'username_asc'}>Nombre de Usuario (A-Z)</Option>
-                        <Option value="username_desc" selected={orderBy === 'username_desc'}>Nombre de Usuario (Z-A)</Option>
-                        <Option value="coins_desc" selected={orderBy === 'coins_desc'}>Monedas (De mayor a menor)</Option>
-                        <Option value="coins_asc" selected={orderBy === 'coins_asc'}>Monedas (De menor a mayor)</Option>
+                        <Option value="createdAt_desc" selected={orderBy === 'createdAt_desc'}>{_("registration_date_newest_first")}</Option>
+                        <Option value="createdAt_asc" selected={orderBy === 'createdAt_asc'}>{_("registration_date_oldest_first")}</Option>
+                        <Option value="username_asc" selected={orderBy === 'username_asc'}>{_("username_a_z")}</Option>
+                        <Option value="username_desc" selected={orderBy === 'username_desc'}>{_("username_z_a")}</Option>
+                        <Option value="coins_desc" selected={orderBy === 'coins_desc'}>{_("coins_highest_first")}</Option>
+                        <Option value="coins_asc" selected={orderBy === 'coins_asc'}>{_("coins_lowest_first")}</Option>
                     </Select>
                 </div>
                 <div className="w-80">
                     <Select
-                        label="Mostrar"
+                        label={_("show")}
                         onChange={(val) => setLimit(val)}
                     >
                         <Option value="12" selected={limit === 12}>12</Option>
@@ -153,13 +154,14 @@ export function AdminMembersGrid() {
                         variant='outlined'
                         onClick={() => refreshMemberList()}
                     >
-                        Buscar
+                        {_("search")}
                     </Button>
                 </div>
             </div>
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
                 <div className="flex items-center gap-8 bg-blue-gray-500 p-2 rounded-md">
                     <PageNavigation
+                        organization={organization}
                         page={page}
                         maxPage={maxPage}
                         setPage={setPage}
@@ -169,6 +171,7 @@ export function AdminMembersGrid() {
                 </div>
             </div>
             <AdminMemberDialog
+                organization={organization}
                 open={isMemberDialogOpen}
                 setOpen={setIsMemberDialogOpen}
                 member={selectedMember}
@@ -178,7 +181,7 @@ export function AdminMembersGrid() {
                 {loading && <Spinner className='m-4 w-full' />}
                 {!loading && memberList.length === 0 &&
                     <Alert>
-                        No hay miembros para mostrar, prueba refinando tu busqueda.
+                        {_("no_members_to_show")}
                     </Alert>
                 }
             </div>
@@ -193,23 +196,23 @@ export function AdminMembersGrid() {
                                 {member.user.username}
                             </Typography>
                             <Typography>
-                                Rol: {member.role}
+                                {_("role")}: {member.role}
                             </Typography>
                             <Typography>
-                                Correo: {member.user.email}
+                                {_("email")}: {member.user.email}
                             </Typography>
                             <Typography>
-                                Monedas: {member.coins}
+                                {_("coins")}: {member.coins}
                             </Typography>
                             <Typography>
-                                Fecha Registro: {new Date(member.user.createdAt).toLocaleString()}
+                                {_("registration_date")}: {new Date(member.user.createdAt).toLocaleString()}
                             </Typography>
                         </CardBody>
                         <CardFooter className="pt-0">
                             <Button
                                 onClick={() => handleCardClick(member)}
                             >
-                                Editar
+                                {_("edit")}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -218,6 +221,7 @@ export function AdminMembersGrid() {
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
                 <div className="flex items-center gap-8 bg-blue-gray-500 p-2 rounded-md">
                     <PageNavigation
+                        organization={organization}
                         page={page}
                         maxPage={maxPage}
                         setPage={setPage}

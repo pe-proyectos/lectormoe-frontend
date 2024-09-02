@@ -22,8 +22,11 @@ import {
 } from "@heroicons/react/24/solid";
 import { callAPI } from '../util/callApi';
 import { MangaCard } from './MangaCard';
+import { getTranslator } from "../util/translate";
 
-export function NewsSearch() {
+export function NewsSearch({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
     const [search, setSearch] = useState('');
@@ -174,7 +177,7 @@ export function NewsSearch() {
                         </Typography>
                     </div>
                 )}
-                {mangaList.map(manga => <MangaCard key={manga.id} manga={manga} />)}
+                {mangaList.map(manga => <MangaCard organization={organization} key={manga.id} manga={manga} />)}
             </div>
         </div>
     );

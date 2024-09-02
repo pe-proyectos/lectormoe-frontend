@@ -19,8 +19,11 @@ import {
     CreditCardIcon,
 } from "@heroicons/react/24/solid";
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminMemberDialog({ open, setOpen, member, setMember }) {
+export function AdminMemberDialog({ organization, open, setOpen, member, setMember }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(false);
     const [currentTab, setCurrentTab] = useState('member');
@@ -98,7 +101,7 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
 
     const handleSubmit = async () => {
         if (!role) {
-            return toast.error('El rol es obligatorio');
+            return toast.error(_('role_mandatory'));
         }
         const formData = new FormData();
         formData.append('role', role);
@@ -114,7 +117,7 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
             body: formData,
         })
             .then(response => {
-                toast.success('Miembro actualizado');
+                toast.success(_('member_updated'));
                 setMember(null);
                 setRole('');
                 setDescription('');
@@ -139,25 +142,25 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    {member ? 'Editar miembro' : 'Crear miembro'}
+                    {member ? _('edit_member') : _('create_member')}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <div className="flex items-center justify-center">
                 <ButtonGroup>
-                    <Button onClick={() => setCurrentTab('member')}>General</Button>
-                    <Button onClick={() => setCurrentTab('permissions')}>Permisos</Button>
-                    <Button onClick={() => setCurrentTab('coinpacks')}>Paquetes de monedas</Button>
+                    <Button onClick={() => setCurrentTab('member')}>{_('general')}</Button>
+                    <Button onClick={() => setCurrentTab('permissions')}>{_('permissions')}</Button>
+                    <Button onClick={() => setCurrentTab('coinpacks')}>{_('coinpacks')}</Button>
                 </ButtonGroup>
                 </div>
 
                 <div className={`flex flex-col gap-4 ${currentTab === 'member' ? 'block' : 'hidden'}`}>
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Rol
+                        {_('role')}
                     </Typography>
                     <Input
                         size="lg"
-                        label="Rol del miembro"
+                        label={_('member_role')}
                         autoComplete='off'
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
@@ -165,133 +168,133 @@ export function AdminMemberDialog({ open, setOpen, member, setMember }) {
                 </div>
                 <div className={`flex flex-col gap-4 ${currentTab === 'permissions' ? 'block' : 'hidden'}`}>
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        General
+                        {_('general')}
                     </Typography>
                     <Checkbox
-                        label="Puede ver el panel de administración"
+                        label={_('can_see_admin_panel')}
                         checked={permissions.canSeeAdminPanel}
                         onChange={(e) => setPermissions({ ...permissions, canSeeAdminPanel: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar la organización"
+                        label={_('can_edit_organization')}
                         checked={permissions.canEditOrganization}
                         onChange={(e) => setPermissions({ ...permissions, canEditOrganization: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar la organización"
+                        label={_('can_delete_organization')}
                         checked={permissions.canDeleteOrganization}
                         onChange={(e) => setPermissions({ ...permissions, canDeleteOrganization: e.target.checked })}
                     />
 
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Miembros
+                        {_('members')}
                     </Typography>
                     <Checkbox
-                        label="Puede editar a un miembro"
+                        label={_('can_edit_member')}
                         checked={permissions.canEditMember}
                         onChange={(e) => setPermissions({ ...permissions, canEditMember: e.target.checked })}
                     />
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Contenido
+                        {_('content')}
                     </Typography>
                     <Checkbox
-                        label="Puede crear un autor"
+                        label={_('can_create_author')}
                         checked={permissions.canCreateAuthor}
                         onChange={(e) => setPermissions({ ...permissions, canCreateAuthor: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede crear un perfil de manga"
+                        label={_('can_create_manga_profile')}
                         checked={permissions.canCreateMangaProfile}
                         onChange={(e) => setPermissions({ ...permissions, canCreateMangaProfile: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede crear un manga"
+                        label={_('can_create_manga')}
                         checked={permissions.canCreateMangaCustom}
                         onChange={(e) => setPermissions({ ...permissions, canCreateMangaCustom: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar un manga"
+                        label={_('can_edit_manga')}
                         checked={permissions.canEditMangaCustom}
                         onChange={(e) => setPermissions({ ...permissions, canEditMangaCustom: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar un manga"
+                        label={_('can_delete_manga')}
                         checked={permissions.canDeleteMangaCustom}
                         onChange={(e) => setPermissions({ ...permissions, canDeleteMangaCustom: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede crear un género"
+                        label={_('can_create_genre')}
                         checked={permissions.canCreateGenre}
                         onChange={(e) => setPermissions({ ...permissions, canCreateGenre: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar un género"
+                        label={_('can_edit_genre')}
                         checked={permissions.canEditGenre}
                         onChange={(e) => setPermissions({ ...permissions, canEditGenre: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar un género"
+                        label={_('can_delete_genre')}
                         checked={permissions.canDeleteGenre}
                         onChange={(e) => setPermissions({ ...permissions, canDeleteGenre: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede crear un capítulo"
+                        label={_('can_create_chapter')}
                         checked={permissions.canCreateChapter}
                         onChange={(e) => setPermissions({ ...permissions, canCreateChapter: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar un capítulo"
+                        label={_('can_edit_chapter')}
                         checked={permissions.canEditChapter}
                         onChange={(e) => setPermissions({ ...permissions, canEditChapter: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar un capítulo"
+                        label={_('can_delete_chapter')}
                         checked={permissions.canDeleteChapter}
                         onChange={(e) => setPermissions({ ...permissions, canDeleteChapter: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede crear una página"
+                        label={_('can_create_page')}
                         checked={permissions.canCreatePage}
                         onChange={(e) => setPermissions({ ...permissions, canCreatePage: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar una página"
+                        label={_('can_edit_page')}
                         checked={permissions.canEditPage}
                         onChange={(e) => setPermissions({ ...permissions, canEditPage: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar una página"
+                        label={_('can_delete_page')}
                         checked={permissions.canDeletePage}
                         onChange={(e) => setPermissions({ ...permissions, canDeletePage: e.target.checked })}
                     />
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Paquetes de monedas
+                        {_('coinpacks')}
                     </Typography>
                     <Checkbox
-                        label="Puede crear un paquete de monedas"
+                        label={_('can_create_coinpack')}
                         checked={permissions.canCreateCoinpack}
                         onChange={(e) => setPermissions({ ...permissions, canCreateCoinpack: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede editar un paquete de monedas"
+                        label={_('can_edit_coinpack')}
                         checked={permissions.canEditCoinpack}
                         onChange={(e) => setPermissions({ ...permissions, canEditCoinpack: e.target.checked })}
                     />
                     <Checkbox
-                        label="Puede eliminar un paquete de monedas"
+                        label={_('can_delete_coinpack')}
                         checked={permissions.canDeleteCoinpack}
                         onChange={(e) => setPermissions({ ...permissions, canDeleteCoinpack: e.target.checked })}
                     />
                 </div>
                 <div className={`flex flex-col gap-4 ${currentTab === 'coinpacks' ? 'block' : 'hidden'}`}>
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        Paquetes de monedas
+                        {_('coinpacks')}
                     </Typography>
                 </div>
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    Guardar
+                    {_('save')}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />

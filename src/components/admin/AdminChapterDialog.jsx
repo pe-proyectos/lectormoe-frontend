@@ -26,16 +26,18 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { DropzoneArea } from 'material-ui-dropzone';
 import { DatePicker } from '../DatePicker';
 import { ImageDropzone } from '../ImageDropzone';
-import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
+export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, chapter }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(true);
     // form
     const [title, setTitle] = useState(() => {
         if (chapter) return chapter.title;
-        return `Capítulo ${mangaCustom?.chapters?.length + 1}`;
+        return `${_("chapter")} ${mangaCustom?.chapters?.length + 1}`;
     });
     const [number, setNumber] = useState(() => {
         if (chapter) return chapter.number;
@@ -106,7 +108,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                 return chapter.number > acc ? chapter.number : acc;
             }, 0);
             setNumber((lastChapterNumber + 1));
-            setTitle(`Capítulo ${lastChapterNumber + 1}`);
+            setTitle(`${_("chapter")} ${lastChapterNumber + 1}`);
             setReleasedAt(new Date());
             setIsSubscription(false);
             setChapterImageFile(null);
@@ -117,10 +119,10 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
 
     const handleSubmit = async () => {
         if (!title) {
-            return toast.error('El titulo es obligatorio');
+            return toast.error(_("mandatory_title"));
         }
         if (!number) {
-            return toast.error('El número es obligatorio');
+            return toast.error(_("mandatory_number"));
         }
         const formData = new FormData();
         formData.append('title', title);
@@ -145,7 +147,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                 setNumber(1);
                 setChapterImageFile(null);
                 setPages([]);
-                toast.success('Capítulo creado');
+                toast.success(_("chapter_created"));
                 setOpen(false);
             })
             .catch(error => {
@@ -165,8 +167,8 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                 <Typography variant="h4" color="blue-gray">
                     {
                         chapter
-                            ? `Editar capítulo ${chapter.number} de ${mangaCustom.title}`
-                            : `Subir capítulo de ${mangaCustom.title}`
+                            ? `${_("edit_chapter")} ${chapter.number} ${_("of")} ${mangaCustom.title}`
+                            : `${_("upload_chapter_of")} ${mangaCustom.title}`
                     }
                 </Typography>
             </DialogHeader>
@@ -174,54 +176,53 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                 <div className="flex gap-2">
                     <div className="max-w-[30%] w-[30%] flex flex-col gap-4">
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
-                            Detalles
+                            {_("details")}
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Número
+                            {_("number")}
                         </Typography>
                         <Input
-                            label="Número del capítulo"
+                            label={_("chapter_number")}
                             autoComplete='off'
                             value={number}
                             onChange={(e) => setNumber(e.target.value)}
                             type='number'
                         />
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Título
+                            {_("upload_chapter_of")}Título
                         </Typography>
                         <Input
-                            label="Título del capítulo"
+                            label={_("chapter_title")}
                             autoComplete='off'
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                         />
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Miniatura del capítulo (Opcional)
+                            {_("chapter_miniature")}
                         </Typography>
                         <ImageDropzone
                             value={chapterImageFile}
-                            label={'Arrastra y suelta una imagen para el capítulo'}
-                            alt={'Miniatura del capítulo'}
+                            label={_("chapter_miniature_label")}
+                            alt={_("chapter_miniature_alt")}
                             onChange={(files) => files[0] ? setChapterImageFile(files[0]) : null}
                             onDelete={(file) => setChapterImageFile(null)}
                         />
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
-                            Opciones
+                            {_("options")}
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Fecha de salida
+                            {_("release_date")}
                         </Typography>
                         <input
                             type="datetime-local"
-                            //   The specified value "2024-04-05T01:54:00.000Z" does not conform to the required format.  The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
                             value={formatDateToInput(releasedAt)}
                             onChange={(e) => setReleasedAt(new Date(e.target.value))}
                         />
                         <Typography variant="small" color="gray" className="font-normal">
-                            Ningun usuario podrá leer este capítulo hasta la fecha de salida
+                            {_("release_date_description")}
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Suscriptores
+                            {_("suscribers")}
                         </Typography>
                         <Switch
                             checked={isSubscription}
@@ -229,27 +230,27 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             label={
                                 <div>
                                     <Typography color="blue-gray" className="font-medium">
-                                        Solo para suscriptores
+                                        {_("suscribers_only")}
                                     </Typography>
                                 </div>
                             }
                         />
                         <Typography variant="small" color="gray" className="font-normal">
-                            Si se activa los suscriptores podrán leer este capítulo antes de la fecha de salida
+                            {_("suscribers_only_description")}
                         </Typography>
                     </div>
                     <div className="max-w-[70%] w-[70%] flex flex-col gap-4">
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
-                            Páginas
+                            {_("pages")}
                         </Typography>
                         <DropzoneArea
                             acceptedFiles={['image/*']}
                             dropzoneClass="!max-h-24 !min-h-24 !p-2"
-                            dropzoneText={"Arrastra y suelta imágenes para subir"}
+                            dropzoneText={_("drag_and_drop_images")}
                             dropzoneParagraphClass="!text-base"
                             Icon={''}
-                            cancelButtonText={"Cancelar"}
-                            submitButtonText={"Subir"}
+                            cancelButtonText={_("cancel")}
+                            submitButtonText={_("upload")}
                             maxFileSize={25 * 1024 * 1024}
                             showAlerts={false}
                             onDrop={(files) => setPages([...pages, ...files])}
@@ -261,7 +262,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                             {loading && <Spinner className='m-4 w-full' />}
                             {pages.length === 0 && !loading && (
                                 <Typography variant="paragraph" color="blue-gray" className="w-full m-auto text-center">
-                                    Este capítulo no tiene páginas, arrastra y suelta imágenes en el recuadro de arriba para subir
+                                    {_("chapter_no_pages")}
                                 </Typography>
                             )}
                             {pages.map((page, index) => (
@@ -279,7 +280,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                                                 ? URL.createObjectURL(page)
                                                 : page?.imageUrl
                                         }
-                                        alt={`Página ${index + 1}`}
+                                        alt={`${_("page")} ${index + 1}`}
                                         decoding="async"
                                         loading="lazy"
                                         className="w-full max-w-full h-56 max-h-56 object-cover rounded-md bg-gray-900"
@@ -306,7 +307,7 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                                                 </svg>
                                             </IconButton>
                                             <Typography variant="small" color="blue-gray">
-                                                Página {index + 1}
+                                                {_("page")} {index + 1}
                                             </Typography>
                                             <IconButton
                                                 variant="text"
@@ -332,14 +333,14 @@ export function AdminChapterDialog({ open, setOpen, mangaCustom, chapter }) {
                     variant="filled"
                     onClick={() => setOpen(false)}
                 >
-                    Cancelar
+                    {_("cancel")}
                 </Button>
                 <Button
                     variant="outlined"
                     onClick={handleSubmit}
                     loading={loading}
                 >
-                    Guardar capítulo
+                    {_("save_chapter")}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />

@@ -2,11 +2,15 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
 import { AdminAuthorGrid } from "../../components/admin/AdminAuthorGrid.jsx";
+import { getTranslator } from "../../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<AdminLayout title="Autores" page="authors">
-  <AdminMangasBreadcrumb client:only />
+<AdminLayout title={_("admin_authors_title")} page="authors">
+  <AdminMangasBreadcrumb organization={organization} client:only />
   <div class="py-2"></div>
   <h1>Autores</h1>
-  <AdminAuthorGrid client:only />
+  <AdminAuthorGrid organization={organization} client:only />
 </AdminLayout>

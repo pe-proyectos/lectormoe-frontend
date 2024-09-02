@@ -18,8 +18,11 @@ import { DatePicker } from '../DatePicker';
 import { callAPI } from '../../util/callApi';
 import { AdminChaptersTable } from './AdminChaptersTable';
 import { AdminChapterDialog } from './AdminChapterDialog';
+import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomChapters({ initialMangaCustom }) {
+export function AdminMangaCustomChapters({ organization, initialMangaCustom }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(true);
     const [chapter, setChapter] = useState(null);
     const [mangaCustom, setMangaCustom] = useState(initialMangaCustom);
@@ -51,34 +54,36 @@ export function AdminMangaCustomChapters({ initialMangaCustom }) {
                     src={mangaCustom.imageUrl}
                     decoding="async"
                     loading="lazy"
-                    className="w-56 max-h-96 object-cover" alt="cover"
+                    className="w-56 max-h-96 object-cover" alt={_("cover")}
                 />
                 <div>
                     <Typography variant="h2" color="blue-gray">
                         {mangaCustom.title}
                     </Typography>
                     <Typography variant="paragraph" color="blue-gray">
-                        {mangaCustom.description || mangaCustom.shortDescription || "Sin descripción"}
+                        {mangaCustom.description || mangaCustom.shortDescription || _("no_description")}
                     </Typography>
                 </div>
             </div>
             <Typography variant="h4" className='my-2' color="blue-gray">
-                Capítulos
+                {_("chapters")}
             </Typography>
             <Button
                 variant="outlined"
                 className='w-56 my-2'
                 onClick={() => setIsAdminChapterDialogOpen(true)}
             >
-                Publicar capítulo
+                {_("publish_chapter")}
             </Button>
             <AdminChapterDialog
+                organization={organization}
                 open={isAdminChapterDialogOpen}
                 setOpen={setIsAdminChapterDialogOpen}
                 mangaCustom={mangaCustom}
                 chapter={chapter}
             />
             <AdminChaptersTable
+                organization={organization}
                 mangaCustom={mangaCustom}
                 chapters={mangaCustom.chapters}
                 onChapterClick={chapter => setChapter(chapter)}

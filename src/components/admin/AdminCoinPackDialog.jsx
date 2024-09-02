@@ -12,8 +12,11 @@ import {
     Input,
 } from "@material-tailwind/react";
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminCoinPackDialog({ open, setOpen, coinpack, setCoinpack }) {
+export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, setCoinpack }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(false);
     // form
@@ -36,7 +39,7 @@ export function AdminCoinPackDialog({ open, setOpen, coinpack, setCoinpack }) {
 
     const handleSubmit = async () => {
         if (!name || !slug) {
-            return toast.error('El nombre y el slug son obligatorios');
+            return toast.error(_('name_and_slug_mandatory'));
         }
         const formData = new FormData();
         formData.append('name', name);
@@ -51,7 +54,7 @@ export function AdminCoinPackDialog({ open, setOpen, coinpack, setCoinpack }) {
             body: formData,
         })
             .then(response => {
-                toast.success('Paquete de monedas guardado');
+                toast.success(_('coin_pack_saved'));
                 setCoinpack(null);
                 setName('');
                 setSlug('');
@@ -75,73 +78,73 @@ export function AdminCoinPackDialog({ open, setOpen, coinpack, setCoinpack }) {
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    {coinpack ? 'Editar paquete de monedas' : 'Crear paquete de monedas'}
+                    {coinpack ? _('edit_coin_pack') : _('create_coin_pack')}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Nombre
+                    {_('name')}
                 </Typography>
                 <Input
                     size="lg"
-                    label="Nombre del paquete de monedas"
+                    label={_('coin_pack_name')}
                     autoComplete='off'
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Descripción (Opcional)
+                    {_('description_optional')}
                 </Typography>
                 <Textarea
                     size="lg"
-                    label="Descripción del paquete de monedas"
+                    label={_('coin_pack_description')}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Precio sin descuento
+                    {_('price_without_discount')}
                 </Typography>
                 <Input
                     type="number"
                     size="lg"
-                    label="Precio sin descuento"
+                    label={_('price_without_discount')}
                     value={priceWithoutDiscount}
                     onChange={(e) => setPriceWithoutDiscount(parseFloat(e.target.value))}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Precio con descuento
+                    {_('price_with_discount')}
                 </Typography>
                 <Input
                     type="number"
                     size="lg"
-                    label="Precio con descuento"
+                    label={_('price_with_discount')}
                     value={price}
                     onChange={(e) => setPrice(parseFloat(e.target.value))}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Cantidad de monedas
+                    {_('coin_amount')}
                 </Typography>
                 <Input
                     type="number"
                     size="lg"
-                    label="Cantidad de monedas"
+                    label={_('coin_amount')}
                     value={coins}
                     onChange={(e) => setCoins(parseInt(e.target.value))}
                 />
                 <label htmlFor="active-checkbox">
                     <Checkbox
                         color="blue"
-                        text="Activo"
+                        text={_('active')}
                         id="active-checkbox"
                         checked={active}
                         onChange={(e) => setActive(e.target.checked)}
                     />
-                    Activo
+                    {_('active')}
                 </label>
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    Guardar paquete de monedas
+                    {_('save_coin_pack')}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />

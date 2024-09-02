@@ -8,14 +8,17 @@ import {
 import { format } from "date-fns";
 import { DayPicker } from "react-day-picker";
 import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { getTranslator } from "../util/translate";
 
-export function DatePicker({ value, onChange }) {
+export function DatePicker({ organization, value, onChange }) {
+  const _ = getTranslator(organization.language);
+
   return (
     <div className="p-0">
       <Popover placement="bottom">
         <PopoverHandler>
           <Input
-            label="Selecciona una fecha"
+            label={_("select_a_date")}
             onChange={() => null}
             value={value ? format(value, "yyyy-MM-dd") : ""}
           />

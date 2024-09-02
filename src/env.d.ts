@@ -20,7 +20,7 @@ type Organization = {
     bannerUrl?: string,
     faviconUrl?: string,
     description?: string,
-    language?: string,
+    language: string,
     enableMangaSection?: boolean,
     enableManhuaSection?: boolean,
     enableManhwaSection?: boolean,

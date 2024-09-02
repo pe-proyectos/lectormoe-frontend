@@ -22,10 +22,12 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { DropzoneArea } from 'material-ui-dropzone';
 import { DatePicker } from '../DatePicker';
 import { ImageDropzone } from '../ImageDropzone';
-import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminCreateAuthorDialog({ open, setOpen }) {
+export function AdminCreateAuthorDialog({ organization, open, setOpen }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(false);
     // form
@@ -36,7 +38,7 @@ export function AdminCreateAuthorDialog({ open, setOpen }) {
 
     const handleSubmit = async () => {
         if (!name) {
-            return toast.error('El nombre es obligatorio');
+            return toast.error(_('name_is_required'));
         }
         const formData = new FormData();
         formData.append('name', name);
@@ -49,7 +51,7 @@ export function AdminCreateAuthorDialog({ open, setOpen }) {
             body: formData,
         })
             .then(response => {
-                toast.success('Autor creado');
+                toast.success(_('author_created'));
                 setName('');
                 setDescription('');
                 setShortDescription('');
@@ -69,53 +71,53 @@ export function AdminCreateAuthorDialog({ open, setOpen }) {
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    Crear autor
+                    {_('create_author')}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Nombre
+                    {_('name')}
                 </Typography>
                 <Input
                     size="lg"
-                    label="Nombre del autor"
+                    label={_('author_name')}
                     autoComplete='off'
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Rol del autor (Opcional)
+                    {_('author_role_optional')}
                 </Typography>
                 <Input
                     size="md"
-                    label="Ejemplo: Mangaka, Escritor, Ilustrador, etc."
+                    label={_('author_role_example')}
                     autoComplete='off'
                     value={shortDescription}
                     onChange={(e) => setShortDescription(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Descripción (Opcional)
+                    {_('description_optional')}
                 </Typography>
                 <Textarea
                     size="lg"
-                    label="Descripción del autor"
+                    label={_('author_description')}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Imagen del autor (Opcional)
+                    {_('author_image_optional')}
                 </Typography>
                 <ImageDropzone
                     value={coverImageFile}
-                    label={'Arrastra y suelta la imagen del autor'}
-                    alt={'Imagen del autor'}
+                    label={_('drag_and_drop_author_image')}
+                    alt={_('author_image')}
                     onChange={(files) => files[0] ? setCoverImageFile(files[0]) : null}
                     onDelete={(file) => setCoverImageFile(null)}
                 />
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    Guardar autor
+                    {_('save_author')}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />

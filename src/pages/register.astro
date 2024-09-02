@@ -1,10 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { RegisterCard } from '../components/RegisterCard.jsx';
+import { getTranslator } from "../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<Layout title="Registro">
+<Layout title={_("register_title")}>
 	<div class="mx-auto max-w-screen-md py-12">
-		<RegisterCard client:only />
+		<RegisterCard organization={organization} client:only />
 	</div>
 </Layout>

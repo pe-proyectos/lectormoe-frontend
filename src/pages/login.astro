@@ -1,10 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { LoginCard } from '../components/LoginCard.jsx';
+import { getTranslator } from "../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<Layout title="Inicio de sesión">
+<Layout title={_("login_title")}>
 	<div class="mx-auto max-w-screen-md py-12">
-		<LoginCard client:only />
+		<LoginCard organization={organization} client:only />
 	</div>
 </Layout>

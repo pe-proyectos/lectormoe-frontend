@@ -4,8 +4,11 @@ import {
     Chip,
 } from "@material-tailwind/react";
 import { LazyImage } from "./LazyImage";
+import { getTranslator } from "../util/translate";
 
-export function FeaturedMangaCard({ manga, ...props }) {
+export function FeaturedMangaCard({ organization, manga, ...props }) {
+    const _ = getTranslator(organization.language);
+
     if (!manga) {
         return (
             <div {...props}>
@@ -48,12 +51,12 @@ export function FeaturedMangaCard({ manga, ...props }) {
                             {manga?.lastChapterAt && new Date(manga.lastChapterAt) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
                                 <Tooltip content={
                                     new Date(manga.lastChapterAt) > new Date().setHours(0, 0, 0, 0)
-                                        ? `El capítulo ${manga?.lastChapters?.[0]?.number || "mas reciente"} fue lanzado hoy`
-                                        : `El capítulo ${manga?.lastChapters?.[0]?.number || "mas reciente"} fue lanzado el ${new Date(manga.lastChapterAt).toLocaleDateString()}`
+                                        ? `${_("chapter")} ${manga?.lastChapters?.[0]?.number || _("latest")} ${_("was_released_today")}`
+                                        : `${_("chapter")} ${manga?.lastChapters?.[0]?.number || _("latest")} ${_("was_released_on")} ${new Date(manga.lastChapterAt).toLocaleDateString()}`
                                 }>
                                     <Chip
                                         variant="outlined"
-                                        value="Nuevo Capítulo"
+                                        value={_("new_chapter")}
                                         className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer"
                                         onClick={() => location.href = manga?.lastChapters?.[0] ? `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}` : `/manga/${manga.slug}`}
                                     />
@@ -62,7 +65,7 @@ export function FeaturedMangaCard({ manga, ...props }) {
                             <Chip
                                 variant="filled"
                                 value={
-                                    `${manga?.views || 0} Lector${manga?.views === 1 ? '' : 'es'}`
+                                    `${manga?.views || 0} ${manga?.views === 1 ? _("reader") : _("readers")}`
                                 }
                             />
                         </div>

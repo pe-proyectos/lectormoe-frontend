@@ -8,8 +8,11 @@ import {
     Tooltip,
 } from "@material-tailwind/react";
 import { LazyImage } from "./LazyImage";
+import { getTranslator } from "../util/translate";
 
-export function MangaCard({ manga }) {
+export function MangaCard({ organization, manga }) {
+    const _ = getTranslator(organization.language);
+
     if (!manga) {
         return (
             <Card
@@ -20,7 +23,6 @@ export function MangaCard({ manga }) {
             </Card>
         )
     }
-
     const formatDate = (date) => {
         if (!date) return '';
         const dt = new Date(date);
@@ -31,6 +33,23 @@ export function MangaCard({ manga }) {
         const days = Math.floor(hours / 24);
         const weeks = Math.floor(days / 7);
         const months = Math.floor(days / 30);
+        if (organization.language === 'en') {
+            if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+            if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+            if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            if (seconds > 0) return `${seconds} second${seconds > 1 ? 's' : ''} ago`;
+            return 'today';
+        } else if (organization.language === 'pt') {
+            if (months > 0) return `há ${months} mes${months > 1 ? 'es' : ''}`;
+            if (weeks > 0) return `há ${weeks} semana${weeks > 1 ? 's' : ''}`;
+            if (days > 0) return `há ${days} dia${days > 1 ? 's' : ''}`;
+            if (hours > 0) return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+            if (minutes > 0) return `há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            if (seconds > 0) return `há ${seconds} segundo${seconds > 1 ? 's' : ''}`;
+            return 'hoje';
+        }
         if (months > 0) return `hace ${months} mes${months > 1 ? 'es' : ''}`;
         if (weeks > 0) return `hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
         if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
@@ -63,12 +82,12 @@ export function MangaCard({ manga }) {
                     {manga?.lastChapterAt && new Date(manga.lastChapterAt) > new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
                         <Tooltip content={
                             new Date(manga.lastChapterAt) > new Date().setHours(0, 0, 0, 0)
-                                ? `El capítulo ${manga?.lastChapters?.[0]?.number || "mas reciente"} fue lanzado hoy`
-                                : `El capítulo ${manga?.lastChapters?.[0]?.number || "mas reciente"} fue lanzado el ${new Date(manga.lastChapterAt).toLocaleDateString()}`
+                                ? (manga?.lastChapters?.[0]?.number ? `${_("the_chapter")} ${manga?.lastChapters?.[0]?.number} ${_("was_released_today")}` : _("most_recent_chapter_was_released_today"))
+                                : (manga?.lastChapters?.[0]?.number ? `${_("the_chapter")} ${manga?.lastChapters?.[0]?.number} ${_("was_released_at")} ${new Date(manga.lastChapterAt).toLocaleDateString()}` : `${_("most_recent_chapter_was_released_at")} ${new Date(manga.lastChapterAt).toLocaleDateString()}`)
                         }>
                             <Chip
                                 variant="outlined"
-                                value="Nuevo Capítulo"
+                                value={_("new_chapter")}
                                 className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer"
                                 onClick={() => location.href = manga?.lastChapters?.[0] ? `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}` : `/manga/${manga.slug}`}
                             />
@@ -99,7 +118,7 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                                 >
-                                    Capítulo {manga?.lastChapters?.[0]?.number}
+                                    {_("chapter")} {manga?.lastChapters?.[0]?.number}
                                 </Typography>
                                 <Typography
                                     as='a'
@@ -119,7 +138,7 @@ export function MangaCard({ manga }) {
                                     color="gray"
                                     className="font-normal text-xs hover:underline cursor-pointer"
                                 >
-                                    Capítulo {manga?.lastChapters?.[1]?.number}
+                                    {_("chapter")} {manga?.lastChapters?.[1]?.number}
                                 </Typography>
                                 <Typography
                                     as='a'

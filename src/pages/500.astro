@@ -1,14 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { getTranslator } from "../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<Layout title="Error interno">
+<Layout title={_("error_500_page_title")}>
     <div class="mx-auto max-w-screen-md py-12">
-        <h1>Error 500</h1>
-        <h3>¡Ups! Algo salió mal.</h3>
-        <p>Estamos teniendo problemas técnicos. Por favor, intenta de nuevo más tarde.</p>
+        <h1>{_("error_500")}</h1>
+        <h3>{_("error_500_title")}</h3>
+        <p>{_("error_500_description")}</p>
     </div>
 </Layout>
-
-<style>
-</style>

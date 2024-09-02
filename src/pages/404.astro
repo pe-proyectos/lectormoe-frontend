@@ -1,14 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { getTranslator } from "../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<Layout title="Página no encontrada">
+<Layout title={_("error_404_page_title")}>
     <div class="mx-auto max-w-screen-md py-12">
-        <h1>Error 404</h1>
-        <h3>¡Ups! No encontramos la página que buscas.</h3>
-        <p>La página que buscas no existe o ha sido movida. Por favor, verifica la URL e inténtalo de nuevo.</p>
+        <h1>{_("error_404")}</h1>
+        <h3>{_("error_404_title")}</h3>
+        <p>{_("error_404_description")}</p>
     </div>
 </Layout>
-
-<style>
-</style>

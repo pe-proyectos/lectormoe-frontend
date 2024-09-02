@@ -29,8 +29,11 @@ import { DatePicker } from '../DatePicker';
 import { ImageDropzone } from '../ImageDropzone';
 import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCustom }) {
+export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCustom, setMangaCustom }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(true);
     const [isCreateMangaProfileDialogOpen, setIsCreateMangaProfileDialogOpen] = useState(false);
@@ -94,10 +97,10 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
 
     const handleSubmit = async (event) => {
         if (!mangaProfile) {
-            return toast.error('El perfil de manga es obligatorio');
+            return toast.error(_('manga_profile_mandatory'));
         }
         if (!title) {
-            return toast.error('El titulo es obligatorio');
+            return toast.error(_('title_mandatory'));
         }
         const formData = new FormData();
         if (!mangaCustom) formData.append('mangaId', mangaProfile.id);
@@ -116,7 +119,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
             body: formData,
         })
             .then(response => {
-                toast.success('Manga creado');
+                toast.success(_('manga_created'));
                 setMangaProfile(null);
                 setMangaCustom(null);
                 setStatus('ongoing');
@@ -142,14 +145,14 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    {mangaCustom?.title || "Crear manga"}
+                    {mangaCustom?.title || _("create_manga")}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 {!mangaCustom &&
                     <>
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            Perfil de manga
+                            {_("manga_profile")}
                         </Typography>
                         <div className="flex">
                             <div className="grow">
@@ -174,7 +177,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
-                                            label="Elige un perfil de manga"
+                                            label={_("choose_manga_profile")}
                                             inputProps={{
                                                 ...params.inputProps,
                                                 autoComplete: 'new-password',
@@ -195,6 +198,7 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                                     </svg>
                                 </Button>
                                 <AdminMangaProfileDialog
+                                    organization={organization}
                                     open={isCreateMangaProfileDialogOpen}
                                     setOpen={setIsCreateMangaProfileDialogOpen}
                                 />
@@ -203,91 +207,93 @@ export function AdminMangaCustomDialog({ open, setOpen, mangaCustom, setMangaCus
                     </>
                 }
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Titulo
+                    {_("title")}
                 </Typography>
                 <Input
                     size="lg"
-                    label="Titulo de la obra"
+                    label={_("manga_title")}
                     autoComplete='off'
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     disabled={!mangaProfile}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Descripción corta ({shortDescription.length.toString().padStart(3, "0")}/300 caracteres) (Opcional)
+                    {_("short_description")} ({shortDescription.length.toString().padStart(3, "0")}/300 {_("characters")}) ({_("optional")})
                 </Typography>
                 <Textarea
                     size="md"
-                    label="Una descripción de menos de 300 caracteres..."
+                    label={_("short_description_less_than_300")}
                     maxLength={300}
                     value={shortDescription}
                     onChange={(e) => setShortDescription(e.target.value)}
                     disabled={!mangaProfile}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Sinopsis (Opcional)
+                    {_("synopsis")} ({_("optional")})
                 </Typography>
                 <Textarea
                     size="lg"
-                    label="Sinopsis de la obra..."
+                    label={_("manga_synopsis")}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={!mangaProfile}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Estado de la obra
+                    {_("manga_status")}
                 </Typography>
                 <div>
                     <Select
-                        label="Estado"
+                        label={_("status")}
                         value={status}
                         onChange={(val) => setStatus(val)}
                     >
-                        <Option value="ongoing" selected={status === 'ongoing'}>En emisión</Option>
-                        <Option value="hiatus" selected={status === 'hiatus'}>Hiatus</Option>
-                        <Option value="finished" selected={status === 'finished'}>Finalizado</Option>
+                        <Option value="ongoing" selected={status === 'ongoing'}>{_("ongoing")}</Option>
+                        <Option value="hiatus" selected={status === 'hiatus'}>{_("hiatus")}</Option>
+                        <Option value="finished" selected={status === 'finished'}>{_("finished")}</Option>
                     </Select>
                 </div>
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Fecha de publicación (Opcional)
+                    {_("release_date")} ({_("optional")})
                 </Typography>
                 <DatePicker
+                    organization={organization}
                     value={releasedDate}
                     onChange={setReleasedDate}
                     disabled={!mangaProfile}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Fecha del próximo capítulo (Opcional)
+                    {_("next_chapter_date")} ({_("optional")})
                 </Typography>
                 <DatePicker
+                    organization={organization}
                     value={nextChapterDate}
                     onChange={setNextChapterDate}
                     disabled={!mangaProfile}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Portada del manga (Opcional)
+                    {_("manga_cover")} ({_("optional")})
                 </Typography>
                 <ImageDropzone
                     value={coverImageFile}
-                    label={'Arrastra y suelta la imagen de portada del manga'}
-                    alt={'Imagen de portada'}
+                    label={_("drop_manga_cover")}
+                    alt={_("cover_image")}
                     onChange={(files) => files[0] ? setCoverImageFile(files[0]) : null}
                     onDelete={(file) => setCoverImageFile(null)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Banner del manga (Opcional)
+                    {_("manga_banner")} ({_("optional")})
                 </Typography>
                 <ImageDropzone
                     value={bannerImageFile}
-                    label={'Arrastra y suelta la imagen de banner del manga'}
-                    alt={'Banner de manga'}
+                    label={_("drop_manga_banner")}
+                    alt={_("manga_banner")}
                     onChange={(files) => files[0] ? setBannerImageFile(files[0]) : null}
                     onDelete={(file) => setBannerImageFile(null)}
                 />
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    Guardar manga
+                    {_("save_manga")}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />

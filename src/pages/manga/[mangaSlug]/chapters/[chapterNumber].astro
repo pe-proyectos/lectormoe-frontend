@@ -1,9 +1,12 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
 import { Reader } from "../../../../components/Reader";
+import { getTranslator } from "../../../../util/translate";
+
 
 const { mangaSlug, chapterNumber } = Astro.params;
 const { organization, callAPI, logged } = Astro.locals;
+const _ = getTranslator(organization.language);
 
 const [
     { status: mangaStatus, data: manga },
@@ -25,7 +28,7 @@ if (!chapterStatus) {
 <Layout
     title={`${chapter.title} - ${manga.title} #${chapter.number}`}
     imageUrl={manga.imageUrl}
-    description={`Lee el capítulo ${chapter.number} de ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || "Click aqui!"}`}
+    description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
     staticNavbar={true}
 >
     <Reader

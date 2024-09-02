@@ -7,8 +7,11 @@ import {
     Typography,
     Button,
 } from "@material-tailwind/react";
+import { getTranslator } from "../../util/translate";
 
-export function AdminAuthorCard({ name, imageUrl, shortDescription, description }) {
+export function AdminAuthorCard({ organization, name, imageUrl, shortDescription, description }) {
+    const _ = getTranslator(organization.language);
+
     return (
         <Card className="w-56">
             <CardHeader floated={false} color="blue-gray" className="relative h-56">
@@ -22,10 +25,10 @@ export function AdminAuthorCard({ name, imageUrl, shortDescription, description 
             </CardHeader>
             <CardBody>
                 <Typography variant="h5" color="blue-gray" className="mb-2">
-                    {name || "Sin nombre"}
+                    {name || _("no_name")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    {shortDescription || "Sin descripción corta"}
+                    {shortDescription || _("no_short_description")}
                 </Typography>
             </CardBody>
         </Card>

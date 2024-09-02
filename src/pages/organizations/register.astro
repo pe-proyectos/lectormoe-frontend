@@ -1,8 +1,12 @@
 ---
 import { RegisterCard } from "../../components/RegisterCard";
 import Layout from "../../layouts/Layout.astro";
+import { getTranslator } from "../../util/translate";
+
+const { organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 ---
 
-<Layout title="Registro">
-	<RegisterCard client:only />
+<Layout title={_("register")}>
+	<RegisterCard organization={organization} client:only />
 </Layout>

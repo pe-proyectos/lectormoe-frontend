@@ -13,8 +13,11 @@ import {
     PencilIcon,
     DocumentPlusIcon,
 } from "@heroicons/react/24/outline";
+import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomCard({ mangaCustom, onClick }) {
+export function AdminMangaCustomCard({ organization, mangaCustom, onClick }) {
+    const _ = getTranslator(organization.language);
+
     return (
         <Card className="w-56">
             <CardHeader floated={false} color="blue-gray" className="relative h-56">
@@ -25,12 +28,12 @@ export function AdminMangaCustomCard({ mangaCustom, onClick }) {
                             className='min-h-full object-cover'
                             decoding="async"
                             loading="lazy"
-                            alt={mangaCustom.title || "Sin título"}
+                            alt={mangaCustom.title || _("no_title")}
                         />
                     )
                     : (
                         <Typography variant="h5" color="blue-gray" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                            Sin imagen
+                            {_("no_image")}
                         </Typography>
                     )
                 }
@@ -40,7 +43,7 @@ export function AdminMangaCustomCard({ mangaCustom, onClick }) {
                     {mangaCustom.title || ""}
                 </Typography>
                 <Typography>
-                    {!mangaCustom.shortDescription && "Sin descripción corta"}
+                    {!mangaCustom.shortDescription && _("no_short_description")}
                     {mangaCustom.shortDescription &&
                         mangaCustom.shortDescription.length > 50
                         ? mangaCustom.shortDescription.substring(0, 50) + "..."
@@ -54,10 +57,10 @@ export function AdminMangaCustomCard({ mangaCustom, onClick }) {
                 <div>
                     <a href={`/admin/mangas/${mangaCustom.slug}`}>
                         <Button variant="text" className="px-2" size="sm">
-                            Capítulos
+                            {_("chapters")}
                         </Button>
                     </a>
-                    <Tooltip content="Editar">
+                    <Tooltip content={_("edit")}>
                         <Button variant="text" className="px-2 ml-1" size="sm" onClick={() => onClick(mangaCustom)}>
                             <PencilIcon strokeWidth={2} className="h-5 w-5" />
                         </Button>

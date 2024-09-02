@@ -6,8 +6,11 @@ import {
     ArrowLeftIcon,
     ArrowRightIcon,
 } from "@heroicons/react/24/solid";
+import { getTranslator } from "../util/translate";
 
-export function PageNavigation({ page, setPage, maxPage, loading, data }) {
+export function PageNavigation({ organization, page, setPage, maxPage, loading, data }) {
+    const _ = getTranslator(organization.language);
+
     return (
         <div className="flex items-center gap-8">
             <IconButton
@@ -20,7 +23,7 @@ export function PageNavigation({ page, setPage, maxPage, loading, data }) {
                 <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
             </IconButton>
             <Typography color="white" className="font-normal">
-                Página <strong className="text-gray-400">{page}</strong> de{" "}
+                {_("page")} <strong className="text-gray-400">{page}</strong> {_("of")}{" "}
                 <strong className="text-gray-400">{maxPage}</strong>
             </Typography>
             <IconButton

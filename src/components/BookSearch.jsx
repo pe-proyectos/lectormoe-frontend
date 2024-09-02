@@ -23,8 +23,11 @@ import {
 import { callAPI } from '../util/callApi';
 import { MangaCard } from './MangaCard';
 import { PageNavigation } from './PageNavigation';
+import { getTranslator } from "../util/translate";
 
-export function BookSearch() {
+export function BookSearch({ organization }) {
+    const _ = getTranslator(organization.language);
+
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
     const [search, setSearch] = useState(() => {
@@ -165,19 +168,16 @@ export function BookSearch() {
         'manhwa': 'Manhwa',
     }
 
-    const bookType = titles[bookTypeCode];
-    const bookTypes = titles[bookTypeCode] + 's';
-
     return (
         <div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
                 <p>
-                    Explora todos los {bookTypes.toLowerCase()} disponibles en nuestra plataforma. Puedes buscar por nombre o navegar por las categorías disponibles.
+                    {_(bookTypeCode + "_search_description")}
                 </p>
             </div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-6 pb-0'>
                 <p className='text-6xl font-bold'>
-                    Buscador de {bookTypes}
+                    {_(bookTypeCode + "_search_hero_title")}
                 </p>
             </div>
             <div className='relative w-full flex flex-wrap items-center justify-around px-2 py-12'>
@@ -185,7 +185,7 @@ export function BookSearch() {
                     <Input
                         type="search"
                         size='lg'
-                        placeholder={`Buscar ${bookTypes.toLowerCase()} por nombre...`}
+                        placeholder={_(bookTypeCode + "_search_by_name")}
                         containerProps={{
                             className: "w-full md:min-w-[26rem]",
                         }}
@@ -228,7 +228,7 @@ export function BookSearch() {
             <div className='relative w-full flex flex-wrap items-center justify-evenly gap-x-2 gap-y-4 px-2 py-12'>
                 <div className="flex items-center gap-4">
                     <Typography color="white" className="font-normal">
-                        Ordenar por:
+                        {_("order_by")}:
                     </Typography>
                     <Button
                         color="red"
@@ -236,7 +236,7 @@ export function BookSearch() {
                         onClick={() => setOrderBy('latest')}
                         disabled={orderBy === 'latest'}
                     >
-                        Más recientes
+                        {_("newest")}
                     </Button>
                     <Button
                         color="red"
@@ -244,12 +244,12 @@ export function BookSearch() {
                         onClick={() => setOrderBy('popular')}
                         disabled={orderBy === 'popular'}
                     >
-                        Más populares
+                        {_("popular")}
                     </Button>
                 </div>
                 <div className="flex items-center gap-4">
                     <Typography color="white" className="font-normal">
-                        Mostrar:
+                        {_("show")}:
                     </Typography>
                     <Button
                         color="red"
@@ -280,6 +280,7 @@ export function BookSearch() {
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
                 <div className="flex items-center gap-8">
                     <PageNavigation
+                        organization={organization}
                         page={page}
                         maxPage={maxPage}
                         setPage={setPage}
@@ -296,7 +297,7 @@ export function BookSearch() {
                                 color="white"
                                 className="font-light text-xl"
                             >
-                                Cargando...
+                                {_("loading")}...
                             </Typography>
                         </div>
                     )
@@ -307,14 +308,15 @@ export function BookSearch() {
                             color="white"
                             className="font-light text-xl"
                         >
-                            No hay {bookTypes.toLowerCase()} para mostrar
+                            {_(bookTypeCode + "_no_results")}
                         </Typography>
                     </div>
                 )}
-                {mangaList.map(manga => <MangaCard key={manga.id} manga={manga} />)}
+                {mangaList.map(manga => <MangaCard key={manga.id} organization={organization} manga={manga} />)}
             </div>
             <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
                 <PageNavigation
+                    organization={organization}
                     page={page}
                     maxPage={maxPage}
                     setPage={setPage}

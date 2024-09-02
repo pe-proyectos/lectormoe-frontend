@@ -3,12 +3,13 @@ import Layout from './Layout.astro';
 import { AdminSidebar } from '../components/admin/AdminSidebar.jsx';
 
 const { title, page } = Astro.props;
+const { organization } = Astro.locals;
 ---
 
 <Layout title={title + " - Admin"} isAdmin={true} >
     <div class="flex">
         <div class="min-w-[320px]">
-            <AdminSidebar page={page} client:only />
+            <AdminSidebar organization={organization} page={page} client:only />
         </div>
         <div class="w-full h-full p-4">
             <slot />

@@ -13,8 +13,11 @@ import StickyBox from "react-sticky-box";
 import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
 import { toast } from 'react-toastify';
+import { getTranslator } from "../util/translate";
 
 export function MangaView({ manga, organization, logged }) {
+    const _ = getTranslator(organization.language);
+
     const [chapterGroups, setChapterGroups] = useState({});
     const [selectedChapterGroup, setSelectedChapterGroup] = useState('');
     const [openCommentsAccordion, setOpenCommentsAccordion] = useState(true);
@@ -66,13 +69,30 @@ export function MangaView({ manga, organization, logged }) {
         const days = Math.floor(hours / 24);
         const weeks = Math.floor(days / 7);
         const months = Math.floor(days / 30);
-        if (months > 0) return `Publicado hace ${months} mes${months > 1 ? 'es' : ''}`;
-        if (weeks > 0) return `Publicado hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
-        if (days > 0) return `Publicado hace ${days} día${days > 1 ? 's' : ''}`;
-        if (hours > 0) return `Publicado hace ${hours} hora${hours > 1 ? 's' : ''}`;
-        if (minutes > 0) return `Publicado hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
-        if (seconds > 0) return `Publicado hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
-        return 'Publicado hoy';
+        if (organization.language === 'en') {
+            if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+            if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+            if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            if (seconds > 0) return `${seconds} second${seconds > 1 ? 's' : ''} ago`;
+            return 'today';
+        } else if (organization.language === 'pt') {
+            if (months > 0) return `há ${months} mes${months > 1 ? 'es' : ''}`;
+            if (weeks > 0) return `há ${weeks} semana${weeks > 1 ? 's' : ''}`;
+            if (days > 0) return `há ${days} dia${days > 1 ? 's' : ''}`;
+            if (hours > 0) return `há ${hours} hora${hours > 1 ? 's' : ''}`;
+            if (minutes > 0) return `há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+            if (seconds > 0) return `há ${seconds} segundo${seconds > 1 ? 's' : ''}`;
+            return 'hoje';
+        }
+        if (months > 0) return `hace ${months} mes${months > 1 ? 'es' : ''}`;
+        if (weeks > 0) return `hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
+        if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
+        if (hours > 0) return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) return `hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+        if (seconds > 0) return `hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
+        return 'hoy';
     }
 
     const getChapterHistory = (chapterNumber) => {
@@ -173,37 +193,37 @@ export function MangaView({ manga, organization, logged }) {
                                     <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
                                 </svg>
                                 */}
-                                    Añadir a Favoritos
+                                    {_("add_to_favorites")}Añadir a Favoritos
                                 </Button>
                             </div>
                             <div className="flex justify-between items-center my-4">
                                 <span className="text-xl font-bold">
-                                    Estado:
+                                    {_("status")}:
                                 </span>
                                 {manga?.status === 'ongoing' && (
                                     <div className="w-fit uppercase text-xl font-bold bg-green-400 py-1 px-6 text-center rounded-lg shadow-sm">
-                                        En emisión
+                                        {_("ongoing")}
                                     </div>
                                 )}
                                 {manga?.status === 'hiatus' && (
                                     <div className="w-fit uppercase text-xl font-bold bg-orange-500 py-1 px-6 text-center rounded-lg shadow-sm mx-auto">
-                                        HIATUS
+                                        {_("hiatus").toUpperCase()}
                                     </div>
                                 )}
                                 {manga?.status === 'finished' && (
                                     <div className="w-fit uppercase text-xl font-bold bg-red-400 py-1 px-6 text-center rounded-lg shadow-sm mx-auto">
-                                        FINALIZADO
+                                        {_("finished").toUpperCase()}
                                     </div>
                                 )}
                             </div>
                             <div className="flex flex-wrap justify-between items-center my-4">
                                 <span className="text-xl font-bold">
-                                    Demografía:
+                                    {_("demography")}:
                                 </span>
                                 <div className="flex flex-wrap gap-2 items-center">
                                     {!manga?.demography && (
                                         <span className="text-sm font-semibold px-2 text-center">
-                                            Sin demografía
+                                            {_("no_demography")}
                                         </span>
                                     )}
                                     {manga?.demography && (
@@ -215,12 +235,12 @@ export function MangaView({ manga, organization, logged }) {
                             </div>
                             <div className="flex flex-wrap justify-between items-center my-4">
                                 <span className="text-xl font-bold">
-                                    Géneros:
+                                    {_("genres")}:
                                 </span>
                                 <div className="flex flex-wrap gap-2 items-center">
                                     {manga?.genres?.length === 0 && (
                                         <span className="text-sm font-semibold px-2 text-center">
-                                            Sin géneros
+                                            {_("no_genres")}
                                         </span>
                                     )}
                                     {manga?.genres?.map(genre => (
@@ -235,7 +255,7 @@ export function MangaView({ manga, organization, logged }) {
                                             className="text-[0.6rem]"
                                             onClick={() => location.href = `/manga/${manga.slug}/chapters/${firstChapter?.number}`}
                                         >
-                                            Ir al primer capítulo
+                                            {_("go_to_first_chapter")}
                                         </Button>
                                     )}
                                     {lastChapter && (
@@ -243,7 +263,7 @@ export function MangaView({ manga, organization, logged }) {
                                             className="text-[0.6rem]"
                                             onClick={() => location.href = `/manga/${manga.slug}/chapters/${lastChapter?.number}`}
                                         >
-                                            Ir al ultimo capítulo
+                                            {_("go_to_last_chapter")}
                                         </Button>
                                     )}
                                 </ButtonGroup>
@@ -265,19 +285,19 @@ export function MangaView({ manga, organization, logged }) {
                             {manga?.title}
                         </span>
                         <p className="md:mx-2 md:my-1">
-                            Por {listFormatter.format(manga?.authors.map(author => author.name))}
+                            {_("by")} {listFormatter.format(manga?.authors.map(author => author.name))}
                         </p>
                         <p className="md:mx-2 md:my-4">
-                            {manga?.description || manga?.shortDescription || 'Sin descripción'}
+                            {manga?.description || manga?.shortDescription || _("no_description")}
                         </p>
                         {/* Chapters */}
                         <span className="text-4xl mb-2 font-extrabold">
-                            Capítulos
+                            {_("chapters")}
                             <span className="text-xs ml-2 mb-1 text-gray-600">
                                 {
                                     logged
-                                    ? `${manga?.chapters.length} publicados (${userChapterHistoryList.filter(v => v?.finishedAt).length} leídos)`
-                                    : `${manga?.chapters.length} publicados`
+                                    ? `${manga?.chapters.length} ${_("published")} (${userChapterHistoryList.filter(v => v?.finishedAt).length} ${_("past_read")})`
+                                    : `${manga?.chapters.length} ${_("published")}`
                                 }
                             </span>
                         </span>
@@ -337,7 +357,7 @@ export function MangaView({ manga, organization, logged }) {
                                             <div className="flex flex-wrap grow items-center justify-between">
                                                 <div className="">
                                                     <p className="flex flex-wrap items-center gap-x-2">
-                                                        <span className="text-xs lg:text-lg text-gray-400">Capítulo {chapter.number}</span>
+                                                        <span className="text-xs lg:text-lg text-gray-400">{_("chapter")} {chapter.number}</span>
                                                         <span className="text-[0.7rem] font-extralight text-gray-500">{formatDate(chapter.releasedAt)}</span>
                                                     </p>
                                                     <p className="text-xl lg:text-2xl">
@@ -389,7 +409,7 @@ export function MangaView({ manga, organization, logged }) {
                                     onClick={() => setOpenCommentsAccordion(oldValue => !oldValue)}
                                 >
                                     <h3 className='text-xl font-bold text-gray-300'>
-                                        {openCommentsAccordion ? 'Ocultar' : 'Mostrar'} comentarios
+                                        {openCommentsAccordion ? _("hide") : _("show")} {_("comments")}
                                     </h3>
                                 </AccordionHeader>
                                 <AccordionBody className="bg-gray-900 my-2 p-4 rounded-md">

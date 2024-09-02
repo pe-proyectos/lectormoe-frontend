@@ -1,14 +1,16 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { AdminSettings } from '../../components/admin/AdminSettings.jsx';
+import { getTranslator } from "../../util/translate";
 
 const { logged, organization } = Astro.locals;
+const _ = getTranslator(organization.language);
 
 if (!logged) {
   Astro.redirect("/login");
 }
 ---
 
-<AdminLayout title="Opciones" page="settings">
+<AdminLayout title={_("admin_settings_title")} page="settings">
     <AdminSettings organization={organization} client:only />
 </AdminLayout>

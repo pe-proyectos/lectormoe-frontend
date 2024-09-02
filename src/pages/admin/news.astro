@@ -1,12 +1,16 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { AdminSidebar } from '../../components/admin/AdminSidebar.jsx';
+import { getTranslator } from "../../util/translate";
 
-if (!Astro.locals.logged) {
+const { organization, logged } = Astro.locals;
+const _ = getTranslator(organization.language);
+
+if (!logged) {
   Astro.redirect("/login");
 }
 ---
 
-<Layout title="Administrador">
-    <AdminSidebar page="news" client:only />
+<Layout title={_("admin_news_title")}>
+    <AdminSidebar organization={organization} page="news" client:only />
 </Layout>

@@ -15,8 +15,11 @@ import {
     useMaterialReactTable,
 } from 'material-react-table';
 import { callAPI } from '../../util/callApi';
+import { getTranslator } from "../../util/translate";
 
-export function AdminPagesCard({ manga, chapter, pages }) {
+export function AdminPagesCard({ organization, manga, chapter, pages }) {
+    const _ = getTranslator(organization.language);
+
     const [data, setData] = useState(() => pages);
     const [chapterNewImages, setChapterNewImages] = useState([]);
     const [openUploadImagesDialog, setOpenUploadImagesDialog] = useState(false);
@@ -24,7 +27,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
         () => [
             {
                 accessorKey: 'number',
-                header: 'Número',
+                header: _('number'),
                 Cell: ({ row }) => (
                     <Typography variant="h6" color="blue-gray" className="-mb-3">
                         {row.index + 1}
@@ -33,7 +36,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
             },
             {
                 accessorKey: 'imageUrl',
-                header: 'Imagen',
+                header: _('image'),
                 Cell: ({ row }) => (
                     <img
                         src={row.original.imageUrl}
@@ -46,28 +49,28 @@ export function AdminPagesCard({ manga, chapter, pages }) {
             },
             {
                 accessorKey: 'isDoublePage',
-                header: 'Es doble página',
+                header: _('is_double_page'),
                 Cell: ({ row }) => (
                     <Switch />
                 ),
             },
             {
                 accessorKey: 'createdAt',
-                header: 'Creado el',
+                header: _('created_at'),
                 Cell: ({ row }) => (
                     <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>
                 ),
             },
             {
                 accessorKey: 'id',
-                header: 'Acciones',
+                header: _('actions'),
                 Cell: ({ row }) => (
                     <Button
                         color="red"
                         size="sm"
                         onClick={() => deletePage(row.original.id)}
                     >
-                        Eliminar
+                        {_('delete')}
                     </Button>
                 ),
             },
@@ -88,7 +91,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
             body: formData,
         })
             .then(response => {
-                toast.success('Imagenes subidas');
+                toast.success(_('images_uploaded'));
                 setData(response);
             })
             .catch(error => {
@@ -108,7 +111,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
             }))),
         })
             .then(response => {
-                toast.success('Orden guardado');
+                toast.success(_('order_saved'));
                 setData(response);
             })
             .catch(error => {
@@ -124,7 +127,7 @@ export function AdminPagesCard({ manga, chapter, pages }) {
             method: 'DELETE',
         })
             .then(response => {
-                toast.success('Página eliminada');
+                toast.success(_('page_deleted'));
                 setData(response);
             })
             .catch(error => {
@@ -156,23 +159,23 @@ export function AdminPagesCard({ manga, chapter, pages }) {
     return (
         <Card color="transparent" shadow={false}>
             <Typography variant="h4" color="blue-gray">
-                Páginas - {manga.title} #{chapter.number}
+                {_('pages')} - {manga.title} #{chapter.number}
             </Typography>
             <div className="dropzone-container flex flex-col items-end justify-end">
                 <MRT_TableContainer table={table} />;
                 <div>
                     <Button type="submit" variant='text' className="my-6 mx-1" onClick={() => setOpenUploadImagesDialog(true)}>
-                        Subir imagenes
+                        {_('upload_images')}
                     </Button>
                     <Button type="submit" variant='outlined' className="my-6 mx-1" onClick={() => saveNewOrder()}>
-                        Guardar
+                        {_('save')}
                     </Button>
                 </div>
             </div>
             <DropzoneDialog
                 acceptedFiles={['image/*']}
-                cancelButtonText={"Cancelar"}
-                submitButtonText={"Subir"}
+                cancelButtonText={_('cancel')}
+                submitButtonText={_('upload')}
                 maxFileSize={25 * 1024 * 1024}
                 open={openUploadImagesDialog}
                 onClose={() => setOpenUploadImagesDialog(false)}

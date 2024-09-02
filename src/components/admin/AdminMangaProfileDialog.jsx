@@ -24,8 +24,11 @@ import { DatePicker } from '../DatePicker';
 import { callAPI } from '../../util/callApi';
 import { AdminCreateAuthorDialog } from './AdminCreateAuthorDialog';
 import { set } from "date-fns";
+import { getTranslator } from "../../util/translate";
 
-export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
+export function AdminMangaProfileDialog({ organization, mangaProfile, open, setOpen }) {
+    const _ = getTranslator(organization.language);
+
     // dialog
     const [loading, setLoading] = useState(true);
     const [isCreateAuthorDialogOpen, setIsCreateAuthorDialogOpen] = useState(false);
@@ -68,16 +71,16 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
 
     const handleSubmit = async () => {
         if (!title) {
-            return toast.error('El titulo es obligatorio');
+            return toast.error(_('title_mandatory'));
         }
         if (selectedAuthors.length < 1 || selectedAuthors.length > 4) {
-            return toast.error('El autor es obligatorio (minimo 1, maximo 4)');
+            return toast.error(_('author_mandatory_min_1_max_4'));
         }
         if (!demography) {
-            return toast.error('La demografia es obligatoria');
+            return toast.error(_('demography_mandatory'));
         }
         if (!bookType) {
-            return toast.error('El tipo de obra es obligatorio');
+            return toast.error(_('book_type_mandatory'));
         }
         setLoading(true);
         callAPI('/api/manga', {
@@ -92,7 +95,7 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
             })
         })
             .then(response => {
-                toast.success('Perfil de manga creado');
+                toast.success(_('manga_profile_created'));
                 setTitle('');
                 setDemography(null);
                 setBookType(null);
@@ -114,12 +117,12 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    Crear perfil de manga
+                    {_("create_manga_profile")}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    {selectedAuthors.length > 1 ? 'Autores' : 'Autor'} ({selectedAuthors.length}/4)
+                    {selectedAuthors.length > 1 ? _("authors") : _("author")} ({selectedAuthors.length}/4)
                 </Typography>
                 <div className="flex">
                     <div className="grow">
@@ -133,8 +136,8 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
                                 <TextField
                                     {...params}
                                     variant="standard"
-                                    label={selectedAuthors.length > 1 ? 'Autores' : 'Autor'}
-                                    placeholder={selectedAuthors.length > 1 ? 'Autores...' : 'Autor...'}
+                                    label={selectedAuthors.length > 1 ? _("authors") : _("author")}
+                                    placeholder={selectedAuthors.length > 1 ? _("authors") + '...' : _("author") + '...'}
                                 />
                             )}
                             value={selectedAuthors}
@@ -152,64 +155,64 @@ export function AdminMangaProfileDialog({ mangaProfile, open, setOpen }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>
                         </Button>
-                        <AdminCreateAuthorDialog open={isCreateAuthorDialogOpen} setOpen={setIsCreateAuthorDialogOpen} />
+                        <AdminCreateAuthorDialog organization={organization} open={isCreateAuthorDialogOpen} setOpen={setIsCreateAuthorDialogOpen} />
                     </div>
                 </div>
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Demografia
+                    {_("demography")}
                 </Typography>
                 <Autocomplete
                     disablePortal
                     options={demographies}
                     getOptionLabel={(option) => `${option.name} (${option.description})`}
-                    renderInput={(params) => <TextField {...params} label="Demografia" />}
+                    renderInput={(params) => <TextField {...params} label={_("demography")} />}
                     value={demography}
                     onChange={(event, newValue) => setDemography(newValue)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Tipo de obra
+                    {_("book_type")}
                 </Typography>
                 <Autocomplete
                     disablePortal
                     options={bookTypes}
                     getOptionLabel={(option) => option.name}
-                    renderInput={(params) => <TextField {...params} label="Tipo de obra" />}
+                    renderInput={(params) => <TextField {...params} label={_("book_type")} />}
                     value={bookType}
                     onChange={(event, newValue) => setBookType(newValue)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Titulo
+                    {_("title")}
                 </Typography>
                 <Input
                     size="lg"
-                    label="Titulo de la obra"
+                    label={_("manga_title")}
                     autoComplete='off'
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Descripción corta ({shortDescription.length.toString().padStart(3, "0")}/300 caracteres) (Opcional)
+                    {_("short_description")} ({shortDescription.length.toString().padStart(3, "0")}/300 {_("characters")}) ({_("optional")})
                 </Typography>
                 <Textarea
                     size="md"
-                    label="Una descripción de menos de 300 caracteres..."
+                    label={_("short_description_less_than_300")}
                     maxLength={300}
                     value={shortDescription}
                     onChange={(e) => setShortDescription(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    Sinopsis (Opcional)
+                    {_("synopsis")} ({_("optional")})
                 </Typography>
                 <Textarea
                     size="lg"
-                    label="Sinopsis de la obra..."
+                    label={_("manga_synopsis")}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                 />
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    Guardar perfil de manga
+                    {_("save_manga_profile")}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />
