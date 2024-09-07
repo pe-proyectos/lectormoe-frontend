@@ -110,6 +110,7 @@ export const translations: Record<string, string> = {
   edit_coin_pack: "Edit coin pack",
   create_coin_pack: "Create coin pack",
   name_and_slug_mandatory: "Name and slug are mandatory",
+  name_mandatory: "Name is mandatory",
   coin_pack_saved: "Coin pack saved",
   name: "Name",
   coin_pack_name: "Coin pack name",

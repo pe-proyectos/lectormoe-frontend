@@ -38,8 +38,8 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
     }, [coinpack]);
 
     const handleSubmit = async () => {
-        if (!name || !slug) {
-            return toast.error(_('name_and_slug_mandatory'));
+        if (!name) {
+            return toast.error(_('name_mandatory'));
         }
         const formData = new FormData();
         formData.append('name', name);
@@ -49,7 +49,7 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
         formData.append('coins', coins);
         formData.append('active', active);
         setLoading(true);
-        callAPI(coinpack ? `/api/coin-pack/${coinpack.id}` : '/api/coin-pack', {
+        callAPI(coinpack ? `/api/coinpack/${coinpack.id}` : '/api/coinpack', {
             method: coinpack ? 'PATCH' : 'POST',
             body: formData,
         })
@@ -57,7 +57,6 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
                 toast.success(_('coin_pack_saved'));
                 setCoinpack(null);
                 setName('');
-                setSlug('');
                 setDescription('');
                 setPriceWithoutDiscount(0.0);
                 setPrice(0.0);
@@ -108,6 +107,8 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
                     type="number"
                     size="lg"
                     label={_('price_without_discount')}
+                    min={0}
+                    max={1000}
                     value={priceWithoutDiscount}
                     onChange={(e) => setPriceWithoutDiscount(parseFloat(e.target.value))}
                 />
@@ -118,6 +119,8 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
                     type="number"
                     size="lg"
                     label={_('price_with_discount')}
+                    min={0}
+                    max={1000}
                     value={price}
                     onChange={(e) => setPrice(parseFloat(e.target.value))}
                 />
@@ -128,6 +131,8 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
                     type="number"
                     size="lg"
                     label={_('coin_amount')}
+                    min={0}
+                    max={1000}
                     value={coins}
                     onChange={(e) => setCoins(parseInt(e.target.value))}
                 />
