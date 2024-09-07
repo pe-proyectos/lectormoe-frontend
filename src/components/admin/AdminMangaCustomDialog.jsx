@@ -25,7 +25,7 @@ import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Autocomplete from '@mui/material/Autocomplete';
 import { DropzoneArea } from 'material-ui-dropzone';
-import { DatePicker } from '../DatePicker';
+import { DialogDatePicker } from '../DialogDatePicker';
 import { ImageDropzone } from '../ImageDropzone';
 import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
@@ -62,6 +62,21 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         setCoverImageFile(mangaCustom?.imageUrl || null);
         setBannerImageFile(mangaCustom?.bannerUrl || null);
     }, [mangaCustom]);
+
+    useEffect(() => {
+        if (!open) {
+            setMangaProfile(null);
+            setMangaCustom(null);
+            setStatus('ongoing');
+            setTitle('');
+            setShortDescription('');
+            setDescription('');
+            setReleasedDate(null);
+            setNextChapterDate(null);
+            setCoverImageFile(null);
+            setBannerImageFile(null);
+        }
+    }, [open]);
 
     useEffect(() => {
         refreshMangaProfile();
@@ -255,7 +270,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                 <Typography className="-mb-2" variant="h6" color="gray">
                     {_("release_date")} ({_("optional")})
                 </Typography>
-                <DatePicker
+                <DialogDatePicker
                     organization={organization}
                     value={releasedDate}
                     onChange={setReleasedDate}
@@ -264,7 +279,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                 <Typography className="-mb-2" variant="h6" color="gray">
                     {_("next_chapter_date")} ({_("optional")})
                 </Typography>
-                <DatePicker
+                <DialogDatePicker
                     organization={organization}
                     value={nextChapterDate}
                     onChange={setNextChapterDate}

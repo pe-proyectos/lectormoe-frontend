@@ -17,6 +17,7 @@ import { getTranslator } from "../util/translate";
 
 export function MangaView({ manga, organization, logged }) {
     const _ = getTranslator(organization.language);
+    console.log(manga);
 
     const [chapterGroups, setChapterGroups] = useState({});
     const [selectedChapterGroup, setSelectedChapterGroup] = useState('');
@@ -216,6 +217,16 @@ export function MangaView({ manga, organization, logged }) {
                                     </div>
                                 )}
                             </div>
+                            {(manga?.nextChapterAt && (new Date() < new Date(manga?.nextChapterAt))) && (
+                                <div className="flex flex-wrap justify-between items-center my-4">
+                                    <span className="text-xl font-bold">
+                                        {_("next_chapter")}:
+                                    </span>
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                        <p>{new Date(manga?.nextChapterAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            )}
                             <div className="flex flex-wrap justify-between items-center my-4">
                                 <span className="text-xl font-bold">
                                     {_("demography")}:
