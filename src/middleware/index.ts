@@ -86,6 +86,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
         }
 
         if (organizationCheck?.status === true) {
+            if (context.url.pathname === "/ads.txt") {
+                const adstxt = organizationCheck.data?.googleAdsAdsTxtContent || "";
+                return new Response(adstxt, {
+                headers: { "Content-Type": "text/plain" },
+                });
+            }
             context.locals.organization = organizationCheck.data;
             context.locals.formatDate = (dateString: string) => {
                 const date = new Date(dateString);
