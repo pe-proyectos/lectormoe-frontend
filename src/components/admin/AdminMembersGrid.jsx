@@ -97,7 +97,6 @@ export function AdminMembersGrid({ organization }) {
         callAPI(`/api/member?${query}`)
             .then(({ data, total, maxPage }) => {
                 setTotal(total);
-                console.log(data);
                 setMemberList(data);
                 setMaxPage(maxPage || 1);
             })

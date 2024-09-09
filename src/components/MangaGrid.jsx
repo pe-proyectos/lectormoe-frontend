@@ -171,22 +171,19 @@ export function MangaGrid({ organization, logged }) {
                     </div>
                 </div>
             </div >
-            {/* Google Ad */}
+            {/* Coin Packs 
             < div className="w-full sm:mx-2 my-16" >
                 <div className="flex justify-center">
                     <div className="max-w-[64rem] max-h-[8rem] text-center">
                         <p className='uppercase text-2xl font-bold'>
-                            {organization?.title || "Mangas"}
+                            {_("coin_packs")}
                         </p>
                         <p className='uppercase'>
-                            {organization?.logged
-                                ? _("logged_title")
-                                : _("no_logged_title")
-                            }
+                            {_("coin_packs_text")}
                         </p>
                     </div>
                 </div>
-            </div >
+            </div > */}
             {/* Main content */}
             < div className="grid grid-cols-1 lg:grid-cols-4 gap-y-4 lg:gap-4 m-2" >
                 <div className="col-span-1 align-middle order-first lg:order-last">

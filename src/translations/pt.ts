@@ -295,6 +295,11 @@ export const translations: Record<string, string> = {
   dashboard: "Painel",
   news: "Notícias",
   coin_packs: "Pacotes de moedas",
+  coin_packs_text: "Compre moedas para apoiar o scan e acessar conteúdo exclusivo!",
+  available: "Disponível",
+  read: "Ler",
+  keep_reading: "Continuar Lendo",
+  already_read: "✅ Lido",
   storage: "Armazenamento",
   settings: "Configurações",
   upgrade_to_pro: "Atualize para um site PRO",
@@ -326,9 +331,7 @@ export const translations: Record<string, string> = {
   logged_title: "Explore, leia e desfrute de seus mangás favoritos",
   no_logged_title:
     "Cadastre-se ou faça login para salvar seu histórico e retomar a leitura a qualquer momento",
-  keep_reading: "Continuar lendo",
   no_history: "Nenhum histórico para mostrar",
-  read: "lido",
   see_less: "Ver menos",
   see_more: "Ver mais",
   to_access_history: "para ver e salvar seu histórico",
@@ -385,4 +388,6 @@ export const translations: Record<string, string> = {
   admin_storage_title: "Armazenamento",
   read_the_chapter: "Leia o capítulo",
   click_here: "Clique aqui!",
+  previous_chapter_will_be_released_in: "O capítulo anterior será lançado",
+  next_chapter_will_be_released_in: "O próximo capítulo será lançado",
 };

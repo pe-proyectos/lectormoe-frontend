@@ -23,6 +23,12 @@ if (!mangaStatus) {
 if (!chapterStatus) {
     return Astro.redirect("/404");
 }
+
+const isReady = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+
+if (!isReady) {
+    return Astro.redirect("/404");
+}
 ---
 
 <Layout

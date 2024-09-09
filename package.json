@@ -23,7 +23,7 @@
     "@mui/x-date-pickers": "^6.19.7",
     "@nanostores/react": "^0.7.2",
     "@types/page-flip": "^2.0.3",
-    "@types/react": "^18.2.66",
+    "@types/react": "^18.3.5",
     "@types/react-dom": "^18.2.22",
     "@types/toastify-js": "^1.12.3",
     "apexcharts": "^3.49.0",

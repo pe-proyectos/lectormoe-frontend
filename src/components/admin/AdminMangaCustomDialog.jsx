@@ -39,12 +39,14 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
     const [isCreateMangaProfileDialogOpen, setIsCreateMangaProfileDialogOpen] = useState(false);
     // lists
     const [mangas, setMangas] = useState([]);
+    const [genres, setGenres] = useState([]);
     // form
     const [mangaProfile, setMangaProfile] = useState(null);
     const [status, setStatus] = useState('ongoing');
     const [title, setTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
+    const [selectedGenres, setSelectedGenres] = useState([]);
     const [releasedDate, setReleasedDate] = useState(null);
     const [nextChapterDate, setNextChapterDate] = useState(null);
     const [coverImageFile, setCoverImageFile] = useState(null);
@@ -80,6 +82,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
 
     useEffect(() => {
         refreshMangaProfile();
+        refreshGenres();
     }, []);
 
     useEffect(() => {
@@ -93,6 +96,12 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
     }
+
+    const refreshGenres = () => {
+        return callAPI(`/api/genre`)
+            .then(result => setGenres(result))
+            .catch(error => toast.error(error?.message));
+    };
 
     useEffect(() => {
         if (!mangaProfile) return;
@@ -126,6 +135,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         if (description) formData.append('description', description);
         if (releasedDate) formData.append('releasedAt', releasedDate);
         if (nextChapterDate) formData.append('nextChapterAt', nextChapterDate);
+        if (selectedGenres.length > 0) formData.append('genreIds', selectedGenres.map(genre => genre.id).join(','));
         formData.append('image', coverImageFile);
         formData.append('banner', bannerImageFile);
         setLoading(true);
@@ -145,6 +155,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                 setNextChapterDate(null);
                 setCoverImageFile(null);
                 setBannerImageFile(null);
+                setSelectedGenres([]);
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -253,6 +264,31 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={!mangaProfile}
                 />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_("genres")}
+                </Typography>
+                <div className="flex">
+                    <div className="grow">
+                        <Autocomplete
+                            multiple
+                            disablePortal
+                            options={genres}
+                            isOptionEqualToValue={(option, value) => option.slug === value.slug}
+                            getOptionLabel={(option) => option.name}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    variant="standard"
+                                    label={_("genres")}
+                                    placeholder={_("genres") + '...'}
+                                />
+                            )}
+                            value={selectedGenres}
+                            getOptionDisabled={(options) => (selectedGenres.length >= 4 ? true : false)}
+                            onChange={(event, newValue) => setSelectedGenres(newValue)}
+                        />
+                    </div>
+                </div>
                 <Typography className="-mb-2" variant="h6" color="gray">
                     {_("manga_status")}
                 </Typography>

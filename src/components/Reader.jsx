@@ -42,6 +42,7 @@ import {
 import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
+import { formatDate } from "../util/date";
 
 export function Reader({ organization, manga, chapterNumber, logged }) {
     const _ = getTranslator(organization.language);
@@ -192,42 +193,6 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
         callAPI(url)
             .catch((error) => { console.error('Failed to save chapter history', error); });
     }, [currentPageNumber]);
-
-    const formatDate = (date) => {
-        if (!date) return '';
-        const dt = new Date(date);
-        const diff = new Date() - dt;
-        const seconds = Math.floor(diff / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-        const weeks = Math.floor(days / 7);
-        const months = Math.floor(days / 30);
-        if (organization.language === 'en') {
-            if (months > 0) return `Published ${months} month${months > 1 ? 's' : ''} ago`;
-            if (weeks > 0) return `Published ${weeks} week${weeks > 1 ? 's' : ''} ago`;
-            if (days > 0) return `Published ${days} day${days > 1 ? 's' : ''} ago`;
-            if (hours > 0) return `Published ${hours} hour${hours > 1 ? 's' : ''} ago`;
-            if (minutes > 0) return `Published ${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-            if (seconds > 0) return `Published ${seconds} second${seconds > 1 ? 's' : ''} ago`;
-            return 'Published today';
-        } else if (organization.language === 'pt') {
-            if (months > 0) return `Publicado há ${months} mes${months > 1 ? 'es' : ''}`;
-            if (weeks > 0) return `Publicado há ${weeks} semana${weeks > 1 ? 's' : ''}`;
-            if (days > 0) return `Publicado há ${days} dia${days > 1 ? 's' : ''}`;
-            if (hours > 0) return `Publicado há ${hours} hora${hours > 1 ? 's' : ''}`;
-            if (minutes > 0) return `Publicado há ${minutes} minuto${minutes > 1 ? 's' : ''}`;
-            if (seconds > 0) return `Publicado há ${seconds} segundo${seconds > 1 ? 's' : ''}`;
-            return 'Publicado hoje';
-        }
-        if (months > 0) return `Publicado hace ${months} mes${months > 1 ? 'es' : ''}`;
-        if (weeks > 0) return `Publicado hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
-        if (days > 0) return `Publicado hace ${days} día${days > 1 ? 's' : ''}`;
-        if (hours > 0) return `Publicado hace ${hours} hora${hours > 1 ? 's' : ''}`;
-        if (minutes > 0) return `Publicado hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
-        if (seconds > 0) return `Publicado hace ${seconds} segundo${seconds > 1 ? 's' : ''}`;
-        return 'Publicado hoy';
-    }
 
     useEffect(() => {
         callAPI(`/api/views/manga-custom/${manga.slug}/chapter/${chapterNumber}`, {
@@ -565,18 +530,30 @@ export function Reader({ organization, manga, chapterNumber, logged }) {
                     <div className=' m-2'>
                         <ButtonGroup>
                             {chapter?.previousChapter && (
-                                <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`}>
-                                    {_("previous_chapter")}
-                                    #{chapter?.previousChapter?.number} {chapter?.previousChapter?.title}
-                                </Button>
+                                (new Date(chapter.previousChapter?.releasedAt).getTime() < new Date().getTime()) ? (
+                                    <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`}>
+                                        {_("previous_chapter")}
+                                        #{chapter?.previousChapter?.number} {chapter?.previousChapter?.title}
+                                    </Button>
+                                    ) : (
+                                    <Button disabled>
+                                        {_("previous_chapter_will_be_released_in")} {formatDate(chapter.previousChapter?.releasedAt, organization.language)}
+                                    </Button>
+                                )
                             )}
                             <Button onClick={() => location.href = `/manga/${manga.slug}`}>
                                 {_("back_to_chapter_list")}
                             </Button>
                             {chapter?.nextChapter && (
-                                <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`}>
-                                    {_("next_chapter")}
-                                </Button>
+                                (new Date(chapter.nextChapter?.releasedAt).getTime() < new Date().getTime()) ? (
+                                    <Button onClick={() => location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`}>
+                                        {_("next_chapter")}
+                                    </Button>
+                                ) : (
+                                    <Button disabled>
+                                        {_("next_chapter_will_be_released_in")} {formatDate(chapter.nextChapter?.releasedAt, organization.language)}
+                                    </Button>
+                                )
                             )}
                         </ButtonGroup>
                     </div>

@@ -45,7 +45,7 @@ export function AdminMangaProfileDialog({ organization, mangaProfile, open, setO
     const [description, setDescription] = useState('');
 
     useEffect(() => {
-        refreshAutors();
+        refreshAuthors();
         setLoading(true);
         callAPI(`/api/demography`)
             .then(result => setDemographies(result))
@@ -60,10 +60,10 @@ export function AdminMangaProfileDialog({ organization, mangaProfile, open, setO
     }, []);
 
     useEffect(() => {
-        if (!isCreateAuthorDialogOpen) refreshAutors();
+        if (!isCreateAuthorDialogOpen) refreshAuthors();
     }, [isCreateAuthorDialogOpen]);
 
-    const refreshAutors = () => {
+    const refreshAuthors = () => {
         return callAPI(`/api/author`)
             .then(result => setAuthors(result))
             .catch(error => toast.error(error?.message));

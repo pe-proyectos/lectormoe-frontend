@@ -293,6 +293,11 @@ export const translations: Record<string, string> = {
   dashboard: "Dashboard",
   news: "News",
   coin_packs: "Coin packs",
+  coin_packs_text: "Buy coins to support the scan and access exclusive content!",
+  available: "Available",
+  read: "Read",
+  keep_reading: "Keep reading",
+  already_read: "✅ Read",
   storage: "Storage",
   settings: "Settings",
   upgrade_to_pro: "Upgrade to a PRO site",
@@ -324,9 +329,7 @@ export const translations: Record<string, string> = {
   logged_title: "Explore, read and enjoy your favorite manga",
   no_logged_title:
     "Register or log in to save your history and resume reading at any time",
-  keep_reading: "Keep reading",
   no_history: "No history to show",
-  read: "read",
   see_less: "See less",
   see_more: "See more",
   to_access_history: "to view and save your history",
@@ -383,4 +386,6 @@ export const translations: Record<string, string> = {
   admin_storage_title: "Storage",
   read_the_chapter: "Read the chapter",
   click_here: "Click here!",
+  previous_chapter_will_be_released_in: "Previous chapter will be released",
+  next_chapter_will_be_released_in: "Next chapter will be released",
 };

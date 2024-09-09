@@ -61,7 +61,6 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
     useEffect(() => {
         callAPI(`/api/coinpack`)
         .then(({ data }) => {
-            console.log(data);
             setCoinpacks(data);
         })
         .catch(error => toast.error(error?.message));

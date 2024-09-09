@@ -52,7 +52,6 @@ export function AdminDashboard({ organization }) {
         params.append("to", to);
         callAPI(`/api/analytics?${params}`)
             .then(stats => {
-                console.log("stats", stats);
                 setStats(stats);
             })
             .catch(error => toast.error(error?.message))

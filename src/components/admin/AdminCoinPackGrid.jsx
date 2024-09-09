@@ -26,7 +26,6 @@ export function AdminCoinPackGrid({ organization }) {
         setLoading(true);
         callAPI(`/api/coinpack`)
             .then(({ data }) => {
-                console.log(data);
                 setCoinPacks(data)
             })
             .catch(error => toast.error(error?.message || _('error_loading_coin_packs')))
