@@ -55,7 +55,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 		<meta name="twitter:image:src" content={imageUrl || organization?.bannerUrl}>
 		<meta property="og:locale:alternate" content="es_ES">
 		<meta name="theme-color" content="#ff1a1a">
-		<script defer src="https://monitor.sotf-mods.com/script.js" data-website-id="9d9e3537-4ff4-450f-af95-dec5f8e4e32c"></script>
+		<script defer src="https://monitor.lector.moe/script.js" data-website-id={organization?.monitorWebsiteId}></script>
 		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
      		crossorigin="anonymous"></script>
 		{/*
@@ -74,6 +74,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 				></script>
 			)
 		*/}
+		 <meta http-equiv="X-Client-IP" content={Astro.clientAddress} id="client-ip" />
 	</head>
 	<body class={isAdmin ? "" : "bg-brand-primary-content-900 text-brand-primary-50"}>
 		<StickyNavbar

@@ -10,33 +10,46 @@ interface ImportMeta {
 }
 
 type Organization = {
-    id: number,
-    slug: string,
-    name: string,
-    title: string,
-    domain: string,
-    logoUrl?: string,
-    imageUrl?: string,
-    bannerUrl?: string,
-    faviconUrl?: string,
-    description?: string,
-    language: string,
-    enableMangaSection?: boolean,
-    enableManhuaSection?: boolean,
-    enableManhwaSection?: boolean,
-    enableGoogleAds?: boolean,
-    googleAdsMetaContent?: string,
-    googleAdsAdsTxtContent?: string,
-    enableDisqusIntegration?: boolean,
-    disqusEmbedUrl?: string,
-    facebookUrl?: string,
-    twitterUrl?: string,
-    instagramUrl?: string,
-    youtubeUrl?: string,
-    patreonUrl?: string,
-    tiktokUrl?: string,
-    discordUrl?: string,
-    twitchUrl?: string,
+    id: number;
+    slug: string;
+    name: string;
+    title: string;
+    domain: string;
+    logoUrl?: string;
+    imageUrl?: string;
+    bannerUrl?: string;
+    faviconUrl?: string;
+    description?: string;
+    language: string;
+    useBlockedCountries?: boolean;
+    useAllowedCountries?: boolean;
+    enableMangaSection?: boolean;
+    enableManhuaSection?: boolean;
+    enableManhwaSection?: boolean;
+    enableGoogleAds?: boolean;
+    googleAdsMetaContent?: string;
+    googleAdsAdsTxtContent?: string;
+    monitorWebsiteId?: string;
+    enableDisqusIntegration?: boolean;
+    disqusEmbedUrl?: string;
+    facebookUrl?: string;
+    twitterUrl?: string;
+    instagramUrl?: string;
+    youtubeUrl?: string;
+    patreonUrl?: string;
+    tiktokUrl?: string;
+    discordUrl?: string;
+    twitchUrl?: string;
+    countryOptions?: {
+        organizationId: number;
+        countryCode: string;
+        language: string;
+        countryName: string;
+        allowed: boolean;
+        blocked: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[];
 }
 
 interface Window {
