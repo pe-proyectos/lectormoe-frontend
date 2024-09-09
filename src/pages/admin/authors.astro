@@ -9,8 +9,8 @@ const _ = getTranslator(organization.language);
 ---
 
 <AdminLayout title={_("admin_authors_title")} page="authors">
-  <AdminMangasBreadcrumb organization={organization} client:only />
+  <AdminMangasBreadcrumb organization={organization} client:only="react"/>
   <div class="py-2"></div>
   <h1>Autores</h1>
-  <AdminAuthorGrid organization={organization} client:only />
+  <AdminAuthorGrid organization={organization} client:only="react"/>
 </AdminLayout>

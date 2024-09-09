@@ -74,7 +74,6 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 				></script>
 			)
 		*/}
-		 <meta http-equiv="X-Client-IP" content={Astro.clientAddress} id="client-ip" />
 	</head>
 	<body class={isAdmin ? "" : "bg-brand-primary-content-900 text-brand-primary-50"}>
 		<StickyNavbar
@@ -83,17 +82,17 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 			member={member}
 			userSlug={userSlug}
 			staticNavbar={staticNavbar}
-			client:only
+			client:only="react"
 		/>
 		<div class="min-h-[80vh]">
 			<slot />
 		</div>
 		{
 			!isAdmin && (
-				<Footer organization={organization} client:only />
+				<Footer organization={organization} client:only="react"/>
 			)
 		}
-		<ToastContainer client:only theme="dark" />
+		<ToastContainer client:only="react"theme="dark" />
 	</body>
 </html>
 

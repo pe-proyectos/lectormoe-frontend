@@ -9,6 +9,6 @@ const _ = getTranslator(organization.language);
 
 <Layout title={_("login_title")}>
 	<div class="mx-auto max-w-screen-md py-12">
-		<LoginCard organization={organization} client:only />
+		<LoginCard organization={organization} client:only="react"/>
 	</div>
 </Layout>

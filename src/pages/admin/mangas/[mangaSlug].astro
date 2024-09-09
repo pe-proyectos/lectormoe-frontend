@@ -16,7 +16,7 @@ if (!mangaStatus) {
 ---
 
 <AdminLayout title={_("admin_manga_title")} page="mangas">
-  <AdminMangasBreadcrumb organization={organization} client:only />
+  <AdminMangasBreadcrumb organization={organization} client:only="react"/>
   <div class="py-2"></div>
-  <AdminMangaCustomChapters organization={organization} initialMangaCustom={manga} client:only />
+  <AdminMangaCustomChapters organization={organization} initialMangaCustom={manga} client:only="react"/>
 </AdminLayout>

@@ -1,9 +1,5 @@
 import 'cookie-store';
 
-const clientIp = document.getElementById('client-ip')?.getAttribute('content');
-console.log(clientIp);
-
-
 async function getIpFromCloudflare() {
     let f = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
     let data = await f.text();

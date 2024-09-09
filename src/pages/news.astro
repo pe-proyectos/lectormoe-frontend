@@ -8,5 +8,5 @@ const _ = getTranslator(organization.language);
 ---
 
 <Layout title={_("news_title")}>
-	<NewsSearch organization={organization} client:only />
+	<NewsSearch organization={organization} client:only="react"/>
 </Layout>

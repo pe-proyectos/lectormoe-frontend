@@ -390,4 +390,5 @@ export const translations: Record<string, string> = {
   click_here: "Click aqui!",
   previous_chapter_will_be_released_in: "El capítulo anterior se publicará",
   next_chapter_will_be_released_in: "El próximo capítulo se publicará",
+  countries: "Países",
 };

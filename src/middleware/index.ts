@@ -1,4 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
+import { getIP } from "../util/get-ip";
 
 export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.theme = context.cookies.get('theme')?.value === 'light' ? 'light' : 'black';
@@ -20,7 +21,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
                 'organization-domain': process.env["PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN"] || context.url.hostname,
                 'Content-Type': 'application/json',
                 'Authorization': context.locals.token ? `Bearer ${context.locals.token}` : '',
-                'ip': context.clientAddress,
+                'ip': getIP(context.request.headers) || "0.0.0.0",
                 ...(fetchOptions?.headers || {}),
             },
         });

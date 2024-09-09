@@ -13,5 +13,5 @@ if (!mangaStatus) {
 ---
 
 <Layout title={manga.title} imageUrl={manga?.bannerUrl || manga?.imageUrl} description={manga.shortDescription || manga.description}>
-	<MangaView manga={manga} organization={organization} logged={logged} client:only />
+	<MangaView manga={manga} organization={organization} logged={logged} client:only="react"/>
 </Layout>

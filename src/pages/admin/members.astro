@@ -8,5 +8,5 @@ const _ = getTranslator(organization.language);
 ---
 
 <AdminLayout title={_("admin_members_title")} page="users">
-  <AdminMembersGrid organization={organization} client:only />
+  <AdminMembersGrid organization={organization} client:only="react"/>
 </AdminLayout>

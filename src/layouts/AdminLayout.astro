@@ -9,7 +9,7 @@ const { organization } = Astro.locals;
 <Layout title={title + " - Admin"} isAdmin={true} >
     <div class="flex">
         <div class="min-w-[320px]">
-            <AdminSidebar organization={organization} page={page} client:only />
+            <AdminSidebar organization={organization} page={page} client:only="react"/>
         </div>
         <div class="w-full h-full p-4">
             <slot />

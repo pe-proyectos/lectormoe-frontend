@@ -19,8 +19,6 @@ import { formatDate } from "../util/date";
 export function MangaView({ manga, organization, logged }) {
   const _ = getTranslator(organization.language);
 
-  console.log(manga);
-
   const [chapterGroups, setChapterGroups] = useState({});
   const [selectedChapterGroup, setSelectedChapterGroup] = useState("");
   const [openCommentsAccordion, setOpenCommentsAccordion] = useState(true);

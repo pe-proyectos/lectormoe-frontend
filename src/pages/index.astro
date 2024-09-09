@@ -6,5 +6,5 @@ const { organization, logged } = Astro.locals;
 ---
 
 <Layout>
-	<MangaGrid organization={organization} logged={logged} client:only />
+	<MangaGrid organization={organization} logged={logged} client:only="react" />
 </Layout>

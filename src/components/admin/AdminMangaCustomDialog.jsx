@@ -63,6 +63,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         setNextChapterDate(mangaCustom?.nextChapterAt || null);
         setCoverImageFile(mangaCustom?.imageUrl || null);
         setBannerImageFile(mangaCustom?.bannerUrl || null);
+        setSelectedGenres(mangaCustom?.genres || []);
     }, [mangaCustom]);
 
     useEffect(() => {

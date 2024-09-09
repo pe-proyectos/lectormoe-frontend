@@ -9,8 +9,8 @@ const _ = getTranslator(organization.language);
 ---
 
 <AdminLayout title={_("admin_coinpack_title")} page="coinpacks">
-  <AdminMangasBreadcrumb organization={organization} client:only />
+  <AdminMangasBreadcrumb organization={organization} client:only="react"/>
   <div class="py-2"></div>
   <h1>{_("admin_coinpack_title")}</h1>
-  <AdminCoinPackGrid organization={organization} client:only />
+  <AdminCoinPackGrid organization={organization} client:only="react"/>
 </AdminLayout>
