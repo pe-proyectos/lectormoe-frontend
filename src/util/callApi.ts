@@ -1,10 +1,9 @@
 import 'cookie-store';
 
 async function getIpFromCloudflare() {
-    let f = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-    let data = await f.text();
-    let ipRegex = /[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}/;
-    return data.match(ipRegex)?.[0];
+    let f = await fetch('https://ipv4-check-perf.radar.cloudflare.com/api/info');
+    let data = await f.json();
+    return data.ip_address;
 }
 
 export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> & { includeIp?: any }) => {
