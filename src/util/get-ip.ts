@@ -6,9 +6,9 @@ https://github.com/gaurishhs/elysia-ip/blob/main/src/index.ts
 export type IPHeaders = 'x-real-ip' | 'x-client-ip' | 'cf-connecting-ip' | 'fastly-client-ip' | 'x-cluster-client-ip' | 'x-forwarded' | 'forwarded-for' | 'forwarded' | 'x-forwarded' | 'appengine-user-ip' | 'true-client-ip' | 'cf-pseudo-ipv4' | (string & {})
 
 export const headersToCheck: IPHeaders[] = [
+    'cf-connecting-ip', // Cloudflare
     'x-real-ip', // Nginx proxy/FastCGI
     'x-client-ip', // Apache https://httpd.apache.org/docs/2.4/mod/mod_remoteip.html#page-header 
-    'cf-connecting-ip', // Cloudflare
     'fastly-client-ip', // Fastly
     'x-cluster-client-ip', // GCP
     'x-forwarded', // General Forwarded
