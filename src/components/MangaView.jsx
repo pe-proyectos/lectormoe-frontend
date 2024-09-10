@@ -214,9 +214,18 @@ export function MangaView({ manga, organization, logged }) {
                       {_("next_chapter")}:
                     </span>
                     <div className="flex flex-wrap gap-2 items-center">
-                      <p>
-                        {new Date(manga?.nextChapterAt).toLocaleDateString()}
-                      </p>
+                      <Tooltip
+                        content={new Date(
+                          manga?.nextChapterAt
+                        ).toLocaleString()}
+                      >
+                        <p>
+                          {formatDate(
+                            manga?.nextChapterAt,
+                            organization.language
+                          )}
+                        </p>
+                      </Tooltip>
                     </div>
                   </div>
                 )}
