@@ -206,6 +206,7 @@ export const translations: Record<string, string> = {
   can_see_admin_panel: "Pode ver o painel de administração",
   can_edit_organization: "Pode editar a organização",
   can_delete_organization: "Pode excluir a organização",
+  can_edit_permissions: "Pode editar as permissões",
   members: "Membros",
   can_edit_member: "Pode editar um membro",
   content: "Conteúdo",
@@ -407,4 +408,7 @@ export const translations: Record<string, string> = {
   language_invalid: "Idioma é inválido",
   country_name_required: "Nome do país é obrigatório",
   country_code_already_exists: "Código do país já existe",
+  hierarchy_level: "Nível hierárquico",
+  profile_image: "Imagem de perfil",
+  drop_profile_image: "Arraste e solte a imagem de perfil",
 };

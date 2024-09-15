@@ -1,5 +1,5 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { AdminSidebar } from '../../components/admin/AdminSidebar.jsx';
 import { getTranslator } from "../../util/translate";
 
@@ -11,6 +11,6 @@ if (!logged) {
 }
 ---
 
-<Layout title={_("admin_news_title")}>
+<AdminLayout title={_("admin_news_title")} page="news">
     <AdminSidebar organization={organization} page="news" client:only="react"/>
-</Layout>
+</AdminLayout>

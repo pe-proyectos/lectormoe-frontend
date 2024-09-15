@@ -6,7 +6,7 @@ const { title, page } = Astro.props;
 const { organization } = Astro.locals;
 ---
 
-<Layout title={title + " - Admin"} isAdmin={true} >
+<Layout title={title + " - Admin"} isAdmin={true} showAds={false}>
     <div class="flex">
         <div class="min-w-[320px]">
             <AdminSidebar organization={organization} page={page} client:only="react"/>

@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
+import { ImageDropzone } from '../ImageDropzone';
 
 export function AdminMemberDialog({ organization, open, setOpen, member, setMember }) {
     const _ = getTranslator(organization.language);
@@ -31,6 +32,7 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
     const [role, setRole] = useState('');
     const [description, setDescription] = useState('');
     const [hierarchyLevel, setHierarchyLevel] = useState(0);
+    const [imageFile, setImageFile] = useState(null);
     const [permissions, setPermissions] = useState({
         canSeeAdminPanel: false,
         canEditOrganization: false,
@@ -52,16 +54,16 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
         canCreatePage: false,
         canEditPage: false,
         canDeletePage: false,
-        canCreateCoinpack: false,
-        canEditCoinpack: false,
-        canDeleteCoinpack: false,
+        canCreateCoinPack: false,
+        canEditCoinPack: false,
+        canDeleteCoinPack: false,
     });
-    const [coinpacks, setCoinpacks] = useState([]);
+    const [coinPacks, setCoinPacks] = useState([]);
 
     useEffect(() => {
         callAPI(`/api/coinpack`)
         .then(({ data }) => {
-            setCoinpacks(data);
+            setCoinPacks(data);
         })
         .catch(error => toast.error(error?.message));
     }, []);
@@ -92,9 +94,9 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
             canCreatePage: member.canCreatePage,
             canEditPage: member.canEditPage,
             canDeletePage: member.canDeletePage,
-            canCreateCoinpack: member.canCreateCoinpack,
-            canEditCoinpack: member.canEditCoinpack,
-            canDeleteCoinpack: member.canDeleteCoinpack,
+            canCreateCoinPack: member.canCreateCoinPack,
+            canEditCoinPack: member.canEditCoinPack,
+            canDeleteCoinPack: member.canDeleteCoinPack,
         });
     }, [member]);
 
@@ -104,8 +106,9 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
         }
         const formData = new FormData();
         formData.append('role', role);
-        if (description) formData.append('description', description);
         formData.append('hierarchyLevel', hierarchyLevel);
+        if (description) formData.append('description', description);
+        formData.append('image', imageFile);
         // Append permissions to formData
         Object.keys(permissions).forEach(key => {
             formData.append(key, permissions[key]);
@@ -126,6 +129,7 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
                     permissionsSetToFalse[key] = false;
                 });
                 setPermissions(permissionsSetToFalse);
+                setImageFile(null);
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -163,6 +167,36 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
                         autoComplete='off'
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                        {_('description')}
+                    </Typography>
+                    <Input
+                        size="lg"
+                        label={_('description')}
+                        autoComplete='off'
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                        {_('hierarchy_level')}
+                    </Typography>
+                    <Input
+                        size="lg"
+                        label={_('hierarchy_level')}
+                        autoComplete='off'
+                        value={hierarchyLevel}
+                        onChange={(e) => setHierarchyLevel(e.target.value)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                        {_("profile_image")} ({_("optional")})
+                    </Typography>
+                    <ImageDropzone
+                        value={imageFile}
+                        label={_("drop_profile_image")}
+                        alt={_("profile_image")}
+                        onChange={(files) => files[0] ? setImageFile(files[0]) : null}
+                        onDelete={(file) => setImageFile(null)}
                     />
                 </div>
                 <div className={`flex flex-col gap-4 ${currentTab === 'permissions' ? 'block' : 'hidden'}`}>
@@ -271,18 +305,18 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
                     </Typography>
                     <Checkbox
                         label={_('can_create_coinpack')}
-                        checked={permissions.canCreateCoinpack}
-                        onChange={(e) => setPermissions({ ...permissions, canCreateCoinpack: e.target.checked })}
+                        checked={permissions.canCreateCoinPack}
+                        onChange={(e) => setPermissions({ ...permissions, canCreateCoinPack: e.target.checked })}
                     />
                     <Checkbox
                         label={_('can_edit_coinpack')}
-                        checked={permissions.canEditCoinpack}
-                        onChange={(e) => setPermissions({ ...permissions, canEditCoinpack: e.target.checked })}
+                        checked={permissions.canEditCoinPack}
+                        onChange={(e) => setPermissions({ ...permissions, canEditCoinPack: e.target.checked })}
                     />
                     <Checkbox
                         label={_('can_delete_coinpack')}
-                        checked={permissions.canDeleteCoinpack}
-                        onChange={(e) => setPermissions({ ...permissions, canDeleteCoinpack: e.target.checked })}
+                        checked={permissions.canDeleteCoinPack}
+                        onChange={(e) => setPermissions({ ...permissions, canDeleteCoinPack: e.target.checked })}
                     />
                 </div>
                 <div className={`flex flex-col gap-4 ${currentTab === 'coinpacks' ? 'block' : 'hidden'}`}>

@@ -9,10 +9,11 @@ interface Props {
 	imageUrl?: string;
 	description?: string;
 	isAdmin?: boolean;
+	showAds?: boolean;
 	staticNavbar?: boolean;
 }
 
-const { title, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
+const { title, showAds, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
 const { theme, organization, userSlug, username, member } = Astro.locals;
 ---
 
@@ -27,7 +28,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google Ads */}
 		{
-			isAdmin !== false && organization?.enableGoogleAds && (
+			(showAds ?? true) && organization?.enableGoogleAds && (
 				<meta
 					name="google-adsense-account"
 					content={organization?.googleAdsMetaContent}
@@ -59,7 +60,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
      		crossorigin="anonymous"></script>
 		{/*
-			!isAdmin && (
+			!showAds && (
 				<script
 					type='text/javascript'
 					src='//pl23164527.highcpmgate.com/49/87/d5/4987d5265e0e4031443cf6b865192948.js'
@@ -67,7 +68,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 			)
 		*/}
 		{/*
-			!isAdmin && (
+			!showAds && (
 				<script
 					type='text/javascript'
 					src='//pl23165906.highcpmgate.com/c8/8f/78/c88f78ff7be3993492ef078516302d3c.js'
