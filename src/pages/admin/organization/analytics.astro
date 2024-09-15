@@ -1,7 +1,7 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
 import { AdminSidebar } from '../../../components/admin/AdminSidebar';
 import { getTranslator } from "../../../util/translate";
+import AdminLayout from '../../../layouts/AdminLayout.astro';
 
 const { organization, logged } = Astro.locals;
 const _ = getTranslator(organization.language);
@@ -11,6 +11,6 @@ if (!logged) {
 }
 ---
 
-<Layout title={_("admin_analytics_title")}>
+<AdminLayout title={_("admin_analytics_title")} page="analytics">
     <AdminSidebar organization={organization} page="analytics" client:only="react"/>
-</Layout>
+</AdminLayout>
