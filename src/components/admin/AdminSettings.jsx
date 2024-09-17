@@ -50,6 +50,7 @@ export function AdminSettings({
   const [useBlockedCountries, setUseBlockedCountries] = useState(false);
   const [useAllowedCountries, setUseAllowedCountries] = useState(false);
   const [enableGoogleAds, setEnableGoogleAds] = useState(false);
+  const [enableAdsterraAds, setEnableAdsterraAds] = useState(false);
   const [enableDisqusIntegration, setEnableDisqusIntegration] = useState(false);
   const [disqusEmbedUrl, setDisqusEmbedUrl] = useState("");
   const [logoImageFile, setLogoImageFile] = useState(null);
@@ -139,6 +140,7 @@ export function AdminSettings({
         setCountryOptions(organization.countryOptions || []);
         // Integrations
         setEnableGoogleAds(organization.enableGoogleAds || false);
+        setEnableAdsterraAds(organization.enableAdsterraAds || false);
         setEnableDisqusIntegration(
           organization.enableDisqusIntegration || false
         );
@@ -180,6 +182,7 @@ export function AdminSettings({
     formData.append("useBlockedCountries", useBlockedCountries);
     formData.append("useAllowedCountries", useAllowedCountries);
     formData.append("enableGoogleAds", enableGoogleAds);
+    formData.append("enableAdsterraAds", enableAdsterraAds);
     formData.append("enableDisqusIntegration", enableDisqusIntegration);
     formData.append("disqusEmbedUrl", disqusEmbedUrl);
     formData.append("facebookUrl", facebookUrl);
@@ -484,6 +487,11 @@ export function AdminSettings({
                 label={_("enable_google_ads")}
                 checked={enableGoogleAds}
                 onChange={(e) => setEnableGoogleAds(e.target.checked)}
+              />
+              <Switch
+                label={_("enable_adsterra_ads")}
+                checked={enableAdsterraAds}
+                onChange={(e) => setEnableAdsterraAds(e.target.checked)}
               />
               <Typography className="-mb-2" variant="h6" color="gray">
                 {_("comments")}

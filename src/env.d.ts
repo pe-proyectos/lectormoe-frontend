@@ -29,6 +29,8 @@ type Organization = {
     enableGoogleAds?: boolean;
     googleAdsMetaContent?: string;
     googleAdsAdsTxtContent?: string;
+    enableAdsterraAds?: boolean;
+    adsterraAdSource?: string;
     monitorWebsiteId?: string;
     enableDisqusIntegration?: boolean;
     disqusEmbedUrl?: string;

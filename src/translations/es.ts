@@ -268,6 +268,7 @@ export const translations: Record<string, string> = {
   integrations: "Integraciones",
   ads: "Anuncios",
   enable_google_ads: "Activar anuncios de Google Ads",
+  enable_adsterra_ads: "Activar anuncios de Adsterra",
   comments: "Comentarios",
   enable_disqus_comments: "Activar comentarios de Disqus",
   disqus_embed_url: "URL Embed de Disqus",

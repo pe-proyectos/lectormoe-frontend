@@ -42,6 +42,12 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 					crossorigin="anonymous"></script>
 			)
 		}
+		{/* Adsterra Ads */}
+		{
+			(showAds ?? true) && organization?.enableAdsterraAds && (
+				<script type='text/javascript' src={organization?.adsterraAdSource}></script>
+			)
+		}
 		{/* Metadata General */}
 		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
 		<meta name="description" content={description || organization?.description || organization?.title || "Mangas"}>
