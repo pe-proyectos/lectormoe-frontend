@@ -104,7 +104,7 @@ export function MangaView({ manga, organization, logged }) {
       (prev, current) => (prev.number > current.number ? prev : current),
       0
     )?.number;
-    if (!highestChapterNumber) return;
+    if (!highestChapterNumber && highestChapterNumber !== 0) return;
     const highestChapterNumberCeiled =
       Math.ceil(highestChapterNumber / 10) * 10;
     const groups = {};
