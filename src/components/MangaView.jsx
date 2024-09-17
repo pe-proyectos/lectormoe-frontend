@@ -127,6 +127,28 @@ export function MangaView({ manga, organization, logged }) {
       };
       lastLabel = label;
     }
+    const chapterNumberZero = manga?.chapters.find(
+      (chapter) => chapter.number === 0
+    );
+    if (chapterNumberZero) {
+      const chapterZero = {
+        ...chapterNumberZero,
+        isReady:
+          new Date(chapterNumberZero.releasedAt).getTime() <
+          new Date().getTime(),
+      };
+      if (groups[Object.keys(groups)[0]]) {
+        groups[Object.keys(groups)[0]]?.chapters.push(chapterZero);
+      } else {
+        groups[0] = {
+          label: `0`,
+          from: 0,
+          to: 0,
+          chapters: [chapterZero],
+        };
+        lastLabel = `0`;
+      }
+    }
     setChapterGroups(groups);
     setSelectedChapterGroup(lastLabel);
   }, []);
