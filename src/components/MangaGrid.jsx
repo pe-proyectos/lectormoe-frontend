@@ -219,7 +219,7 @@ export function MangaGrid({ organization, logged }) {
                                         className='w-full bg-gray-400 hover:bg-gray-300'
                                     >
                                         <p className='font-semibold'>{history.chapter.mangaCustom.title}</p>
-                                        <span className='text-xs'>{_("chapter")} {history.chapter.number} {_("welcome_to")}página {history.pageNumber}, {_("read")} {formatDate(history.lastReadAt)}</span>
+                                        <span className='text-xs'>{_("chapter")} {history.chapter.number}, {_("page")} {history.pageNumber}, {_("seen")} {formatDate(history.lastReadAt)}</span>
                                     </Alert>
                                 </a>
                             ))}

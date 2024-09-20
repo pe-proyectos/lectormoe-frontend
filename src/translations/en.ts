@@ -145,6 +145,7 @@ export const translations: Record<string, string> = {
   manga_search_views: "Manga Search Views",
   login_views: "Login Views",
   register_views: "Register Views",
+  seen:"Seen",
   manga_searches: "Manga Searches",
   chapter_reads: "Chapter Reads",
   logins: "Logins",

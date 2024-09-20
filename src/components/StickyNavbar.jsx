@@ -148,9 +148,9 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                   </MenuHandler>
                   <MenuList>
                     <MenuItem disabled>{username}</MenuItem>
-                    {/* <a href={`/profile/${userSlug}`}>
+                    { <a href={`/profile/${userSlug}`}>
                       <MenuItem>{_("my_profile")}</MenuItem>
-                    </a> */}
+                    </a>}
                     {member?.canSeeAdminPanel === true && (
                       <a href="/admin/mangas">
                         <MenuItem>{_("admin")}</MenuItem>
