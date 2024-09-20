@@ -45,7 +45,7 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
                         alt={alt}
                         decoding="async"
                         loading="lazy"
-                        className="w-full max-h-72 object-cover rounded-md p-4"
+                        className="w-full max-h-72 object-cover rounded-md p-4 bg-gray-400"
                     />
                 </div>
             )}
