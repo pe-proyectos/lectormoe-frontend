@@ -44,7 +44,7 @@ export function ProfileView({ organization, member, userSlug, username }) {
 
   const refreshUserChapterHistory = () => {
     setLoadingHistory(true);
-    callAPI(`/api/user-chapter-history`)
+    callAPI(`/api/user-chapter-history?limit=30`)
       .then(({ data, total }) => {
         setUserChapterHistoryList(data);
         setUserChapterHistoryTotal(total);
@@ -61,7 +61,7 @@ export function ProfileView({ organization, member, userSlug, username }) {
             <div className="flex flex-col items-center text-center">
               <img
                 className="w-24 h-24 mb-3 rounded-full shadow-lg"
-                src={member.imageUrl || "/public/images/profile-user.png"}
+                src={member.imageUrl || "https://cdn.pixabay.com/photo/2018/11/13/21/43/avatar-3814049_1280.png"}
                 alt={username}
               />
               <h5 className="text-xl font-medium text-white dark:text-white">
@@ -85,17 +85,17 @@ export function ProfileView({ organization, member, userSlug, username }) {
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-4 p-5">
           <div>
             <div className="border border-gray-200 rounded-lg p-4 text-center mb-2">
-              <h3 className="text-lg font-bold mb-2">Leer después</h3>
+              <h3 className="text-lg font-bold mb-2">{_("read_later")}</h3>
             </div>
           </div>
           <div>
             <div className="border border-gray-200 rounded-lg p-4 text-center mb-2">
-              <h3 className="text-lg font-bold mb-2">Mis favoritos</h3>
+              <h3 className="text-lg font-bold mb-2">{_("my_favorites")}</h3>
             </div>
           </div>
           <div>
             <div className="border border-gray-200 rounded-lg p-4 text-center mb-2">
-              <h3 className="text-lg font-bold mb-2">Continuar leyendo</h3>
+              <h3 className="text-lg font-bold mb-2">{_("continue_reading")}</h3>
             </div>
             <div className=" rounded-lg p-4">
               <div className="flex flex-wrap gap-4 justify-center mb-4">
