@@ -61,7 +61,7 @@ export function ProfileView({ organization, member, userSlug, username }) {
             <div className="flex flex-col items-center text-center">
               <img
                 className="w-24 h-24 mb-3 rounded-full shadow-lg"
-                src={member.imageUrl || "/public/images/profile-user2.png"}
+                src={member.imageUrl || "/public/images/profile-user.png"}
                 alt={username}
               />
               <h5 className="text-xl font-medium text-white dark:text-white">
