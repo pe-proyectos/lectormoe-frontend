@@ -65,7 +65,7 @@ export function FeaturedMangaCard({ organization, manga, ...props }) {
                             <Chip
                                 variant="filled"
                                 value={
-                                    `${manga?.views || 0} ${manga?.views === 1 ? _("reader") : _("readers")}`
+                                    `${manga?.views || 0} ${manga?.views === 1 ? _("reader") : _("total_views")}`
                                 }
                             />
                         </div>
