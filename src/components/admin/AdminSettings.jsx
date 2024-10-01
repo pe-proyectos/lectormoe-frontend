@@ -47,6 +47,8 @@ export function AdminSettings({
   const [enableMangaSection, setEnableMangaSection] = useState(false);
   const [enableManhuaSection, setEnableManhuaSection] = useState(false);
   const [enableManhwaSection, setEnableManhwaSection] = useState(false);
+  const [enableMainSlider, setEnableMainSlider] = useState(false);
+  const [enableMainBanner, setEnableMainBanner] = useState(false);
   const [useBlockedCountries, setUseBlockedCountries] = useState(false);
   const [useAllowedCountries, setUseAllowedCountries] = useState(false);
   const [enableGoogleAds, setEnableGoogleAds] = useState(false);
@@ -135,6 +137,8 @@ export function AdminSettings({
         setEnableMangaSection(organization.enableMangaSection || false);
         setEnableManhuaSection(organization.enableManhuaSection || false);
         setEnableManhwaSection(organization.enableManhwaSection || false);
+        setEnableMainSlider(organization.enableMainSlider || false);
+        setEnableMainBanner(organization.enableMainBanner || false);
         setUseBlockedCountries(organization.useBlockedCountries || false);
         setUseAllowedCountries(organization.useAllowedCountries || false);
         setCountryOptions(organization.countryOptions || []);
@@ -179,6 +183,8 @@ export function AdminSettings({
     formData.append("enableMangaSection", enableMangaSection);
     formData.append("enableManhuaSection", enableManhuaSection);
     formData.append("enableManhwaSection", enableManhwaSection);
+    formData.append("enableMainSlider", enableMainSlider);
+    formData.append("enableMainBanner", enableMainBanner);
     formData.append("useBlockedCountries", useBlockedCountries);
     formData.append("useAllowedCountries", useAllowedCountries);
     formData.append("enableGoogleAds", enableGoogleAds);
@@ -267,9 +273,6 @@ export function AdminSettings({
                   <Option value="en" selected={language === "en"}>
                     {_("english")}
                   </Option>
-                  <Option value="pt" selected={language === "pt"}>
-                    {_("portuguese")}
-                  </Option>
                 </Select>
               </div>
               <Typography className="-mb-2" variant="h6" color="gray">
@@ -295,6 +298,22 @@ export function AdminSettings({
                 label={_("enable_manhwa_section")}
                 checked={enableManhwaSection}
                 onChange={(e) => setEnableManhwaSection(e.target.checked)}
+              />
+              <Typography className="-mb-2" variant="h6" color="gray">
+                {_("main_slider")}
+              </Typography>
+              <Switch
+                label={_("enable_main_slider")}
+                checked={enableMainSlider}
+                onChange={(e) => setEnableMainSlider(e.target.checked)}
+              />
+              <Typography className="-mb-2" variant="h6" color="gray">
+                {_("main_banner")}
+              </Typography>
+              <Switch
+                label={_("enable_main_banner")}
+                checked={enableMainBanner}
+                onChange={(e) => setEnableMainBanner(e.target.checked)}
               />
             </div>
           </AccordionBody>

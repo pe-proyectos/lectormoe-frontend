@@ -35,6 +35,7 @@
     "cookie-store": "^3.0.0",
     "daisyui": "^4.12.10",
     "date-fns": "^3.6.0",
+    "jszip": "^3.10.1",
     "material-react-table": "^2.13.3",
     "material-ui-dropzone": "^3.5.0",
     "nanostores": "^0.10.3",

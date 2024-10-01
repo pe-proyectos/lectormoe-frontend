@@ -1,6 +1,7 @@
 import 'cookie-store';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import JSZip from "jszip";
 import {
     Card,
     Input,
@@ -46,6 +47,35 @@ export function AdminMangaCustomChapters({ organization, initialMangaCustom }) {
             .catch(error => toast.error(error?.message))
             .finally(() => setLoading(false));
     };
+    const downloadChapterPages = async (chapter) => {
+        console.log("downloadChapterPages", chapter);
+        toast.info(`Descargando capitulo ${chapter.number} ...`);
+        try {
+            const chapterPages = await callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`);
+            const zip = new JSZip();
+            const folder = zip.folder(`Chapter ${chapter.number}`);
+            const pagePromises = chapterPages.map(page => {
+                return fetch(page.imageUrl).then(response => response.blob());
+            });
+            const blobs = await Promise.all(pagePromises);
+            blobs.forEach((blob, index) => {
+                folder.file(`Page ${chapterPages[index].number}.jpg`, blob, { type: 'blob' });
+            });
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(zipBlob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Chapter ${chapter.number}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success("Descarga iniciada");
+        } catch (error) {
+            console.error(error);
+            toast.error(error?.message);
+        }
+    }
 
     return (
         <Card color="transparent" shadow={false}>
@@ -87,6 +117,7 @@ export function AdminMangaCustomChapters({ organization, initialMangaCustom }) {
                 mangaCustom={mangaCustom}
                 chapters={mangaCustom.chapters}
                 onChapterClick={chapter => setChapter(chapter)}
+                onChapterDownload={chapter => downloadChapterPages(chapter)}
                 onChapterDelete={() => refreshMangaCustom()}
             />
         </Card>

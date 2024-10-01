@@ -13,7 +13,7 @@ import {
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminChaptersTable({ organization, mangaCustom, onChapterClick, onChapterDelete }) {
+export function AdminChaptersTable({ organization, mangaCustom, onChapterClick, onChapterDownload, onChapterDelete }) {
     const _ = getTranslator(organization.language);
 
     const columns = useMemo(
@@ -88,6 +88,9 @@ export function AdminChaptersTable({ organization, mangaCustom, onChapterClick, 
                     <ButtonGroup variant="text">
                         <Button variant="text" onClick={() => onChapterClick(row.original)}>
                             {_("edit")}
+                        </Button>
+                        <Button variant="text" onClick={() => onChapterDownload(row.original)}>
+                            {_("download")}
                         </Button>
                         <Button variant="text" className='hover:text-red-600' onClick={() => deleteChapter(row.original)}>
                             {_("delete")}

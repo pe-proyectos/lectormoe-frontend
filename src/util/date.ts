@@ -33,30 +33,6 @@ export const formatDate = (date: any, language: string) => {
       if (seconds > 0) return `${seconds} second${seconds > 1 ? "s" : ""} ago`;
     }
     return "today";
-  } else if (language === "pt") {
-    if (diff < 0) {
-      const absDiff = Math.abs(diff);
-      const futureSeconds = Math.floor(absDiff / 1000);
-      const futureMinutes = Math.floor(futureSeconds / 60);
-      const futureHours = Math.floor(futureMinutes / 60);
-      const futureDays = Math.floor(futureHours / 24);
-      if (futureDays > 0)
-        return `em ${futureDays} dia${futureDays > 1 ? "s" : ""}`;
-      if (futureHours > 0)
-        return `em ${futureHours} hora${futureHours > 1 ? "s" : ""}`;
-      if (futureMinutes > 0)
-        return `em ${futureMinutes} minuto${futureMinutes > 1 ? "s" : ""}`;
-      if (futureSeconds > 0)
-        return `em ${futureSeconds} segundo${futureSeconds > 1 ? "s" : ""}`;
-    } else {
-      if (months > 0) return `há ${months} mes${months > 1 ? "es" : ""}`;
-      if (weeks > 0) return `há ${weeks} semana${weeks > 1 ? "s" : ""}`;
-      if (days > 0) return `há ${days} dia${days > 1 ? "s" : ""}`;
-      if (hours > 0) return `há ${hours} hora${hours > 1 ? "s" : ""}`;
-      if (minutes > 0) return `há ${minutes} minuto${minutes > 1 ? "s" : ""}`;
-      if (seconds > 0) return `há ${seconds} segundo${seconds > 1 ? "s" : ""}`;
-    }
-    return "hoje";
   }
   if (diff < 0) {
     const absDiff = Math.abs(diff);
