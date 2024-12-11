@@ -18,7 +18,7 @@ import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import { pascalCase } from "../util/pascalCase";
 
-export function ProfileView({ organization, member, userSlug, username }) {
+export function ProfileView({ organization, user, userSlug, username }) {
   const _ = getTranslator(organization.language);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [userChapterHistoryList, setUserChapterHistoryList] = useState([]);
@@ -61,7 +61,7 @@ export function ProfileView({ organization, member, userSlug, username }) {
             <div className="flex flex-col items-center text-center">
               <img
                 className="w-24 h-24 mb-3 rounded-full shadow-lg"
-                src={member.imageUrl || "https://cdn.pixabay.com/photo/2018/11/13/21/43/avatar-3814049_1280.png"}
+                src={user.imageUrl || "https://cdn.pixabay.com/photo/2018/11/13/21/43/avatar-3814049_1280.png"}
                 alt={username}
               />
               <h5 className="text-xl font-medium text-white dark:text-white">
@@ -72,11 +72,11 @@ export function ProfileView({ organization, member, userSlug, username }) {
             <div className="flex flex-col justify-center text-center">
               <div>
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                  {pascalCase(member.role)}
+                  {pascalCase(user.role)}
                 </span>
               </div>
               <p className="mb-4 text-white my-5">
-                {member.description || _("no_description")}
+                {user.description || _("no_description")}
               </p>
             </div>
           </div>

@@ -66,7 +66,7 @@ export function LoginCard({ organization }) {
                 cookieStore.set("token", data.token),
                 cookieStore.set("username", data.username),
                 cookieStore.set("userSlug", data.userSlug),
-                data?.member ? cookieStore.set("member", JSON.stringify(data.member)) : null,
+                data?.user ? cookieStore.set("user", JSON.stringify(data.user)) : null,
             ]);
             // Redirect to homepage after successful login
             window.location.href = "/";

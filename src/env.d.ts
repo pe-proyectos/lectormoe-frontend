@@ -66,15 +66,14 @@ declare namespace App {
         token: string | undefined,
         username: string | undefined,
         userSlug: string | undefined,
-        member: undefined | {
+        user: undefined | {
             // Organization
             canSeeAdminPanel: boolean,
             canEditOrganization: boolean,
             canDeleteOrganization: boolean,
-            // Organization Members
-            canInviteMember: boolean,
-            canEditMember: boolean,
-            canDeleteMember: boolean,
+            // Organization Users
+            canEditUser: boolean,
+            canDeleteUser: boolean,
             // Author
             canCreateAuthor: boolean,
             // Manga Profile
@@ -88,6 +87,7 @@ declare namespace App {
             canEditGenre: boolean,
             canDeleteGenre: boolean,
             // Chapter
+            canReadUnreleasedChapter: boolean,
             canCreateChapter: boolean,
             canEditChapter: boolean,
             canDeleteChapter: boolean,

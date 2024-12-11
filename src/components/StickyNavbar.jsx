@@ -20,7 +20,7 @@ import {
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
-export function StickyNavbar({ organization, username, userSlug, member, staticNavbar }) {
+export function StickyNavbar({ organization, username, userSlug, user, staticNavbar }) {
   const _ = getTranslator(organization.language);
 
   const [openNav, setOpenNav] = React.useState(false);
@@ -151,7 +151,7 @@ export function StickyNavbar({ organization, username, userSlug, member, staticN
                     { <a href={`/profile/${userSlug}`}>
                       <MenuItem>{_("my_profile")}</MenuItem>
                     </a>}
-                    {member?.canSeeAdminPanel === true && (
+                    {user?.canSeeAdminPanel === true && (
                       <a href="/admin/mangas">
                         <MenuItem>{_("admin")}</MenuItem>
                       </a>

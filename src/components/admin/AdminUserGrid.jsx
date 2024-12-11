@@ -12,20 +12,20 @@ import {
     Option,
     Input,
 } from "@material-tailwind/react";
-import { AdminMemberDialog } from './AdminMemberDialog';
+import { AdminUserDialog } from './AdminUserDialog';
 import { PageNavigation } from '../PageNavigation';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminMembersGrid({ organization }) {
+export function AdminUserGrid({ organization }) {
     const _ = getTranslator(organization.language);
 
     const [loading, setLoading] = useState(true);
-    const [memberList, setMemberList] = useState([]);
+    const [userList, setUserList] = useState([]);
     const [total, setTotal] = useState(0);
     const [selectedManga, setSelectedManga] = useState(null);
-    const [selectedMember, setSelectedMember] = useState(null);
-    const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
     const [email, setEmail] = useState(() => {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('email') || '';
@@ -50,11 +50,11 @@ export function AdminMembersGrid({ organization }) {
     });
 
     useEffect(() => {
-        refreshMemberList();
+        refreshUserList();
     }, []);
 
     useEffect(() => {
-        refreshMemberList();
+        refreshUserList();
     }, [page]);
 
     useEffect(() => {
@@ -66,15 +66,15 @@ export function AdminMembersGrid({ organization }) {
     }, [limit]);
 
     useEffect(() => {
-        if (!isMemberDialogOpen) refreshMemberList();
-    }, [isMemberDialogOpen]);
+        if (!isUserDialogOpen) refreshUserList();
+    }, [isUserDialogOpen]);
     
-    const handleCardClick = (member) => {
-        setSelectedMember(member);
-        setIsMemberDialogOpen(true);
+    const handleCardClick = (user) => {
+        setSelectedUser(user);
+        setIsUserDialogOpen(true);
     }
 
-    const refreshMemberList = () => {
+    const refreshUserList = () => {
         setLoading(true);
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.set('page', page);
@@ -94,10 +94,10 @@ export function AdminMembersGrid({ organization }) {
             urlParams.set('username', username);
         }
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
-        callAPI(`/api/member?${query}`)
+        callAPI(`/api/user?${query}`)
             .then(({ data, total, maxPage }) => {
                 setTotal(total);
-                setMemberList(data);
+                setUserList(data);
                 setMaxPage(maxPage || 1);
             })
             .catch(error => toast.error(error?.message))
@@ -107,7 +107,7 @@ export function AdminMembersGrid({ organization }) {
     return (
         <div className="w-full my-4">
             <div className='w-full flex flex-col gap-2 sm:gap-4 select-none my-4'>
-                <p className='font-semibold text-xl'>{_("member_list")} ({total || '-'})</p>
+                <p className='font-semibold text-xl'>{_("user_list")} ({total || '-'})</p>
                 <div className="w-80">
                     <Input
                         label={_("search_email")}
@@ -151,7 +151,7 @@ export function AdminMembersGrid({ organization }) {
                 <div className="w-80">
                     <Button
                         variant='outlined'
-                        onClick={() => refreshMemberList()}
+                        onClick={() => refreshUserList()}
                     >
                         {_("search")}
                     </Button>
@@ -165,51 +165,51 @@ export function AdminMembersGrid({ organization }) {
                         maxPage={maxPage}
                         setPage={setPage}
                         loading={loading}
-                        data={memberList}
+                        data={userList}
                     />
                 </div>
             </div>
-            <AdminMemberDialog
+            <AdminUserDialog
                 organization={organization}
-                open={isMemberDialogOpen}
-                setOpen={setIsMemberDialogOpen}
-                member={selectedMember}
-                setMember={setSelectedMember}
+                open={isUserDialogOpen}
+                setOpen={setIsUserDialogOpen}
+                user={selectedUser}
+                setUser={setSelectedUser}
             />
             <div className="max-w-lg">
                 {loading && <Spinner className='m-4 w-full' />}
-                {!loading && memberList.length === 0 &&
+                {!loading && userList.length === 0 &&
                     <Alert>
-                        {_("no_members_to_show")}
+                        {_("no_users_to_show")}
                     </Alert>
                 }
             </div>
             <div className="flex flex-wrap gap-4">
-                {memberList.map(member => (
+                {userList.map(user => (
                     <Card
-                        key={member.id}
+                        key={user.id}
                         className="w-96 shadow-md"
                     >
                         <CardBody>
                             <Typography variant="h5" color="blue-gray" className="mb-2">
-                                {member.user.username}
+                                {user.username}
                             </Typography>
                             <Typography>
-                                {_("role")}: {member.role}
+                                {_("role")}: {user.role}
                             </Typography>
                             <Typography>
-                                {_("email")}: {member.user.email}
+                                {_("email")}: {user.email}
                             </Typography>
                             <Typography>
-                                {_("coins")}: {member.coins}
+                                {_("coins")}: {user.coins}
                             </Typography>
                             <Typography>
-                                {_("registration_date")}: {new Date(member.user.createdAt).toLocaleString()}
+                                {_("registration_date")}: {new Date(user.createdAt).toLocaleString()}
                             </Typography>
                         </CardBody>
                         <CardFooter className="pt-0">
                             <Button
-                                onClick={() => handleCardClick(member)}
+                                onClick={() => handleCardClick(user)}
                             >
                                 {_("edit")}
                             </Button>
@@ -225,7 +225,7 @@ export function AdminMembersGrid({ organization }) {
                         maxPage={maxPage}
                         setPage={setPage}
                         loading={loading}
-                        data={memberList}
+                        data={userList}
                     />
                 </div>
             </div>

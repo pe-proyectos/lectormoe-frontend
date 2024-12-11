@@ -22,12 +22,12 @@ import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 import { ImageDropzone } from '../ImageDropzone';
 
-export function AdminMemberDialog({ organization, open, setOpen, member, setMember }) {
+export function AdminUserDialog({ organization, open, setOpen, user, setUser }) {
     const _ = getTranslator(organization.language);
 
     // dialog
     const [loading, setLoading] = useState(false);
-    const [currentTab, setCurrentTab] = useState('member');
+    const [currentTab, setCurrentTab] = useState('user');
     // form
     const [role, setRole] = useState('');
     const [description, setDescription] = useState('');
@@ -37,9 +37,8 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
         canSeeAdminPanel: false,
         canEditOrganization: false,
         canDeleteOrganization: false,
-        canInviteMember: false,
-        canEditMember: false,
-        canDeleteMember: false,
+        canEditUser: false,
+        canDeleteUser: false,
         canCreateAuthor: false,
         canCreateMangaProfile: false,
         canCreateMangaCustom: false,
@@ -48,6 +47,7 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
         canCreateGenre: false,
         canEditGenre: false,
         canDeleteGenre: false,
+        canReadUnreleasedChapter: false,
         canCreateChapter: false,
         canEditChapter: false,
         canDeleteChapter: false,
@@ -69,36 +69,36 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
     }, []);
 
     useEffect(() => {
-        if (!member) return;
-        setRole(member.role || "");
-        setDescription(member.description || "");
-        setHierarchyLevel(member.hierarchyLevel || 0);
+        if (!user) return;
+        setRole(user.role || "");
+        setDescription(user.description || "");
+        setHierarchyLevel(user.hierarchyLevel || 0);
         setPermissions({
-            canSeeAdminPanel: member.canSeeAdminPanel,
-            canEditOrganization: member.canEditOrganization,
-            canDeleteOrganization: member.canDeleteOrganization,
-            canInviteMember: member.canInviteMember,
-            canEditMember: member.canEditMember,
-            canDeleteMember: member.canDeleteMember,
-            canCreateAuthor: member.canCreateAuthor,
-            canCreateMangaProfile: member.canCreateMangaProfile,
-            canCreateMangaCustom: member.canCreateMangaCustom,
-            canEditMangaCustom: member.canEditMangaCustom,
-            canDeleteMangaCustom: member.canDeleteMangaCustom,
-            canCreateGenre: member.canCreateGenre,
-            canEditGenre: member.canEditGenre,
-            canDeleteGenre: member.canDeleteGenre,
-            canCreateChapter: member.canCreateChapter,
-            canEditChapter: member.canEditChapter,
-            canDeleteChapter: member.canDeleteChapter,
-            canCreatePage: member.canCreatePage,
-            canEditPage: member.canEditPage,
-            canDeletePage: member.canDeletePage,
-            canCreateCoinPack: member.canCreateCoinPack,
-            canEditCoinPack: member.canEditCoinPack,
-            canDeleteCoinPack: member.canDeleteCoinPack,
+            canSeeAdminPanel: user.canSeeAdminPanel,
+            canEditOrganization: user.canEditOrganization,
+            canDeleteOrganization: user.canDeleteOrganization,
+            canEditUser: user.canEditUser,
+            canDeleteUser: user.canDeleteUser,
+            canCreateAuthor: user.canCreateAuthor,
+            canCreateMangaProfile: user.canCreateMangaProfile,
+            canCreateMangaCustom: user.canCreateMangaCustom,
+            canEditMangaCustom: user.canEditMangaCustom,
+            canDeleteMangaCustom: user.canDeleteMangaCustom,
+            canCreateGenre: user.canCreateGenre,
+            canEditGenre: user.canEditGenre,
+            canDeleteGenre: user.canDeleteGenre,
+            canReadUnreleasedChapter: user.canReadUnreleasedChapter,
+            canCreateChapter: user.canCreateChapter,
+            canEditChapter: user.canEditChapter,
+            canDeleteChapter: user.canDeleteChapter,
+            canCreatePage: user.canCreatePage,
+            canEditPage: user.canEditPage,
+            canDeletePage: user.canDeletePage,
+            canCreateCoinPack: user.canCreateCoinPack,
+            canEditCoinPack: user.canEditCoinPack,
+            canDeleteCoinPack: user.canDeleteCoinPack,
         });
-    }, [member]);
+    }, [user]);
 
     const handleSubmit = async () => {
         if (!role) {
@@ -114,13 +114,13 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
             formData.append(key, permissions[key]);
         });
         setLoading(true);
-        callAPI(member ? `/api/member/${member.id}` : '/api/member', {
-            method: member ? 'PATCH' : 'POST',
+        callAPI(user ? `/api/user/${user.id}` : '/api/user', {
+            method: user ? 'PATCH' : 'POST',
             body: formData,
         })
             .then(response => {
-                toast.success(_('member_updated'));
-                setMember(null);
+                toast.success(_('user_updated'));
+                setUser(null);
                 setRole('');
                 setDescription('');
                 setHierarchyLevel(0);
@@ -145,25 +145,25 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    {member ? _('edit_member') : _('create_member')}
+                    {user ? _('edit_user') : _('create_user')}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
                 <div className="flex items-center justify-center">
                 <ButtonGroup>
-                    <Button onClick={() => setCurrentTab('member')}>{_('general')}</Button>
+                    <Button onClick={() => setCurrentTab('user')}>{_('general')}</Button>
                     <Button onClick={() => setCurrentTab('permissions')}>{_('permissions')}</Button>
                     <Button onClick={() => setCurrentTab('coinpacks')}>{_('coinpacks')}</Button>
                 </ButtonGroup>
                 </div>
 
-                <div className={`flex flex-col gap-4 ${currentTab === 'member' ? 'block' : 'hidden'}`}>
+                <div className={`flex flex-col gap-4 ${currentTab === 'user' ? 'block' : 'hidden'}`}>
                     <Typography className="-mb-2" variant="h6" color="gray">
                         {_('role')}
                     </Typography>
                     <Input
                         size="lg"
-                        label={_('member_role')}
+                        label={_('user_role')}
                         autoComplete='off'
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
@@ -220,12 +220,12 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
                     />
 
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        {_('members')}
+                        {_('users')}
                     </Typography>
                     <Checkbox
-                        label={_('can_edit_member')}
-                        checked={permissions.canEditMember}
-                        onChange={(e) => setPermissions({ ...permissions, canEditMember: e.target.checked })}
+                        label={_('can_edit_user')}
+                        checked={permissions.canEditUser}
+                        onChange={(e) => setPermissions({ ...permissions, canEditUser: e.target.checked })}
                     />
                     <Typography className="-mb-2" variant="h6" color="gray">
                         {_('content')}
@@ -269,6 +269,11 @@ export function AdminMemberDialog({ organization, open, setOpen, member, setMemb
                         label={_('can_delete_genre')}
                         checked={permissions.canDeleteGenre}
                         onChange={(e) => setPermissions({ ...permissions, canDeleteGenre: e.target.checked })}
+                    />
+                    <Checkbox
+                        label={_('can_read_unreleased_chapter')}
+                        checked={permissions.canReadUnreleasedChapter}
+                        onChange={(e) => setPermissions({ ...permissions, canReadUnreleasedChapter: e.target.checked })}
                     />
                     <Checkbox
                         label={_('can_create_chapter')}

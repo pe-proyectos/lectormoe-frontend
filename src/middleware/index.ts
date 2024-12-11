@@ -9,7 +9,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.userSlug = context.cookies.get('userSlug')?.value;
     
     try {
-        context.locals.member = context.cookies.get('member')?.value ? JSON.parse(context.cookies.get('member')?.value!) : undefined;
+        context.locals.user = context.cookies.get('user')?.value ? JSON.parse(context.cookies.get('user')?.value!) : undefined;
     } catch (error) {
     }
 
@@ -63,27 +63,27 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         if (authCheck?.status === true) {
             context.locals.token = authCheck.data.token;
-            context.locals.username = authCheck.data.username;
-            context.locals.userSlug = authCheck.data.userSlug;
-            if (authCheck.data.member) {
-                context.locals.member = authCheck.data.member;
+            context.locals.username = authCheck.data.user.username;
+            context.locals.userSlug = authCheck.data.user.slug;
+            if (authCheck.data.user) {
+                context.locals.user = authCheck.data.user;
             }
             context.cookies.set('token', authCheck.data.token, { maxAge: 60 * 60 * 24 * 7 });
-            context.cookies.set('username', authCheck.data.username, { maxAge: 60 * 60 * 24 * 7 });
-            context.cookies.set('userSlug', authCheck.data.userSlug, { maxAge: 60 * 60 * 24 * 7 });
-            if (authCheck.data.member) {
-                context.cookies.set('member', JSON.stringify(authCheck.data.member), { maxAge: 60 * 60 * 24 * 7 });
+            context.cookies.set('username', authCheck.data.user.username, { maxAge: 60 * 60 * 24 * 7 });
+            context.cookies.set('userSlug', authCheck.data.user.slug, { maxAge: 60 * 60 * 24 * 7 });
+            if (authCheck.data.user) {
+                context.cookies.set('user', JSON.stringify(authCheck.data.user), { maxAge: 60 * 60 * 24 * 7 });
             }
             context.locals.logged = true;
         } else {
             context.locals.token = undefined;
             context.locals.username = undefined;
             context.locals.userSlug = undefined;
-            context.locals.member = undefined;
+            context.locals.user = undefined;
             context.cookies.set('token', '', { maxAge: 0 });
             context.cookies.set('username', '', { maxAge: 0 });
             context.cookies.set('userSlug', '', { maxAge: 0 });
-            context.cookies.set('member', '', { maxAge: 0 });
+            context.cookies.set('user', '', { maxAge: 0 });
             context.locals.logged = false;
         }
 
@@ -180,7 +180,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
             if (!context.locals.logged) {
                 return context.redirect("/login");
             }
-            if (!context.locals.member?.canSeeAdminPanel) {
+            if (!context.locals.user?.canSeeAdminPanel) {
                 return context.redirect("/");
             }
         }

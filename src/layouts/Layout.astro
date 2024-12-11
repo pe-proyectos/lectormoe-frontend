@@ -14,7 +14,7 @@ interface Props {
 }
 
 const { title, showAds, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
-const { theme, organization, userSlug, username, member } = Astro.locals;
+const { theme, organization, userSlug, username, user } = Astro.locals;
 ---
 
 <!doctype html>
@@ -91,7 +91,7 @@ const { theme, organization, userSlug, username, member } = Astro.locals;
 		<StickyNavbar
 			organization={organization}
 			username={username}
-			member={member}
+			user={user}
 			userSlug={userSlug}
 			staticNavbar={staticNavbar}
 			client:only="react"

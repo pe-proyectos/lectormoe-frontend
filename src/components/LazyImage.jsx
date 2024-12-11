@@ -34,6 +34,13 @@ const addToQueue = (image) => {
 };
 
 export const LazyImage = ({ src, alt, ...rest }) => {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      {...rest}
+    />
+  );
   const [imageSrc, setImageSrc] = useState("");
 
   const loadImage = useCallback(async () => {

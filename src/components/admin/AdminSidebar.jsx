@@ -18,7 +18,6 @@ import {
     Cog6ToothIcon,
     CubeTransparentIcon,
     ServerStackIcon,
-    NewspaperIcon,
     BookOpenIcon,
     ChartBarIcon,
     UsersIcon,
@@ -38,7 +37,7 @@ import { getTranslator } from "../../util/translate";
 export function AdminSidebar({ organization, page }) {
     const _ = getTranslator(organization.language);
 
-    const initialOpen = (page === "analytics" || page === "members") ? 1 : 0;
+    const initialOpen = (page === "analytics" || page === "users") ? 1 : 0;
     const [open, setOpen] = React.useState(initialOpen);
     const [openAlert, setOpenAlert] = React.useState(true);
 
@@ -75,12 +74,12 @@ export function AdminSidebar({ organization, page }) {
                     </ListItem>
                     <AccordionBody className="py-1">
                         <List className="p-0">
-                            <a href="/admin/organization/members">
-                                <ListItem selected={page === "members"}>
+                            <a href="/admin/organization/users">
+                                <ListItem selected={page === "users"}>
                                     <ListItemPrefix>
                                         <UserCircleIcon strokeWidth={3} className="h-3 w-5" />
                                     </ListItemPrefix>
-                                    {_("members")}
+                                    {_("users")}
                                 </ListItem>
                             </a>
                             <a href="/admin/organization/analytics">
@@ -160,20 +159,12 @@ export function AdminSidebar({ organization, page }) {
                         </ListItemSuffix> */}
                     </ListItem>
                 </a>
-                <a href="/admin/news">
-                    <ListItem selected={page === "news"}>
-                        <ListItemPrefix>
-                            <NewspaperIcon strokeWidth={3} className="h-5 w-5" />
-                        </ListItemPrefix>
-                        {_("news")}
-                    </ListItem>
-                </a>
-                <a href="/admin/members">
-                    <ListItem selected={page === "members"}>
+                <a href="/admin/users">
+                    <ListItem selected={page === "users"}>
                         <ListItemPrefix>
                             <UsersIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        {_("members")}
+                        {_("users")}
                     </ListItem>
                 </a>
                 <a href="/admin/coinpacks">

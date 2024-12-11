@@ -16,7 +16,6 @@ import { callAPI } from "../util/callApi";
 import { MangaCardsScroller } from "./MangaCardsScroller";
 import { FeaturedMangaCard } from "./FeaturedMangaCard";
 import { MangaCard } from "./MangaCard";
-import { NewsCard } from "./NewsCard";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
@@ -30,8 +29,6 @@ export function MangaGrid({ organization, logged }) {
   const [mangaFeaturedList, setMangaFeaturedList] = useState([]);
   const [loadingPopular, setLoadingPopular] = useState(true);
   const [mangaPopularList, setMangaPopularList] = useState([]);
-  const [loadingNews, setLoadingNews] = useState(true);
-  const [newsList, setNewsList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [userChapterHistoryList, setUserChapterHistoryList] = useState([]);
   const [userChapterHistoryTotal, setUserChapterHistoryTotal] = useState([]);
@@ -40,7 +37,6 @@ export function MangaGrid({ organization, logged }) {
   const [sliderMangas, setSliderMangas] = useState([]);
 
   useEffect(() => {
-    refreshNewsList();
     refreshUserChapterHistory();
     // Latest
     setLoadingLatest(true);
@@ -78,14 +74,6 @@ export function MangaGrid({ organization, logged }) {
       })
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoadingHistory(false));
-  };
-
-  const refreshNewsList = () => {
-    setLoadingNews(true);
-    callAPI(`/api/news?limit=3`)
-      .then(({ data }) => setNewsList(data))
-      .catch((error) => toast.error(error?.message))
-      .finally(() => setLoadingNews(false));
   };
 
   const formatDate = (date) => {
@@ -316,36 +304,6 @@ export function MangaGrid({ organization, logged }) {
               </div>
             </div>
           )}
-          {/* <div className='flex flex-wrap sm:gap-4 mb-4 items-end'>
-                        <Typography
-                            color="white"
-                            className="font-semibold text-4xl"
-                        >
-                            Noticias
-                        </Typography>
-                        <a
-                            href='/news'
-                            className="font-normal text-gray-500 text-md hover:underline ml-auto mr-4"
-                        >
-                            Ver todas
-                        </a>
-                    </div> */}
-          {/* <div className="w-full h-1 bg-gray-200 rounded-sm my-4" /> */}
-          {/* <div className="flex flex-wrap gap-4 justify-center">
-                        {
-                            !loadingNews && newsList.length === 0 && (
-                                <div className="flex flex-col items-center justify-center w-full h-full">
-                                    <Typography
-                                        color="gray"
-                                        className="font-light text-xl"
-                                    >
-                                        No hay noticias para mostrar
-                                    </Typography>
-                                </div>
-                            )
-                        }
-                        {newsList.map((news) => <NewsCard news={news} key={news.id} />)}
-                    </div> */}
         </div>
         <div className="col-span-3 align-middle order-last lg:order-first">
           <div className="flex flex-wrap sm:gap-4 mb-4 items-end">

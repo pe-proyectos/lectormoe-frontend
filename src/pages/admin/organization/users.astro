@@ -11,6 +11,7 @@ if (!Astro.locals.logged) {
 }
 ---
 
-<AdminLayout title={_("admin_members_title")} page="members">
-    <AdminSidebar organization={organization} page="members" client:only="react"/>
+<AdminLayout title={_("admin_users_title")} page="users">
+    <AdminSidebar organization={organization} page="users" client:only="react"/>
 </AdminLayout>
+
