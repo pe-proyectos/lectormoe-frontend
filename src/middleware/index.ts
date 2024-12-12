@@ -185,25 +185,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
             }
         }
 
-        // Social Redirects
-        if (context.url.pathname === "/facebook") {
-            return context.redirect(organizationCheck?.data?.facebookUrl || "/");
-        } else if (context.url.pathname === "/instagram") {
-            return context.redirect(organizationCheck?.data?.instagramUrl || "/");
-        } else if (context.url.pathname === "/x") {
-            return context.redirect(organizationCheck?.data?.twitterUrl || "/");
-        } else if (context.url.pathname === "/youtube") {
-            return context.redirect(organizationCheck?.data?.youtubeUrl || "/");
-        } else if (context.url.pathname === "/patreon") {
-            return context.redirect(organizationCheck?.data?.patreonUrl || "/");
-        } else if (context.url.pathname === "/discord") {
-            return context.redirect(organizationCheck?.data?.discordUrl || "/");
-        } else if (context.url.pathname === "/tiktok") {
-            return context.redirect(organizationCheck?.data?.tiktokUrl || "/");
-        } else if (context.url.pathname === "/twitch") {
-            return context.redirect(organizationCheck?.data?.twitchUrl || "/");
-        }
-
         return await next();
     } catch (error) {
         // @ts-ignore
