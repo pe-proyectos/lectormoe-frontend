@@ -133,8 +133,6 @@ export function AdminUserGrid({ organization }) {
                         <Option value="createdAt_asc" selected={orderBy === 'createdAt_asc'}>{_("registration_date_oldest_first")}</Option>
                         <Option value="username_asc" selected={orderBy === 'username_asc'}>{_("username_a_z")}</Option>
                         <Option value="username_desc" selected={orderBy === 'username_desc'}>{_("username_z_a")}</Option>
-                        <Option value="coins_desc" selected={orderBy === 'coins_desc'}>{_("coins_highest_first")}</Option>
-                        <Option value="coins_asc" selected={orderBy === 'coins_asc'}>{_("coins_lowest_first")}</Option>
                     </Select>
                 </div>
                 <div className="w-80">
@@ -199,9 +197,6 @@ export function AdminUserGrid({ organization }) {
                             </Typography>
                             <Typography>
                                 {_("email")}: {user.email}
-                            </Typography>
-                            <Typography>
-                                {_("coins")}: {user.coins}
                             </Typography>
                             <Typography>
                                 {_("registration_date")}: {new Date(user.createdAt).toLocaleString()}

@@ -167,12 +167,12 @@ export function AdminSidebar({ organization, page }) {
                         {_("users")}
                     </ListItem>
                 </a>
-                <a href="/admin/coinpacks">
-                    <ListItem selected={page === "coinpacks"}>
+                <a href="/admin/subscription-plans">
+                    <ListItem selected={page === "subscription_plans"}>
                         <ListItemPrefix>
                             <TicketIcon className="h-5 w-5" />
                         </ListItemPrefix>
-                        {_("coin_packs")}
+                        {_("subscription_plans")}
                     </ListItem>
                 </a>
                 <a href="/admin/storage">

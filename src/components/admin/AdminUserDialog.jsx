@@ -54,16 +54,16 @@ export function AdminUserDialog({ organization, open, setOpen, user, setUser }) 
         canCreatePage: false,
         canEditPage: false,
         canDeletePage: false,
-        canCreateCoinPack: false,
-        canEditCoinPack: false,
-        canDeleteCoinPack: false,
+        canCreateSubscriptionPlan: false,
+        canEditSubscriptionPlan: false,
+        canDeleteSubscriptionPlan: false,
     });
-    const [coinPacks, setCoinPacks] = useState([]);
+    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
 
     useEffect(() => {
-        callAPI(`/api/coinpack`)
+        callAPI(`/api/subscription-plan`)
         .then(({ data }) => {
-            setCoinPacks(data);
+            setSubscriptionPlans(data);
         })
         .catch(error => toast.error(error?.message));
     }, []);
@@ -94,9 +94,9 @@ export function AdminUserDialog({ organization, open, setOpen, user, setUser }) 
             canCreatePage: user.canCreatePage,
             canEditPage: user.canEditPage,
             canDeletePage: user.canDeletePage,
-            canCreateCoinPack: user.canCreateCoinPack,
-            canEditCoinPack: user.canEditCoinPack,
-            canDeleteCoinPack: user.canDeleteCoinPack,
+            canCreateSubscriptionPlan: user.canCreateSubscriptionPlan,
+            canEditSubscriptionPlan: user.canEditSubscriptionPlan,
+            canDeleteSubscriptionPlan: user.canDeleteSubscriptionPlan,
         });
     }, [user]);
 
@@ -153,7 +153,7 @@ export function AdminUserDialog({ organization, open, setOpen, user, setUser }) 
                 <ButtonGroup>
                     <Button onClick={() => setCurrentTab('user')}>{_('general')}</Button>
                     <Button onClick={() => setCurrentTab('permissions')}>{_('permissions')}</Button>
-                    <Button onClick={() => setCurrentTab('coinpacks')}>{_('coinpacks')}</Button>
+                    <Button onClick={() => setCurrentTab('subscriptions')}>{_('subscriptions')}</Button>
                 </ButtonGroup>
                 </div>
 
@@ -306,27 +306,27 @@ export function AdminUserDialog({ organization, open, setOpen, user, setUser }) 
                         onChange={(e) => setPermissions({ ...permissions, canDeletePage: e.target.checked })}
                     />
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        {_('coinpacks')}
+                        {_('subscription_plans')}
                     </Typography>
                     <Checkbox
-                        label={_('can_create_coinpack')}
-                        checked={permissions.canCreateCoinPack}
-                        onChange={(e) => setPermissions({ ...permissions, canCreateCoinPack: e.target.checked })}
+                        label={_('can_create_subscription_plan')}
+                        checked={permissions.canCreateSubscriptionPlan}
+                        onChange={(e) => setPermissions({ ...permissions, canCreateSubscriptionPlan: e.target.checked })}
                     />
                     <Checkbox
-                        label={_('can_edit_coinpack')}
-                        checked={permissions.canEditCoinPack}
-                        onChange={(e) => setPermissions({ ...permissions, canEditCoinPack: e.target.checked })}
+                        label={_('can_edit_subscription_plan')}
+                        checked={permissions.canEditSubscriptionPlan}
+                        onChange={(e) => setPermissions({ ...permissions, canEditSubscriptionPlan: e.target.checked })}
                     />
                     <Checkbox
-                        label={_('can_delete_coinpack')}
-                        checked={permissions.canDeleteCoinPack}
-                        onChange={(e) => setPermissions({ ...permissions, canDeleteCoinPack: e.target.checked })}
+                        label={_('can_delete_subscription_plan')}
+                        checked={permissions.canDeleteSubscriptionPlan}
+                        onChange={(e) => setPermissions({ ...permissions, canDeleteSubscriptionPlan: e.target.checked })}
                     />
                 </div>
-                <div className={`flex flex-col gap-4 ${currentTab === 'coinpacks' ? 'block' : 'hidden'}`}>
+                <div className={`flex flex-col gap-4 ${currentTab === 'subscription_plans' ? 'block' : 'hidden'}`}>
                     <Typography className="-mb-2" variant="h6" color="gray">
-                        {_('coinpacks')}
+                        {_('subscription_plans')}
                     </Typography>
                 </div>
             </DialogBody>

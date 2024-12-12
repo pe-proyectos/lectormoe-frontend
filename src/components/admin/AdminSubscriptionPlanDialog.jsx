@@ -10,11 +10,13 @@ import {
     DialogFooter,
     Typography,
     Input,
+    Select,
+    Option,
 } from "@material-tailwind/react";
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, setCoinpack }) {
+export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subscriptionPlan, setSubscriptionPlan }) {
     const _ = getTranslator(organization.language);
 
     // dialog
@@ -22,20 +24,20 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
     // form
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [priceWithoutDiscount, setPriceWithoutDiscount] = useState(0.0);
     const [price, setPrice] = useState(0.0);
-    const [coins, setCoins] = useState(0);
-    const [active, setActive] = useState(false);
+    const [planInterval, setPlanInterval] = useState('monthly');
+    const [currency, setCurrency] = useState('USD');
+    const [planId, setPlanId] = useState('');
 
     useEffect(() => {
-        if (!coinpack) return;
-        setName(coinpack.name);
-        setDescription(coinpack.description);
-        setPriceWithoutDiscount(coinpack.priceWithoutDiscount);
-        setPrice(coinpack.price);
-        setCoins(coinpack.coins);
-        setActive(coinpack.active);
-    }, [coinpack]);
+        if (!subscriptionPlan) return;
+        setName(subscriptionPlan.name || '');
+        setDescription(subscriptionPlan.description || '');
+        setPrice(subscriptionPlan.price || 0.0);
+        setPlanInterval(subscriptionPlan.interval || 'monthly');
+        setCurrency(subscriptionPlan.currency || 'USD');
+        setPlanId(subscriptionPlan.planId || '');
+    }, [subscriptionPlan]);
 
     const handleSubmit = async () => {
         if (!name) {
@@ -44,24 +46,24 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
         const formData = new FormData();
         formData.append('name', name);
         if (description) formData.append('description', description);
-        formData.append('priceWithoutDiscount', priceWithoutDiscount);
         formData.append('price', price);
-        formData.append('coins', coins);
-        formData.append('active', active);
+        formData.append('interval', planInterval);
+        formData.append('currency', currency);
+        formData.append('planId', planId);
         setLoading(true);
-        callAPI(coinpack ? `/api/coinpack/${coinpack.id}` : '/api/coinpack', {
-            method: coinpack ? 'PATCH' : 'POST',
+        callAPI(subscriptionPlan ? `/api/subscription-plan/${subscriptionPlan.id}` : '/api/subscription-plan', {
+            method: subscriptionPlan ? 'PATCH' : 'POST',
             body: formData,
         })
             .then(response => {
-                toast.success(_('coin_pack_saved'));
-                setCoinpack(null);
+                toast.success(_('subscription_plan_saved'));
+                setSubscriptionPlan(null);
                 setName('');
                 setDescription('');
-                setPriceWithoutDiscount(0.0);
                 setPrice(0.0);
-                setCoins(0);
-                setActive(false);
+                setPlanInterval('');
+                setCurrency('');
+                setPlanId('');
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -77,7 +79,7 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
         >
             <DialogHeader>
                 <Typography variant="h4" color="blue-gray">
-                    {coinpack ? _('edit_coin_pack') : _('create_coin_pack')}
+                    {subscriptionPlan ? _('edit_subscription_plan') : _('create_subscription_plan')}
                 </Typography>
             </DialogHeader>
             <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
@@ -86,7 +88,7 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
                 </Typography>
                 <Input
                     size="lg"
-                    label={_('coin_pack_name')}
+                    label={_('subscription_plan_name')}
                     autoComplete='off'
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -96,60 +98,49 @@ export function AdminCoinPackDialog({ organization, open, setOpen, coinpack, set
                 </Typography>
                 <Textarea
                     size="lg"
-                    label={_('coin_pack_description')}
+                    label={_('subscription_plan_description')}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('price_without_discount')}
+                    {_('price_usd')}
                 </Typography>
                 <Input
                     type="number"
                     size="lg"
-                    label={_('price_without_discount')}
-                    min={0}
-                    max={1000}
-                    value={priceWithoutDiscount}
-                    onChange={(e) => setPriceWithoutDiscount(parseFloat(e.target.value))}
-                />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('price_with_discount')}
-                </Typography>
-                <Input
-                    type="number"
-                    size="lg"
-                    label={_('price_with_discount')}
-                    min={0}
+                    label={_('price')}
+                    min={1}
                     max={1000}
                     value={price}
                     onChange={(e) => setPrice(parseFloat(e.target.value))}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('coin_amount')}
+                    {_('interval')}
+                </Typography>
+                <div className="w-full">
+                    <Select
+                        label={_('interval')}
+                        value={planInterval}
+                        onChange={(e) => setPlanInterval(e.target.value)}
+                    >
+                        <Option value="weekly" selected={planInterval === 'weekly'}>{_('weekly')}</Option>
+                        <Option value="monthly" selected={planInterval === 'monthly'}>{_('monthly')}</Option>
+                        <Option value="yearly" selected={planInterval === 'yearly'}>{_('yearly')}</Option>
+                    </Select>
+                </div>
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_('plan_id')}
                 </Typography>
                 <Input
-                    type="number"
                     size="lg"
-                    label={_('coin_amount')}
-                    min={0}
-                    max={1000}
-                    value={coins}
-                    onChange={(e) => setCoins(parseInt(e.target.value))}
+                    label={_('plan_id')}
+                    value={planId}
+                    onChange={(e) => setPlanId(e.target.value)}
                 />
-                <label htmlFor="active-checkbox">
-                    <Checkbox
-                        color="blue"
-                        text={_('active')}
-                        id="active-checkbox"
-                        checked={active}
-                        onChange={(e) => setActive(e.target.checked)}
-                    />
-                    {_('active')}
-                </label>
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    {_('save_coin_pack')}
+                    {_('save_subscription_plan')}
                 </Button>
             </DialogFooter>
             <ToastContainer theme="dark" />

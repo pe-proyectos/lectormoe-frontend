@@ -9,7 +9,7 @@ const translations: Record<string, any> = {
 export const getTranslator = (language: string) => {
     const translate = (textCode: string): string => {
         const languageTranslations = translations[language] || translations['es'];
-        return languageTranslations[textCode] || translations['es'][textCode] || "";
+        return languageTranslations[textCode] || translations['es'][textCode] || textCode;
     };
     return translate;
 };

@@ -224,20 +224,18 @@ export function MangaGrid({ organization, logged }) {
           </div>
         </div>
       </div>
-      {/* Coin Packs 
-            < div className="w-full sm:mx-2 my-16" >
-                <div className="flex justify-center">
-                    <div className="max-w-[64rem] max-h-[8rem] text-center">
-                        <p className='uppercase text-2xl font-bold'>
-                            {_("coin_packs")}
-                        </p>
-                        <p className='uppercase'>
-                            {_("coin_packs_text")}
-                        </p>
-                    </div>
-                </div>
-            </div > */}
-      {/* Main content */}
+      <div className="w-full sm:mx-2 my-16" >
+        <div className="flex justify-center">
+            <div className="max-w-[64rem] max-h-[8rem] text-center">
+                <p className='uppercase text-2xl font-bold'>
+                    {_("subscription_plans")}
+                </p>
+                <p className='uppercase'>
+                    {_("subscription_plans_text")}
+                </p>
+            </div>
+        </div>
+      </div >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-y-4 lg:gap-4 m-2">
         <div className="col-span-1 align-middle order-first lg:order-last">
           <Typography color="white" className="font-semibold text-4xl">

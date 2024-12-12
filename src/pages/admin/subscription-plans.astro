@@ -1,16 +1,16 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcrumb.jsx";
-import { AdminCoinPackGrid } from "../../components/admin/AdminCoinPackGrid.jsx";
+import { AdminSubscriptionPlanGrid } from "../../components/admin/AdminSubscriptionPlanGrid.jsx";
 import { getTranslator } from "../../util/translate";
 
 const { organization } = Astro.locals;
 const _ = getTranslator(organization.language);
 ---
 
-<AdminLayout title={_("admin_coinpack_title")} page="coinpacks">
+<AdminLayout title={_("admin_subscription_plan_title")} page="subscription-plans">
   <AdminMangasBreadcrumb organization={organization} client:only="react"/>
   <div class="py-2"></div>
-  <h1>{_("admin_coinpack_title")}</h1>
-  <AdminCoinPackGrid organization={organization} client:only="react"/>
+  <h1>{_("admin_subscription_plan_title")}</h1>
+  <AdminSubscriptionPlanGrid organization={organization} client:only="react"/>
 </AdminLayout>

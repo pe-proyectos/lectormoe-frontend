@@ -95,10 +95,10 @@ declare namespace App {
             canCreatePage: boolean,
             canEditPage: boolean,
             canDeletePage: boolean,
-            // Coinpack
-            canCreateCoinpack: boolean,
-            canEditCoinpack: boolean,
-            canDeleteCoinpack: boolean,
+            // Subscription Plan
+            canCreateSubscriptionPlan: boolean,
+            canEditSubscriptionPlan: boolean,
+            canDeleteSubscriptionPlan: boolean,
         },
         logged: boolean,
 
