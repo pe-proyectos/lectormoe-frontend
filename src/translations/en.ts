@@ -121,6 +121,7 @@ export const translations: Record<string, string> = {
   read_now: "Read now",
   active: "Active",
   inactive: "Inactive",
+  add_to_favorites: "Add to favorites",
   edit_subscription_plan: "Edit subscription plan",
   create_subscription_plan: "Create subscription plan",
   name_and_slug_mandatory: "Name and slug are mandatory",
