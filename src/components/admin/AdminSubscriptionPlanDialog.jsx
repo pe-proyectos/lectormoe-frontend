@@ -28,6 +28,9 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
     const [planInterval, setPlanInterval] = useState('MONTH');
     const [currency, setCurrency] = useState('USD');
     const [active, setActive] = useState(true);
+    const [showAds, setShowAds] = useState(false);
+    const [canDownload, setCanDownload] = useState(false);
+    const [canReadUnreleased, setCanReadUnreleased] = useState(false);
 
     useEffect(() => {
         if (!subscriptionPlan) return;
@@ -37,6 +40,9 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
         setPlanInterval(subscriptionPlan.interval || 'MONTH');
         setCurrency(subscriptionPlan.currency || 'USD');
         setActive(subscriptionPlan.active || true);
+        setShowAds(subscriptionPlan.showAds || false);
+        setCanDownload(subscriptionPlan.canDownload || false);
+        setCanReadUnreleased(subscriptionPlan.canReadUnreleased || false);
     }, [subscriptionPlan]);
 
     const handleSubmit = async () => {
@@ -50,6 +56,9 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
         formData.append('interval', planInterval);
         formData.append('currency', currency);
         formData.append('active', active);
+        formData.append('showAds', showAds);
+        formData.append('canDownload', canDownload);
+        formData.append('canReadUnreleased', canReadUnreleased);
         setLoading(true);
         callAPI(subscriptionPlan ? `/api/subscription-plan/${subscriptionPlan.id}` : '/api/subscription-plan', {
             method: subscriptionPlan ? 'PATCH' : 'POST',
@@ -64,6 +73,9 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                 setPlanInterval('MONTH');
                 setCurrency('USD');
                 setActive(true);
+                setShowAds(false);
+                setCanDownload(false);
+                setCanReadUnreleased(false);
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -133,6 +145,18 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                     {_('active')}
                 </Typography>
                 <Checkbox checked={active} onChange={(e) => setActive(e.target.checked)} />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_('show_ads')}
+                </Typography>
+                <Checkbox checked={showAds} onChange={(e) => setShowAds(e.target.checked)} />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_('can_download')}
+                </Typography>
+                <Checkbox checked={canDownload} onChange={(e) => setCanDownload(e.target.checked)} />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_('can_read_unreleased')}
+                </Typography>
+                <Checkbox checked={canReadUnreleased} onChange={(e) => setCanReadUnreleased(e.target.checked)} />
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>

@@ -248,6 +248,7 @@ export function MangaGrid({ organization, user, logged, paypalClientId }) {
                 {_("subscription_plans")}
               </p>
               <p className="uppercase">{_("subscription_plans_text")}</p>
+              <p className="uppercase text-sm text-gray-500">{_("subscription_plans_subtext")}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-4 justify-center my-4">
