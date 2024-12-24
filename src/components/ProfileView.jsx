@@ -72,7 +72,7 @@ export function ProfileView({ organization, user, userSlug, username }) {
             <div className="flex flex-col justify-center text-center">
               <div>
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                  {pascalCase(user.role)}
+                  {pascalCase(user?.subscriptions.length > 0 ? user.subscriptions[0].subscriptionPlan.name : user.role || "user")}
                 </span>
               </div>
               <p className="mb-4 text-white my-5">

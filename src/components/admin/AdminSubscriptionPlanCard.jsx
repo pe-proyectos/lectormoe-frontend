@@ -44,10 +44,22 @@ export function AdminSubscriptionPlanCard({ organization, subscriptionPlan, onCl
                     {subscriptionPlan.currency}
                 </Typography>
                 <Typography color="black" className="font-bold">
-                    {_("plan_id")}
+                    {_("active")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    {subscriptionPlan.planId}
+                    {subscriptionPlan.active ? _("yes") : _("no")}
+                </Typography>
+                <Typography color="black" className="font-bold">
+                    {_("active_subscriptions")}
+                </Typography>
+                <Typography color="blue-gray" className="mb-2">
+                    {subscriptionPlan.subscriptions.filter(subscription => subscription.active).length}
+                </Typography>
+                <Typography color="black" className="font-bold">
+                    {_("inactive_subscriptions")}
+                </Typography>
+                <Typography color="blue-gray" className="mb-2">
+                    {subscriptionPlan.subscriptions.filter(subscription => !subscription.active).length}
                 </Typography>
                 <Button color="blue" className="mt-4" onClick={() => onClick(subscriptionPlan)}>
                     {_("edit")}

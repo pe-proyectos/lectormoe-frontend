@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Navbar,
   Collapse,
@@ -16,6 +16,7 @@ import {
   BellIcon,
   Cog6ToothIcon,
   UserIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/solid";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
@@ -25,6 +26,7 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
 
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [snowActive, setSnowActive] = React.useState(() => localStorage.getItem('snowActive') !== 'false');
 
   React.useEffect(() => {
     window.addEventListener(
@@ -135,6 +137,17 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
             </Button>
           </div>
           <div className="flex items-center gap-x-1">
+            <IconButton variant="text" color="white" onClick={() => {
+                setSnowActive(!snowActive);
+                localStorage.setItem('snowActive', !snowActive);
+                if (snowActive) {
+                  window.snow.hide();
+                } else {
+                  window.snow.show();
+                }
+              }}>
+              <SparklesIcon className="h-4 w-4" /> {/* Added SnowflakeIcon */}
+            </IconButton>
             <IconButton variant="text" color="white">
               <BellIcon className="h-4 w-4" />
             </IconButton>
@@ -148,7 +161,12 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
                   </MenuHandler>
                   <MenuList>
                     <MenuItem disabled>{username}</MenuItem>
-                    { <a href={`/profile/${userSlug}`}>
+                    {user?.subscriptions.length > 0 && (
+                      <a href="/subscriptions">
+                        <MenuItem disabled>{user.subscriptions[0].subscriptionPlan.name}</MenuItem>
+                      </a>
+                    )}
+                    {<a href={`/profile/${userSlug}`}>
                       <MenuItem>{_("my_profile")}</MenuItem>
                     </a>}
                     {user?.canSeeAdminPanel === true && (

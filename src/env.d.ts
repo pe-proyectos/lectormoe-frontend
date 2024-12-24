@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
     readonly PUBLIC_API_URL: string;
     readonly PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN: string;
+    readonly PUBLIC_PAYPAL_CLIENT_ID: string;
 }
 
 interface ImportMeta {
@@ -99,6 +100,21 @@ declare namespace App {
             canCreateSubscriptionPlan: boolean,
             canEditSubscriptionPlan: boolean,
             canDeleteSubscriptionPlan: boolean,
+            // Subscription
+            subscriptions?: {
+                id: number,
+                startDate: Date,
+                lastPayment: Date,
+                nextPayment: Date,
+                subscriptionPlan?: {
+                    id: number,
+                    name: string,
+                    slug: string,
+                    interval: string,
+                    currency: string,
+                    active: boolean,
+                },
+            }[],
         },
         logged: boolean,
 

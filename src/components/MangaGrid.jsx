@@ -18,8 +18,9 @@ import { FeaturedMangaCard } from "./FeaturedMangaCard";
 import { MangaCard } from "./MangaCard";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
+import { SubscriptionPlanCard } from "./SubscriptionPlanCard";
 
-export function MangaGrid({ organization, logged }) {
+export function MangaGrid({ organization, user, logged, paypalClientId }) {
   const _ = getTranslator(organization.language);
 
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ export function MangaGrid({ organization, logged }) {
   const [showAllChapterHistoryList, setShowAllChapterHistoryList] =
     useState(false);
   const [sliderMangas, setSliderMangas] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
 
   useEffect(() => {
     refreshUserChapterHistory();
@@ -59,6 +61,20 @@ export function MangaGrid({ organization, logged }) {
       .then(({ data }) => setMangaPopularList(data))
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoadingPopular(false));
+    // Subscription Plans
+    const scriptId = "paypal-sdk";
+    if ((!user || user?.subscriptions.length === 0) && !document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&vault=true&intent=subscription`;
+      script.async = true;
+      script.id = scriptId;
+      script.onload = () => {
+        callAPI(`/api/subscription-plan`)
+          .then(({ data }) => setSubscriptionPlans(data))
+          .catch((error) => toast.error(error?.message));
+      };
+      document.body.appendChild(script);
+    }
   }, []);
 
   const refreshUserChapterHistory = () => {
@@ -224,18 +240,33 @@ export function MangaGrid({ organization, logged }) {
           </div>
         </div>
       </div>
-      <div className="w-full sm:mx-2 my-16" >
-        <div className="flex justify-center">
+      {subscriptionPlans.length > 0 && (
+        <div className="w-full sm:mx-2 my-12">
+          <div className="flex justify-center">
             <div className="max-w-[64rem] max-h-[8rem] text-center">
-                <p className='uppercase text-2xl font-bold'>
-                    {_("subscription_plans")}
-                </p>
-                <p className='uppercase'>
-                    {_("subscription_plans_text")}
-                </p>
+              <p className="uppercase text-2xl font-bold">
+                {_("subscription_plans")}
+              </p>
+              <p className="uppercase">{_("subscription_plans_text")}</p>
             </div>
+          </div>
+          <div className="flex flex-wrap gap-4 justify-center my-4">
+            {subscriptionPlans
+              .filter((plan) => plan.active)
+              .sort((a, b) => a.price - b.price)
+              .map((plan) => (
+                <SubscriptionPlanCard
+                  key={plan.id}
+                  subscriptionPlan={plan}
+                  organization={organization}
+                  logged={logged}
+                  user={user}
+                  paypalClientId={paypalClientId}
+                />
+              ))}
+          </div>
         </div>
-      </div >
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-y-4 lg:gap-4 m-2">
         <div className="col-span-1 align-middle order-first lg:order-last">
           <Typography color="white" className="font-semibold text-4xl">

@@ -25,18 +25,18 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState(0.0);
-    const [planInterval, setPlanInterval] = useState('monthly');
+    const [planInterval, setPlanInterval] = useState('MONTH');
     const [currency, setCurrency] = useState('USD');
-    const [planId, setPlanId] = useState('');
+    const [active, setActive] = useState(true);
 
     useEffect(() => {
         if (!subscriptionPlan) return;
         setName(subscriptionPlan.name || '');
         setDescription(subscriptionPlan.description || '');
         setPrice(subscriptionPlan.price || 0.0);
-        setPlanInterval(subscriptionPlan.interval || 'monthly');
+        setPlanInterval(subscriptionPlan.interval || 'MONTH');
         setCurrency(subscriptionPlan.currency || 'USD');
-        setPlanId(subscriptionPlan.planId || '');
+        setActive(subscriptionPlan.active || true);
     }, [subscriptionPlan]);
 
     const handleSubmit = async () => {
@@ -49,7 +49,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
         formData.append('price', price);
         formData.append('interval', planInterval);
         formData.append('currency', currency);
-        formData.append('planId', planId);
+        formData.append('active', active);
         setLoading(true);
         callAPI(subscriptionPlan ? `/api/subscription-plan/${subscriptionPlan.id}` : '/api/subscription-plan', {
             method: subscriptionPlan ? 'PATCH' : 'POST',
@@ -61,9 +61,9 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                 setName('');
                 setDescription('');
                 setPrice(0.0);
-                setPlanInterval('');
-                setCurrency('');
-                setPlanId('');
+                setPlanInterval('MONTH');
+                setCurrency('USD');
+                setActive(true);
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -123,20 +123,16 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                         value={planInterval}
                         onChange={(e) => setPlanInterval(e.target.value)}
                     >
-                        <Option value="weekly" selected={planInterval === 'weekly'}>{_('weekly')}</Option>
-                        <Option value="monthly" selected={planInterval === 'monthly'}>{_('monthly')}</Option>
-                        <Option value="yearly" selected={planInterval === 'yearly'}>{_('yearly')}</Option>
+                        <Option value="DAY" selected={planInterval === 'DAY'}>{_('daily')}</Option>
+                        <Option value="WEEK" selected={planInterval === 'WEEK'}>{_('weekly')}</Option>
+                        <Option value="MONTH" selected={planInterval === 'MONTH'}>{_('monthly')}</Option>
+                        <Option value="YEAR" selected={planInterval === 'YEAR'}>{_('yearly')}</Option>
                     </Select>
                 </div>
                 <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('plan_id')}
+                    {_('active')}
                 </Typography>
-                <Input
-                    size="lg"
-                    label={_('plan_id')}
-                    value={planId}
-                    onChange={(e) => setPlanId(e.target.value)}
-                />
+                <Checkbox checked={active} onChange={(e) => setActive(e.target.checked)} />
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>
