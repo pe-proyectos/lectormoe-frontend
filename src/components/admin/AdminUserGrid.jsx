@@ -48,7 +48,15 @@ export function AdminUserGrid({ organization }) {
         const urlParams = new URLSearchParams(window.location.search);
         return Number(urlParams.get('limit')) || 24;
     });
+    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
 
+    useEffect(() => {
+        callAPI(`/api/subscription-plan`)
+          .then(({ data }) => {
+            setSubscriptionPlans(data);
+          })
+          .catch((error) => toast.error(error?.message));
+      }, []);
     useEffect(() => {
         refreshUserList();
     }, []);
@@ -173,6 +181,7 @@ export function AdminUserGrid({ organization }) {
                 setOpen={setIsUserDialogOpen}
                 user={selectedUser}
                 setUser={setSelectedUser}
+                subscriptionPlans={subscriptionPlans}
             />
             <div className="max-w-lg">
                 {loading && <Spinner className='m-4 w-full' />}
@@ -193,7 +202,7 @@ export function AdminUserGrid({ organization }) {
                                 {user.username}
                             </Typography>
                             <Typography>
-                                {_("role")}: {user.role}
+                                {_("role")}: {user.role || _("user")}
                             </Typography>
                             <Typography>
                                 {_("email")}: {user.email}

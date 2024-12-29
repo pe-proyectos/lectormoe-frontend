@@ -28,7 +28,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
     const [planInterval, setPlanInterval] = useState('MONTH');
     const [currency, setCurrency] = useState('USD');
     const [active, setActive] = useState(true);
-    const [showAds, setShowAds] = useState(false);
+    const [hideAds, setHideAds] = useState(false);
     const [canDownload, setCanDownload] = useState(false);
     const [canReadUnreleased, setCanReadUnreleased] = useState(false);
 
@@ -40,7 +40,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
         setPlanInterval(subscriptionPlan.interval || 'MONTH');
         setCurrency(subscriptionPlan.currency || 'USD');
         setActive(subscriptionPlan.active || true);
-        setShowAds(subscriptionPlan.showAds || false);
+        setHideAds(subscriptionPlan.hideAds || false);
         setCanDownload(subscriptionPlan.canDownload || false);
         setCanReadUnreleased(subscriptionPlan.canReadUnreleased || false);
     }, [subscriptionPlan]);
@@ -56,7 +56,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
         if (!subscriptionPlan) formData.append('interval', planInterval);
         if (!subscriptionPlan) formData.append('currency', currency);
         formData.append('active', active);
-        formData.append('showAds', showAds);
+        formData.append('hideAds', hideAds);
         formData.append('canDownload', canDownload);
         formData.append('canReadUnreleased', canReadUnreleased);
         setLoading(true);
@@ -73,7 +73,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                 setPlanInterval('MONTH');
                 setCurrency('USD');
                 setActive(true);
-                setShowAds(false);
+                setHideAds(false);
                 setCanDownload(false);
                 setCanReadUnreleased(false);
                 setOpen(false);
@@ -157,8 +157,8 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                     <p className="text-md font-bold text-gray-800">{_('hide_ads')}</p>
                     <Checkbox
                         label={_('hide_ads_descriptions')}
-                        checked={!showAds}
-                        onChange={(e) => setShowAds(!e.target.checked)}
+                        checked={hideAds}
+                        onChange={(e) => setHideAds(e.target.checked)}
                     />
                 </div>
                 {/* can download */}

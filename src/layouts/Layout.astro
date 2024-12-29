@@ -17,7 +17,10 @@ const { title, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
 let { showAds } = Astro.props;
 const { theme, organization, userSlug, username, user } = Astro.locals
 const isDecember = new Date().getMonth() === 11;
-if (user && user?.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan.showAds === false) {
+if (user && user?.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan.hideAds === true) {
+	showAds = false;
+}
+if (user && user?.hideAds === true) {
 	showAds = false;
 }
 ---

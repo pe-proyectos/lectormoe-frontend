@@ -101,6 +101,10 @@ declare namespace App {
             canCreateSubscriptionPlan: boolean,
             canEditSubscriptionPlan: boolean,
             canDeleteSubscriptionPlan: boolean,
+            // Perks
+            hideAds: boolean,
+            canDownload: boolean,
+            canReadUnreleased: boolean,
             // Subscription
             subscriptions?: {
                 id: number,
