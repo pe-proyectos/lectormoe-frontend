@@ -48,7 +48,6 @@ export function AdminMangaCustomChapters({ organization, initialMangaCustom }) {
             .finally(() => setLoading(false));
     };
     const downloadChapterPages = async (chapter) => {
-        console.log("downloadChapterPages", chapter);
         toast.info(`Descargando capitulo ${chapter.number} ...`);
         try {
             const chapterPages = await callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`);

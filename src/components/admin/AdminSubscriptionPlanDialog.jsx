@@ -141,22 +141,42 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                         <Option value="YEAR" selected={planInterval === 'YEAR'}>{_('yearly')}</Option>
                     </Select>
                 </div>
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('active')}
-                </Typography>
-                <Checkbox checked={active} onChange={(e) => setActive(e.target.checked)} />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('show_ads')}
-                </Typography>
-                <Checkbox checked={showAds} onChange={(e) => setShowAds(e.target.checked)} />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('can_download')}
-                </Typography>
-                <Checkbox checked={canDownload} onChange={(e) => setCanDownload(e.target.checked)} />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('can_read_unreleased')}
-                </Typography>
-                <Checkbox checked={canReadUnreleased} onChange={(e) => setCanReadUnreleased(e.target.checked)} />
+                {/* active */}
+                <div className="flex flex-col gap-2">
+                    <p className="text-md font-bold text-gray-800">{_('active')}</p>
+                    <Checkbox
+                        label={_('active_description')}
+                        checked={active}
+                        onChange={(e) => setActive(e.target.checked)}
+                    />
+                </div>
+                {/* hide ads */}
+                <div className="flex flex-col gap-2">
+                    <p className="text-md font-bold text-gray-800">{_('hide_ads')}</p>
+                    <Checkbox
+                        label={_('hide_ads_descriptions')}
+                        checked={!showAds}
+                        onChange={(e) => setShowAds(!e.target.checked)}
+                    />
+                </div>
+                {/* can download */}
+                <div className="flex flex-col gap-2">
+                    <p className="text-md font-bold text-gray-800">{_('can_download')}</p>
+                    <Checkbox
+                        label={_('can_download_descriptions')}
+                        checked={canDownload}
+                        onChange={(e) => setCanDownload(e.target.checked)}
+                    />
+                </div>
+                {/* can read unreleased */}
+                <div className="flex flex-col gap-2">
+                    <p className="text-md font-bold text-gray-800">{_('can_read_unreleased')}</p>
+                    <Checkbox
+                        label={_('can_read_unreleased_descriptions')}
+                        checked={canReadUnreleased}
+                        onChange={(e) => setCanReadUnreleased(e.target.checked)}
+                    />
+                </div>
             </DialogBody>
             <DialogFooter className="space-x-2">
                 <Button variant="outlined" onClick={handleSubmit} loading={loading}>

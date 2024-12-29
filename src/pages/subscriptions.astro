@@ -1,0 +1,20 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Subscriptions as SubscriptionsComponent } from "../components/Subscriptions.jsx";
+import { getTranslator } from "../util/translate";
+
+const { organization, user, logged } = Astro.locals;
+const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID;
+
+const _ = getTranslator(organization.language);
+
+const { status: subscriptionPlansStatus, data: subscriptionPlansData } = await Astro.locals.callAPI(`/api/subscription-plan`);
+
+if (!subscriptionPlansStatus) {
+    return Astro.redirect('/404');
+}
+---
+
+<Layout title={_("subscriptions_title")}>
+	<SubscriptionsComponent organization={organization} user={user} logged={logged} subscriptionPlansData={subscriptionPlansData.data} paypalClientId={paypalClientId} client:only="react" />
+</Layout>

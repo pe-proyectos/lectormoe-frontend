@@ -37,6 +37,13 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
 
   const navOptions = [];
 
+  if (user?.subscriptions.length > 0 && organization.enableSubscriptionSection) {
+    navOptions.push({
+      name: _("subscription_plans"),
+      href: "/subscriptions"
+    });
+  }
+
   if (organization.enableMangaSection) {
     navOptions.push({
       name: _("mangas"),

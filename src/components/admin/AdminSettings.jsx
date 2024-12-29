@@ -47,6 +47,7 @@ export function AdminSettings({
   const [enableMangaSection, setEnableMangaSection] = useState(false);
   const [enableManhuaSection, setEnableManhuaSection] = useState(false);
   const [enableManhwaSection, setEnableManhwaSection] = useState(false);
+  const [enableSubscriptionSection, setEnableSubscriptionSection] = useState(false);
   const [enableMainSlider, setEnableMainSlider] = useState(false);
   const [enableMainBanner, setEnableMainBanner] = useState(false);
   const [useBlockedCountries, setUseBlockedCountries] = useState(false);
@@ -137,6 +138,7 @@ export function AdminSettings({
         setEnableMangaSection(organization.enableMangaSection || false);
         setEnableManhuaSection(organization.enableManhuaSection || false);
         setEnableManhwaSection(organization.enableManhwaSection || false);
+        setEnableSubscriptionSection(organization.enableSubscriptionSection || false);
         setEnableMainSlider(organization.enableMainSlider || false);
         setEnableMainBanner(organization.enableMainBanner || false);
         setUseBlockedCountries(organization.useBlockedCountries || false);
@@ -183,6 +185,7 @@ export function AdminSettings({
     formData.append("enableMangaSection", enableMangaSection);
     formData.append("enableManhuaSection", enableManhuaSection);
     formData.append("enableManhwaSection", enableManhwaSection);
+    formData.append("enableSubscriptionSection", enableSubscriptionSection);
     formData.append("enableMainSlider", enableMainSlider);
     formData.append("enableMainBanner", enableMainBanner);
     formData.append("useBlockedCountries", useBlockedCountries);
@@ -298,6 +301,14 @@ export function AdminSettings({
                 label={_("enable_manhwa_section")}
                 checked={enableManhwaSection}
                 onChange={(e) => setEnableManhwaSection(e.target.checked)}
+              />
+              <Typography className="-mb-2" variant="h6" color="gray">
+                {_("subscription_section")}
+              </Typography>
+              <Switch
+                label={_("enable_subscription_section")}
+                checked={enableSubscriptionSection}
+                onChange={(e) => setEnableSubscriptionSection(e.target.checked)}
               />
               <Typography className="-mb-2" variant="h6" color="gray">
                 {_("main_slider")}

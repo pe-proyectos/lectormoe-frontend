@@ -3,9 +3,8 @@ import Layout from "../layouts/Layout.astro";
 import { MangaGrid } from "../components/MangaGrid.jsx";
 
 const { organization, user, logged } = Astro.locals;
-const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID;
 ---
 
 <Layout>
-	<MangaGrid organization={organization} user={user} logged={logged} paypalClientId={paypalClientId} client:only="react" />
+	<MangaGrid organization={organization} user={user} logged={logged} client:only="react" />
 </Layout>

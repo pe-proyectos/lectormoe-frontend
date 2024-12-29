@@ -27,6 +27,7 @@ type Organization = {
     enableMangaSection?: boolean;
     enableManhuaSection?: boolean;
     enableManhwaSection?: boolean;
+    enableSubscriptionSection?: boolean;
     enableMainSlider?: boolean;
     enableMainBanner?: boolean;
     enableGoogleAds?: boolean;

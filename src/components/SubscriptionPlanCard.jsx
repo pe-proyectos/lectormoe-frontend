@@ -87,6 +87,8 @@ export function SubscriptionPlanCard({
       })
       .render(`#paypal-button-container-${planId}`);
   };
+  console.log(user?.subscriptions);
+  
 
   return (
     <Card color="gray" variant="gradient" className="w-full max-w-[20rem] p-8 transition-all duration-300 hover:scale-[1.01]">
@@ -144,6 +146,13 @@ export function SubscriptionPlanCard({
               "please_log_in_to_subscribe"
             )}
           </Typography>
+        )}
+        {user?.subscriptions.find(subscription => subscription.subscriptionPlan.id === subscriptionPlan.id) && (
+          <div className="flex justify-center">
+            <Typography variant="small" color="red" className="font-normal">
+              {_("already_subscribed")}
+            </Typography>
+          </div>
         )}
       </CardFooter>
       <ToastContainer theme="dark" />
