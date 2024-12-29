@@ -4,6 +4,19 @@ import { getIP } from "../util/get-ip";
 export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.theme = context.cookies.get('theme')?.value === 'light' ? 'light' : 'black';
 
+    if (context.url.pathname === '/logout') {
+        const redirectTo = context.url.searchParams.get('redirect') || '/';
+        context.cookies.delete('token');
+        context.cookies.delete('username');
+        context.cookies.delete('userSlug');
+        context.cookies.delete('user');
+        context.locals.token = undefined;
+        context.locals.username = undefined;
+        context.locals.userSlug = undefined;
+        context.locals.user = undefined;
+        return context.redirect(redirectTo);
+    }
+
     context.locals.token = context.cookies.get('token')?.value;
     context.locals.username = context.cookies.get('username')?.value;
     context.locals.userSlug = context.cookies.get('userSlug')?.value;

@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
+import { callAPI } from "../util/callApi";
 
 export function StickyNavbar({ organization, username, userSlug, user, staticNavbar }) {
   const _ = getTranslator(organization.language);
@@ -35,9 +36,19 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
     );
   }, []);
 
+  const doLogout = async () => {
+    callAPI("/api/auth/logout")
+      .then(() => {
+        window.location.href = "/logout?redirect=" + window.location.href;
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+
   const navOptions = [];
 
-  if (user?.subscriptions.length > 0 && organization.enableSubscriptionSection) {
+  if (organization.enableSubscriptionSection) {
     navOptions.push({
       name: _("subscription_plans"),
       href: "/subscriptions"
@@ -181,14 +192,14 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
                         <MenuItem>{_("admin")}</MenuItem>
                       </a>
                     )}
-                    <a href="/logout">
+                    <div onClick={doLogout}>
                       <MenuItem>{_("logout")}</MenuItem>
-                    </a>
+                    </div>
                   </MenuList>
                 </Menu>
               ) : (
                 <>
-                  <a href="/login">
+                  <a href={`/login?redirect=${location.pathname}`}>
                     <Button
                       variant="text"
                       color="white"
@@ -198,7 +209,7 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
                       <span>{_("login")}</span>
                     </Button>
                   </a>
-                  <a href="/register">
+                  <a href={`/register?redirect=${location.pathname}`}>
                     <Button
                       variant="gradient"
                       size="sm"

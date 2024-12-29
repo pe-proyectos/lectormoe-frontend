@@ -52,9 +52,9 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
         const formData = new FormData();
         formData.append('name', name);
         if (description) formData.append('description', description);
-        formData.append('price', price);
-        formData.append('interval', planInterval);
-        formData.append('currency', currency);
+        if (!subscriptionPlan) formData.append('price', price);
+        if (!subscriptionPlan) formData.append('interval', planInterval);
+        if (!subscriptionPlan) formData.append('currency', currency);
         formData.append('active', active);
         formData.append('showAds', showAds);
         formData.append('canDownload', canDownload);
@@ -123,6 +123,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                     label={_('price')}
                     min={1}
                     max={1000}
+                    disabled={!!subscriptionPlan}
                     value={price}
                     onChange={(e) => setPrice(parseFloat(e.target.value))}
                 />
@@ -132,6 +133,7 @@ export function AdminSubscriptionPlanDialog({ organization, open, setOpen, subsc
                 <div className="w-full">
                     <Select
                         label={_('interval')}
+                        disabled={!!subscriptionPlan}
                         value={planInterval}
                         onChange={(e) => setPlanInterval(e.target.value)}
                     >

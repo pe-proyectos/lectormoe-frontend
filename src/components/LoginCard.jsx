@@ -69,7 +69,8 @@ export function LoginCard({ organization }) {
                 data?.user ? cookieStore.set("user", JSON.stringify(data.user)) : null,
             ]);
             // Redirect to homepage after successful login
-            window.location.href = "/";
+            const redirectTo = new URL(location.href).searchParams.get('redirect');
+            window.location.href = redirectTo || "/";
         } catch (error) {
             console.error('Error logging in:', error);
             toast.error(error?.message || _("error_logging_in"), {

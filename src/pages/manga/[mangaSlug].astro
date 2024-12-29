@@ -3,7 +3,7 @@ import { MangaView } from '../../components/MangaView';
 import Layout from '../../layouts/Layout.astro';
 
 const { mangaSlug } = Astro.params;
-const { organization, logged } = Astro.locals;
+const { organization, logged, user } = Astro.locals;
 
 const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`);
 
@@ -13,5 +13,5 @@ if (!mangaStatus) {
 ---
 
 <Layout title={manga.title} imageUrl={manga?.bannerUrl || manga?.imageUrl} description={manga.shortDescription || manga.description}>
-	<MangaView manga={manga} organization={organization} logged={logged} client:only="react"/>
+	<MangaView manga={manga} organization={organization} logged={logged} user={user} client:only="react"/>
 </Layout>

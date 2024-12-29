@@ -68,7 +68,8 @@ export function RegisterCard({ organization }) {
                 });
             } else {
                 // Redirect to login page after successful registration
-                window.location.href = "/login";
+                const redirectTo = new URL(location.href).searchParams.get('redirect');
+                window.location.href = redirectTo ? `/login?redirect=${redirectTo}` : "/login";
             }
         } catch (error) {
             toast.error(error?.message || _("register_error"), {

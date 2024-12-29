@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import JSZip from "jszip";
 import {
   Typography,
   Tooltip,
@@ -8,7 +9,14 @@ import {
   Accordion,
   AccordionHeader,
   AccordionBody,
+  Spinner,
 } from "@material-tailwind/react";
+import {
+  ArrowTopRightOnSquareIcon,
+  ArrowDownTrayIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
 import StickyBox from "react-sticky-box";
 import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
@@ -16,13 +24,17 @@ import { toast } from "react-toastify";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 
-export function MangaView({ manga, organization, logged }) {
+export function MangaView({ manga, organization, logged, user }) {
   const _ = getTranslator(organization.language);
 
+  const [isFavorite, setIsFavorite] = useState(false);
   const [chapterGroups, setChapterGroups] = useState({});
   const [selectedChapterGroup, setSelectedChapterGroup] = useState("");
   const [openCommentsAccordion, setOpenCommentsAccordion] = useState(true);
   const [userChapterHistoryList, setUserChapterHistoryList] = useState([]);
+  const [isDownloadingChapterNumber, setIsDownloadingChapterNumber] = useState(
+    []
+  );
 
   const firstChapter = manga?.chapters?.sort(
     (a, b) => a.number - b.number
@@ -30,6 +42,15 @@ export function MangaView({ manga, organization, logged }) {
   const lastChapter = manga?.chapters?.sort((a, b) => b.number - a.number)?.[0];
 
   useEffect(() => {
+    if (logged) {
+      callAPI(`/api/favorites/manga-custom/${manga.slug}`)
+        .then((value) => {
+          setIsFavorite(value);
+        })
+        .catch((error) => {
+          console.error("Failed to check if manga is favorite", error);
+        });
+    }
     callAPI(`/api/views/manga-custom/${manga.slug}`, {
       includeIp: true,
     }).catch((error) => {});
@@ -71,6 +92,11 @@ export function MangaView({ manga, organization, logged }) {
     );
   };
 
+  const isChapterRead = (chapterNumber) => {
+    const history = getChapterHistory(chapterNumber);
+    return history?.finishedAt;
+  };
+
   const getChapterLabel = (chapterNumber) => {
     const history = getChapterHistory(chapterNumber);
     if (!history) {
@@ -82,6 +108,163 @@ export function MangaView({ manga, organization, logged }) {
     }
 
     return _("already_read");
+  };
+
+  const markChapterAsRead = (evt, chapterNumber) => {
+    evt.preventDefault();
+    if (!logged) {
+      toast.error(_("you_must_be_logged_to_mark_as_read"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
+    if (!chapter) return;
+    setUserChapterHistoryList((prev) => [
+      ...prev,
+      {
+        chapter,
+        chapterId: chapter.id,
+        finishedAt: new Date(),
+        pageNumber: 0,
+      },
+    ]);
+    callAPI(
+      `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}`
+    ).catch((error) => {
+      console.error("Failed to save chapter history", error);
+    });
+  };
+
+  const markChapterAsUnread = (evt, chapterNumber) => {
+    evt.preventDefault();
+    if (!logged) {
+      toast.error(_("you_must_be_logged_to_mark_as_unread"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
+    if (!chapter) return;
+    setUserChapterHistoryList((prev) =>
+      prev.filter((h) => h.chapter.number !== chapterNumber)
+    );
+    callAPI(
+      `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}`,
+      {
+        method: "DELETE",
+      }
+    ).catch((error) => {
+      console.error("Failed to save chapter history", error);
+    });
+  };
+
+  const addToFavorites = (evt) => {
+    evt.preventDefault();
+    if (!logged) {
+      toast.error(_("you_must_be_logged_to_add_to_favorites"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    setIsFavorite(true);
+    callAPI(`/api/favorites/manga-custom/${manga.slug}`, {
+      method: "POST",
+    }).catch((error) => {
+      console.error("Failed to add to favorites", error);
+    });
+  };
+
+  const removeFromFavorites = (evt) => {
+    evt.preventDefault();
+    if (!logged) {
+      toast.error(_("you_must_be_logged_to_remove_from_favorites"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    setIsFavorite(false);
+    callAPI(`/api/favorites/manga-custom/${manga.slug}`, {
+      method: "DELETE",
+    }).catch((error) => {
+      console.error("Failed to remove from favorites", error);
+    });
+  };
+
+  const downloadChapter = async (evt, chapterNumber) => {
+    evt.preventDefault();
+    const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
+    if (!chapter) return;
+    if (!logged || !user) {
+      toast.error(_("you_must_be_logged_to_download_chapters"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    if (user?.subscriptions?.length < 1) {
+      toast.error(_("you_must_be_subscribed_to_download_chapters"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    if (!user?.subscriptions?.[0]?.subscriptionPlan?.canDownload) {
+      toast.error(_("your_subscription_doesnt_allow_chapter_downloads"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+
+    setIsDownloadingChapterNumber((prev) => [...prev, chapterNumber]);
+
+    const toastId = toast.info(
+      `${_("getting_pages_from_chapter")} ${chapter.number} ...`,
+      {
+        position: "bottom-right",
+        isLoading: true,
+      }
+    );
+
+    try {
+      const chapterPages = await callAPI(
+        `/api/manga-custom/${manga.slug}/chapter/${chapter.number}/pages`
+      );
+      const zip = new JSZip();
+      const folder = zip.folder(`Chapter ${chapter.number}`);
+      const pagePromises = chapterPages.map((page) => {
+        return fetch(page.imageUrl).then((response) => response.blob());
+      });
+      const blobs = await Promise.all(pagePromises);
+      blobs.forEach((blob, index) => {
+        folder.file(
+          `${chapter.number} - ${chapterPages[index].number}.jpg`,
+          blob,
+          {
+            type: "blob",
+          }
+        );
+      });
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(zipBlob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${manga.title} - ${chapter.number}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`${_("downloading_chapter")} ${chapter.number}`, {
+        position: "bottom-right",
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message);
+    } finally {
+      toast.dismiss(toastId);
+      setIsDownloadingChapterNumber((prev) =>
+        prev.filter((n) => n !== chapterNumber)
+      );
+    }
   };
 
   useEffect(() => {
@@ -183,33 +366,53 @@ export function MangaView({ manga, organization, logged }) {
                 />
               </div>
               <div className="w-full mt-6 mb-6">
-                <Button
-                  variant="filled"
-                  className="flex items-center gap-3 mx-auto text-gray-900 bg-yellow-500"
-                  color="yellow"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6"
+                {isFavorite ? (
+                  <Button
+                    variant="filled"
+                    className="flex items-center gap-3 mx-auto text-gray-900 bg-yellow-500"
+                    color="yellow"
+                    onClick={(evt) => removeFromFavorites(evt)}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
-                    />
-                  </svg>
-                  {/*
-                                Filled:
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                    <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
-                                </svg>
-                                */}
-                  {_("add_to_favorites")}
-                </Button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-6 h-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
+                      />
+                    </svg>
+                    {_("remove_from_favorites")}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="filled"
+                    className="flex items-center gap-3 mx-auto text-gray-900 bg-yellow-500"
+                    color="yellow"
+                    onClick={(evt) => addToFavorites(evt)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-6 h-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
+                      />
+                    </svg>
+                    {_("add_to_favorites")}
+                  </Button>
+                )}
               </div>
               <div className="flex justify-between items-center my-4">
                 <span className="text-xl font-bold">{_("status")}:</span>
@@ -419,8 +622,66 @@ export function MangaView({ manga, organization, logged }) {
                               {chapter.title}
                             </p>
                           </div>
-                          <div>
-                            <span className="text-xs lg:text-base text-gray-100 lg:mr-4">
+                          <div className="w-full sm:w-auto flex flex-col items-center justify-center sm:items-end sm:justify-end gap-2 mx-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {/* Go to chapter */}
+                              <Tooltip
+                                content={_("go_to_chapter")}
+                                placement="bottom"
+                              >
+                                <ArrowTopRightOnSquareIcon className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-gray-500 transition-all duration-300" />
+                              </Tooltip>
+                              {/* Mark as read */}
+                              {!isChapterRead(chapter.number) && (
+                                <Tooltip
+                                  content={_("mark_as_read")}
+                                  placement="bottom"
+                                >
+                                  <EyeIcon
+                                    className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-green-300 transition-all duration-300"
+                                    onClick={(evt) =>
+                                      markChapterAsRead(evt, chapter.number)
+                                    }
+                                  />
+                                </Tooltip>
+                              )}
+                              {/* Mark as unread */}
+                              {isChapterRead(chapter.number) && (
+                                <Tooltip
+                                  content={_("mark_as_unread")}
+                                  placement="bottom"
+                                >
+                                  <EyeSlashIcon
+                                    className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-red-300 transition-all duration-300"
+                                    onClick={(evt) =>
+                                      markChapterAsUnread(evt, chapter.number)
+                                    }
+                                  />
+                                </Tooltip>
+                              )}
+                              {/* Download chapter */}
+                              <Tooltip
+                                content={_("download_chapter")}
+                                placement="bottom"
+                              >
+                                {isDownloadingChapterNumber.includes(
+                                  chapter.number
+                                ) ? (
+                                  <Spinner
+                                    className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-green-300 transition-all duration-300"
+                                    onClick={(evt) => evt.preventDefault()}
+                                  />
+                                ) : (
+                                  <ArrowDownTrayIcon
+                                    className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-green-300 transition-all duration-300"
+                                    onClick={(evt) =>
+                                      downloadChapter(evt, chapter.number)
+                                    }
+                                  />
+                                )}
+                              </Tooltip>
+                            </div>
+                            <span className="text-xs lg:text-base text-gray-400">
                               {getChapterLabel(chapter.number)}
                             </span>
                           </div>
