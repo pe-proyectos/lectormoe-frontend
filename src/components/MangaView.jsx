@@ -266,18 +266,7 @@ export function MangaView({ manga, organization, logged, user }) {
       });
       return;
     }
-    if (user?.subscriptions?.length < 1) {
-      toast.error(_("you_must_be_subscribed_to_download_chapters"), {
-        position: "bottom-right",
-      });
-      return;
-    }
-    if (!user?.subscriptions?.[0]?.subscriptionPlan?.canDownload) {
-      toast.error(_("your_subscription_doesnt_allow_chapter_downloads"), {
-        position: "bottom-right",
-      });
-      return;
-    }
+
     if (!userHasAccessToChapter(chapter)) {
       toast.error(_("you_must_be_subscribed_to_download_chapters"), {
         position: "bottom-right",
