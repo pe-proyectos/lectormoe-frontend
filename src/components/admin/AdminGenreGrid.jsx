@@ -31,9 +31,6 @@ export function AdminGenreGrid({ organization }) {
     };
 
     const handleEdit = (genre) => {
-        console.log("handleEdit");
-        console.log(genre);
-
         setSelectedGenre(genre);
         setIsGenreDialogOpen(true);
     };

@@ -89,7 +89,6 @@ declare namespace App {
             canEditGenre: boolean,
             canDeleteGenre: boolean,
             // Chapter
-            canReadUnreleasedChapter: boolean,
             canCreateChapter: boolean,
             canEditChapter: boolean,
             canDeleteChapter: boolean,
@@ -118,6 +117,8 @@ declare namespace App {
                     interval: string,
                     currency: string,
                     active: boolean,
+                    canReadUnreleased: boolean,
+                    canDownload: boolean,
                 },
             }[],
         },

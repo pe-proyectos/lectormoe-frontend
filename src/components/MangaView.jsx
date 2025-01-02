@@ -16,6 +16,8 @@ import {
   ArrowDownTrayIcon,
   EyeIcon,
   EyeSlashIcon,
+  LockOpenIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import StickyBox from "react-sticky-box";
 import { callAPI } from "../util/callApi";
@@ -26,8 +28,6 @@ import { formatDate } from "../util/date";
 
 export function MangaView({ manga, organization, logged, user }) {
   const _ = getTranslator(organization.language);
-  console.log(manga);
-  
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [chapterGroups, setChapterGroups] = useState({});
@@ -87,6 +87,12 @@ export function MangaView({ manga, organization, logged, user }) {
     type: "conjunction",
   });
 
+  const preventEvent = (evt) => {
+    evt?.preventDefault?.();
+    evt?.stopPropagation?.();
+    evt?.nativeEvent?.stopImmediatePropagation?.();
+  }
+
   const getChapterHistory = (chapterNumber) => {
     if (!logged) return null;
     return userChapterHistoryList.find(
@@ -100,7 +106,16 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const getChapterLabel = (chapterNumber) => {
+    const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
+
+    if (!chapter) return _("read");
+
+    if (!userHasAccessToChapter(chapter)) {
+      return _("subscribers_only");
+    }
+
     const history = getChapterHistory(chapterNumber);
+
     if (!history) {
       return _("read");
     }
@@ -112,8 +127,44 @@ export function MangaView({ manga, organization, logged, user }) {
     return _("already_read");
   };
 
+  const goToReadChapter = (chapter) => {
+    if (!userHasAccessToChapter(chapter)) {
+      window.location.href = `/subscriptions?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}`;
+      return;
+    }
+    
+    if (logged) {
+      const history = getChapterHistory(chapter.number);
+      if (!history?.finishedAt) {
+        if (history?.pageNumber) {
+          window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}?page=${history?.pageNumber}`;
+        } else {
+          window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}`;
+        }
+        return;
+      }
+    }
+    
+    window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}`;
+  }
+
+  const userHasAccessToChapter = (chapter) => {
+    if (new Date(chapter.releasedAt).getTime() < new Date().getTime()) return true;
+    if (!logged) return false;
+    if (user?.canReadUnreleased === true) return true;
+    for (const subscription of user?.subscriptions || []) {
+        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
+            return true;
+        }
+        if (manga?.subscriptionPlans?.find((plan) => plan.id === subscription?.subscriptionPlan?.id)) {
+            return true;
+        }
+    }
+    return false;
+  }
+
   const markChapterAsRead = (evt, chapterNumber) => {
-    evt.preventDefault();
+    preventEvent(evt);
     if (!logged) {
       toast.error(_("you_must_be_logged_to_mark_as_read"), {
         position: "bottom-right",
@@ -122,6 +173,12 @@ export function MangaView({ manga, organization, logged, user }) {
     }
     const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
     if (!chapter) return;
+    if (!userHasAccessToChapter(chapter)) {
+      toast.error(_("you_dont_have_access_to_this_chapter"), {
+        position: "bottom-right",
+      });
+      return;
+    }
     setUserChapterHistoryList((prev) => [
       ...prev,
       {
@@ -139,7 +196,7 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const markChapterAsUnread = (evt, chapterNumber) => {
-    evt.preventDefault();
+    preventEvent(evt);
     if (!logged) {
       toast.error(_("you_must_be_logged_to_mark_as_unread"), {
         position: "bottom-right",
@@ -148,6 +205,12 @@ export function MangaView({ manga, organization, logged, user }) {
     }
     const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
     if (!chapter) return;
+    if (!userHasAccessToChapter(chapter)) {
+      toast.error(_("you_dont_have_access_to_this_chapter"), {
+        position: "bottom-right",
+      });
+      return;
+    }
     setUserChapterHistoryList((prev) =>
       prev.filter((h) => h.chapter.number !== chapterNumber)
     );
@@ -162,7 +225,7 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const addToFavorites = (evt) => {
-    evt.preventDefault();
+    preventEvent(evt);
     if (!logged) {
       toast.error(_("you_must_be_logged_to_add_to_favorites"), {
         position: "bottom-right",
@@ -178,7 +241,7 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const removeFromFavorites = (evt) => {
-    evt.preventDefault();
+    preventEvent(evt);
     if (!logged) {
       toast.error(_("you_must_be_logged_to_remove_from_favorites"), {
         position: "bottom-right",
@@ -194,7 +257,7 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const downloadChapter = async (evt, chapterNumber) => {
-    evt.preventDefault();
+    preventEvent(evt);
     const chapter = manga?.chapters.find((c) => c.number === chapterNumber);
     if (!chapter) return;
     if (!logged || !user) {
@@ -211,6 +274,12 @@ export function MangaView({ manga, organization, logged, user }) {
     }
     if (!user?.subscriptions?.[0]?.subscriptionPlan?.canDownload) {
       toast.error(_("your_subscription_doesnt_allow_chapter_downloads"), {
+        position: "bottom-right",
+      });
+      return;
+    }
+    if (!userHasAccessToChapter(chapter)) {
+      toast.error(_("you_must_be_subscribed_to_download_chapters"), {
         position: "bottom-right",
       });
       return;
@@ -296,12 +365,7 @@ export function MangaView({ manga, organization, logged, user }) {
     let lastLabel = "";
     for (let i = 10; i <= highestChapterNumberCeiled; i += 10) {
       const chapters = manga?.chapters
-        .filter((chapter) => chapter.number >= i - 9 && chapter.number <= i)
-        .map((chapter) => {
-          chapter.isReady =
-            new Date(chapter.releasedAt).getTime() < new Date().getTime();
-          return chapter;
-        });
+        .filter((chapter) => chapter.number >= i - 9 && chapter.number <= i);
       if (chapters.length === 0) continue;
       const label = `${i - 9}-${i}`;
       groups[label] = {
@@ -316,20 +380,14 @@ export function MangaView({ manga, organization, logged, user }) {
       (chapter) => chapter.number === 0
     );
     if (chapterNumberZero) {
-      const chapterZero = {
-        ...chapterNumberZero,
-        isReady:
-          new Date(chapterNumberZero.releasedAt).getTime() <
-          new Date().getTime(),
-      };
       if (groups[Object.keys(groups)[0]]) {
-        groups[Object.keys(groups)[0]]?.chapters.push(chapterZero);
+        groups[Object.keys(groups)[0]]?.chapters.push(chapterNumberZero);
       } else {
         groups[0] = {
           label: `0`,
           from: 0,
           to: 0,
-          chapters: [chapterZero],
+          chapters: [chapterNumberZero],
         };
         lastLabel = `0`;
       }
@@ -559,28 +617,13 @@ export function MangaView({ manga, organization, logged, user }) {
                 {chapterGroups[selectedChapterGroup]?.chapters
                   .sort((a, b) => b.number - a.number)
                   .map((chapter) => (
-                    <a
+                    <div
                       key={chapter.number}
-                      href={
-                        chapter.isReady
-                          ? logged
-                            ? getChapterHistory(chapter.number)
-                              ? getChapterHistory(chapter.number)?.finishedAt
-                                ? `/manga/${manga.slug}/chapters/${chapter.number}`
-                                : `/manga/${manga.slug}/chapters/${
-                                    chapter.number
-                                  }?page=${
-                                    getChapterHistory(chapter.number)
-                                      ?.pageNumber
-                                  }`
-                              : `/manga/${manga.slug}/chapters/${chapter.number}`
-                            : `/manga/${manga.slug}/chapters/${chapter.number}`
-                          : "#!not_ready"
-                      }
+                      onClick={() => goToReadChapter(chapter)}
                       className={
-                        "p-2 w-full rounded-xl group" +
+                        "p-2 w-full rounded-xl group cursor-pointer" +
                         " " +
-                        (chapter.isReady
+                        (userHasAccessToChapter(chapter)
                           ? logged
                             ? getChapterHistory(chapter.number)
                               ? getChapterHistory(chapter.number)?.finishedAt
@@ -594,7 +637,7 @@ export function MangaView({ manga, organization, logged, user }) {
                               new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
                             ? "bg-green-400 bg-opacity-10 hover:bg-opacity-15"
                             : "bg-white bg-opacity-10 hover:bg-opacity-15"
-                          : "bg-gray-600 bg-opacity-50 cursor-not-allowed")
+                          : "bg-gray-600 bg-opacity-50")
                       }
                     >
                       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center justify-center">
@@ -613,7 +656,7 @@ export function MangaView({ manga, organization, logged, user }) {
                                 {_("chapter")} {chapter.number}
                               </span>
                               <span className="text-[0.7rem] font-extralight text-gray-500">
-                                {_("available")}{" "}
+                                {_("available_for_everyone_in")}{" "}
                                 {formatDate(
                                   chapter.releasedAt,
                                   organization.language
@@ -623,6 +666,35 @@ export function MangaView({ manga, organization, logged, user }) {
                             <p className="text-xl lg:text-2xl">
                               {chapter.title}
                             </p>
+                            {!userHasAccessToChapter(chapter) && (
+                              <p className="my-1">
+                                <span
+                                  className="text-[0.6rem] font-extralight text-gray-500"
+                                >
+                                  {_("early_access_for_subscribers")}
+                                </span>
+                                {manga?.subscriptionPlans?.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {manga?.subscriptionPlans?.map((plan) => 
+                                      user?.subscriptions?.find(v => v.subscriptionPlan.id === plan.id) ? (
+                                        <span
+                                          className="text-[0.6rem] font-extralight text-gray-100 bg-green-900 rounded-lg px-[0.4rem] py-[0.1rem]"
+                                        >
+                                          {plan.name}
+                                        </span>
+                                      ) : (
+                                        <a 
+                                          href={`/subscriptions`}
+                                          className="text-[0.6rem] font-extralight text-gray-500 bg-black bg-opacity-50 rounded-lg px-[0.4rem] py-[0.1rem]"
+                                        >
+                                          {plan.name}
+                                        </a>
+                                      )
+                                    )}
+                                  </div>
+                                )}
+                              </p>
+                            )}
                           </div>
                           <div className="w-full sm:w-auto flex flex-col items-center justify-center sm:items-end sm:justify-end gap-2 mx-4">
                             <div className="flex flex-wrap items-center gap-2">
@@ -671,14 +743,12 @@ export function MangaView({ manga, organization, logged, user }) {
                                 ) ? (
                                   <Spinner
                                     className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-green-300 transition-all duration-300"
-                                    onClick={(evt) => evt.preventDefault()}
+                                    onClick={preventEvent}
                                   />
                                 ) : (
                                   <ArrowDownTrayIcon
                                     className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-green-300 transition-all duration-300"
-                                    onClick={(evt) =>
-                                      downloadChapter(evt, chapter.number)
-                                    }
+                                    onClick={(evt) => downloadChapter(evt, chapter.number)}
                                   />
                                 )}
                               </Tooltip>
@@ -689,7 +759,7 @@ export function MangaView({ manga, organization, logged, user }) {
                           </div>
                         </div>
                       </div>
-                    </a>
+                    </div>
                   ))}
               </div>
               <StickyBox offsetTop={100} offsetBottom={100}>

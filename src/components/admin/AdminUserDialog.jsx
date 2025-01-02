@@ -54,7 +54,6 @@ export function AdminUserDialog({
     canCreateGenre: false,
     canEditGenre: false,
     canDeleteGenre: false,
-    canReadUnreleasedChapter: false,
     canCreateChapter: false,
     canEditChapter: false,
     canDeleteChapter: false,
@@ -88,7 +87,6 @@ export function AdminUserDialog({
       canCreateGenre: user.canCreateGenre,
       canEditGenre: user.canEditGenre,
       canDeleteGenre: user.canDeleteGenre,
-      canReadUnreleasedChapter: user.canReadUnreleasedChapter,
       canCreateChapter: user.canCreateChapter,
       canEditChapter: user.canEditChapter,
       canDeleteChapter: user.canDeleteChapter,
@@ -397,16 +395,6 @@ export function AdminUserDialog({
               setPermissions({
                 ...permissions,
                 canDeleteGenre: e.target.checked,
-              })
-            }
-          />
-          <Checkbox
-            label={_("can_read_unreleased_chapter")}
-            checked={permissions.canReadUnreleasedChapter}
-            onChange={(e) =>
-              setPermissions({
-                ...permissions,
-                canReadUnreleasedChapter: e.target.checked,
               })
             }
           />

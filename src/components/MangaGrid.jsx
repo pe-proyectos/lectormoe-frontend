@@ -118,7 +118,6 @@ export function MangaGrid({ organization, user, logged, paypalClientId }) {
             loop={true}
             showDots={false}
             showArrows={false}
-            // onSlideChange={(index) => console.log(index)}
           >
             {sliderMangas.map((manga, index) => (
               <div key={manga.id}>

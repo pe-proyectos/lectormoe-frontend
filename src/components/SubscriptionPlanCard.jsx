@@ -87,8 +87,6 @@ export function SubscriptionPlanCard({
       })
       .render(`#paypal-button-container-${planId}`);
   };
-  console.log(user?.subscriptions);
-  
 
   return (
     <Card color="gray" variant="gradient" className="w-full max-w-[20rem] p-8 transition-all duration-300 hover:scale-[1.01]">

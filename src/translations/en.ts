@@ -1,4 +1,10 @@
 export const translations: Record<string, string> = {
+  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Subscribe to one of these plans to read chapter early",
+  chapter_not_ready: "Chapter is not ready for reading",
+  available_for_everyone_in: "Available for everyone in",
+  early_access_for_subscribers: "Early access for subscribers",
+  you_dont_have_access_to_this_chapter: "You don't have access to this chapter",
+  you_must_be_subscribed_to_read_this_chapter: "You must be subscribed to read this chapter",
   you_must_be_logged_to_download_chapters: "You must be logged to download chapters",
   you_must_be_subscribed_to_download_chapters: "You must be subscribed to download chapters",
   your_subscription_doesnt_allow_chapter_downloads: "Your subscription doesn't allow chapter downloads",
@@ -355,6 +361,7 @@ export const translations: Record<string, string> = {
   read: "Read",
   keep_reading: "Keep reading",
   already_read: "✅ Read",
+  subscribers_only: "Subscribers only",
   storage: "Storage",
   settings: "Settings",
   upgrade_to_pro: "Upgrade to a PRO site",

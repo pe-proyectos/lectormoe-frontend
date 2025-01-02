@@ -5,7 +5,7 @@ import { getTranslator } from "../../../../util/translate";
 
 
 const { mangaSlug, chapterNumber } = Astro.params;
-const { organization, callAPI, logged } = Astro.locals;
+const { organization, callAPI, logged, user } = Astro.locals;
 const _ = getTranslator(organization.language);
 
 const [
@@ -24,10 +24,23 @@ if (!chapterStatus) {
     return Astro.redirect("/404");
 }
 
-const isReady = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+const userHasAccessToChapter = (chapter: any) => {
+    if (new Date(chapter.releasedAt).getTime() < new Date().getTime()) return true;
+    if (!logged) return false;
+    if (user?.canReadUnreleased === true) return true;
+    for (const subscription of user?.subscriptions || []) {
+        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
+            return true;
+        }
+        if (manga?.subscriptionPlans?.find((plan: any) => plan.id === subscription?.subscriptionPlan?.id)) {
+            return true;
+        }
+    }
+    return false;
+}
 
-if (!isReady) {
-    return Astro.redirect("/404");
+if (!userHasAccessToChapter(chapter)) {
+    return Astro.redirect(`/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapterNumber}`);
 }
 ---
 

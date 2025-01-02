@@ -1,4 +1,10 @@
 export const translations: Record<string, string> = {
+  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Suscríbete a uno de estos planes para leer el capítulo antes de tiempo",
+  chapter_not_ready: "El capítulo aun no esta disponible",
+  available_for_everyone_in: "Disponible para todos en",
+  early_access_for_subscribers: "Acceso anticipado para suscriptores",
+  you_dont_have_access_to_this_chapter: "No tienes acceso a este capítulo",
+  you_must_be_subscribed_to_read_this_chapter: "Debes estar suscrito para leer este capítulo",
   you_must_be_logged_to_download_chapters: "Debes estar logeado para descargar capítulos",
   you_must_be_subscribed_to_download_chapters: "Debes estar suscrito para descargar capítulos",
   your_subscription_doesnt_allow_chapter_downloads: "Tu suscripción no permite descargas de capítulos",
@@ -355,6 +361,7 @@ export const translations: Record<string, string> = {
   subscription_plans_patreon: "Tambien puedes suscribirte desde Patreon haciendo click aqui",
   available: "Disponible",
   read: "Leer",
+  subscribers_only: "Solo para suscriptores",
   keep_reading: "Continuar leyendo",
   already_read: "✅ Leído",
   storage: "Almacenamiento",
