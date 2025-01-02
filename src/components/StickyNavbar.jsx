@@ -22,12 +22,22 @@ import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { callAPI } from "../util/callApi";
 
-export function StickyNavbar({ organization, username, userSlug, user, staticNavbar }) {
+export function StickyNavbar({
+  organization,
+  username,
+  userSlug,
+  user,
+  staticNavbar,
+}) {
   const _ = getTranslator(organization.language);
 
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
-  const [snowActive, setSnowActive] = React.useState(() => localStorage.getItem('snowActive') !== 'false');
+  const [snowActive, setSnowActive] = React.useState(
+    () => localStorage.getItem("snowActive") !== "false"
+  );
+
+  const isDecember = new Date().getMonth() === 11;
 
   React.useEffect(() => {
     window.addEventListener(
@@ -44,42 +54,46 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
       .catch((error) => {
         console.error(error);
       });
-  }
+  };
 
   const navOptions = [];
 
   if (organization.enableSubscriptionSection) {
     navOptions.push({
       name: _("subscription_plans"),
-      href: "/subscriptions"
+      href: "/subscriptions",
     });
   }
 
   if (organization.enableMangaSection) {
     navOptions.push({
       name: _("mangas"),
-      href: "/search?type=manga"
+      href: "/search?type=manga",
     });
   }
 
   if (organization.enableManhuaSection) {
     navOptions.push({
       name: _("manhuas"),
-      href: "/search?type=manhua"
+      href: "/search?type=manhua",
     });
   }
 
   if (organization.enableManhwaSection) {
     navOptions.push({
       name: _("manhwas"),
-      href: "/search?type=manhwa"
+      href: "/search?type=manhwa",
     });
   }
 
   const navList = (
     <ul className="mt-2 mb-4 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
       {navOptions.map((option) => (
-        <a href={navOptions.length > 1 ? option.href : '/search'} key={option.name} className="flex items-center">
+        <a
+          href={navOptions.length > 1 ? option.href : "/search"}
+          key={option.name}
+          className="flex items-center"
+        >
           <Typography
             as="li"
             variant="small"
@@ -118,7 +132,7 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
             href="/"
             className="mr-4 cursor-pointer py-1.5 font-medium"
           >
-            {organization?.title || ''}
+            {organization?.title || ""}
           </Typography>
         )}
         <div className="flex items-center gap-4">
@@ -128,7 +142,8 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
               location.pathname === "/search"
                 ? "relative w-full gap-2 md:w-max hidden"
                 : "relative w-full gap-2 md:w-max hidden md:flex"
-            }>
+            }
+          >
             <Input
               type="search"
               color="white"
@@ -149,23 +164,31 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
               size="sm"
               variant="gradient"
               className="!absolute right-1 top-1 rounded"
-              onClick={() => { location.href = `/search?q=${search}`; }}
+              onClick={() => {
+                location.href = `/search?q=${search}`;
+              }}
             >
               {_("search")}
             </Button>
           </div>
           <div className="flex items-center gap-x-1">
-            <IconButton variant="text" color="white" onClick={() => {
-                setSnowActive(!snowActive);
-                localStorage.setItem('snowActive', !snowActive);
-                if (snowActive) {
-                  window.snow.hide();
-                } else {
-                  window.snow.show();
-                }
-              }}>
-              <SparklesIcon className="h-4 w-4" /> {/* Added SnowflakeIcon */}
-            </IconButton>
+            {isDecember && (
+              <IconButton
+                variant="text"
+                color="white"
+                onClick={() => {
+                  setSnowActive(!snowActive);
+                  localStorage.setItem("snowActive", !snowActive);
+                  if (snowActive) {
+                    window.snow.hide();
+                  } else {
+                    window.snow.show();
+                  }
+                }}
+              >
+                <SparklesIcon className="h-4 w-4" /> {/* Added SnowflakeIcon */}
+              </IconButton>
+            )}
             <IconButton variant="text" color="white">
               <BellIcon className="h-4 w-4" />
             </IconButton>
@@ -181,12 +204,16 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
                     <MenuItem disabled>{username}</MenuItem>
                     {user?.subscriptions.length > 0 && (
                       <a href="/subscriptions">
-                        <MenuItem disabled>{user.subscriptions[0].subscriptionPlan.name}</MenuItem>
+                        <MenuItem disabled>
+                          {user.subscriptions[0].subscriptionPlan.name}
+                        </MenuItem>
                       </a>
                     )}
-                    {<a href={`/profile/${userSlug}`}>
-                      <MenuItem>{_("my_profile")}</MenuItem>
-                    </a>}
+                    {
+                      <a href={`/profile/${userSlug}`}>
+                        <MenuItem>{_("my_profile")}</MenuItem>
+                      </a>
+                    }
                     {user?.canSeeAdminPanel === true && (
                       <a href="/admin/mangas">
                         <MenuItem>{_("admin")}</MenuItem>
@@ -264,11 +291,13 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
       <Collapse open={openNav}>
         {navList}
         <div className="flex items-center gap-x-1 pb-4 justify-center">
-          <div className={
-            location.pathname === "/search"
-              ? "relative w-full gap-2 md:w-max hidden"
-              : "relative w-full gap-2 md:w-max"
-          }>
+          <div
+            className={
+              location.pathname === "/search"
+                ? "relative w-full gap-2 md:w-max hidden"
+                : "relative w-full gap-2 md:w-max"
+            }
+          >
             <Input
               type="search"
               color="white"
@@ -284,7 +313,9 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
               size="sm"
               variant="gradient"
               className="!absolute right-1 top-1 rounded"
-              onClick={() => { location.href = `/search?q=${search}`; }}
+              onClick={() => {
+                location.href = `/search?q=${search}`;
+              }}
             >
               {_("search")}
             </Button>
@@ -293,12 +324,7 @@ export function StickyNavbar({ organization, username, userSlug, user, staticNav
         {!username && (
           <div className="flex items-center justify-center gap-x-1">
             <a href="/login">
-              <Button
-                fullWidth
-                variant="text"
-                color="white"
-                size="sm"
-              >
+              <Button fullWidth variant="text" color="white" size="sm">
                 <span>{_("login")}</span>
               </Button>
             </a>
