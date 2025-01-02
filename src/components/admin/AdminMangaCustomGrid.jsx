@@ -21,6 +21,7 @@ export function AdminMangaCustomGrid({ organization }) {
 
     const [loading, setLoading] = useState(true);
     const [mangaList, setMangaList] = useState([]);
+    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
     const [page, setPage] = useState(1);
     const [maxPage, setMaxPage] = useState(1);
     const [selectedManga, setSelectedManga] = useState(null);
@@ -28,6 +29,7 @@ export function AdminMangaCustomGrid({ organization }) {
 
     useEffect(() => {
         refreshMangaProfile();
+        refreshSubscriptionPlans();
     }, [page]);
 
     useEffect(() => {
@@ -49,6 +51,12 @@ export function AdminMangaCustomGrid({ organization }) {
             .finally(() => setLoading(false));
     }
 
+    const refreshSubscriptionPlans = () => {
+        return callAPI(`/api/subscription-plan`)
+            .then(({ data }) => setSubscriptionPlans(data))
+            .catch(error => toast.error(error?.message || _('error_loading_subscription_plans')));
+    };
+
     const handleCardClick = (mangaCustom) => {
         setSelectedManga(mangaCustom);
         setIsCreateMangaCustomDialogOpen(true);
@@ -62,6 +70,7 @@ export function AdminMangaCustomGrid({ organization }) {
                 setOpen={setIsCreateMangaCustomDialogOpen}
                 mangaCustom={selectedManga}
                 setMangaCustom={setSelectedManga}
+                subscriptionPlans={subscriptionPlans}
             />
             <Button
                 variant="outlined"

@@ -51,10 +51,6 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
         if (chapter) return chapter.imageUrl;
         return null;
     });
-    const [isSubscription, setIsSubscription] = useState(() => {
-        if (chapter) return chapter.isSubscription;
-        return false;
-    });
     const [pages, setPages] = useState([]);
     const [dragId, setDragId] = useState();
 
@@ -96,7 +92,6 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
             setTitle(chapter.title);
             setNumber(chapter.number);
             setReleasedAt(new Date(chapter.releasedAt));
-            setIsSubscription(chapter.isSubscription);
             setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
@@ -110,7 +105,6 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
             setNumber((lastChapterNumber + 1));
             setTitle(`${_("chapter")} ${lastChapterNumber + 1}`);
             setReleasedAt(new Date());
-            setIsSubscription(false);
             setChapterImageFile(null);
             setPages([]);
             setLoading(false);
@@ -128,7 +122,6 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
         formData.append('title', title);
         formData.append('number', number);
         formData.append('releasedAt', releasedAt);
-        formData.append('isSubscription', isSubscription);
         if (chapterImageFile || chapter) formData.append('image', chapterImageFile);
         pages.forEach((page) => {
             formData.append('pages', page instanceof File ? page : page?.imageUrl);
@@ -223,20 +216,6 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
                             {_("suscribers")}
-                        </Typography>
-                        <Switch
-                            checked={isSubscription}
-                            onChange={(e) => setIsSubscription(e.target.checked)}
-                            label={
-                                <div>
-                                    <Typography color="blue-gray" className="font-medium">
-                                        {_("suscribers_only")}
-                                    </Typography>
-                                </div>
-                            }
-                        />
-                        <Typography variant="small" color="gray" className="font-normal">
-                            {_("suscribers_only_description")}
                         </Typography>
                     </div>
                     <div className="max-w-[70%] w-[70%] flex flex-col gap-4">

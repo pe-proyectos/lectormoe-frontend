@@ -26,6 +26,8 @@ import { formatDate } from "../util/date";
 
 export function MangaView({ manga, organization, logged, user }) {
   const _ = getTranslator(organization.language);
+  console.log(manga);
+  
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [chapterGroups, setChapterGroups] = useState({});

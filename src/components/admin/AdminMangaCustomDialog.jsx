@@ -31,7 +31,7 @@ import { AdminMangaProfileDialog } from './AdminMangaProfileDialog';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCustom, setMangaCustom }) {
+export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCustom, setMangaCustom, subscriptionPlans }) {
     const _ = getTranslator(organization.language);
 
     // dialog
@@ -47,6 +47,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
     const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
     const [selectedGenres, setSelectedGenres] = useState([]);
+    const [selectedSubscriptionPlans, setSelectedSubscriptionPlans] = useState([]);
     const [releasedDate, setReleasedDate] = useState(null);
     const [nextChapterDate, setNextChapterDate] = useState(null);
     const [coverImageFile, setCoverImageFile] = useState(null);
@@ -64,6 +65,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         setCoverImageFile(mangaCustom?.imageUrl || null);
         setBannerImageFile(mangaCustom?.bannerUrl || null);
         setSelectedGenres(mangaCustom?.genres || []);
+        setSelectedSubscriptionPlans(mangaCustom?.subscriptionPlans || []);
     }, [mangaCustom]);
 
     useEffect(() => {
@@ -78,6 +80,8 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
             setNextChapterDate(null);
             setCoverImageFile(null);
             setBannerImageFile(null);
+            setSelectedGenres([]);
+            setSelectedSubscriptionPlans([]);
         }
     }, [open]);
 
@@ -137,6 +141,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         if (releasedDate) formData.append('releasedAt', releasedDate);
         if (nextChapterDate) formData.append('nextChapterAt', nextChapterDate);
         if (selectedGenres.length > 0) formData.append('genreIds', selectedGenres.map(genre => genre.id).join(','));
+        if (selectedSubscriptionPlans.length > 0) formData.append('subscriptionPlanIds', selectedSubscriptionPlans.map(plan => plan.id).join(','));
         formData.append('image', coverImageFile);
         formData.append('banner', bannerImageFile);
         setLoading(true);
@@ -157,6 +162,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                 setCoverImageFile(null);
                 setBannerImageFile(null);
                 setSelectedGenres([]);
+                setSelectedSubscriptionPlans([]);
                 setOpen(false);
             })
             .catch(error => toast.error(error?.message))
@@ -287,6 +293,30 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                             value={selectedGenres}
                             getOptionDisabled={(options) => (selectedGenres.length >= 4 ? true : false)}
                             onChange={(event, newValue) => setSelectedGenres(newValue)}
+                        />
+                    </div>
+                </div>
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_("subscription_plans")}
+                </Typography>
+                <div className="flex">
+                    <div className="grow">
+                        <Autocomplete
+                            multiple
+                            disablePortal
+                            options={subscriptionPlans}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            getOptionLabel={(option) => option.name}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    variant="standard"
+                                    label={_("subscription_plans")}
+                                    placeholder={_("subscription_plans") + '...'}
+                                />
+                            )}
+                            value={selectedSubscriptionPlans}
+                            onChange={(event, newValue) => setSelectedSubscriptionPlans(newValue)}
                         />
                     </div>
                 </div>
