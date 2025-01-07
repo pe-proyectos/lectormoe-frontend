@@ -121,7 +121,7 @@ export const translations: Record<string, string> = {
   options: "Opciones",
   release_date: "Fecha de salida",
   release_date_description:
-    "Ningun usuario podrá leer este capítulo hasta la fecha de salida",
+    "Solo los suscriptores podrán leer este capítulo antes de la fecha de salida, pasado este tiempo, cualquier usuario podrá leerlo",
   suscribers: "Suscriptores",
   suscribers_only: "Solo para suscriptores",
   suscribers_only_description:

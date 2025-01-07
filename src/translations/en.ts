@@ -121,7 +121,7 @@ export const translations: Record<string, string> = {
   options: "Options",
   release_date: "Release date",
   release_date_description:
-    "No user will be able to read this chapter until the release date",
+    "Only subscribers will be able to read this chapter before the release date, after this time, any user will be able to read it",
   suscribers: "Subscribers",
   suscribers_only: "Subscribers only",
   suscribers_only_description:

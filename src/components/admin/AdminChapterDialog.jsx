@@ -214,9 +214,6 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
                         <Typography variant="small" color="gray" className="font-normal">
                             {_("release_date_description")}
                         </Typography>
-                        <Typography className="-mb-2" variant="h6" color="gray">
-                            {_("suscribers")}
-                        </Typography>
                     </div>
                     <div className="max-w-[70%] w-[70%] flex flex-col gap-4">
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
