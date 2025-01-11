@@ -228,6 +228,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
                             type="datetime-local"
                             value={formatDateToInput(releasedAt)}
                             onChange={(e) => setReleasedAt(new Date(e.target.value))}
+                            disabled={subscribersOnly}
                         />
                         <Typography variant="small" color="gray" className="font-normal">
                             {_("release_date_description")}
