@@ -1,7 +1,7 @@
 export const translations: Record<string, string> = {
   subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Suscríbete a uno de estos planes para leer el capítulo antes de tiempo",
   chapter_not_ready: "El capítulo aun no esta disponible",
-  available_for_everyone_in: "Disponible para todos en",
+  available_for_everyone_in: "Disponible para todos: ",
   early_access_for_subscribers: "Acceso anticipado para suscriptores",
   you_dont_have_access_to_this_chapter: "No tienes acceso a este capítulo",
   you_must_be_subscribed_to_read_this_chapter: "Debes estar suscrito para leer este capítulo",
@@ -125,7 +125,8 @@ export const translations: Record<string, string> = {
   suscribers: "Suscriptores",
   suscribers_only: "Solo para suscriptores",
   suscribers_only_description:
-    "Si se activa los suscriptores podrán leer este capítulo antes de la fecha de salida",
+    "Si se activa, los no suscriptores no podrán leer este capítulo sin importar la fecha de salida",
+  only_for_subscribers: "Solo para suscriptores",
   pages: "Páginas",
   drag_and_drop_images: "Arrastra y suelta imágenes para subir",
   cancel: "Cancelar",

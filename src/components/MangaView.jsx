@@ -91,7 +91,7 @@ export function MangaView({ manga, organization, logged, user }) {
     evt?.preventDefault?.();
     evt?.stopPropagation?.();
     evt?.nativeEvent?.stopImmediatePropagation?.();
-  }
+  };
 
   const getChapterHistory = (chapterNumber) => {
     if (!logged) return null;
@@ -132,7 +132,7 @@ export function MangaView({ manga, organization, logged, user }) {
       window.location.href = `/subscriptions?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}`;
       return;
     }
-    
+
     if (logged) {
       const history = getChapterHistory(chapter.number);
       if (!history?.finishedAt) {
@@ -144,26 +144,34 @@ export function MangaView({ manga, organization, logged, user }) {
         return;
       }
     }
-    
+
     window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}`;
-  }
+  };
 
   const userHasAccessToChapter = (chapter) => {
-    if (new Date(chapter.releasedAt).getTime() < new Date().getTime()) return true;
+    if (
+      new Date(chapter.releasedAt).getTime() < new Date().getTime() &&
+      chapter?.subscribersOnly !== true
+    )
+      return true;
     if (!logged) return false;
     if (user?.canReadUnreleased === true) return true;
     if (user?.canEditChapter === true) return true;
     if (user?.canEditPage === true) return true;
     for (const subscription of user?.subscriptions || []) {
-        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
-            return true;
-        }
-        if (manga?.subscriptionPlans?.find((plan) => plan.id === subscription?.subscriptionPlan?.id)) {
-            return true;
-        }
+      if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
+        return true;
+      }
+      if (
+        manga?.subscriptionPlans?.find(
+          (plan) => plan.id === subscription?.subscriptionPlan?.id
+        )
+      ) {
+        return true;
+      }
     }
     return false;
-  }
+  };
 
   const markChapterAsRead = (evt, chapterNumber) => {
     preventEvent(evt);
@@ -355,8 +363,9 @@ export function MangaView({ manga, organization, logged, user }) {
     const groups = {};
     let lastLabel = "";
     for (let i = 10; i <= highestChapterNumberCeiled; i += 10) {
-      const chapters = manga?.chapters
-        .filter((chapter) => chapter.number >= i - 9 && chapter.number <= i);
+      const chapters = manga?.chapters.filter(
+        (chapter) => chapter.number >= i - 9 && chapter.number <= i
+      );
       if (chapters.length === 0) continue;
       const label = `${i - 9}-${i}`;
       groups[label] = {
@@ -646,35 +655,37 @@ export function MangaView({ manga, organization, logged, user }) {
                               <span className="text-xs lg:text-lg text-gray-400">
                                 {_("chapter")} {chapter.number}
                               </span>
-                              <span className="text-[0.7rem] font-extralight text-gray-500">
-                                {_("available_for_everyone_in")}{" "}
-                                {formatDate(
-                                  chapter.releasedAt,
-                                  organization.language
+                              {userHasAccessToChapter(chapter) &&
+                                chapter?.subscribersOnly !== true && (
+                                  <span className="text-[0.7rem] font-extralight text-gray-500">
+                                    {_("available_for_everyone_in") +
+                                      " " +
+                                      formatDate(
+                                        chapter.releasedAt,
+                                        organization.language
+                                      )}
+                                  </span>
                                 )}
-                              </span>
                             </p>
                             <p className="text-xl lg:text-2xl">
                               {chapter.title}
                             </p>
                             {!userHasAccessToChapter(chapter) && (
                               <p className="my-1">
-                                <span
-                                  className="text-[0.6rem] font-extralight text-gray-500"
-                                >
+                                <span className="text-[0.6rem] font-extralight text-gray-500">
                                   {_("early_access_for_subscribers")}
                                 </span>
                                 {manga?.subscriptionPlans?.length > 0 && (
                                   <div className="flex flex-wrap gap-2">
-                                    {manga?.subscriptionPlans?.map((plan) => 
-                                      user?.subscriptions?.find(v => v.subscriptionPlan.id === plan.id) ? (
-                                        <span
-                                          className="text-[0.6rem] font-extralight text-gray-100 bg-green-900 rounded-lg px-[0.4rem] py-[0.1rem]"
-                                        >
+                                    {manga?.subscriptionPlans?.map((plan) =>
+                                      user?.subscriptions?.find(
+                                        (v) => v.subscriptionPlan.id === plan.id
+                                      ) ? (
+                                        <span className="text-[0.6rem] font-extralight text-gray-100 bg-green-900 rounded-lg px-[0.4rem] py-[0.1rem]">
                                           {plan.name}
                                         </span>
                                       ) : (
-                                        <a 
+                                        <a
                                           href={`/subscriptions`}
                                           className="text-[0.6rem] font-extralight text-gray-500 bg-black bg-opacity-50 rounded-lg px-[0.4rem] py-[0.1rem]"
                                         >
@@ -739,7 +750,9 @@ export function MangaView({ manga, organization, logged, user }) {
                                 ) : (
                                   <ArrowDownTrayIcon
                                     className="h-6 w-6 sm:h-6 sm:w-6 cursor-pointer hover:text-green-300 transition-all duration-300"
-                                    onClick={(evt) => downloadChapter(evt, chapter.number)}
+                                    onClick={(evt) =>
+                                      downloadChapter(evt, chapter.number)
+                                    }
                                   />
                                 )}
                               </Tooltip>

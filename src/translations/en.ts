@@ -125,7 +125,8 @@ export const translations: Record<string, string> = {
   suscribers: "Subscribers",
   suscribers_only: "Subscribers only",
   suscribers_only_description:
-    "If enabled, subscribers will be able to read this chapter before the release date",
+    "If enabled, non subscribers will not be able to read this chapter regardless of the release date",
+  only_for_subscribers: "Only for subscribers",
   pages: "Pages",
   drag_and_drop_images: "Drag and drop images to upload",
   cancel: "Cancel",

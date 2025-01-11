@@ -47,6 +47,10 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
         if (chapter) return new Date(chapter.releasedAt);
         return new Date();
     });
+    const [subscribersOnly, setSuscribersOnly] = useState(() => {
+        if (chapter) return chapter.subscribersOnly;
+        return false;
+    });
     const [chapterImageFile, setChapterImageFile] = useState(() => {
         if (chapter) return chapter.imageUrl;
         return null;
@@ -92,6 +96,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
             setTitle(chapter.title);
             setNumber(chapter.number);
             setReleasedAt(new Date(chapter.releasedAt));
+            setSuscribersOnly(chapter.subscribersOnly);
             setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
@@ -105,6 +110,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
             setNumber((lastChapterNumber + 1));
             setTitle(`${_("chapter")} ${lastChapterNumber + 1}`);
             setReleasedAt(new Date());
+            setSuscribersOnly(false);
             setChapterImageFile(null);
             setPages([]);
             setLoading(false);
@@ -122,6 +128,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
         formData.append('title', title);
         formData.append('number', number);
         formData.append('releasedAt', releasedAt);
+        formData.append('subscribersOnly', subscribersOnly);
         if (chapterImageFile || chapter) formData.append('image', chapterImageFile);
         pages.forEach((page) => {
             formData.append('pages', page instanceof File ? page : page?.imageUrl);
@@ -202,6 +209,17 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
                         />
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
                             {_("options")}
+                        </Typography>
+                        <Typography className="-mb-2" variant="h6" color="gray">
+                            {_("suscribers_only")}
+                        </Typography>
+                        <Switch
+                            label={_("suscribers_only")}
+                            checked={subscribersOnly}
+                            onChange={(e) => setSuscribersOnly(e.target.checked)}
+                        />
+                        <Typography variant="small" color="gray" className="font-normal">
+                            {_("suscribers_only_description")}
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
                             {_("release_date")}

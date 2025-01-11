@@ -126,7 +126,11 @@ export function MangaCard({ organization, manga }) {
                                     color="gray"
                                     className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                                 >
-                                    {formatDate(manga?.lastChapters?.[0]?.releasedAt)}
+                                    {
+                                        manga?.lastChapters?.[0]?.subscribersOnly
+                                            ? _("only_for_subscribers")
+                                            : formatDate(manga?.lastChapters?.[0]?.releasedAt)
+                                    }
                                 </Typography>
                             </div>
                         )}
@@ -146,7 +150,11 @@ export function MangaCard({ organization, manga }) {
                                     color="gray"
                                     className="font-normal text-xs hover:underline cursor-pointer"
                                 >
-                                    {formatDate(manga?.lastChapters?.[1]?.releasedAt)}
+                                    {
+                                        manga?.lastChapters?.[1]?.subscribersOnly
+                                            ? _("only_for_subscribers")
+                                            : formatDate(manga?.lastChapters?.[1]?.releasedAt)
+                                    }
                                 </Typography>
                             </div>
                         )}
