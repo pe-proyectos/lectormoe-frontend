@@ -81,7 +81,7 @@ export function AdminChaptersTable({
         Cell: ({ row }) => (
           <span>
             {row.original.subscribersOnly
-              ? _("suscribers_only")
+              ? _("subscribers_only")
               : new Date(row.original.releasedAt).toLocaleString()}
           </span>
         ),

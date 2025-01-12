@@ -1,5 +1,9 @@
 export const translations: Record<string, string> = {
-  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Subscribe to one of these plans to read chapter early",
+  login_to_read_published_chapter: "Login to read published chapter",
+  require_login: "Require login",
+  require_login_description: "If enabled, the user will be required to login to read this chapter",
+  login_to_read: "Login to read",
+  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Subscribe to one of these plans to read chapters early",
   chapter_not_ready: "Chapter is not ready for reading",
   available_for_everyone_in: "Available for everyone in",
   early_access_for_subscribers: "Early access for subscribers",
@@ -122,9 +126,9 @@ export const translations: Record<string, string> = {
   release_date: "Release date",
   release_date_description:
     "Only subscribers will be able to read this chapter before the release date, after this time, any user will be able to read it",
-  suscribers: "Subscribers",
-  suscribers_only: "Subscribers only",
-  suscribers_only_description:
+  subscribers: "Subscribers",
+  subscribers_only: "Subscribers only",
+  subscribers_only_description:
     "If enabled, non subscribers will not be able to read this chapter regardless of the release date",
   only_for_subscribers: "Only for subscribers",
   pages: "Pages",
@@ -362,7 +366,6 @@ export const translations: Record<string, string> = {
   read: "Read",
   keep_reading: "Keep reading",
   already_read: "✅ Read",
-  subscribers_only: "Subscribers only",
   storage: "Storage",
   settings: "Settings",
   upgrade_to_pro: "Upgrade to a PRO site",

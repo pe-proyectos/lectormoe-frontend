@@ -50,6 +50,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
     const [selectedSubscriptionPlans, setSelectedSubscriptionPlans] = useState([]);
     const [releasedDate, setReleasedDate] = useState(null);
     const [nextChapterDate, setNextChapterDate] = useState(null);
+    const [requireLogin, setRequireLogin] = useState(false);
     const [coverImageFile, setCoverImageFile] = useState(null);
     const [bannerImageFile, setBannerImageFile] = useState(null);
 
@@ -62,6 +63,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         setDescription(mangaCustom?.description || '');
         setReleasedDate(mangaCustom?.releasedAt || null);
         setNextChapterDate(mangaCustom?.nextChapterAt || null);
+        setRequireLogin(mangaCustom?.requireLogin || false);
         setCoverImageFile(mangaCustom?.imageUrl || null);
         setBannerImageFile(mangaCustom?.bannerUrl || null);
         setSelectedGenres(mangaCustom?.genres || []);
@@ -78,6 +80,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
             setDescription('');
             setReleasedDate(null);
             setNextChapterDate(null);
+            setRequireLogin(false);
             setCoverImageFile(null);
             setBannerImageFile(null);
             setSelectedGenres([]);
@@ -140,6 +143,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         if (description) formData.append('description', description);
         if (releasedDate) formData.append('releasedAt', releasedDate);
         if (nextChapterDate) formData.append('nextChapterAt', nextChapterDate);
+        if (requireLogin !== undefined) formData.append('requireLogin', requireLogin);
         if (selectedGenres.length > 0) formData.append('genreIds', selectedGenres.map(genre => genre.id).join(','));
         if (selectedSubscriptionPlans.length > 0) formData.append('subscriptionPlanIds', selectedSubscriptionPlans.map(plan => plan.id).join(','));
         formData.append('image', coverImageFile);
@@ -159,6 +163,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                 setDescription('');
                 setReleasedDate(null);
                 setNextChapterDate(null);
+                setRequireLogin(false);
                 setCoverImageFile(null);
                 setBannerImageFile(null);
                 setSelectedGenres([]);
@@ -352,6 +357,17 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                     onChange={setNextChapterDate}
                     disabled={!mangaProfile}
                 />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_("require_login")} ({_("optional")})
+                </Typography>
+                <Checkbox
+                    label={_("require_login")}
+                    checked={requireLogin}
+                    onChange={(e) => setRequireLogin(e.target.checked)}
+                />
+                <Typography className="" variant="small" color="gray">
+                    {_("require_login_description")}
+                </Typography>
                 <Typography className="-mb-2" variant="h6" color="gray">
                     {_("manga_cover")} ({_("optional")})
                 </Typography>

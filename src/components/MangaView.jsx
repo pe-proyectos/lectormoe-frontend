@@ -110,6 +110,10 @@ export function MangaView({ manga, organization, logged, user }) {
 
     if (!chapter) return _("read");
 
+    if (!logged && manga?.requireLogin === true) {
+      return _("login_to_read");
+    }
+
     if (!userHasAccessToChapter(chapter)) {
       return _("subscribers_only");
     }
@@ -128,6 +132,11 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const goToReadChapter = (chapter) => {
+    if (!logged && manga?.requireLogin === true) {
+      window.location.href = `/login?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}&redirect=${window.location.pathname}`;
+      return;
+    }
+
     if (!userHasAccessToChapter(chapter)) {
       window.location.href = `/subscriptions?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}`;
       return;
@@ -149,6 +158,7 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   const userHasAccessToChapter = (chapter) => {
+    if (!user && manga?.requireLogin === true) return false;
     if (
       new Date(chapter.releasedAt).getTime() < new Date().getTime() &&
       chapter?.subscribersOnly !== true

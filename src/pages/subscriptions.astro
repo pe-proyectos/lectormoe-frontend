@@ -21,7 +21,7 @@ const { mangaSlug, chapterNumber } = Object.fromEntries(params.entries());
 const { data: manga } = mangaSlug && chapterNumber ? await callAPI(`/api/manga-custom/${mangaSlug}`) : { data: null };
 ---
 
-<Layout title={_("subscriptions_title")}>
+<Layout title={_("subscriptions_title")} showAds={false}>
 	<SubscriptionsComponent
         organization={organization}
         user={user}

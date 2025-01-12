@@ -47,7 +47,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
         if (chapter) return new Date(chapter.releasedAt);
         return new Date();
     });
-    const [subscribersOnly, setSuscribersOnly] = useState(() => {
+    const [subscribersOnly, setSubscribersOnly] = useState(() => {
         if (chapter) return chapter.subscribersOnly;
         return false;
     });
@@ -96,7 +96,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
             setTitle(chapter.title);
             setNumber(chapter.number);
             setReleasedAt(new Date(chapter.releasedAt));
-            setSuscribersOnly(chapter.subscribersOnly);
+            setSubscribersOnly(chapter.subscribersOnly);
             setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
@@ -110,7 +110,7 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
             setNumber((lastChapterNumber + 1));
             setTitle(`${_("chapter")} ${lastChapterNumber + 1}`);
             setReleasedAt(new Date());
-            setSuscribersOnly(false);
+            setSubscribersOnly(false);
             setChapterImageFile(null);
             setPages([]);
             setLoading(false);
@@ -211,15 +211,15 @@ export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, c
                             {_("options")}
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
-                            {_("suscribers_only")}
+                            {_("subscribers_only")}
                         </Typography>
                         <Switch
-                            label={_("suscribers_only")}
+                            label={_("subscribers_only")}
                             checked={subscribersOnly}
-                            onChange={(e) => setSuscribersOnly(e.target.checked)}
+                            onChange={(e) => setSubscribersOnly(e.target.checked)}
                         />
                         <Typography variant="small" color="gray" className="font-normal">
-                            {_("suscribers_only_description")}
+                            {_("subscribers_only_description")}
                         </Typography>
                         <Typography className="-mb-2" variant="h6" color="gray">
                             {_("release_date")}

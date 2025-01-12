@@ -6,7 +6,7 @@ const { organization } = Astro.locals;
 const _ = getTranslator(organization.language);
 ---
 
-<Layout title={_("error_500_page_title")}>
+<Layout title={_("error_500_page_title")} showAds={false}>
     <div class="mx-auto max-w-screen-md py-12">
         <h1>{_("error_500")}</h1>
         <h3>{_("error_500_title")}</h3>

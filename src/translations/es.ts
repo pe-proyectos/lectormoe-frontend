@@ -1,5 +1,9 @@
 export const translations: Record<string, string> = {
-  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Suscríbete a uno de estos planes para leer el capítulo antes de tiempo",
+  login_to_read_published_chapter: "Inicia sesión para leer los capítulos publicados",
+  require_login: "Requiere inicio de sesión",
+  require_login_description: "Si se activa, el usuario deberá iniciar sesión para leer este capítulo",
+  login_to_read: "Inicia sesión para leer",
+  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Suscríbete a uno de estos planes para leer los capítulos antes de tiempo",
   chapter_not_ready: "El capítulo aun no esta disponible",
   available_for_everyone_in: "Disponible para todos: ",
   early_access_for_subscribers: "Acceso anticipado para suscriptores",
@@ -122,9 +126,9 @@ export const translations: Record<string, string> = {
   release_date: "Fecha de salida",
   release_date_description:
     "Solo los suscriptores podrán leer este capítulo antes de la fecha de salida, pasado este tiempo, cualquier usuario podrá leerlo",
-  suscribers: "Suscriptores",
-  suscribers_only: "Solo para suscriptores",
-  suscribers_only_description:
+  subscribers: "Suscriptores",
+  subscribers_only: "Solo para suscriptores",
+  subscribers_only_description:
     "Si se activa, los no suscriptores no podrán leer este capítulo sin importar la fecha de salida",
   only_for_subscribers: "Solo para suscriptores",
   pages: "Páginas",
@@ -362,7 +366,6 @@ export const translations: Record<string, string> = {
   subscription_plans_patreon: "Tambien puedes suscribirte desde Patreon haciendo click aqui",
   available: "Disponible",
   read: "Leer",
-  subscribers_only: "Solo para suscriptores",
   keep_reading: "Continuar leyendo",
   already_read: "✅ Leído",
   storage: "Almacenamiento",
