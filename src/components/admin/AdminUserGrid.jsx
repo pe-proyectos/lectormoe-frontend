@@ -16,8 +16,10 @@ import { AdminUserDialog } from './AdminUserDialog';
 import { PageNavigation } from '../PageNavigation';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 
-export function AdminUserGrid({ organization }) {
+export function AdminUserGrid({ organization, subscriptionPlans }) {
     const _ = getTranslator(organization.language);
 
     const [loading, setLoading] = useState(true);
@@ -34,6 +36,10 @@ export function AdminUserGrid({ organization }) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('username') || '';
     });
+    const [selectedSubscriptionPlans, setSelectedSubscriptionPlans] = useState(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return subscriptionPlans.filter(plan => urlParams.get('selectedSubscriptionPlans')?.split(',').map(Number).includes(plan.id)) || [];
+    });
     const [orderBy, setOrderBy] = useState(() => {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('order') || 'createdAt_desc';
@@ -48,15 +54,7 @@ export function AdminUserGrid({ organization }) {
         const urlParams = new URLSearchParams(window.location.search);
         return Number(urlParams.get('limit')) || 24;
     });
-    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
 
-    useEffect(() => {
-        callAPI(`/api/subscription-plan`)
-          .then(({ data }) => {
-            setSubscriptionPlans(data);
-          })
-          .catch((error) => toast.error(error?.message));
-      }, []);
     useEffect(() => {
         refreshUserList();
     }, []);
@@ -101,6 +99,10 @@ export function AdminUserGrid({ organization }) {
             query.set('username', username);
             urlParams.set('username', username);
         }
+        if (selectedSubscriptionPlans.length > 0) {
+            query.set('subscriptionPlanIds', selectedSubscriptionPlans.map(plan => plan.id).join(','));
+            urlParams.set('selectedSubscriptionPlans', selectedSubscriptionPlans.map(plan => plan.id).join(','));
+        }
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
         callAPI(`/api/user?${query}`)
             .then(({ data, total, maxPage }) => {
@@ -130,6 +132,25 @@ export function AdminUserGrid({ organization }) {
                         placeholder={_("search_by_username")}
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                    />
+                </div>
+                <div className="w-80">
+                    <Autocomplete
+                        multiple
+                        disablePortal
+                        options={subscriptionPlans.sort((a, b) => a.price - b.price).filter(plan => plan.active)}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        getOptionLabel={(option) => `$${option.price} - ${option.name}`}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                variant="standard"
+                                label={_("subscription_plan")}
+                                placeholder={_("subscription_plan") + '...'}
+                            />
+                        )}
+                        value={selectedSubscriptionPlans}
+                        onChange={(event, newValue) => setSelectedSubscriptionPlans(newValue)}
                     />
                 </div>
                 <div className="w-80">
@@ -202,14 +223,21 @@ export function AdminUserGrid({ organization }) {
                                 {user.username}
                             </Typography>
                             <Typography>
-                                {_("role")}: {user.role || _("user")}
+                                {user.email}
                             </Typography>
                             <Typography>
-                                {_("email")}: {user.email}
+                                {_("registration_date")}: {new Date(user.createdAt).toLocaleDateString()}
                             </Typography>
-                            <Typography>
-                                {_("registration_date")}: {new Date(user.createdAt).toLocaleString()}
-                            </Typography>
+                            {user.subscriptions.length > 0 &&
+                                <Typography>
+                                    {_("subscription_plans")}
+                                </Typography>
+                            }
+                            {user.subscriptions.map(subscription => (
+                                <Typography key={subscription.id} className='text-sm' color='blue-gray'>
+                                    {subscription.active ? '✅' : '❌'} {subscription.subscriptionPlan.name} (${subscription.subscriptionPlan.price})
+                                </Typography>
+                            ))}
                         </CardBody>
                         <CardFooter className="pt-0">
                             <Button

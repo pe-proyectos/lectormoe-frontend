@@ -64,7 +64,7 @@ export function Subscriptions({
   }, []);
 
   return (
-    <div className="2xl:max-w-[1320px] 2xl:mx-auto transition-all duration-500">
+    <div className="transition-all duration-500">
       {manga && chapter && (
         <div className="w-full flex justify-center my-6">
           <MangaAdCard

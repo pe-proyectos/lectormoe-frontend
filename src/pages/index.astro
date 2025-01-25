@@ -2,9 +2,27 @@
 import Layout from "../layouts/Layout.astro";
 import { MangaGrid } from "../components/MangaGrid.jsx";
 
-const { organization, user, logged } = Astro.locals;
+const { organization, user, logged, callAPI } = Astro.locals;
+
+async function getSubscriptionPlans() {
+	try {
+		const { data: subscriptionPlansData } = await callAPI(`/api/subscription-plan`);
+		return subscriptionPlansData.data;
+	} catch (error) {
+		console.error(error);
+		return [];
+	}
+}
+
+const subscriptionPlans = await getSubscriptionPlans();
 ---
 
 <Layout>
-	<MangaGrid organization={organization} user={user} logged={logged} client:only="react" />
+	<MangaGrid
+		organization={organization}
+		user={user}
+		logged={logged}
+		subscriptionPlans={subscriptionPlans}
+		client:only="react"
+	/>
 </Layout>

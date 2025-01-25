@@ -19,7 +19,7 @@ import { MangaCard } from "./MangaCard";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
-export function MangaGrid({ organization, user, logged, paypalClientId }) {
+export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
   const _ = getTranslator(organization.language);
 
   const [loading, setLoading] = useState(true);
@@ -225,70 +225,130 @@ export function MangaGrid({ organization, user, logged, paypalClientId }) {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-y-4 lg:gap-4 m-2">
         <div className="col-span-1 align-middle order-first lg:order-last">
-          <Typography color="white" className="font-semibold text-4xl">
-            {_("keep_reading")}
-          </Typography>
-          <div className="w-full h-1 bg-gray-200 rounded-sm my-4" />
-          {logged ? (
-            <div className="flex flex-wrap gap-4 justify-center mb-4">
-              {!loadingHistory && userChapterHistoryList.length === 0 && (
-                <div className="flex flex-col items-center justify-center text-center w-full h-full">
-                  <Typography color="gray" className="font-light text-xl">
-                    {_("no_history")}
-                  </Typography>
-                </div>
-              )}
-              {(showAllChapterHistoryList
-                ? userChapterHistoryList
-                : userChapterHistoryList.slice(0, 6)
-              ).map((history) => (
-                <a
-                  key={history.id}
-                  className="w-full"
-                  href={`/manga/${history.chapter.mangaCustom.manga.slug}/chapters/${history.chapter.number}?page=${history.pageNumber}`}
-                >
-                  <Alert
-                    variant="ghost"
-                    className="w-full bg-gray-400 hover:bg-gray-300"
-                  >
-                    <p className="font-semibold">
-                      {history.chapter.mangaCustom.title}
-                    </p>
-                    <span className="text-xs">
-                      {_("chapter")} {history.chapter.number}, {_("page")}{" "}
-                      {history.pageNumber}, {_("seen")}{" "}
-                      {formatDate(history.lastReadAt)}
-                    </span>
-                  </Alert>
-                </a>
-              ))}
-              {userChapterHistoryList.length > 6 && (
-                <Button
-                  color="gray"
-                  onClick={() =>
-                    setShowAllChapterHistoryList(!showAllChapterHistoryList)
-                  }
-                >
-                  {showAllChapterHistoryList ? _("see_less") : _("see_more")}
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-4 justify-center mb-4">
-              <div className="flex flex-col items-center justify-center text-center w-full h-full">
-                <span className="font-light text-gray-700 text-lg">
-                  <a href="/register" className="hover:underline">
-                    {_("register")}
-                  </a>
-                  &nbsp;o&nbsp;
-                  <a href="/login" className="hover:underline">
-                    {_("login")}
-                  </a>
-                  &nbsp;{_("to_access_history")}
-                </span>
+          {subscriptionPlans.length > 0 &&
+            subscriptionPlans.some((plan) => plan.subscriptions.length > 0) && (
+              <div>
+                <Typography color="white" className="font-semibold text-4xl">
+                  {_("top_subscribers")}
+                </Typography>
+                <div className="w-full h-1 bg-gray-200 rounded-sm my-4 text-center" />
+                {subscriptionPlans
+                  .sort((a, b) => b.price - a.price)
+                  .filter((plan) => plan.subscriptions.length > 0)
+                  .map((plan, index) => (
+                    <div key={plan.id} className="w-full text-center my-2">
+                      <a
+                        className={
+                          "font-semibold underline underline-offset-2 text-center " +
+                          (index === 0
+                            ? "text-4xl text-gray-100"
+                            : "text-xl text-gray-300")
+                        }
+                        href="/subscriptions"
+                      >
+                        {plan.name}
+                      </a>
+                      {plan.subscriptions
+                        .sort(
+                          (a, b) =>
+                            new Date(b.startDate) - new Date(a.startDate)
+                        )
+                        .map((subscription) => (
+                          <div
+                            key={subscription.id}
+                            className={
+                              "flex items-center justify-between bg-black bg-opacity-80 rounded-md py-2 px-4 my-1 mx-2 " +
+                              (index === 0 &&
+                                "text-xl bg-white bg-opacity-80 text-black")
+                            }
+                          >
+                            <Typography className="font-normal text-md">
+                              {subscription.user.username}
+                            </Typography>
+                            <Typography className="font-normal text-xs">
+                              {(() => {
+                                const months = Math.floor(
+                                  (new Date() -
+                                    new Date(subscription.startDate)) /
+                                    (1000 * 60 * 60 * 24 * 30)
+                                );
+                                if (months === 0) return _("less_than_a_month");
+                                if (months === 1) return _("one_month");
+                                return `${months} ${_("months")}`;
+                              })()}
+                            </Typography>
+                          </div>
+                        ))}
+                    </div>
+                  ))}
               </div>
-            </div>
-          )}
+            )}
+          <div>
+            <Typography color="white" className="font-semibold text-4xl">
+              {_("keep_reading")}
+            </Typography>
+            <div className="w-full h-1 bg-gray-200 rounded-sm my-4" />
+            {logged ? (
+              <div className="flex flex-wrap gap-4 justify-center mb-4">
+                {!loadingHistory && userChapterHistoryList.length === 0 && (
+                  <div className="flex flex-col items-center justify-center text-center w-full h-full">
+                    <Typography color="gray" className="font-light text-xl">
+                      {_("no_history")}
+                    </Typography>
+                  </div>
+                )}
+                {(showAllChapterHistoryList
+                  ? userChapterHistoryList
+                  : userChapterHistoryList.slice(0, 6)
+                ).map((history) => (
+                  <a
+                    key={history.id}
+                    className="w-full"
+                    href={`/manga/${history.chapter.mangaCustom.manga.slug}/chapters/${history.chapter.number}?page=${history.pageNumber}`}
+                  >
+                    <Alert
+                      variant="ghost"
+                      className="w-full bg-gray-400 hover:bg-gray-300"
+                    >
+                      <p className="font-semibold">
+                        {history.chapter.mangaCustom.title}
+                      </p>
+                      <span className="text-xs">
+                        {_("chapter")} {history.chapter.number}, {_("page")}{" "}
+                        {history.pageNumber}, {_("seen")}{" "}
+                        {formatDate(history.lastReadAt)}
+                      </span>
+                    </Alert>
+                  </a>
+                ))}
+                {userChapterHistoryList.length > 6 && (
+                  <Button
+                    color="gray"
+                    onClick={() =>
+                      setShowAllChapterHistoryList(!showAllChapterHistoryList)
+                    }
+                  >
+                    {showAllChapterHistoryList ? _("see_less") : _("see_more")}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-4 justify-center mb-4">
+                <div className="flex flex-col items-center justify-center text-center w-full h-full">
+                  <span className="font-light text-gray-700 text-lg">
+                    <a href="/register" className="hover:underline">
+                      {_("register")}
+                    </a>
+                    &nbsp;o&nbsp;
+                    <a href="/login" className="hover:underline">
+                      {_("login")}
+                    </a>
+                    &nbsp;{_("to_access_history")}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <div className="col-span-3 align-middle order-last lg:order-first">
           <div className="flex flex-wrap sm:gap-4 mb-4 items-end">

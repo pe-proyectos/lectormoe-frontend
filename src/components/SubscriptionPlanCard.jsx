@@ -97,9 +97,9 @@ export function SubscriptionPlanCard({
         className="m-0 mb-8 rounded-none border-b border-white/10 pb-8 text-center"
       >
         <Typography
-          variant="small"
+          variant="h4"
           color="white"
-          className="font-normal uppercase"
+          className="font-normal underline underline-offset-4"
         >
           {subscriptionPlan.name}
         </Typography>

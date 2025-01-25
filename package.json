@@ -10,10 +10,10 @@
     "astro": "bunx --bun astro"
   },
   "dependencies": {
-    "@astrojs/check": "^0.5.10",
-    "@astrojs/node": "^8.3.4",
-    "@astrojs/react": "^3.6.3",
-    "@astrojs/tailwind": "^5.1.4",
+    "@astrojs/check": "0.9.4",
+    "@astrojs/node": "9.0.2",
+    "@astrojs/react": "4.1.6",
+    "@astrojs/tailwind": "5.1.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@heroicons/react": "^2.2.0",
@@ -28,7 +28,7 @@
     "@types/react-dom": "^18.3.5",
     "@types/toastify-js": "^1.12.3",
     "apexcharts": "^3.54.1",
-    "astro": "^4.16.18",
+    "astro": "5.1.9",
     "astro-bun-adapter": "^1.0.2",
     "autoprefixer": "^10.4.20",
     "caniuse-lite": "^1.0.30001690",
