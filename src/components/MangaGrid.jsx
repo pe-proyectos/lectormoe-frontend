@@ -251,7 +251,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                       {plan.subscriptions
                         .sort(
                           (a, b) =>
-                            new Date(b.startDate) - new Date(a.startDate)
+                            new Date(a.startDate) - new Date(b.startDate)
                         )
                         .map((subscription) => (
                           <div
@@ -267,6 +267,14 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                             </Typography>
                             <Typography className="font-normal text-xs">
                               {(() => {
+                                const days = Math.floor(
+                                  (new Date() -
+                                    new Date(subscription.startDate)) /
+                                    (1000 * 60 * 60 * 24)
+                                );
+                                if (days === 0) return _("less_than_a_day");
+                                if (days === 1) return _("one_day");
+                                return `${days} ${_("days")}`;
                                 const months = Math.floor(
                                   (new Date() -
                                     new Date(subscription.startDate)) /
