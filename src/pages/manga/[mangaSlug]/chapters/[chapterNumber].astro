@@ -64,10 +64,11 @@ if (!userHasAccessToChapter(chapter)) {
 
 <Layout
   title={`${chapter.title} - ${manga.title} #${chapter.number}`}
-  imageUrl={manga.imageUrl}
+  imageUrl={chapter.imageUrl || manga.imageUrl || manga.bannerUrl}
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
   staticNavbar={true}
 >
+
   <Reader
     organization={organization}
     manga={manga}
