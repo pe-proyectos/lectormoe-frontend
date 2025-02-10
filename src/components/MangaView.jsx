@@ -374,7 +374,7 @@ export function MangaView({ manga, organization, logged, user }) {
     let lastLabel = "";
     for (let i = 10; i <= highestChapterNumberCeiled; i += 10) {
       const chapters = manga?.chapters.filter(
-        (chapter) => chapter.number >= i - 9 && chapter.number <= i
+        (chapter) => chapter.number >= i - 9 && chapter.number < i + 1
       );
       if (chapters.length === 0) continue;
       const label = `${i - 9}-${i}`;
