@@ -79,7 +79,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
   const formatDate = (date) => {
     if (!date) return "";
     const dt = new Date(date);
-    const diff = new Date() - dt;
+    const diff = (new Date()).getTime() - dt.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -111,13 +111,11 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
         <div className="left-0 top-0 mt-8 h-[36rem] w-full">
           <Carousel
             className="no-scrollbar rounded-md"
-            nextArrow={false}
-            prevArrow={false}
+            nextArrow={null}
+            prevArrow={null}
             autoplay={true}
             autoplayDelay={15000}
             loop={true}
-            showDots={false}
-            showArrows={false}
           >
             {sliderMangas.map((manga, index) => (
               <div key={manga.id}>
@@ -251,7 +249,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                       {plan.subscriptions
                         .sort(
                           (a, b) =>
-                            new Date(a.startDate) - new Date(b.startDate)
+                            new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
                         )
                         .map((subscription) => (
                           <div
@@ -268,21 +266,13 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                             <Typography className="font-normal text-xs">
                               {(() => {
                                 const days = Math.floor(
-                                  (new Date() -
-                                    new Date(subscription.startDate)) /
+                                  (new Date().getTime() -
+                                    new Date(subscription.startDate).getTime()) /
                                     (1000 * 60 * 60 * 24)
                                 );
                                 if (days === 0) return _("less_than_a_day");
                                 if (days === 1) return _("one_day");
                                 return `${days} ${_("days")}`;
-                                const months = Math.floor(
-                                  (new Date() -
-                                    new Date(subscription.startDate)) /
-                                    (1000 * 60 * 60 * 24 * 30)
-                                );
-                                if (months === 0) return _("less_than_a_month");
-                                if (months === 1) return _("one_month");
-                                return `${months} ${_("months")}`;
                               })()}
                             </Typography>
                           </div>

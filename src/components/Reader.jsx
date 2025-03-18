@@ -8,9 +8,7 @@ import {
   Card,
   Tabs,
   TabsHeader,
-  TabsBody,
   Tab,
-  TabPanel,
   Typography,
   Accordion,
   AccordionHeader,
@@ -18,12 +16,13 @@ import {
   AccordionBody,
   SpeedDial,
   SpeedDialHandler,
-  SpeedDialContent,
-  SpeedDialAction,
   IconButton,
   Tooltip,
   Dialog,
   CardBody,
+  Select,
+  Radio,
+  Slider,
 } from "@material-tailwind/react";
 import {
   ChevronUpIcon,
@@ -32,13 +31,6 @@ import {
   ChevronRightIcon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
-import {
-  FormHelperText,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-} from "@mui/material";
 import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
@@ -60,7 +52,6 @@ export function Reader({
 
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [loadedPages, setLoadedPages] = useState([]);
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
 
@@ -72,7 +63,6 @@ export function Reader({
   const [chapterData, setChapterData] = useState({
     chapter: null,
     pages: [],
-    loadedPages: new Set(),
   });
 
   const [settings, setSettings] = useState(() => ({
@@ -84,47 +74,9 @@ export function Reader({
     showFloatButtons: localStorage.getItem("showFloatButtons") !== "false",
     showChapterComments:
       localStorage.getItem("showChapterComments") !== "false",
+    limitPageWidth: parseInt(localStorage.getItem("limitPageWidth") || "100"),
     chapterSettings: localStorage.getItem("chapterSettings") === "true",
   }));
-
-  const handleSettingsChange = useCallback((key) => {
-    setSettings((prev) => {
-      const newValue = !prev[key];
-      localStorage.setItem(key, newValue ? "true" : "false");
-      return { ...prev, [key]: newValue };
-    });
-  }, []);
-
-  const labelProps = {
-    variant: "small",
-    className:
-      "absolute top-2/4 -left-2/4 -translate-y-2/4 -translate-x-3/4 font-normal text-white bg-black bg-opacity-80 px-4 py-1 rounded-3xl",
-  };
-
-  const handlePageLoad = (pageId) => {
-    setLoadedPages((oldValue) => [...oldValue, pageId]);
-  };
-
-  const dateToText = (date) => {
-    const dt = new Date(date);
-    const months = [
-      _("january"),
-      _("february"),
-      _("march"),
-      _("april"),
-      _("may"),
-      _("june"),
-      _("july"),
-      _("august"),
-      _("september"),
-      _("october"),
-      _("november"),
-      _("december"),
-    ];
-    return `${dt.getDate()} ${_("of")} ${months[dt.getMonth()]} ${_(
-      "of"
-    )} ${dt.getFullYear()}`;
-  };
 
   const shouldShowPage = useCallback(
     (pageNumber) =>
@@ -170,6 +122,27 @@ export function Reader({
     }));
   };
 
+  const debounce = (func, delay) => {
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+  };
+
+  const handleLimitPageWidth = debounce((evt) => {
+    console.log("handleLimitPageWidth", parseInt(evt.target.value));
+
+    localStorage.setItem(
+      "limitPageWidth",
+      parseInt(evt.target.value).toString()
+    );
+    setSettings((prev) => ({
+      ...prev,
+      limitPageWidth: parseInt(evt.target.value),
+    }));
+  }, 1000);
+
   const handleLimitPageHeight = () => {
     localStorage.setItem(
       "limitPageHeight",
@@ -185,10 +158,9 @@ export function Reader({
     setOpenPagesDialog((prev) => !prev);
   };
 
-  const handlePageClick = (evt, pageId, pageIndex) => {
+  const handlePageClick = (evt, pageIndex) => {
     const rect = evt.target.getBoundingClientRect();
     const x = evt.clientX - rect.left;
-    const y = evt.clientY - rect.top;
     if (x > rect.width / 2) {
       const page = chapterData.pages?.[pageIndex + 1];
       if (page) {
@@ -246,7 +218,7 @@ export function Reader({
   useEffect(() => {
     callAPI(`/api/views/manga-custom/${manga.slug}/chapter/${chapterNumber}`, {
       includeIp: true,
-    }).catch((error) => {});
+    }).catch(() => {});
   }, []);
 
   // useEffect on page change
@@ -323,14 +295,6 @@ export function Reader({
     setCurrentPage(page.number);
   }, [scrollInfo.scrollY]);
 
-  const debounce = (func, delay) => {
-    let timeout;
-    return function (...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), delay);
-    };
-  };
-
   const handleScroll = debounce(() => {
     const currentScrollY = window.scrollY;
     if (currentScrollY !== scrollInfo.scrollY) {
@@ -351,9 +315,7 @@ export function Reader({
         setChapterData((prev) => ({ ...prev, pages: pages }));
         if (pages.length > 0) {
           const urlParams = new URLSearchParams(window.location.search);
-          const initialPageNumber = urlParams.get("page")
-            ? parseInt(urlParams.get("page"))
-            : 1;
+          const initialPageNumber = parseInt(urlParams.get("page") || "1");
           const pageIndex =
             pages.findIndex((page) => page.number === initialPageNumber) || 0;
           setCurrentPage(pages[pageIndex].number);
@@ -364,9 +326,13 @@ export function Reader({
       .finally(() => setLoading(false));
     // Disqus
     if (organization?.enableDisqusIntegration) {
+      // @ts-ignore
       window.disqus_config = function () {
+        // @ts-ignore
         this.page.url = `https://${organization?.domain}/manga/${manga.slug}/chapters/${chapterNumber}`;
+        // @ts-ignore
         this.page.identifier = `${manga.slug}_${chapterNumber}`;
+        // @ts-ignore
         this.page.title = `${manga.title} - Capítulo ${chapterNumber} - ${chapter?.title}`;
       };
       const script = document.createElement("script");
@@ -437,6 +403,7 @@ export function Reader({
     <div id="reader-top">
       <div className="relative w-full min-h-44 group py-4">
         <LazyImage
+          alt={manga?.title}
           src={manga?.bannerUrl || manga?.imageUrl}
           decoding="async"
           loading="lazy"
@@ -512,6 +479,7 @@ export function Reader({
                       }
                       checked={settings.limitPageHeight}
                       onChange={() => handleLimitPageHeight()}
+                      crossOrigin={undefined}
                     />
                   </div>
                   <div className="my-2 mx-4">
@@ -524,7 +492,24 @@ export function Reader({
                       }
                       checked={settings.showFloatButtons}
                       onChange={() => handleToggleFloatButtons()}
+                      crossOrigin={undefined}
                     />
+                  </div>
+                  <div className="my-2 mx-4">
+                    <Typography className="text-gray-100">
+                      Ancho de pagina {settings.limitPageWidth}%
+                    </Typography>
+                    <div className="w-72">
+                      <div className="flex gap-10">
+                        <Slider
+                          size="lg"
+                          defaultValue={settings.limitPageWidth}
+                          onChange={(value) => handleLimitPageWidth(value)}
+                          min={30}
+                          max={100}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="mx-auto sm:mx-0">
@@ -561,7 +546,7 @@ export function Reader({
         >
           {chapterData.pages.length === 0 && loading && (
             <div className="flex min-h-full w-full justify-center py-4">
-              <Spinner color="red" size="xl" />
+              <Spinner color="red" />
             </div>
           )}
 
@@ -581,12 +566,12 @@ export function Reader({
                   : "w-full h-full flex justify-center select-none cursor-pointer ") +
                 (shouldShowPage(page.number) ? "" : " hidden")
               }
-              onClick={(evt) => handlePageClick(evt, page.number, pageIndex)}
+              onClick={(evt) => handlePageClick(evt, pageIndex)}
             >
               {!chapterData.pages.find((p) => p.number === page.number) && (
                 <img
-                  width={`${page.imageWidth}px`}
-                  height={`${page.imageHeight}px`}
+                  width={`${page.imageWidth * (settings.limitPageWidth / 100)}px`}
+                  height={`${page.imageHeight * (settings.limitPageWidth / 100)}px`}
                   className="bg-gray-300 !opacity-20 animate-pulse"
                   style={settings.limitPageHeight ? { maxHeight: "100vh" } : {}}
                 />
@@ -594,8 +579,9 @@ export function Reader({
               <LazyImage
                 id={`page-${page.number}-img`}
                 src={page.imageUrl}
-                onLoad={() => handlePageLoad(page.number)}
                 className="max-w-full m-auto pointer-events-none"
+                width={`${page.imageWidth * (settings.limitPageWidth / 100)}px`}
+                height={`${page.imageHeight * (settings.limitPageWidth / 100)}px`}
                 alt={`${_("page")} ${page.number}`}
                 hidden={
                   !chapterData.pages.find((p) => p.number === page.number)
@@ -754,7 +740,7 @@ export function Reader({
             </span>
             <span className="text-base text-white">{chapter?.title}</span>
             <div className="flex flex-wrap gap-2 my-2">
-              {chapterData.pages.map((page, index) => (
+              {chapterData.pages.map((page) => (
                 <span
                   key={page.number}
                   onClick={() => {
