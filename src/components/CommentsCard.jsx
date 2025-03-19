@@ -86,7 +86,7 @@ export function CommentsCard({
     callAPI("/api/comment", {
       method: "POST",
       body: JSON.stringify({
-        comment,
+        comment: comment.trim(),
         mangaCustomId: manga.id,
         chapterId: chapter.id,
         pageNumber:
