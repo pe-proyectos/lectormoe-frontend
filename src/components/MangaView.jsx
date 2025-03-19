@@ -1,14 +1,9 @@
 import { useEffect, useState } from "react";
 import JSZip from "jszip";
 import {
-  Typography,
   Tooltip,
-  Chip,
   Button,
   ButtonGroup,
-  Accordion,
-  AccordionHeader,
-  AccordionBody,
   Spinner,
 } from "@material-tailwind/react";
 import {
@@ -16,8 +11,6 @@ import {
   ArrowDownTrayIcon,
   EyeIcon,
   EyeSlashIcon,
-  LockOpenIcon,
-  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import StickyBox from "react-sticky-box";
 import { callAPI } from "../util/callApi";
@@ -319,6 +312,7 @@ export function MangaView({ manga, organization, logged, user }) {
           `${chapter.number} - ${chapterPages[index].number}.jpg`,
           blob,
           {
+            // @ts-ignore
             type: "blob",
           }
         );
@@ -348,20 +342,6 @@ export function MangaView({ manga, organization, logged, user }) {
   };
 
   useEffect(() => {
-    // Disqus
-    if (organization?.enableDisqusIntegration) {
-      window.disqus_config = function () {
-        this.page.url = `https://${organization?.domain}/manga/${manga.slug}`;
-        this.page.identifier = manga.slug;
-        this.page.title = manga.title;
-      };
-      const script = document.createElement("script");
-      script.src =
-        organization?.disqusEmbedUrl || "https://lat-manga.disqus.com/embed.js";
-      script.setAttribute("data-timestamp", Date.now().toString());
-      script.setAttribute("data-title", Date.now().toString());
-      (document.head || document.body).appendChild(script);
-    }
     // Chapters Navigation
     const highestChapterNumber = manga?.chapters?.reduce(
       (prev, current) => (prev.number > current.number ? prev : current),
@@ -410,6 +390,7 @@ export function MangaView({ manga, organization, logged, user }) {
     <div>
       <div className="relative w-full h-[24rem] group overflow-hidden bg-black shadow-lg">
         <LazyImage
+          alt={manga?.title}
           src={manga?.bannerUrl || manga?.imageUrl}
           decoding="async"
           loading="lazy"
@@ -423,12 +404,14 @@ export function MangaView({ manga, organization, logged, user }) {
               <div className="relative w-[18rem] min-w-[18rem] h-[26rem] group -translate-y-64 md:-translate-y-16 -mb-64 md:-mb-16 overflow-hidden rounded-md">
                 {/* <LazyImage src={manga?.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 filter brightness-50" /> */}
                 <LazyImage
+                  alt={manga?.title}
                   src={manga?.imageUrl}
                   decoding="async"
                   loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover opacity-80 blur-sm filter brightness-75 transition-transform duration-500 group-hover:scale-[110%]"
                 />
                 <LazyImage
+                  alt={manga?.title}
                   src={manga?.imageUrl}
                   decoding="async"
                   loading="lazy"
@@ -657,6 +640,7 @@ export function MangaView({ manga, organization, logged, user }) {
                             decoding="async"
                             loading="lazy"
                             className="w-full h-full object-cover rounded-lg grayscale group-hover:grayscale-0"
+                            alt={manga?.title}
                           />
                         </div>
                         <div className="flex flex-wrap grow items-center justify-between">
@@ -801,30 +785,7 @@ export function MangaView({ manga, organization, logged, user }) {
         </div>
       </div>
       {/* <div className="w-full px-1 sm:px-4 md:px-8"> */}
-      <div className="2xl:max-w-[1320px] 2xl:mx-auto px-1 sm:px-4 transition-all duration-500">
-        {/* Disqus Comments */}
-        {organization?.enableDisqusIntegration && (
-          <div className="w-full md:my-4 text-center">
-            <div className="max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md">
-              <Accordion open={openCommentsAccordion}>
-                <AccordionHeader
-                  onClick={() =>
-                    setOpenCommentsAccordion((oldValue) => !oldValue)
-                  }
-                >
-                  <h3 className="text-xl font-bold text-gray-300">
-                    {openCommentsAccordion ? _("hide") : _("show")}{" "}
-                    {_("comments")}
-                  </h3>
-                </AccordionHeader>
-                <AccordionBody className="bg-gray-900 my-2 p-4 rounded-md">
-                  <div id="disqus_thread" />
-                </AccordionBody>
-              </Accordion>
-            </div>
-          </div>
-        )}
-      </div>
+      <div className="2xl:max-w-[1320px] 2xl:mx-auto px-1 sm:px-4 transition-all duration-500"></div>
     </div>
   );
 }

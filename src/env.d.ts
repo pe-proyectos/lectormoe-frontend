@@ -36,8 +36,6 @@ type Organization = {
     enableAdsterraAds?: boolean;
     adsterraAdSource?: string;
     monitorWebsiteId?: string;
-    enableDisqusIntegration?: boolean;
-    disqusEmbedUrl?: string;
     facebookUrl?: string;
     twitterUrl?: string;
     instagramUrl?: string;

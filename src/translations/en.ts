@@ -343,8 +343,6 @@ export const translations: Record<string, string> = {
   enable_google_ads: "Enable Google Ads",
   enable_adsterra_ads: "Enable Adsterra Ads",
   comments: "Comments",
-  enable_disqus_comments: "Enable Disqus comments",
-  disqus_embed_url: "Disqus Embed URL",
   social: "Social",
   facebook_url: "Facebook URL",
   twitter_url: "Twitter URL",

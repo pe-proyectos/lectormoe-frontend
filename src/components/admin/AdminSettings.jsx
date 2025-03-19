@@ -54,8 +54,6 @@ export function AdminSettings({
   const [useAllowedCountries, setUseAllowedCountries] = useState(false);
   const [enableGoogleAds, setEnableGoogleAds] = useState(false);
   const [enableAdsterraAds, setEnableAdsterraAds] = useState(false);
-  const [enableDisqusIntegration, setEnableDisqusIntegration] = useState(false);
-  const [disqusEmbedUrl, setDisqusEmbedUrl] = useState("");
   const [logoImageFile, setLogoImageFile] = useState(null);
   const [imageImageFile, setImageImageFile] = useState(null);
   const [bannerImageFile, setBannerImageFile] = useState(null);
@@ -147,10 +145,6 @@ export function AdminSettings({
         // Integrations
         setEnableGoogleAds(organization.enableGoogleAds || false);
         setEnableAdsterraAds(organization.enableAdsterraAds || false);
-        setEnableDisqusIntegration(
-          organization.enableDisqusIntegration || false
-        );
-        setDisqusEmbedUrl(organization.disqusEmbedUrl || "");
         // Social
         setFacebookUrl(organization.facebookUrl || "");
         setTwitterUrl(organization.twitterUrl || "");
@@ -192,8 +186,6 @@ export function AdminSettings({
     formData.append("useAllowedCountries", useAllowedCountries);
     formData.append("enableGoogleAds", enableGoogleAds);
     formData.append("enableAdsterraAds", enableAdsterraAds);
-    formData.append("enableDisqusIntegration", enableDisqusIntegration);
-    formData.append("disqusEmbedUrl", disqusEmbedUrl);
     formData.append("facebookUrl", facebookUrl);
     formData.append("twitterUrl", twitterUrl);
     formData.append("instagramUrl", instagramUrl);
@@ -522,22 +514,6 @@ export function AdminSettings({
                 label={_("enable_adsterra_ads")}
                 checked={enableAdsterraAds}
                 onChange={(e) => setEnableAdsterraAds(e.target.checked)}
-              />
-              <Typography className="-mb-2" variant="h6" color="gray">
-                {_("comments")}
-              </Typography>
-              <Switch
-                label={_("enable_disqus_comments")}
-                checked={enableDisqusIntegration}
-                onChange={(e) => setEnableDisqusIntegration(e.target.checked)}
-              />
-              <Input
-                size="lg"
-                label={_("disqus_embed_url")}
-                autoComplete="off"
-                value={disqusEmbedUrl}
-                onChange={(e) => setDisqusEmbedUrl(e.target.value)}
-                disabled={!enableDisqusIntegration}
               />
             </div>
           </AccordionBody>

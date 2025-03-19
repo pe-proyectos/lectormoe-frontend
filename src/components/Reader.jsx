@@ -4,7 +4,6 @@ import {
   Spinner,
   Button,
   ButtonGroup,
-  Option,
   Card,
   Tabs,
   TabsHeader,
@@ -20,9 +19,8 @@ import {
   Tooltip,
   Dialog,
   CardBody,
-  Select,
-  Radio,
   Slider,
+  Drawer,
 } from "@material-tailwind/react";
 import {
   ChevronUpIcon,
@@ -35,6 +33,7 @@ import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
+import { CommentsCard } from "./CommentsCard";
 
 export function Reader({
   organization,
@@ -54,6 +53,14 @@ export function Reader({
   const [currentPage, setCurrentPage] = useState(0);
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
+
+  const [showSideComments, setShowSideComments] = useState(window.innerWidth >= 720);
+
+  const [screenIsMobile, setScreenIsMobile] = useState(false);
+
+  useEffect(() => {
+    setScreenIsMobile(window.innerWidth < 720);
+  }, [window.innerWidth]);
 
   const [scrollInfo, setScrollInfo] = useState({
     scrollY: 0,
@@ -324,23 +331,6 @@ export function Reader({
 
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoading(false));
-    // Disqus
-    if (organization?.enableDisqusIntegration) {
-      // @ts-ignore
-      window.disqus_config = function () {
-        // @ts-ignore
-        this.page.url = `https://${organization?.domain}/manga/${manga.slug}/chapters/${chapterNumber}`;
-        // @ts-ignore
-        this.page.identifier = `${manga.slug}_${chapterNumber}`;
-        // @ts-ignore
-        this.page.title = `${manga.title} - Capítulo ${chapterNumber} - ${chapter?.title}`;
-      };
-      const script = document.createElement("script");
-      script.src =
-        organization?.disqusEmbedUrl || "https://lat-manga.disqus.com/embed.js";
-      script.setAttribute("data-timestamp", Date.now().toString());
-      (document.head || document.body).appendChild(script);
-    }
   }, []);
 
   const PreviousChapterArrow = ({ ...props }) => (
@@ -542,7 +532,7 @@ export function Reader({
         {/* PAGINAS */}
         <div
           id="manga-pages-top"
-          className="w-full min-h-[100vh] select-none backdrop-blur-sm bg-black bg-opacity-50"
+          className="w-full min-h-[100vh] select-none bg-black"
         >
           {chapterData.pages.length === 0 && loading && (
             <div className="flex min-h-full w-full justify-center py-4">
@@ -556,41 +546,91 @@ export function Reader({
             </div>
           )}
 
-          {chapterData.pages.map((page, pageIndex) => (
-            <div
-              key={page.number}
-              id={`page-${page.number}`}
-              className={
-                (settings.readType === readTypes.CASCADE
-                  ? "w-full flex justify-center select-none cursor-pointer "
-                  : "w-full h-full flex justify-center select-none cursor-pointer ") +
-                (shouldShowPage(page.number) ? "" : " hidden")
-              }
-              onClick={(evt) => handlePageClick(evt, pageIndex)}
-            >
-              {!chapterData.pages.find((p) => p.number === page.number) && (
-                <img
-                  width={`${page.imageWidth * (settings.limitPageWidth / 100)}px`}
-                  height={`${page.imageHeight * (settings.limitPageWidth / 100)}px`}
-                  className="bg-gray-300 !opacity-20 animate-pulse"
-                  style={settings.limitPageHeight ? { maxHeight: "100vh" } : {}}
+          <div className="flex w-full h-full flex-row-reverse gap-2">
+            {(showSideComments && chapterData.pages.length > 0 && !loading) && (
+              <div className="sticky top-0 h-full min-w-96 max-h-[100vh] p-4 rounded-lg overflow-hidden hidden md:block">
+                <CommentsCard
+                  manga={manga}
+                  chapter={chapter}
+                  chapterData={chapterData}
+                  currentPage={currentPage}
+                  settings={settings}
+                  logged={logged}
+                  chapterNumber={chapterNumber}
                 />
-              )}
-              <LazyImage
-                id={`page-${page.number}-img`}
-                src={page.imageUrl}
-                className="max-w-full m-auto pointer-events-none"
-                width={`${page.imageWidth * (settings.limitPageWidth / 100)}px`}
-                height={`${page.imageHeight * (settings.limitPageWidth / 100)}px`}
-                alt={`${_("page")} ${page.number}`}
-                hidden={
-                  !chapterData.pages.find((p) => p.number === page.number)
-                }
-                style={settings.limitPageHeight ? { maxHeight: "100vh" } : {}}
-              />
+              </div>
+            )}
+            <div className="flex-grow w-full h-full">
+              {chapterData.pages.map((page, pageIndex) => (
+                <div
+                  key={page.number}
+                  id={`page-${page.number}`}
+                  className={
+                    (settings.readType === readTypes.CASCADE
+                      ? "w-full flex justify-center select-none cursor-pointer "
+                      : "w-full h-full flex justify-center select-none cursor-pointer ") +
+                    (shouldShowPage(page.number) ? "" : " hidden")
+                  }
+                  onClick={(evt) => handlePageClick(evt, pageIndex)}
+                >
+                  {!chapterData.pages.find((p) => p.number === page.number) && (
+                    <img
+                      width={`${
+                        page.imageWidth * (settings.limitPageWidth / 100)
+                      }px`}
+                      height={`${
+                        page.imageHeight * (settings.limitPageWidth / 100)
+                      }px`}
+                      className="bg-gray-300 !opacity-20 animate-pulse"
+                      style={
+                        settings.limitPageHeight ? { maxHeight: "100vh" } : {}
+                      }
+                    />
+                  )}
+                  <LazyImage
+                    id={`page-${page.number}-img`}
+                    src={page.imageUrl}
+                    className="max-w-full m-auto pointer-events-none"
+                    width={`${
+                      page.imageWidth * (settings.limitPageWidth / 100)
+                    }px`}
+                    height={`${
+                      page.imageHeight * (settings.limitPageWidth / 100)
+                    }px`}
+                    alt={`${_("page")} ${page.number}`}
+                    hidden={
+                      !chapterData.pages.find((p) => p.number === page.number)
+                    }
+                    style={
+                      settings.limitPageHeight ? { maxHeight: "100vh" } : {}
+                    }
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
+        {/* Comments Drawer */}
+        <Drawer
+          placement="right"
+          open={(showSideComments && chapterData.pages.length > 0 && !loading) && screenIsMobile}
+          onClose={() => setShowSideComments(false)}
+          className="p-4 bg-opacity-0 w-full"
+          size={500}
+          overlayProps={{
+            className: "fixed inset-0 bg-black/50",
+          }}
+        >
+          <CommentsCard
+            manga={manga}
+            chapter={chapter}
+            chapterData={chapterData}
+            currentPage={currentPage}
+            settings={settings}
+            logged={logged}
+            chapterNumber={chapterNumber}
+          />
+        </Drawer>
         {/* Progress Bar */}
         {chapterData.pages.length > 0 && (
           <div className="sticky bottom-0 left-0 w-full h-1 bg-black">
@@ -671,51 +711,116 @@ export function Reader({
               </a>
             )}
         </div>
-        {/* Disqus Comments */}
-        {organization?.enableDisqusIntegration && (
-          <div className="w-full text-center">
-            <div className="max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md">
-              <Accordion open={settings.showChapterComments}>
-                <AccordionHeader onClick={handleToggleComments}>
-                  <h3 className="text-xl font-bold text-gray-300">
-                    {settings.showChapterComments ? _("hide") : _("show")}{" "}
-                    {_("comments")}
-                  </h3>
-                </AccordionHeader>
-                <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
-                  <div id="disqus_thread" />
-                </AccordionBody>
-              </Accordion>
-            </div>
+        <div className="w-full text-center">
+          <div className="max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md">
+            <Accordion open={settings.showChapterComments}>
+              <AccordionHeader onClick={handleToggleComments}>
+                <h3 className="text-xl font-bold text-gray-300">
+                  {settings.showChapterComments ? _("hide") : _("show")}{" "}
+                  {_("comments")}
+                </h3>
+              </AccordionHeader>
+              <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
+                <CommentsCard
+                  manga={manga}
+                  chapter={chapter}
+                  chapterData={chapterData}
+                  currentPage={currentPage}
+                  settings={settings}
+                  logged={logged}
+                  chapterNumber={chapterNumber}
+                />
+              </AccordionBody>
+            </Accordion>
           </div>
-        )}
+        </div>
       </div>
       {/* Speed Dial */}
       {settings.showFloatButtons && (
         <>
-          <div className="fixed bottom-5 right-5">
+          <div className="fixed flex flex-col gap-2 bottom-5 right-5">
+            <SpeedDial>
+              <Tooltip content={_("back_to_start")} placement="left">
+                <SpeedDialHandler>
+                  <a href="#main-navbar">
+                    <IconButton
+                      size="lg"
+                      className="rounded-full bg-opacity-90"
+                    >
+                      <ChevronUpIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
+                    </IconButton>
+                  </a>
+                </SpeedDialHandler>
+              </Tooltip>
+            </SpeedDial>
+            <SpeedDial>
+              <Tooltip
+                content={
+                  (showSideComments && chapterData.pages.length > 0 && !loading)
+                    ? "Ocultar comentarios"
+                    : "Mostrar comentarios"
+                }
+                placement="left"
+              >
+                <SpeedDialHandler>
+                  <IconButton
+                    size="lg"
+                    className="rounded-full bg-opacity-90"
+                    onClick={() => setShowSideComments(!showSideComments)}
+                  >
+                    {(showSideComments && chapterData.pages.length > 0 && !loading) ? (
+                      <svg
+                        className="w-6 h-6 text-gray-400 dark:text-white"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1v2a1 1 0 0 0 1.707.707L9.414 13H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Z"
+                          clip-rule="evenodd"
+                        />
+                        <path
+                          fillRule="evenodd"
+                          d="M8.023 17.215c.033-.03.066-.062.098-.094L10.243 15H15a3 3 0 0 0 3-3V8h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-1v2a1 1 0 0 1-1.707.707L14.586 18H9a1 1 0 0 1-.977-.785Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-6 h-6 text-gray-400 dark:text-white"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 17h6l3 3v-3h2V9h-2M4 4h11v8H9l-3 3v-3H4V4Z"
+                        />
+                      </svg>
+                    )}
+                  </IconButton>
+                </SpeedDialHandler>
+              </Tooltip>
+            </SpeedDial>
             <SpeedDial>
               <Tooltip content={_("pages_list")} placement="left">
                 <SpeedDialHandler
                   className="cursor-pointer"
                   onClick={() => handlePagesDialog()}
                 >
-                  <IconButton size="lg" className="rounded-full">
+                  <IconButton size="lg" className="rounded-full bg-opacity-90">
                     <ListBulletIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
                   </IconButton>
-                </SpeedDialHandler>
-              </Tooltip>
-            </SpeedDial>
-          </div>
-          <div className="fixed bottom-20 right-5">
-            <SpeedDial>
-              <Tooltip content={_("back_to_start")} placement="left">
-                <SpeedDialHandler>
-                  <a href="#main-navbar">
-                    <IconButton size="lg" className="rounded-full">
-                      <ChevronUpIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
-                    </IconButton>
-                  </a>
                 </SpeedDialHandler>
               </Tooltip>
             </SpeedDial>
