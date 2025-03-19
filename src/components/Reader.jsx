@@ -138,8 +138,6 @@ export function Reader({
   };
 
   const handleLimitPageWidth = debounce((evt) => {
-    console.log("handleLimitPageWidth", parseInt(evt.target.value));
-
     localStorage.setItem(
       "limitPageWidth",
       parseInt(evt.target.value).toString()

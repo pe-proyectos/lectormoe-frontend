@@ -51,7 +51,6 @@ export function CommentsCard({
     callAPI(
       `/api/comment?identifier=${manga.slug}_${chapterNumber}&mangaCustomId=${manga.id}&chapterId=${chapter.id}`
     ).then((comments) => {
-      console.log("comments", comments);
       setComments(comments);
       setPagesWithComments(
         [...new Set(comments.map((comment) => comment.pageNumber))].sort(
@@ -95,6 +94,9 @@ export function CommentsCard({
       }),
     }).then(() => {
       getComments();
+    }).catch((error) => {
+      console.error("Error al comentar", error);
+      toast.error("Error al comentar");
     });
   };
 
