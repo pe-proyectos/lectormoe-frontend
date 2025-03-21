@@ -5,6 +5,9 @@ import {
   Button,
   ButtonGroup,
   Spinner,
+  Accordion,
+  AccordionBody,
+  AccordionHeader,
 } from "@material-tailwind/react";
 import {
   ArrowTopRightOnSquareIcon,
@@ -18,6 +21,7 @@ import { LazyImage } from "./LazyImage";
 import { toast } from "react-toastify";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
+import { CommentsCard } from "./CommentsCard";
 
 export function MangaView({ manga, organization, logged, user }) {
   const _ = getTranslator(organization.language);
@@ -784,8 +788,25 @@ export function MangaView({ manga, organization, logged, user }) {
           </div>
         </div>
       </div>
-      {/* <div className="w-full px-1 sm:px-4 md:px-8"> */}
-      <div className="2xl:max-w-[1320px] 2xl:mx-auto px-1 sm:px-4 transition-all duration-500"></div>
+      <div className="2xl:max-w-[1320px] 2xl:mx-auto px-1 sm:px-4 transition-all duration-500">
+        <div className="w-full text-center">
+          <div className="max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md">
+            <Accordion open={openCommentsAccordion}>
+              <AccordionHeader
+                onClick={() => setOpenCommentsAccordion(!openCommentsAccordion)}
+              >
+                <h3 className="text-xl font-bold text-gray-300">
+                  {openCommentsAccordion ? _("hide") : _("show")}{" "}
+                  {_("comments")}
+                </h3>
+              </AccordionHeader>
+              <AccordionBody className="my-2 p-4 rounded-md">
+                <CommentsCard logged={logged} identifier={manga.slug} />
+              </AccordionBody>
+            </Accordion>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

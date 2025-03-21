@@ -54,7 +54,9 @@ export function Reader({
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
 
-  const [showSideComments, setShowSideComments] = useState(window.innerWidth >= 720);
+  const [showSideComments, setShowSideComments] = useState(
+    window.innerWidth >= 720
+  );
 
   const [screenIsMobile, setScreenIsMobile] = useState(false);
 
@@ -545,16 +547,11 @@ export function Reader({
           )}
 
           <div className="flex w-full h-full flex-row-reverse gap-2">
-            {(showSideComments && chapterData.pages.length > 0 && !loading) && (
+            {showSideComments && chapterData.pages.length > 0 && !loading && (
               <div className="sticky top-0 h-full min-w-96 max-h-[100vh] p-4 rounded-lg overflow-hidden hidden md:block">
                 <CommentsCard
-                  manga={manga}
-                  chapter={chapter}
-                  chapterData={chapterData}
-                  currentPage={currentPage}
-                  settings={settings}
                   logged={logged}
-                  chapterNumber={chapterNumber}
+                  identifier={`${manga.slug}_${chapterNumber}`}
                 />
               </div>
             )}
@@ -581,7 +578,14 @@ export function Reader({
                       }px`}
                       className="bg-gray-300 !opacity-20 animate-pulse"
                       style={
-                        settings.limitPageHeight ? { maxHeight: "100vh", width: "auto", height: "auto", maxWidth: "100%" } : {}
+                        settings.limitPageHeight
+                          ? {
+                              maxHeight: "100vh",
+                              width: "auto",
+                              height: "auto",
+                              maxWidth: "100%",
+                            }
+                          : {}
                       }
                     />
                   )}
@@ -600,7 +604,14 @@ export function Reader({
                       !chapterData.pages.find((p) => p.number === page.number)
                     }
                     style={
-                      settings.limitPageHeight ? { maxHeight: "100vh", width: "auto", height: "auto", maxWidth: "100%" } : {}
+                      settings.limitPageHeight
+                        ? {
+                            maxHeight: "100vh",
+                            width: "auto",
+                            height: "auto",
+                            maxWidth: "100%",
+                          }
+                        : {}
                     }
                   />
                 </div>
@@ -611,7 +622,12 @@ export function Reader({
         {/* Comments Drawer */}
         <Drawer
           placement="right"
-          open={(showSideComments && chapterData.pages.length > 0 && !loading) && screenIsMobile}
+          open={
+            showSideComments &&
+            chapterData.pages.length > 0 &&
+            !loading &&
+            screenIsMobile
+          }
           onClose={() => setShowSideComments(false)}
           className="p-4 bg-opacity-0 w-full"
           size={500}
@@ -620,13 +636,8 @@ export function Reader({
           }}
         >
           <CommentsCard
-            manga={manga}
-            chapter={chapter}
-            chapterData={chapterData}
-            currentPage={currentPage}
-            settings={settings}
             logged={logged}
-            chapterNumber={chapterNumber}
+            identifier={`${manga.slug}_${chapterNumber}`}
           />
         </Drawer>
         {/* Progress Bar */}
@@ -720,13 +731,8 @@ export function Reader({
               </AccordionHeader>
               <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
                 <CommentsCard
-                  manga={manga}
-                  chapter={chapter}
-                  chapterData={chapterData}
-                  currentPage={currentPage}
-                  settings={settings}
                   logged={logged}
-                  chapterNumber={chapterNumber}
+                  identifier={`${manga.slug}_${chapterNumber}`}
                 />
               </AccordionBody>
             </Accordion>
@@ -754,7 +760,7 @@ export function Reader({
             <SpeedDial>
               <Tooltip
                 content={
-                  (showSideComments && chapterData.pages.length > 0 && !loading)
+                  showSideComments && chapterData.pages.length > 0 && !loading
                     ? "Ocultar comentarios"
                     : "Mostrar comentarios"
                 }
@@ -766,7 +772,9 @@ export function Reader({
                     className="rounded-full bg-opacity-90"
                     onClick={() => setShowSideComments(!showSideComments)}
                   >
-                    {(showSideComments && chapterData.pages.length > 0 && !loading) ? (
+                    {showSideComments &&
+                    chapterData.pages.length > 0 &&
+                    !loading ? (
                       <svg
                         className="w-6 h-6 text-gray-400 dark:text-white"
                         aria-hidden="true"
@@ -779,7 +787,7 @@ export function Reader({
                         <path
                           fillRule="evenodd"
                           d="M4 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1v2a1 1 0 0 0 1.707.707L9.414 13H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Z"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                         />
                         <path
                           fillRule="evenodd"
