@@ -581,7 +581,7 @@ export function Reader({
                       }px`}
                       className="bg-gray-300 !opacity-20 animate-pulse"
                       style={
-                        settings.limitPageHeight ? { maxHeight: "100vh" } : {}
+                        settings.limitPageHeight ? { maxHeight: "100vh", width: "auto", height: "auto", maxWidth: "100%" } : {}
                       }
                     />
                   )}
@@ -600,7 +600,7 @@ export function Reader({
                       !chapterData.pages.find((p) => p.number === page.number)
                     }
                     style={
-                      settings.limitPageHeight ? { maxHeight: "100vh" } : {}
+                      settings.limitPageHeight ? { maxHeight: "100vh", width: "auto", height: "auto", maxWidth: "100%" } : {}
                     }
                   />
                 </div>
