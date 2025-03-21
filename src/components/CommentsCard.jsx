@@ -70,62 +70,88 @@ export function CommentsCard({ identifier, logged }) {
   [&::-webkit-scrollbar-track]:bg-gray-800
   [&::-webkit-scrollbar-thumb]:bg-gray-600"
       >
-        <List className="py-0 my-0">
-          {comments
-            .sort(
-              (a, b) =>
-                new Date(a.createdAt).getTime() -
-                new Date(b.createdAt).getTime()
-            )
-            .map((comment) => (
-              <ListItem
-                key={comment.id}
-                className="text-white hover:bg-gray-800"
-              >
-                <ListItemPrefix>
-                  {comment.user.imageUrl && (
-                    <Avatar
-                      variant="circular"
-                      alt={comment.user.username}
-                      src={comment.user.imageUrl}
-                      size="xs"
-                    />
-                  )}
-                  {!comment.user.imageUrl && (
-                    <IconButton className="rounded-full bg-gray-700" size="sm">
-                      <svg
-                        className="w-6 h-6 text-gray-300"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
+        {comments.length === 0 ? (
+          <div className="flex h-full w-full flex-col gap-2 justify-center items-center py-4">
+            <Typography
+              variant="paragraph"
+              color="gray"
+              className="text-center"
+            >
+              Aún no hay comentarios.
+            </Typography>
+            <Typography
+              variant="paragraph"
+              color="gray"
+              className="text-center"
+            >
+              ¡Sé el primero en comentar!
+            </Typography>
+          </div>
+        ) : (
+          <List className="py-0 my-0">
+            {comments
+              .sort(
+                (a, b) =>
+                  new Date(a.createdAt).getTime() -
+                  new Date(b.createdAt).getTime()
+              )
+              .map((comment) => (
+                <ListItem
+                  key={comment.id}
+                  className="text-white hover:bg-gray-800"
+                >
+                  <ListItemPrefix>
+                    {comment.user.imageUrl && (
+                      <Avatar
+                        variant="circular"
+                        alt={comment.user.username}
+                        src={comment.user.imageUrl}
+                        size="xs"
+                      />
+                    )}
+                    {!comment.user.imageUrl && (
+                      <IconButton
+                        className="rounded-full bg-gray-700"
+                        size="sm"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4h-4Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </IconButton>
-                  )}
-                </ListItemPrefix>
-                <div>
-                  <Typography variant="small" color="gray" className="text-xs">
-                    {comment.user.username}
-                  </Typography>
-                  <Typography
-                    variant="paragraph"
-                    color="white"
-                    className="font-normal text-sm"
-                  >
-                    {comment.comment}
-                  </Typography>
-                </div>
-              </ListItem>
-            ))}
-        </List>
+                        <svg
+                          className="w-6 h-6 text-gray-300"
+                          aria-hidden="true"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4h-4Z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </IconButton>
+                    )}
+                  </ListItemPrefix>
+                  <div>
+                    <Typography
+                      variant="small"
+                      color="gray"
+                      className="text-xs"
+                    >
+                      {comment.user.username}
+                    </Typography>
+                    <Typography
+                      variant="paragraph"
+                      color="white"
+                      className="font-normal text-sm"
+                    >
+                      {comment.comment}
+                    </Typography>
+                  </div>
+                </ListItem>
+              ))}
+          </List>
+        )}
       </div>
       {/* Caja comentarios */}
       <div
@@ -151,7 +177,7 @@ export function CommentsCard({ identifier, logged }) {
           placeholder={logged ? "Comentar" : "Inicia sesión para comentar"}
           maxLength={200}
           minLength={1}
-          className="min-h-full !border-0 focus:border-transparent text-white bg-transparent"
+          className="min-h-full !border-0 focus:border-transparent text-white bg-transparent no-scrollbar"
           disabled={!logged}
           containerProps={{
             className: "grid h-full",
@@ -163,6 +189,7 @@ export function CommentsCard({ identifier, logged }) {
           onChange={(e) => setComment(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
+              e.preventDefault();
               postComment();
             }
           }}
