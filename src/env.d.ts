@@ -98,6 +98,8 @@ declare namespace App {
             canCreateSubscriptionPlan: boolean,
             canEditSubscriptionPlan: boolean,
             canDeleteSubscriptionPlan: boolean,
+            // Comment
+            canDeleteComment: boolean,
             // Perks
             hideAds: boolean,
             canDownload: boolean,

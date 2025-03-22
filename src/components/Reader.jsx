@@ -41,6 +41,7 @@ export function Reader({
   chapter,
   chapterNumber,
   logged,
+  user,
 }) {
   const _ = getTranslator(organization.language);
 
@@ -551,6 +552,7 @@ export function Reader({
               <div className="sticky top-0 h-full min-w-96 max-h-[100vh] p-4 rounded-lg overflow-hidden hidden md:block">
                 <CommentsCard
                   logged={logged}
+                  user={user}
                   identifier={`${manga.slug}_${chapterNumber}`}
                 />
               </div>
@@ -637,6 +639,7 @@ export function Reader({
         >
           <CommentsCard
             logged={logged}
+            user={user}
             identifier={`${manga.slug}_${chapterNumber}`}
           />
         </Drawer>
@@ -732,6 +735,7 @@ export function Reader({
               <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
                 <CommentsCard
                   logged={logged}
+                  user={user}
                   identifier={`${manga.slug}_${chapterNumber}`}
                 />
               </AccordionBody>

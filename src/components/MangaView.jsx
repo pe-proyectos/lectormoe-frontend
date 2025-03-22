@@ -801,7 +801,11 @@ export function MangaView({ manga, organization, logged, user }) {
                 </h3>
               </AccordionHeader>
               <AccordionBody className="my-2 p-4 rounded-md">
-                <CommentsCard logged={logged} identifier={manga.slug} />
+                <CommentsCard
+                  identifier={manga.slug}
+                  logged={logged}
+                  user={user}
+                />
               </AccordionBody>
             </Accordion>
           </div>

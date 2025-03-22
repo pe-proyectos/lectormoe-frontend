@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import {
-  Textarea,
   Button,
   ButtonGroup,
   Dialog,
-  Spinner,
   DialogHeader,
   DialogBody,
   Checkbox,
@@ -13,11 +11,6 @@ import {
   Typography,
   Input,
 } from "@material-tailwind/react";
-import {
-  UserCircleIcon,
-  LockClosedIcon,
-  CreditCardIcon,
-} from "@heroicons/react/24/solid";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 import { ImageDropzone } from "../ImageDropzone";
@@ -63,6 +56,7 @@ export function AdminUserDialog({
     canCreateSubscriptionPlan: false,
     canEditSubscriptionPlan: false,
     canDeleteSubscriptionPlan: false,
+    canDeleteComment: false,
     hideAds: false,
     canDownload: false,
     canReadUnreleased: false,
@@ -96,6 +90,7 @@ export function AdminUserDialog({
       canCreateSubscriptionPlan: user.canCreateSubscriptionPlan,
       canEditSubscriptionPlan: user.canEditSubscriptionPlan,
       canDeleteSubscriptionPlan: user.canDeleteSubscriptionPlan,
+      canDeleteComment: user.canDeleteComment,
       hideAds: user.hideAds,
       canDownload: user.canDownload,
       canReadUnreleased: user.canReadUnreleased,
@@ -486,6 +481,13 @@ export function AdminUserDialog({
                 ...permissions,
                 canDeleteSubscriptionPlan: e.target.checked,
               })
+            }
+          />
+          <Checkbox
+            label={_("can_delete_comment")}
+            checked={permissions.canDeleteComment}
+            onChange={(e) =>
+              setPermissions({ ...permissions, canDeleteComment: e.target.checked })
             }
           />
           <Checkbox

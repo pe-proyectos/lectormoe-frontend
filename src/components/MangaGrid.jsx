@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
   Typography,
-  Avatar,
   Button,
   Chip,
   Alert,
@@ -22,7 +17,6 @@ import { getTranslator } from "../util/translate";
 export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
   const _ = getTranslator(organization.language);
 
-  const [loading, setLoading] = useState(true);
   const [loadingLatest, setLoadingLatest] = useState(true);
   const [mangaLatestList, setMangaLatestList] = useState([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
