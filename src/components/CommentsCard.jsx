@@ -9,12 +9,22 @@ import {
   ListItemPrefix,
   ListItem,
   List,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
 } from "@material-tailwind/react";
 import { callAPI } from "../util/callApi";
 
 export function CommentsCard({ identifier, logged, user }) {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const [zoomImageDialogOpen, setZoomImageDialogOpen] = useState(false);
+  const [selectedZoomImage, setSelectedZoomImage] = useState(null);
 
   const getComments = () => {
     callAPI(`/api/comment?identifier=${identifier}`).then((comments) => {
@@ -26,7 +36,35 @@ export function CommentsCard({ identifier, logged, user }) {
     getComments();
   }, []);
 
-  const postComment = () => {
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Solo se permiten imágenes");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
+      toast.error("La imagen no puede ser mayor a 5MB");
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const postComment = async () => {
     if (!logged) {
       toast.error("Debes estar logueado para comentar");
       return;
@@ -39,14 +77,17 @@ export function CommentsCard({ identifier, logged, user }) {
       toast.error("El comentario no puede tener más de 200 caracteres");
       return;
     }
+
     setCommentText("");
+    clearImage();
+
+    const formData = new FormData();
+    formData.append("identifier", identifier);
+    if (imageFile) formData.append("image", imageFile);
+    formData.append("comment", commentText.trim());
     callAPI("/api/comment", {
       method: "POST",
-      body: JSON.stringify({
-        identifier,
-        comment: commentText.trim(),
-        imageUrl: undefined,
-      }),
+      body: formData,
     })
       .then(() => {
         getComments();
@@ -56,6 +97,7 @@ export function CommentsCard({ identifier, logged, user }) {
         toast.error("Error al comentar");
       });
   };
+
   const formatDate = (date) => {
     if (!date) return "";
     const dt = new Date(date);
@@ -69,7 +111,9 @@ export function CommentsCard({ identifier, logged, user }) {
       { unit: "segundo", value: diff },
     ];
     const time = times.find((t) => t.value > 0);
-    return time ? `hace ${time.value} ${time.unit}${time.value > 1 ? "s" : ""}` : "hoy";
+    return time
+      ? `hace ${time.value} ${time.unit}${time.value > 1 ? "s" : ""}`
+      : "hoy";
   };
 
   const CommentListItem = ({ user, comment: initialCommentData }) => {
@@ -77,15 +121,12 @@ export function CommentsCard({ identifier, logged, user }) {
     const [isBlurred, setIsBlurred] = useState(true);
     const [isVoting, setIsVoting] = useState(false);
 
-    console.log("Rendering comment", user);
-
     const userLike = Array.isArray(comment.likes)
       ? comment.likes.find((l) => l.userId === user?.id)?.like === true
       : null;
     const userDislike = Array.isArray(comment.likes)
       ? comment.likes.find((l) => l.userId === user?.id)?.like === false
       : null;
-    console.log({userLike, userDislike});
 
     const handleDelete = async () => {
       try {
@@ -122,14 +163,18 @@ export function CommentsCard({ identifier, logged, user }) {
 
       try {
         setIsVoting(true);
-        console.log({userLike, userDislike, isLike});
-        
         setComment({
           ...comment,
-          likesCount: comment.likesCount + (userLike ? (isLike ? -1 : -1) : isLike ? 1 : 0),
-          dislikesCount: comment.dislikesCount + (userDislike ? (isLike ? -1 : -1) : isLike ? 0 : 1),
+          likesCount:
+            comment.likesCount +
+            (userLike ? (isLike ? -1 : -1) : isLike ? 1 : 0),
+          dislikesCount:
+            comment.dislikesCount +
+            (userDislike ? (isLike ? -1 : -1) : isLike ? 0 : 1),
           likes: (() => {
-            const updatedLikes = comment.likes.filter((like) => like.userId !== user?.id);
+            const updatedLikes = comment.likes.filter(
+              (like) => like.userId !== user?.id
+            );
             if (userLike && !isLike) return updatedLikes; // Si el usuario tenía "like" y lo quita
             if (userDislike && isLike) return updatedLikes; // Si el usuario tenía "dislike" y lo cambia a "like"
             updatedLikes.push({ userId: user?.id, like: isLike });
@@ -156,40 +201,45 @@ export function CommentsCard({ identifier, logged, user }) {
         key={comment.id}
         className="text-white hover:bg-gray-800 active:bg-gray-800 focus:bg-gray-800"
       >
-        <ListItemPrefix>
-          {comment?.user?.imageUrl && (
-            <Avatar
-              variant="circular"
-              alt={comment.user.username}
-              src={comment.user.imageUrl}
-              size="xs"
-            />
-          )}
-          {!comment?.user?.imageUrl && (
-            <IconButton className="rounded-full bg-gray-700" size="sm">
-              <svg
-                className="w-6 h-6 text-gray-300"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4h-4Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </IconButton>
-          )}
-        </ListItemPrefix>
         <div className="w-full">
           <div className="flex justify-between items-center">
-            <Typography variant="small" color="gray" className="text-xs">
-              {comment?.user?.username}
-            </Typography>
+            <div className="flex gap-2 justify-center items-center">
+              {comment?.user?.imageUrl && (
+                <Avatar
+                  variant="circular"
+                  alt={comment.user.username}
+                  src={comment.user.imageUrl}
+                  size="xs"
+                />
+              )}
+              {!comment?.user?.imageUrl && (
+                <IconButton className="rounded-full bg-gray-700" size="sm">
+                  <svg
+                    className="w-6 h-6 text-gray-300"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4h-4Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </IconButton>
+              )}
+              <div className="flex flex-col">
+                <span className="text-gray-400 text-xs">
+                  {comment?.user?.username}
+                </span>
+                <span className="text-gray-400 text-xs">
+                  {formatDate(comment?.createdAt)}
+                </span>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <Typography variant="small" color="gray" className="text-xs">
                 {formatDate(comment?.createdAt)}
@@ -217,18 +267,19 @@ export function CommentsCard({ identifier, logged, user }) {
               )}
             </div>
           </div>
-          <Typography
-            variant="paragraph"
-            color="white"
-            className="font-normal text-sm"
-          >
-            {comment?.comment}
-          </Typography>
-
+          <div className="ml-[40px] py-2">
+            <Typography
+              variant="paragraph"
+              color="white"
+              className="font-normal text-sm"
+            >
+              {comment?.comment}
+            </Typography>
+          </div>
           {comment.imageUrl && (
             <div
-              className="mt-2 cursor-pointer"
-              onClick={() => setIsBlurred(!isBlurred)}
+              className="flex w-full ml-[40px] my-2 p-4 cursor-pointer max-h-56 max-w-56 justify-center items-center"
+              onClick={() => isBlurred ? setIsBlurred(false) : (setSelectedZoomImage(comment.imageUrl), setZoomImageDialogOpen(true))}
             >
               <img
                 src={comment.imageUrl}
@@ -239,8 +290,7 @@ export function CommentsCard({ identifier, logged, user }) {
               />
             </div>
           )}
-
-          <div className={"flex gap-4 mt-2 " + (isVoting ? "opacity-50" : "")}>
+          <div className={"flex gap-4 ml-[40px] mt-2 " + (isVoting ? "opacity-50" : "")}>
             <button
               onClick={() => handleLike(true)}
               className={`flex items-center gap-1 ${
@@ -337,68 +387,150 @@ export function CommentsCard({ identifier, logged, user }) {
       {/* Caja comentarios */}
       <div
         className={
-          "mt-4 flex w-full flex-row items-center gap-2 rounded-[99px] border border-gray-700 p-2 " +
+          "mt-4 flex flex-col border border-gray-700 p-2 m-0 " +
           (logged ? "bg-gray-800" : "bg-gray-900")
         }
       >
-        <div className="flex w-4 min-w-4">
-          {/* <Select size="md" className="w-4 min-w-4" selected={() => commentPage.toString()} onChange={(e) => setCommentPage(parseInt(e || "1"))}>
-                      {chapterData.pages
-                        .filter((page) => page.number <= currentPage)
-                        .map((page) => (
-                          <Option key={page.number} value={page.number.toString()}>
-                            #{page.number}
-                          </Option>
-                        ))}
-                    </Select> */}
-        </div>
-        <Textarea
-          rows={1}
-          resize={true}
-          placeholder={logged ? "Comentar" : "Inicia sesión para comentar"}
-          maxLength={200}
-          minLength={1}
-          className="min-h-full !border-0 focus:border-transparent text-white bg-transparent no-scrollbar"
-          disabled={!logged}
-          containerProps={{
-            className: "grid h-full",
-          }}
-          labelProps={{
-            className: "before:content-none after:content-none",
-          }}
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              postComment();
-            }
-          }}
-        />
-        <div>
-          <IconButton
-            variant="text"
-            className="rounded-full text-white"
-            onClick={postComment}
-            disabled={!logged}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="h-5 w-5"
+        <div className="flex w-full flex-row items-center gap-2">
+          <div className="flex w-4 min-w-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              id="image-upload"
+              disabled={!logged}
+            />
+            <label
+              htmlFor="image-upload"
+              className={"cursor-pointer " + (!logged && "opacity-50")}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+              <IconButton
+                variant="text"
+                className="rounded-full text-white"
+                type="button"
+                disabled={!logged}
+                onClick={() => {
+                  document.getElementById("image-upload").click();
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4.5v15m7.5-7.5h-15"
+                  />
+                </svg>
+              </IconButton>
+            </label>
+          </div>
+          <div className="flex-grow flex flex-col gap-4 justify-center items-center">
+            <Textarea
+              rows={1}
+              resize={true}
+              placeholder={logged ? "Comentar" : "Inicia sesión para comentar"}
+              maxLength={200}
+              minLength={1}
+              className="min-h-full !border-0 focus:border-transparent text-white bg-transparent no-scrollbar"
+              disabled={!logged}
+              containerProps={{
+                className: "grid h-full",
+              }}
+              labelProps={{
+                className: "before:content-none after:content-none",
+              }}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  postComment();
+                }
+              }}
+            />
+          </div>
+          <div>
+            <IconButton
+              variant="text"
+              className="rounded-full text-white"
+              onClick={postComment}
+              disabled={!logged}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="h-5 w-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                />
+              </svg>
+            </IconButton>
+          </div>
+        </div>
+        <div className="flex-grow flex flex-col gap-4 justify-center items-center">
+          {imagePreview && (
+            <div className="relative mt-2">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="max-h-32 rounded object-contain"
               />
-            </svg>
-          </IconButton>
+              <button
+                onClick={clearImage}
+                className="absolute top-1 right-1 bg-gray-800 rounded-full p-1 hover:bg-gray-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
+      <Dialog open={zoomImageDialogOpen} handler={() => setZoomImageDialogOpen(false)} size="xl">
+        <DialogHeader className="text-white bg-gray-900">Vista previa de imagen</DialogHeader>
+        <DialogBody className="flex justify-center bg-black">
+          <img
+            src={selectedZoomImage}
+            alt="Vista previa"
+            className="max-h-[80vh] max-w-full object-contain"
+          />
+        </DialogBody>
+        <DialogFooter className="bg-gray-900">
+          <Button
+            variant="text"
+            color="white"
+            onClick={() => setZoomImageDialogOpen(false)}
+            className="mr-1"
+          >
+            <span>Cerrar</span>
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </Card>
   );
 }
