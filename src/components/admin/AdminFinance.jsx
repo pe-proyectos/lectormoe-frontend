@@ -198,7 +198,7 @@ export function AdminFinance({ organization }) {
                 <Card>
                     <CardBody>
                         <Typography variant="h6" color="green">
-                            Gananado
+                            Ganado
                         </Typography>
                         <Typography variant="h4">
                             {formatCurrency(summary.totalEarnings)}
