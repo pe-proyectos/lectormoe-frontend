@@ -118,7 +118,6 @@ export function CommentsCard({ identifier, logged, user }) {
 
   const CommentListItem = ({ user, comment: initialCommentData }) => {
     const [comment, setComment] = useState(initialCommentData);
-    const [isBlurred, setIsBlurred] = useState(true);
     const [isVoting, setIsVoting] = useState(false);
 
     const userLike = Array.isArray(comment.likes)
@@ -279,14 +278,12 @@ export function CommentsCard({ identifier, logged, user }) {
           {comment.imageUrl && (
             <div
               className="flex w-full ml-[40px] my-2 p-4 cursor-pointer max-h-56 max-w-56 justify-center items-center"
-              onClick={() => isBlurred ? setIsBlurred(false) : (setSelectedZoomImage(comment.imageUrl), setZoomImageDialogOpen(true))}
+              onClick={() => (setSelectedZoomImage(comment.imageUrl), setZoomImageDialogOpen(true))}
             >
               <img
                 src={comment.imageUrl}
                 alt="Comment attachment"
-                className={`max-w-full h-auto rounded-lg transition-all duration-200 ${
-                  isBlurred ? "blur-lg" : ""
-                }`}
+                className={`max-w-full h-auto rounded-lg transition-all duration-200`}
               />
             </div>
           )}
