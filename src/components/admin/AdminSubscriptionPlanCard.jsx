@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     Button,
     Card,
@@ -53,13 +52,7 @@ export function AdminSubscriptionPlanCard({ organization, subscriptionPlan, onCl
                     {_("active_subscriptions")}
                 </Typography>
                 <Typography color="blue-gray" className="mb-2">
-                    {subscriptionPlan.subscriptions.filter(subscription => subscription.active).length}
-                </Typography>
-                <Typography color="black" className="font-bold">
-                    {_("inactive_subscriptions")}
-                </Typography>
-                <Typography color="blue-gray" className="mb-2">
-                    {subscriptionPlan.subscriptions.filter(subscription => !subscription.active).length}
+                    {subscriptionPlan.subscriptions.length}
                 </Typography>
                 <Button color="blue" className="mt-4" onClick={() => onClick(subscriptionPlan)}>
                     {_("edit")}

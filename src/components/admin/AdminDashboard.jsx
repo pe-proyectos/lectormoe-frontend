@@ -1,32 +1,11 @@
 import { useState, useEffect } from "react";
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import Chart from "react-apexcharts";
 import {
-    Textarea,
-    Button,
-    Dialog,
     Spinner,
-    DialogHeader,
-    DialogBody,
-    DialogFooter,
-    Card,
-    CardHeader,
-    CardBody,
-    CardFooter,
     Typography,
-    Input,
-    Checkbox,
-    Accordion,
-    AccordionHeader,
-    AccordionBody,
-    Switch,
 } from "@material-tailwind/react";
-import TextField from '@mui/material/TextField';
-import Box from '@mui/material/Box';
-import Autocomplete from '@mui/material/Autocomplete';
-import { DropzoneArea } from 'material-ui-dropzone';
 import { DatePicker } from '../DatePicker';
-import { ImageDropzone } from '../ImageDropzone';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 

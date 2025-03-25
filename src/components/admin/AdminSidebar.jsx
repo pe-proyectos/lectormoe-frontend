@@ -5,16 +5,9 @@ import {
     List,
     ListItem,
     ListItemPrefix,
-    ListItemSuffix,
-    Chip,
-    Accordion,
     Alert,
-    AccordionHeader,
-    AccordionBody,
 } from "@material-tailwind/react";
 import {
-    PresentationChartBarIcon,
-    ShoppingBagIcon,
     Cog6ToothIcon,
     CubeTransparentIcon,
     ServerStackIcon,
@@ -24,26 +17,14 @@ import {
     TicketIcon,
     InboxIcon,
     AcademicCapIcon,
-    PowerIcon,
+    BanknotesIcon,
 } from "@heroicons/react/24/solid";
-import {
-    UserCircleIcon,
-    ChartPieIcon,
-    ChevronRightIcon,
-    ChevronDownIcon
-} from "@heroicons/react/24/outline";
 import { getTranslator } from "../../util/translate";
 
 export function AdminSidebar({ organization, page }) {
     const _ = getTranslator(organization.language);
 
-    const initialOpen = (page === "analytics" || page === "users") ? 1 : 0;
-    const [open, setOpen] = React.useState(initialOpen);
     const [openAlert, setOpenAlert] = React.useState(true);
-
-    const handleOpen = (value) => {
-        setOpen(open === value ? 0 : value);
-    };
 
     return (
         <Card className="sticky top-[calc(5rem)] h-[calc(100vh-100px)] w-full max-w-[20rem] p-4 shadow-xl shadow-blue-gray-900/5">
@@ -103,6 +84,14 @@ export function AdminSidebar({ organization, page }) {
                             <TicketIcon className="h-5 w-5" />
                         </ListItemPrefix>
                         {_("subscription_plans")}
+                    </ListItem>
+                </a>
+                <a href="/admin/finance">
+                    <ListItem selected={page === "finance"}>
+                        <ListItemPrefix>
+                            <BanknotesIcon className="h-5 w-5" />
+                        </ListItemPrefix>
+                        {_("Finanzas")}
                     </ListItem>
                 </a>
                 <a href="/admin/storage">
