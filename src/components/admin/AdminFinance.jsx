@@ -37,10 +37,10 @@ export function AdminFinance({ organization }) {
 
     const calculateSummary = () => {
         const filteredTransactions = selectedMonth === 'all' 
-            ? transactions 
+            ? transactions.filter(t => t.status === 'COMPLETED')
             : transactions.filter(t => {
                 const date = new Date(t.transactionDate);
-                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` === selectedMonth;
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` === selectedMonth && t.status === 'COMPLETED';
             });
 
         const totalEarnings = filteredTransactions
@@ -81,10 +81,10 @@ export function AdminFinance({ organization }) {
 
     const getChartData = () => {
         const filteredTransactions = selectedMonth === 'all'
-            ? transactions
+            ? transactions.filter(t => t.status === 'COMPLETED')
             : transactions.filter(t => {
                 const date = new Date(t.transactionDate);
-                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` === selectedMonth;
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` === selectedMonth && t.status === 'COMPLETED';
             });
 
         const data = filteredTransactions.reduce((acc, transaction) => {
@@ -145,7 +145,6 @@ export function AdminFinance({ organization }) {
         setLoading(true);
         callAPI(`/api/transactions`)
             .then((data) => {
-                console.log(data);
                 setTransactions(data)
             })
             .catch(error => toast.error(error?.message || _('error_loading_transactions')))
@@ -257,6 +256,7 @@ export function AdminFinance({ organization }) {
                 <CardBody>
                     {!loading && transactions.length > 0 && (
                         <Chart
+                            // @ts-ignore
                             options={getChartData().options}
                             series={getChartData().series}
                             type="area"
