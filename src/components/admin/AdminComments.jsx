@@ -157,7 +157,7 @@ export function AdminComments({ organization }) {
                                                 </Typography>
                                             </td>
                                             <td className="p-4 border-b border-blue-gray-50">
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-col gap-2">
                                                     {!comment.hiddenAt && !comment.deletedAt && (
                                                         <>
                                                             <IconButton
