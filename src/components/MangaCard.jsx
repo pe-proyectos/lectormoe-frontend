@@ -100,14 +100,16 @@ export function MangaCard({ organization, manga }) {
         justify-between rounded-xl border border-white border-opacity-25 bg-white/70 py-1 px-2 shadow-lg shadow-black/5 saturate-200 backdrop-blur-sm"
                 >
                     <div>
-                        <Typography
-                            as='a'
-                            href={`/manga/${manga.slug}`}
-                            color="blue-gray"
-                            className="font-semibold hover:underline cursor-pointer"
-                        >
-                            {manga.title}
-                        </Typography>
+                        <Tooltip content={manga.title}>
+                            <Typography
+                                as='a'
+                                href={`/manga/${manga.slug}`}
+                                color="blue-gray"
+                                className="font-semibold hover:underline cursor-pointer"
+                            >
+                                {manga.title.length > 40 ? manga.title.slice(0, 40-3) + '...' : manga.title}
+                            </Typography>
+                        </Tooltip>
                     </div>
                     <div className='flex flex-wrap gap-2 justify-center'>
                         {manga?.lastChapters?.[0] && (
