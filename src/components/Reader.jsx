@@ -34,6 +34,7 @@ import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import { CommentsCard } from "./CommentsCard";
+import { XMarkIcon } from "@heroicons/react/24/solid";
 
 export function Reader({
   organization,
@@ -637,6 +638,14 @@ export function Reader({
             className: "fixed inset-0 bg-black/50",
           }}
         >
+          <div className="absolute top-6 right-8 z-10">
+            <button
+              onClick={() => setShowSideComments(false)}
+              className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
           <CommentsCard
             logged={logged}
             user={user}
