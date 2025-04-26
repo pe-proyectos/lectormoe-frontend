@@ -8,6 +8,7 @@ import {
   Accordion,
   AccordionBody,
   AccordionHeader,
+  Chip,
 } from "@material-tailwind/react";
 import {
   ArrowTopRightOnSquareIcon,
@@ -422,7 +423,7 @@ export function MangaView({ manga, organization, logged, user }) {
                   className="absolute inset-0 w-full h-full object-contain max-w-full max-h-full m-auto transition-transform duration-500 group-hover:scale-[104%]"
                 />
               </div>
-              <div className="w-full mt-6 mb-6">
+              <div className="flex flex-col gap-4 w-full mt-6 mb-6">
                 {isFavorite ? (
                   <Button
                     variant="filled"
@@ -469,6 +470,11 @@ export function MangaView({ manga, organization, logged, user }) {
                     </svg>
                     {_("add_to_favorites")}
                   </Button>
+                )}
+                {manga?.isSimulRelease && (
+                  <div className="w-fit uppercase text-xl font-bold bg-red-400 py-1 px-6 text-center rounded-lg shadow-sm mx-auto">
+                    {_("simulrelease")}
+                  </div>
                 )}
               </div>
               <div className="flex justify-between items-center my-4">

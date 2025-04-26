@@ -51,6 +51,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
     const [releasedDate, setReleasedDate] = useState(null);
     const [nextChapterDate, setNextChapterDate] = useState(null);
     const [requireLogin, setRequireLogin] = useState(false);
+    const [isSimulRelease, setIsSimulRelease] = useState(false);
     const [coverImageFile, setCoverImageFile] = useState(null);
     const [bannerImageFile, setBannerImageFile] = useState(null);
 
@@ -64,6 +65,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         setReleasedDate(mangaCustom?.releasedAt || null);
         setNextChapterDate(mangaCustom?.nextChapterAt || null);
         setRequireLogin(mangaCustom?.requireLogin || false);
+        setIsSimulRelease(mangaCustom?.isSimulRelease || false);
         setCoverImageFile(mangaCustom?.imageUrl || null);
         setBannerImageFile(mangaCustom?.bannerUrl || null);
         setSelectedGenres(mangaCustom?.genres || []);
@@ -81,6 +83,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
             setReleasedDate(null);
             setNextChapterDate(null);
             setRequireLogin(false);
+            setIsSimulRelease(false);
             setCoverImageFile(null);
             setBannerImageFile(null);
             setSelectedGenres([]);
@@ -144,6 +147,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
         if (releasedDate) formData.append('releasedAt', releasedDate);
         if (nextChapterDate) formData.append('nextChapterAt', nextChapterDate);
         if (requireLogin !== undefined) formData.append('requireLogin', requireLogin);
+        if (isSimulRelease !== undefined) formData.append('isSimulRelease', isSimulRelease);
         if (selectedGenres.length > 0) formData.append('genreIds', selectedGenres.map(genre => genre.id).join(','));
         if (selectedSubscriptionPlans.length > 0) formData.append('subscriptionPlanIds', selectedSubscriptionPlans.map(plan => plan.id).join(','));
         formData.append('image', coverImageFile);
@@ -164,6 +168,7 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                 setReleasedDate(null);
                 setNextChapterDate(null);
                 setRequireLogin(false);
+                setIsSimulRelease(false);
                 setCoverImageFile(null);
                 setBannerImageFile(null);
                 setSelectedGenres([]);
@@ -356,6 +361,14 @@ export function AdminMangaCustomDialog({ organization, open, setOpen, mangaCusto
                     value={nextChapterDate}
                     onChange={setNextChapterDate}
                     disabled={!mangaProfile}
+                />
+                <Typography className="-mb-2" variant="h6" color="gray">
+                    {_("Manga con simul release")}
+                </Typography>
+                <Checkbox
+                    label={_("SimulRelease")}
+                    checked={isSimulRelease}
+                    onChange={(e) => setIsSimulRelease(e.target.checked)}
                 />
                 <Typography className="-mb-2" variant="h6" color="gray">
                     {_("require_login")} ({_("optional")})
