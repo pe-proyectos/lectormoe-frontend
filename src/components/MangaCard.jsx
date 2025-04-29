@@ -116,11 +116,13 @@ export function MangaCard({ organization, manga }) {
                 </Tooltip>
               )}
             {manga?.isSimulRelease && (
-              <Chip
-                variant="outlined"
-                value={_("simulrelease")}
-                className="backdrop-blur-sm bg-gradient-to-r bg-red-500 bg-opacity-80 text-white"
-              />
+              <Tooltip content={_("simulrelease_tooltip")}>
+                <Chip
+                  variant="outlined"
+                  value={_("simulrelease")}
+                  className="backdrop-blur-sm bg-gradient-to-r bg-red-500 bg-opacity-80 text-white"
+                />
+              </Tooltip>
             )}
           </div>
         </div>

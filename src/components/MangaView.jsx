@@ -472,9 +472,11 @@ export function MangaView({ manga, organization, logged, user }) {
                   </Button>
                 )}
                 {manga?.isSimulRelease && (
-                  <div className="w-fit uppercase text-xl font-bold bg-red-400 py-1 px-6 text-center rounded-lg shadow-sm mx-auto">
-                    {_("simulrelease")}
-                  </div>
+                  <Tooltip content={_("simulrelease_tooltip")}>
+                    <div className="w-fit uppercase text-xl font-bold bg-red-400 py-1 px-6 text-center rounded-lg shadow-sm mx-auto">
+                      {_("simulrelease")}
+                    </div>
+                  </Tooltip>
                 )}
               </div>
               <div className="flex justify-between items-center my-4">

@@ -1,23 +1,31 @@
 export const translations: Record<string, string> = {
   login_to_read_published_chapter: "Login to read published chapter",
   require_login: "Require login",
-  require_login_description: "If enabled, the user will be required to login to read this chapter",
+  require_login_description:
+    "If enabled, the user will be required to login to read this chapter",
   login_to_read: "Login to read",
-  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Subscribe to one of these plans to read chapters early",
+  subscribe_now_to_one_of_these_plans_to_read_chapter_early:
+    "Subscribe to one of these plans to read chapters early",
   chapter_not_ready: "Chapter is not ready for reading",
   available_for_everyone_in: "Available for everyone in",
   early_access_for_subscribers: "Early access for subscribers",
   you_dont_have_access_to_this_chapter: "You don't have access to this chapter",
-  you_must_be_subscribed_to_read_this_chapter: "You must be subscribed to read this chapter",
-  you_must_be_logged_to_download_chapters: "You must be logged to download chapters",
-  you_must_be_subscribed_to_download_chapters: "You must be subscribed to download chapters",
-  your_subscription_doesnt_allow_chapter_downloads: "Your subscription doesn't allow chapter downloads",
+  you_must_be_subscribed_to_read_this_chapter:
+    "You must be subscribed to read this chapter",
+  you_must_be_logged_to_download_chapters:
+    "You must be logged to download chapters",
+  you_must_be_subscribed_to_download_chapters:
+    "You must be subscribed to download chapters",
+  your_subscription_doesnt_allow_chapter_downloads:
+    "Your subscription doesn't allow chapter downloads",
   getting_pages_from_chapter: "Getting pages from chapter",
   downloading_chapter: "Downloading chapter",
   you_must_be_logged_to_mark_as_read: "You must be logged to mark as read",
   you_must_be_logged_to_mark_as_unread: "You must be logged to mark as unread",
-  you_must_be_logged_to_add_to_favorites: "You must be logged to add to favorites",
-  you_must_be_logged_to_remove_from_favorites: "You must be logged to remove from favorites",
+  you_must_be_logged_to_add_to_favorites:
+    "You must be logged to add to favorites",
+  you_must_be_logged_to_remove_from_favorites:
+    "You must be logged to remove from favorites",
   added_to_favorites: "Added to favorites",
   removed_from_favorites: "Removed from favorites",
   add_to_favorites: "Add to favorites",
@@ -48,13 +56,16 @@ export const translations: Record<string, string> = {
   subscription_activated: "Subscription activated",
   active_subscriptions: "Active subscriptions",
   inactive_subscriptions: "Inactive subscriptions",
-  active_description: "If enabled, the subscription plan will be publicly available and not hidden",
+  active_description:
+    "If enabled, the subscription plan will be publicly available and not hidden",
   hide_ads: "Hide ads",
   hide_ads_descriptions: "If enabled, ads will be hidden from the user",
   can_download: "Can download any chapter",
-  can_download_descriptions: "If enabled, the user will be able to download any chapter from any manga",
+  can_download_descriptions:
+    "If enabled, the user will be able to download any chapter from any manga",
   can_read_unreleased: "Can read any unreleased chapter",
-  can_read_unreleased_descriptions: "If enabled, the user will be able to read any unreleased chapter from any manga before the release date",
+  can_read_unreleased_descriptions:
+    "If enabled, the user will be able to read any unreleased chapter from any manga before the release date",
   search_title: "Search",
   manga_search_description:
     "Explore all the manga available on our platform. You can search by name or browse through the available categories.",
@@ -221,7 +232,7 @@ export const translations: Record<string, string> = {
   manga_search_views: "Manga Search Views",
   login_views: "Login Views",
   register_views: "Register Views",
-  seen:"Seen",
+  seen: "Seen",
   manga_searches: "Manga Searches",
   chapter_reads: "Chapter Reads",
   logins: "Logins",
@@ -344,6 +355,8 @@ export const translations: Record<string, string> = {
   enable_adsterra_ads: "Enable Adsterra Ads",
   comments: "Comments",
   social: "Social",
+  simulrelease_tooltip:
+    "This manga is a simulrelease, with chapters released at the same time as in Japan.",
   facebook_url: "Facebook URL",
   twitter_url: "Twitter URL",
   instagram_url: "Instagram URL",
@@ -368,7 +381,8 @@ export const translations: Record<string, string> = {
   dashboard: "Dashboard",
   subscription_plans_text: "Access exclusive content and forget about ads!",
   subscription_plans_subtext: "Buy a subscription to support the scan",
-  subscription_plans_patreon: "You can also subscribe from Patreon by clicking here",
+  subscription_plans_patreon:
+    "You can also subscribe from Patreon by clicking here",
   available: "Available",
   read: "Read",
   keep_reading: "Keep reading",
@@ -465,10 +479,12 @@ export const translations: Record<string, string> = {
   countries: "Countries",
   use_allowed_countries: "Use allowed countries",
   enable_allowed_countries_whitelist: "Enable allowed countries whitelist",
-  warning_use_allowed_countries: "Warning: This will allow only the selected countries to access your content and will increase your server load times.",
+  warning_use_allowed_countries:
+    "Warning: This will allow only the selected countries to access your content and will increase your server load times.",
   use_blocked_countries: "Use blocked countries",
   enable_blocked_countries_whitelist: "Enable blocked countries whitelist",
-  warning_use_blocked_countries: "Warning: This will block all the selected countries from accessing your content and will increase your server load times.",
+  warning_use_blocked_countries:
+    "Warning: This will block all the selected countries from accessing your content and will increase your server load times.",
   add_country: "Add country",
   country_name: "Country name",
   country_language: "Country language",

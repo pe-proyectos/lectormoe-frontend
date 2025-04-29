@@ -1,23 +1,34 @@
 export const translations: Record<string, string> = {
-  login_to_read_published_chapter: "Inicia sesión para leer los capítulos publicados",
+  login_to_read_published_chapter:
+    "Inicia sesión para leer los capítulos publicados",
   require_login: "Requiere inicio de sesión",
-  require_login_description: "Si se activa, el usuario deberá iniciar sesión para leer este capítulo",
+  require_login_description:
+    "Si se activa, el usuario deberá iniciar sesión para leer este capítulo",
   login_to_read: "Inicia sesión para leer",
-  subscribe_now_to_one_of_these_plans_to_read_chapter_early: "Suscríbete a uno de estos planes para leer los capítulos antes de tiempo",
+  subscribe_now_to_one_of_these_plans_to_read_chapter_early:
+    "Suscríbete a uno de estos planes para leer los capítulos antes de tiempo",
   chapter_not_ready: "El capítulo aun no esta disponible",
   available_for_everyone_in: "Disponible para todos: ",
   early_access_for_subscribers: "Acceso anticipado para suscriptores",
   you_dont_have_access_to_this_chapter: "No tienes acceso a este capítulo",
-  you_must_be_subscribed_to_read_this_chapter: "Debes estar suscrito para leer este capítulo",
-  you_must_be_logged_to_download_chapters: "Debes estar logeado para descargar capítulos",
-  you_must_be_subscribed_to_download_chapters: "Debes estar suscrito para descargar capítulos",
-  your_subscription_doesnt_allow_chapter_downloads: "Tu suscripción no permite descargas de capítulos",
+  you_must_be_subscribed_to_read_this_chapter:
+    "Debes estar suscrito para leer este capítulo",
+  you_must_be_logged_to_download_chapters:
+    "Debes estar logeado para descargar capítulos",
+  you_must_be_subscribed_to_download_chapters:
+    "Debes estar suscrito para descargar capítulos",
+  your_subscription_doesnt_allow_chapter_downloads:
+    "Tu suscripción no permite descargas de capítulos",
   getting_pages_from_chapter: "Obteniendo paginas del capitulo",
   downloading_chapter: "Descargando capitulo",
-  you_must_be_logged_to_mark_as_read: "Debes estar logeado para marcar como leído",
-  you_must_be_logged_to_mark_as_unread: "Debes estar logeado para marcar como no leído",
-  you_must_be_logged_to_add_to_favorites: "Debes estar logeado para añadir a favoritos",
-  you_must_be_logged_to_remove_from_favorites: "Debes estar logeado para eliminar de favoritos",
+  you_must_be_logged_to_mark_as_read:
+    "Debes estar logeado para marcar como leído",
+  you_must_be_logged_to_mark_as_unread:
+    "Debes estar logeado para marcar como no leído",
+  you_must_be_logged_to_add_to_favorites:
+    "Debes estar logeado para añadir a favoritos",
+  you_must_be_logged_to_remove_from_favorites:
+    "Debes estar logeado para eliminar de favoritos",
   added_to_favorites: "Añadido a favoritos",
   removed_from_favorites: "Eliminado de favoritos",
   add_to_favorites: "Añadir a favoritos",
@@ -48,13 +59,17 @@ export const translations: Record<string, string> = {
   subscription_activated: "Suscripción activada",
   active_subscriptions: "Suscripciones activas",
   inactive_subscriptions: "Suscripciones inactivas",
-  active_description: "Si se activa, el plan será publicamente visible y no oculto",
+  active_description:
+    "Si se activa, el plan será publicamente visible y no oculto",
   hide_ads: "Ocultar anuncios",
-  hide_ads_descriptions: "Si se activa, los anuncios serán ocultados para el usuario",
+  hide_ads_descriptions:
+    "Si se activa, los anuncios serán ocultados para el usuario",
   can_download: "Puede descargar cualquier capítulo",
-  can_download_descriptions: "Si se activa, el usuario podrá descargar cualquier capítulo de cualquier manga",
+  can_download_descriptions:
+    "Si se activa, el usuario podrá descargar cualquier capítulo de cualquier manga",
   can_read_unreleased: "Puede leer cualquier capítulo sin publicar",
-  can_read_unreleased_descriptions: "Si se activa, el usuario podrá leer cualquier capítulo sin publicar de cualquier manga antes de la fecha de salida",
+  can_read_unreleased_descriptions:
+    "Si se activa, el usuario podrá leer cualquier capítulo sin publicar de cualquier manga antes de la fecha de salida",
   search_title: "Buscador",
   manga_search_description:
     "Explora todos los mangas disponibles en nuestra plataforma. Puedes buscar por nombre o navegar por las categorías disponibles.",
@@ -222,7 +237,7 @@ export const translations: Record<string, string> = {
   manga_search_views: "Vistas del Buscador de Mangas",
   login_views: "Vistas del Login",
   register_views: "Vistas del Registro",
-  seen:"Visto",
+  seen: "Visto",
   manga_searches: "Busquedas de mangas",
   chapter_reads: "Lecturas de Cápitulos",
   logins: "Inicios de Sesión",
@@ -344,6 +359,8 @@ export const translations: Record<string, string> = {
   ads: "Anuncios",
   enable_google_ads: "Activar anuncios de Google Ads",
   enable_adsterra_ads: "Activar anuncios de Adsterra",
+  simulrelease_tooltip:
+    "Este manga es un simulrelease, con capítulos publicados al mismo tiempo que en Japón.",
   comments: "Comentarios",
   social: "Social",
   facebook_url: "URL a Facebook",
@@ -368,9 +385,12 @@ export const translations: Record<string, string> = {
   organization: "Organización",
   analytics: "Estadísticas",
   dashboard: "Dashboard",
-  subscription_plans_text: "¡Accede a contenido exclusivo y olvidate de los anuncios!",
-  subscription_plans_subtext: "Compra un plan de suscripción para apoyar al scan",
-  subscription_plans_patreon: "Tambien puedes suscribirte desde Patreon haciendo click aqui",
+  subscription_plans_text:
+    "¡Accede a contenido exclusivo y olvidate de los anuncios!",
+  subscription_plans_subtext:
+    "Compra un plan de suscripción para apoyar al scan",
+  subscription_plans_patreon:
+    "Tambien puedes suscribirte desde Patreon haciendo click aqui",
   available: "Disponible",
   read: "Leer",
   keep_reading: "Continuar leyendo",
@@ -466,11 +486,15 @@ export const translations: Record<string, string> = {
   next_chapter_will_be_released_in: "El próximo capítulo se publicará",
   countries: "Países",
   use_allowed_countries: "Usar países permitidos",
-  enable_allowed_countries_whitelist: "Habilitar lista blanca de países permitidos",
-  warning_use_allowed_countries: "Advertencia: Esto permitirá que solo los países seleccionados accedan a su contenido y aumentará los tiempos de carga de su servidor.",
+  enable_allowed_countries_whitelist:
+    "Habilitar lista blanca de países permitidos",
+  warning_use_allowed_countries:
+    "Advertencia: Esto permitirá que solo los países seleccionados accedan a su contenido y aumentará los tiempos de carga de su servidor.",
   use_blocked_countries: "Usar países bloqueados",
-  enable_blocked_countries_whitelist: "Habilitar lista blanca de países bloqueados",
-  warning_use_blocked_countries: "Advertencia: Esto bloqueará todos los países seleccionados para que no accedan a su contenido y aumentará los tiempos de carga de su servidor.",
+  enable_blocked_countries_whitelist:
+    "Habilitar lista blanca de países bloqueados",
+  warning_use_blocked_countries:
+    "Advertencia: Esto bloqueará todos los países seleccionados para que no accedan a su contenido y aumentará los tiempos de carga de su servidor.",
   add_country: "Agregar país",
   country_name: "Nombre del país",
   country_language: "Idioma del país",
