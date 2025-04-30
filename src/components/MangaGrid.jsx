@@ -13,6 +13,7 @@ import { FeaturedMangaCard } from "./FeaturedMangaCard";
 import { MangaCard } from "./MangaCard";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
+import { MangaSlider } from "./MangaSlider";
 
 export function MangaGrid({
   organization,
@@ -33,7 +34,6 @@ export function MangaGrid({
   const [userChapterHistoryTotal, setUserChapterHistoryTotal] = useState([]);
   const [showAllChapterHistoryList, setShowAllChapterHistoryList] =
     useState(false);
-  const [sliderMangas, setSliderMangas] = useState([]);
 
   useEffect(() => {
     refreshUserChapterHistory();
@@ -42,7 +42,6 @@ export function MangaGrid({
     callAPI(`/api/manga-custom?order=latest&limit=9`)
       .then(({ data }) => {
         setMangaLatestList(data);
-        setSliderMangas(data.slice(0, 5));
       })
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoadingLatest(false));
@@ -105,60 +104,6 @@ export function MangaGrid({
 
   return (
     <div className="2xl:max-w-[1320px] 2xl:mx-auto transition-all duration-500">
-      {/* Main slider */}
-      {organization.enableMainSlider && sliderMangas.length > 0 && (
-        <div className="left-0 top-0 mt-8 h-[36rem] w-full">
-          <Carousel
-            className="no-scrollbar rounded-md"
-            nextArrow={null}
-            prevArrow={null}
-            autoplay={true}
-            autoplayDelay={15000}
-            loop={true}
-          >
-            {sliderMangas.map((manga, index) => (
-              <div key={manga.id}>
-                <div className="relative w-full h-full">
-                  <div className="relative">
-                    <img
-                      src={manga.bannerUrl || manga.imageUrl}
-                      alt={`Popular Manga ${index + 1}`}
-                      className="h-[36rem] w-full object-cover object-center"
-                    />
-                    <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent"></div>
-                  </div>
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center p-4">
-                    <Typography className="font-semibold text-white text-4xl text-center">
-                      {manga.title || ""}
-                    </Typography>
-                    <Typography className="hidden md:block font-normal text-white text-lg text-center mt-2">
-                      {manga.shortDescription || ""}
-                    </Typography>
-                    <div className="flex flex-wrap justify-center mt-4">
-                      {(manga.genres || []).map((genre) => (
-                        <Chip
-                          key={genre.id}
-                          value={genre.name}
-                          className="m-1"
-                        />
-                      ))}
-                    </div>
-                    <Button
-                      color="blue"
-                      className="mt-4 z-40"
-                      onClick={() =>
-                        (window.location.href = `/manga/${manga.slug}`)
-                      }
-                    >
-                      {_("read_now")}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </Carousel>
-        </div>
-      )}
       {/* Main banner */}
       {organization.enableMainBanner && (
         <div className="relative h-80 w-full mt-8 mb-16 2xl:rounded-lg overflow-hidden">
