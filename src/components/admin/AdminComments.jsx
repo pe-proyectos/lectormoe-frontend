@@ -18,8 +18,8 @@ import {
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminComments({ organization }) {
-    const _ = getTranslator(organization.language);
+export function AdminComments({ language }) {
+    const _ = getTranslator(language);
 
     const [loading, setLoading] = useState(true);
     const [comments, setComments] = useState([]);

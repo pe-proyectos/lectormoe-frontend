@@ -4,8 +4,8 @@ import { Reader } from "../../../../components/Reader";
 import { getTranslator } from "../../../../util/translate";
 
 const { mangaSlug, chapterNumber } = Astro.params;
-const { organization, callAPI, logged, user } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { language, callAPI, logged, user } = Astro.locals;
+const _ = getTranslator(language);
 
 const [
   { status: mangaStatus, data: manga },
@@ -68,9 +68,8 @@ if (!userHasAccessToChapter(chapter)) {
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
   staticNavbar={true}
 >
-
   <Reader
-    organization={organization}
+    language={language}
     manga={manga}
     chapter={chapter}
     chapterNumber={chapterNumber}

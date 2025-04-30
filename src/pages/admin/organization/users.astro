@@ -1,10 +1,10 @@
 ---
-import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { AdminSidebar } from '../../../components/admin/AdminSidebar';
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { AdminSidebar } from "../../../components/admin/AdminSidebar";
 import { getTranslator } from "../../../util/translate";
 
-const { organization } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { language } = Astro.locals;
+const _ = getTranslator(language);
 
 if (!Astro.locals.logged) {
   Astro.redirect("/login");
@@ -12,6 +12,5 @@ if (!Astro.locals.logged) {
 ---
 
 <AdminLayout title={_("admin_users_title")} page="users">
-    <AdminSidebar organization={organization} page="users" client:only="react"/>
+  <AdminSidebar language={language} page="users" client:only="react" />
 </AdminLayout>
-

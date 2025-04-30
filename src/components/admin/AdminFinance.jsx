@@ -13,8 +13,8 @@ import Chart from "react-apexcharts";
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminFinance({ organization }) {
-    const _ = getTranslator(organization.language);
+export function AdminFinance({ language }) {
+    const _ = getTranslator(language);
 
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState([]);

@@ -2,7 +2,6 @@ import {
   Card,
   CardHeader,
   CardBody,
-  CardFooter,
   Typography,
   Chip,
   Tooltip,
@@ -10,8 +9,8 @@ import {
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
-export function MangaCard({ organization, manga }) {
-  const _ = getTranslator(organization.language);
+export function MangaCard({ organization, language, manga }) {
+  const _ = getTranslator(language);
 
   if (!manga) {
     return (
@@ -26,7 +25,7 @@ export function MangaCard({ organization, manga }) {
   const formatDate = (date) => {
     if (!date) return "";
     const dt = new Date(date);
-    const diff = new Date() - dt;
+    const diff = new Date().getTime() - dt.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);

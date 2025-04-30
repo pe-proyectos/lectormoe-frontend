@@ -24,8 +24,8 @@ import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import { CommentsCard } from "./CommentsCard";
 
-export function MangaView({ manga, organization, logged, user }) {
-  const _ = getTranslator(organization.language);
+export function MangaView({ manga, organization, language, logged, user }) {
+  const _ = getTranslator(language);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [chapterGroups, setChapterGroups] = useState({});

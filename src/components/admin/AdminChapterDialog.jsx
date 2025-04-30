@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import {
-    Textarea,
     Button,
     Dialog,
     Spinner,
@@ -9,28 +8,19 @@ import {
     DialogBody,
     DialogFooter,
     Card,
-    CardHeader,
-    CardBody,
     Switch,
-    Select,
-    Option,
     CardFooter,
     Typography,
     IconButton,
     Input,
-    Checkbox,
 } from "@material-tailwind/react";
-import TextField from '@mui/material/TextField';
-import Box from '@mui/material/Box';
-import Autocomplete from '@mui/material/Autocomplete';
 import { DropzoneArea } from 'material-ui-dropzone';
-import { DatePicker } from '../DatePicker';
 import { ImageDropzone } from '../ImageDropzone';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminChapterDialog({ organization, open, setOpen, mangaCustom, chapter }) {
-    const _ = getTranslator(organization.language);
+export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapter }) {
+    const _ = getTranslator(language);
 
     // dialog
     const [loading, setLoading] = useState(true);

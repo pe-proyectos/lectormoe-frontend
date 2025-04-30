@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import { MangaGrid } from "../components/MangaGrid.jsx";
 
-const { organization, user, logged, callAPI } = Astro.locals;
+const { organization, language, logged, callAPI } = Astro.locals;
 
 async function getSubscriptionPlans() {
 	try {
@@ -20,7 +20,7 @@ const subscriptionPlans = await getSubscriptionPlans();
 <Layout>
 	<MangaGrid
 		organization={organization}
-		user={user}
+		language={language}
 		logged={logged}
 		subscriptionPlans={subscriptionPlans}
 		client:only="react"

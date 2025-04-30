@@ -63,6 +63,7 @@ interface Window {
 declare namespace App {
     interface Locals {
         theme: 'light' | 'black',
+        language: 'es' | 'en',
         token: string | undefined,
         username: string | undefined,
         userSlug: string | undefined,
@@ -121,6 +122,7 @@ declare namespace App {
                     active: boolean,
                     canReadUnreleased: boolean,
                     canDownload: boolean,
+                    hideAds: boolean,
                 },
             }[],
         },

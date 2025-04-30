@@ -1,11 +1,10 @@
-import React from "react";
 import { getTranslator } from "../util/translate";
 import {
     TrashIcon,
 } from "@heroicons/react/24/outline";
 
-export function DialogDatePicker({ organization, value, onChange, ...props }) {
-  const _ = getTranslator(organization.language);
+export function DialogDatePicker({ organization, language, value, onChange, ...props }) {
+  const _ = getTranslator(language);
 
   const format = (date, format) => {
     const dt = new Date(date);
@@ -36,7 +35,6 @@ export function DialogDatePicker({ organization, value, onChange, ...props }) {
     <div className="flex gap-2 items-center">
       <input
         type="datetime-local"
-        organization={organization}
         value={value ? format(value, "yyyy-MM-ddTHH:mm") : ""}
         onChange={(e) => onChange(new Date(e.target.value))}
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"

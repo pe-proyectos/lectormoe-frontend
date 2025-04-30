@@ -3,33 +3,38 @@ import Layout from "../layouts/Layout.astro";
 import { Subscriptions as SubscriptionsComponent } from "../components/Subscriptions.jsx";
 import { getTranslator } from "../util/translate";
 
-const { organization, user, logged, callAPI } = Astro.locals;
+const { organization, language, user, logged, callAPI } = Astro.locals;
 const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID;
 
-const _ = getTranslator(organization.language);
+const _ = getTranslator(language);
 
-const { status: subscriptionPlansStatus, data: subscriptionPlansData } = await callAPI(`/api/subscription-plan`);
+const { status: subscriptionPlansStatus, data: subscriptionPlansData } =
+  await callAPI(`/api/subscription-plan`);
 
 if (!subscriptionPlansStatus) {
-    return Astro.redirect('/404');
+  return Astro.redirect("/404");
 }
 
 const url = new URL(Astro.request.url);
 const params = new URLSearchParams(url.search);
 const { mangaSlug, chapterNumber } = Object.fromEntries(params.entries());
 
-const { data: manga } = mangaSlug && chapterNumber ? await callAPI(`/api/manga-custom/${mangaSlug}`) : { data: null };
+const { data: manga } =
+  mangaSlug && chapterNumber
+    ? await callAPI(`/api/manga-custom/${mangaSlug}`)
+    : { data: null };
 ---
 
 <Layout title={_("subscriptions_title")} showAds={false}>
-	<SubscriptionsComponent
-        organization={organization}
-        user={user}
-        logged={logged}
-        subscriptionPlansData={subscriptionPlansData.data}
-        paypalClientId={paypalClientId}
-        manga={manga}
-        chapterNumber={chapterNumber ? parseInt(chapterNumber) : null}
-        client:only="react"
-    />
+  <SubscriptionsComponent
+    organization={organization}
+    language={language}
+    user={user}
+    logged={logged}
+    subscriptionPlansData={subscriptionPlansData.data}
+    paypalClientId={paypalClientId}
+    manga={manga}
+    chapterNumber={chapterNumber ? parseInt(chapterNumber) : null}
+    client:only="react"
+  />
 </Layout>

@@ -4,13 +4,16 @@ import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcr
 import { AdminSubscriptionPlanGrid } from "../../components/admin/AdminSubscriptionPlanGrid.jsx";
 import { getTranslator } from "../../util/translate";
 
-const { organization } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { language } = Astro.locals;
+const _ = getTranslator(language);
 ---
 
-<AdminLayout title={_("admin_subscription_plan_title")} page="subscription-plans">
-  <AdminMangasBreadcrumb organization={organization} client:only="react"/>
+<AdminLayout
+  title={_("admin_subscription_plan_title")}
+  page="subscription-plans"
+>
+  <AdminMangasBreadcrumb language={language} client:only="react" />
   <div class="py-2"></div>
   <h1>{_("admin_subscription_plan_title")}</h1>
-  <AdminSubscriptionPlanGrid organization={organization} client:only="react"/>
+  <AdminSubscriptionPlanGrid language={language} client:only="react" />
 </AdminLayout>

@@ -3,12 +3,16 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 import { AdminUserGrid } from "../../components/admin/AdminUserGrid";
 import { getTranslator } from "../../util/translate";
 
-const { organization, callAPI } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { language, callAPI } = Astro.locals;
+const _ = getTranslator(language);
 
 const { data: subscriptionPlansData } = await callAPI(`/api/subscription-plan`);
 ---
 
 <AdminLayout title={_("admin_users_title")} page="users">
-  <AdminUserGrid organization={organization} subscriptionPlans={subscriptionPlansData.data} client:only="react"/>
+  <AdminUserGrid
+    language={language}
+    subscriptionPlans={subscriptionPlansData.data}
+    client:only="react"
+  />
 </AdminLayout>

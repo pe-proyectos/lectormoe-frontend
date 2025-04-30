@@ -22,8 +22,8 @@ import {
 } from "@heroicons/react/24/solid";
 import { getTranslator } from "../../util/translate";
 
-export function AdminSidebar({ organization, page }) {
-  const _ = getTranslator(organization.language);
+export function AdminSidebar({ language, page }) {
+  const _ = getTranslator(language);
 
   const [openAlert, setOpenAlert] = React.useState(true);
 

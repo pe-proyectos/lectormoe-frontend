@@ -1,16 +1,13 @@
-import React from 'react';
 import {
     Card,
     CardHeader,
     CardBody,
-    CardFooter,
     Typography,
-    Button,
 } from "@material-tailwind/react";
 import { getTranslator } from "../../util/translate";
 
-export function AdminAuthorCard({ organization, name, imageUrl, shortDescription, description }) {
-    const _ = getTranslator(organization.language);
+export function AdminAuthorCard({ language, name, imageUrl, shortDescription }) {
+    const _ = getTranslator(language);
 
     return (
         <Card className="w-56">

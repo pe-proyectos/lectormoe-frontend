@@ -1,23 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Navbar,
   Collapse,
   Typography,
   Button,
   IconButton,
-  Card,
   Menu,
   MenuHandler,
   MenuList,
   Input,
   MenuItem,
 } from "@material-tailwind/react";
-import {
-  BellIcon,
-  Cog6ToothIcon,
-  UserIcon,
-  SparklesIcon,
-} from "@heroicons/react/24/solid";
+import { BellIcon, UserIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { callAPI } from "../util/callApi";
@@ -28,8 +22,9 @@ export function StickyNavbar({
   userSlug,
   user,
   staticNavbar,
+  language,
 }) {
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -192,6 +187,37 @@ export function StickyNavbar({
             <IconButton variant="text" color="white">
               <BellIcon className="h-4 w-4" />
             </IconButton>
+            <Menu>
+              <MenuHandler>
+                <IconButton variant="text" color="white">
+                  <Typography variant="small" className="font-normal">
+                    {language?.toUpperCase()}
+                  </Typography>
+                </IconButton>
+              </MenuHandler>
+              <MenuList>
+                <MenuItem
+                  className={language === "en" ? "bg-gray-500 text-white" : ""}
+                  onClick={() => {
+                    cookieStore.set("language", "en").finally(() => {
+                      window.location.href = `?lang=en`;
+                    });
+                  }}
+                >
+                  {_("english")}
+                </MenuItem>
+                <MenuItem
+                  className={language === "es" ? "bg-gray-500 text-white" : ""}
+                  onClick={() => {
+                    cookieStore.set("language", "es").finally(() => {
+                      window.location.href = `?lang=es`;
+                    });
+                  }}
+                >
+                  {_("spanish")}
+                </MenuItem>
+              </MenuList>
+            </Menu>
             <div>
               {username ? (
                 <Menu>

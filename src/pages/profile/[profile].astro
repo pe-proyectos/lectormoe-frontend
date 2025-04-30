@@ -1,16 +1,21 @@
 ---
-import { ProfileView } from '../../components/ProfileView';
-import Layout from '../../layouts/Layout.astro';
+import { ProfileView } from "../../components/ProfileView";
+import Layout from "../../layouts/Layout.astro";
 import { getTranslator } from "../../util/translate";
 
-const { organization, user, logged, userSlug, username } = Astro.locals;
+const { language, user, logged, username } = Astro.locals;
 
-const _ = getTranslator(organization.language);
+const _ = getTranslator(language);
 if (!logged) {
   Astro.redirect("/login");
 }
 ---
 
 <Layout title={_("my_profile")}>
-	<ProfileView organization={organization} user={user} userSlug={userSlug} username={username} client:only="react"/>
+  <ProfileView
+    language={language}
+    user={user}
+    username={username}
+    client:only="react"
+  />
 </Layout>

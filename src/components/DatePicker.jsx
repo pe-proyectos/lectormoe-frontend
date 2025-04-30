@@ -1,4 +1,3 @@
-import React from "react";
 import {
     Input,
     Popover,
@@ -10,8 +9,8 @@ import { DayPicker } from "react-day-picker";
 import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { getTranslator } from "../util/translate";
 
-export function DatePicker({ organization, value, onChange }) {
-  const _ = getTranslator(organization.language);
+export function DatePicker({ language, value, onChange, disabled }) {
+  const _ = getTranslator(language);
 
   return (
     <div className="p-0">
@@ -21,6 +20,7 @@ export function DatePicker({ organization, value, onChange }) {
             label={_("select_a_date")}
             onChange={() => null}
             value={value ? format(value, "yyyy-MM-dd") : ""}
+            disabled={disabled}
           />
         </PopoverHandler>
         <PopoverContent>

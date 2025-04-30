@@ -15,15 +15,8 @@ import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 import { ImageDropzone } from "../ImageDropzone";
 
-export function AdminUserDialog({
-  organization,
-  open,
-  setOpen,
-  user,
-  setUser,
-  subscriptionPlans,
-}) {
-  const _ = getTranslator(organization.language);
+export function AdminUserDialog({ language, open, setOpen, user, setUser }) {
+  const _ = getTranslator(language);
 
   // dialog
   const [loading, setLoading] = useState(false);
@@ -103,7 +96,7 @@ export function AdminUserDialog({
     }
     const formData = new FormData();
     formData.append("role", role);
-    formData.append("hierarchyLevel", hierarchyLevel);
+    formData.append("hierarchyLevel", hierarchyLevel.toString());
     if (description) formData.append("description", description);
     formData.append("image", imageFile);
     // Append permissions to formData
@@ -487,7 +480,10 @@ export function AdminUserDialog({
             label={_("can_delete_comment")}
             checked={permissions.canDeleteComment}
             onChange={(e) =>
-              setPermissions({ ...permissions, canDeleteComment: e.target.checked })
+              setPermissions({
+                ...permissions,
+                canDeleteComment: e.target.checked,
+              })
             }
           />
           <Checkbox
@@ -508,7 +504,10 @@ export function AdminUserDialog({
             label={_("can_read_unreleased")}
             checked={permissions.canReadUnreleased}
             onChange={(e) =>
-              setPermissions({ ...permissions, canReadUnreleased: e.target.checked })
+              setPermissions({
+                ...permissions,
+                canReadUnreleased: e.target.checked,
+              })
             }
           />
         </div>
@@ -564,23 +563,27 @@ export function AdminUserDialog({
                   ID de la suscripción: {subscription.id}
                 </p>
                 {subscription.active ? (
-                    <Button
-                        className="my-2"
-                        variant="outlined"
+                  <Button
+                    className="my-2"
+                    variant="outlined"
                     size="sm"
-                    onClick={() => handleDeactivateSubscription(subscription.id, user.id)}
-                >
-                        Desactivar suscripción
-                    </Button>
+                    onClick={() =>
+                      handleDeactivateSubscription(subscription.id, user.id)
+                    }
+                  >
+                    Desactivar suscripción
+                  </Button>
                 ) : (
-                    <Button
-                        className="my-2"
-                        variant="outlined"
-                        size="sm"
-                        onClick={() => handleActivateSubscription(subscription.id, user.id)}
-                >
+                  <Button
+                    className="my-2"
+                    variant="outlined"
+                    size="sm"
+                    onClick={() =>
+                      handleActivateSubscription(subscription.id, user.id)
+                    }
+                  >
                     Activar suscripción
-                    </Button>
+                  </Button>
                 )}
               </li>
             ))}

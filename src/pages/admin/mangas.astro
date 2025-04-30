@@ -4,12 +4,16 @@ import { AdminMangasBreadcrumb } from "../../components/admin/AdminMangasBreadcr
 import { AdminMangaCustomGrid } from "../../components/admin/AdminMangaCustomGrid.jsx";
 import { getTranslator } from "../../util/translate";
 
-const { organization } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { organization, language } = Astro.locals;
+const _ = getTranslator(language);
 ---
 
 <AdminLayout title={_("admin_books_title")} page="mangas">
-  <AdminMangasBreadcrumb organization={organization} client:only="react"/>
+  <AdminMangasBreadcrumb language={language} client:only="react" />
   <div class="py-2"></div>
-  <AdminMangaCustomGrid organization={organization} client:only="react"/>
+  <AdminMangaCustomGrid
+    organization={organization}
+    language={language}
+    client:only="react"
+  />
 </AdminLayout>

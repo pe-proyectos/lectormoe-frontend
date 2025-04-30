@@ -1,132 +1,150 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import {
-    Alert,
-    Spinner,
-    Typography,
-    IconButton,
-    Button,
+  Alert,
+  Spinner,
+  Typography,
+  IconButton,
+  Button,
 } from "@material-tailwind/react";
-import {
-    ArrowLeftIcon,
-    ArrowRightIcon,
-} from "@heroicons/react/24/solid";
-import { AdminMangaCustomCard } from './AdminMangaCustomCard';
-import { AdminMangaCustomDialog } from './AdminMangaCustomDialog';
-import { callAPI } from '../../util/callApi';
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/solid";
+import { AdminMangaCustomCard } from "./AdminMangaCustomCard";
+import { AdminMangaCustomDialog } from "./AdminMangaCustomDialog";
+import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomGrid({ organization }) {
-    const _ = getTranslator(organization.language);
+export function AdminMangaCustomGrid({ organization, language }) {
+  const _ = getTranslator(language);
 
-    const [loading, setLoading] = useState(true);
-    const [mangaList, setMangaList] = useState([]);
-    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
-    const [page, setPage] = useState(1);
-    const [maxPage, setMaxPage] = useState(1);
-    const [selectedManga, setSelectedManga] = useState(null);
-    const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [mangaList, setMangaList] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [page, setPage] = useState(1);
+  const [maxPage, setMaxPage] = useState(1);
+  const [selectedManga, setSelectedManga] = useState(null);
+  const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] =
+    useState(false);
 
-    useEffect(() => {
-        refreshMangaProfile();
-        refreshSubscriptionPlans();
-    }, [page]);
+  useEffect(() => {
+    refreshMangaProfile();
+    refreshSubscriptionPlans();
+  }, [page]);
 
-    useEffect(() => {
-        if (!isCreateMangaCustomDialogOpen) refreshMangaProfile();
-    }, [isCreateMangaCustomDialogOpen]);
+  useEffect(() => {
+    if (!isCreateMangaCustomDialogOpen) refreshMangaProfile();
+  }, [isCreateMangaCustomDialogOpen]);
 
-    const refreshMangaProfile = () => {
-        setLoading(true);
-        const query = new URLSearchParams({
-            page,
-            limit: 20,
-        });
-        callAPI(`/api/manga-custom?${query}`)
-            .then(({ data, maxPage }) => {
-                setMangaList(data);
-                setMaxPage(maxPage);
-            })
-            .catch(error => toast.error(error?.message))
-            .finally(() => setLoading(false));
-    }
+  const refreshMangaProfile = () => {
+    setLoading(true);
+    const query = new URLSearchParams({
+      page,
+      limit: 20,
+    });
+    callAPI(`/api/manga-custom?${query}`)
+      .then(({ data, maxPage }) => {
+        setMangaList(data);
+        setMaxPage(maxPage);
+      })
+      .catch((error) => toast.error(error?.message))
+      .finally(() => setLoading(false));
+  };
 
-    const refreshSubscriptionPlans = () => {
-        return callAPI(`/api/subscription-plan`)
-            .then(({ data }) => setSubscriptionPlans(data))
-            .catch(error => toast.error(error?.message || _('error_loading_subscription_plans')));
-    };
+  const refreshSubscriptionPlans = () => {
+    return callAPI(`/api/subscription-plan`)
+      .then(({ data }) => setSubscriptionPlans(data))
+      .catch((error) =>
+        toast.error(error?.message || _("error_loading_subscription_plans"))
+      );
+  };
 
-    const handleCardClick = (mangaCustom) => {
-        setSelectedManga(mangaCustom);
-        setIsCreateMangaCustomDialogOpen(true);
-    }
+  const handleCardClick = (mangaCustom) => {
+    setSelectedManga(mangaCustom);
+    setIsCreateMangaCustomDialogOpen(true);
+  };
 
-    return (
-        <div className="w-full my-4">
-            <AdminMangaCustomDialog
-                organization={organization}
-                open={isCreateMangaCustomDialogOpen}
-                setOpen={setIsCreateMangaCustomDialogOpen}
-                mangaCustom={selectedManga}
-                setMangaCustom={setSelectedManga}
-                subscriptionPlans={subscriptionPlans}
-            />
-            <Button
-                variant="outlined"
-                className="flex items-center gap-3 h-full sm:m-4"
-                onClick={() => setIsCreateMangaCustomDialogOpen(true)}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                {_("add_manga")}
-            </Button>
-            {!loading && mangaList.length > 0 && (
-                <div className='w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4'>
-                    <div className="flex items-center gap-8">
-                        <IconButton
-                            size="sm"
-                            variant="outlined"
-                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                            disabled={page === 1}
-                        >
-                            <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
-                        </IconButton>
-                        <Typography color="gray" className="font-normal">
-                            {_("page")} <strong className="text-gray-900">{page}</strong> {_("of")}{" "}
-                            <strong className="text-gray-900">{maxPage}</strong>
-                        </Typography>
-                        <IconButton
-                            size="sm"
-                            variant="outlined"
-                            onClick={() => setPage(prev => Math.min(prev + 1, 10))}
-                            disabled={page === maxPage}
-                        >
-                            <ArrowRightIcon strokeWidth={2} className="h-4 w-4" />
-                        </IconButton>
-                    </div>
-                </div>
-            )}
-            <div className="max-w-lg">
-                {loading && <Spinner className='m-4 w-full' />}
-                {!loading && mangaList.length === 0 &&
-                    <Alert>
-                        {_("no_mangas_available")},{" "}
-                        <a href="/admin/mangas/create" className='hover:text-light-blue-200'>{_("create_one")}</a>{" "}
-                        {_("to_start")}.
-                    </Alert>
-                }
-            </div>
-            <div className="flex flex-wrap gap-4">
-                {mangaList.map(mangaCustom => (
-                    <AdminMangaCustomCard
-                        organization={organization}
-                        key={mangaCustom.id}
-                        mangaCustom={mangaCustom}
-                        onClick={() => handleCardClick(mangaCustom)}
-                    />
-                ))}
-            </div>
+  return (
+    <div className="w-full my-4">
+      <AdminMangaCustomDialog
+        organization={organization}
+        language={language}
+        open={isCreateMangaCustomDialogOpen}
+        setOpen={setIsCreateMangaCustomDialogOpen}
+        mangaCustom={selectedManga}
+        setMangaCustom={setSelectedManga}
+        subscriptionPlans={subscriptionPlans}
+      />
+      <Button
+        variant="outlined"
+        className="flex items-center gap-3 h-full sm:m-4"
+        onClick={() => setIsCreateMangaCustomDialogOpen(true)}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="w-6 h-6"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          />
+        </svg>
+        {_("add_manga")}
+      </Button>
+      {!loading && mangaList.length > 0 && (
+        <div className="w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4">
+          <div className="flex items-center gap-8">
+            <IconButton
+              size="sm"
+              variant="outlined"
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              disabled={page === 1}
+            >
+              <ArrowLeftIcon strokeWidth={2} className="h-4 w-4" />
+            </IconButton>
+            <Typography color="gray" className="font-normal">
+              {_("page")} <strong className="text-gray-900">{page}</strong>{" "}
+              {_("of")} <strong className="text-gray-900">{maxPage}</strong>
+            </Typography>
+            <IconButton
+              size="sm"
+              variant="outlined"
+              onClick={() => setPage((prev) => Math.min(prev + 1, 10))}
+              disabled={page === maxPage}
+            >
+              <ArrowRightIcon strokeWidth={2} className="h-4 w-4" />
+            </IconButton>
+          </div>
         </div>
-    );
+      )}
+      <div className="max-w-lg">
+        {loading && <Spinner className="m-4 w-full" />}
+        {!loading && mangaList.length === 0 && (
+          <Alert>
+            {_("no_mangas_available")},{" "}
+            <a
+              href="/admin/mangas/create"
+              className="hover:text-light-blue-200"
+            >
+              {_("create_one")}
+            </a>{" "}
+            {_("to_start")}.
+          </Alert>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-4">
+        {mangaList.map((mangaCustom) => (
+          <AdminMangaCustomCard
+            language={language}
+            key={mangaCustom.id}
+            mangaCustom={mangaCustom}
+            onClick={() => handleCardClick(mangaCustom)}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -1,20 +1,10 @@
 import { useState, useEffect } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import {
   Textarea,
   Button,
-  Dialog,
-  Spinner,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
   Typography,
   Input,
-  Checkbox,
   Select,
   Option,
   Accordion,
@@ -22,20 +12,16 @@ import {
   AccordionBody,
   Switch,
 } from "@material-tailwind/react";
-import TextField from "@mui/material/TextField";
-import Box from "@mui/material/Box";
-import Autocomplete from "@mui/material/Autocomplete";
-import { DropzoneArea } from "material-ui-dropzone";
-import { DatePicker } from "../DatePicker";
 import { ImageDropzone } from "../ImageDropzone";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 import { TrashIcon } from "@heroicons/react/24/outline";
 
 export function AdminSettings({
-  organization: { domain: organizationDomain, language: organizationLanguage },
+  organization: { domain: organizationDomain },
+  language: translatorLanguage,
 }) {
-  const _ = getTranslator(organizationLanguage);
+  const _ = getTranslator(translatorLanguage);
 
   // dialog
   const [loading, setLoading] = useState(false);
@@ -47,7 +33,8 @@ export function AdminSettings({
   const [enableMangaSection, setEnableMangaSection] = useState(false);
   const [enableManhuaSection, setEnableManhuaSection] = useState(false);
   const [enableManhwaSection, setEnableManhwaSection] = useState(false);
-  const [enableSubscriptionSection, setEnableSubscriptionSection] = useState(false);
+  const [enableSubscriptionSection, setEnableSubscriptionSection] =
+    useState(false);
   const [enableMainSlider, setEnableMainSlider] = useState(false);
   const [enableMainBanner, setEnableMainBanner] = useState(false);
   const [useBlockedCountries, setUseBlockedCountries] = useState(false);
@@ -136,7 +123,9 @@ export function AdminSettings({
         setEnableMangaSection(organization.enableMangaSection || false);
         setEnableManhuaSection(organization.enableManhuaSection || false);
         setEnableManhwaSection(organization.enableManhwaSection || false);
-        setEnableSubscriptionSection(organization.enableSubscriptionSection || false);
+        setEnableSubscriptionSection(
+          organization.enableSubscriptionSection || false
+        );
         setEnableMainSlider(organization.enableMainSlider || false);
         setEnableMainBanner(organization.enableMainBanner || false);
         setUseBlockedCountries(organization.useBlockedCountries || false);
@@ -176,16 +165,19 @@ export function AdminSettings({
     formData.append("title", title);
     formData.append("description", description);
     formData.append("language", language);
-    formData.append("enableMangaSection", enableMangaSection);
-    formData.append("enableManhuaSection", enableManhuaSection);
-    formData.append("enableManhwaSection", enableManhwaSection);
-    formData.append("enableSubscriptionSection", enableSubscriptionSection);
-    formData.append("enableMainSlider", enableMainSlider);
-    formData.append("enableMainBanner", enableMainBanner);
-    formData.append("useBlockedCountries", useBlockedCountries);
-    formData.append("useAllowedCountries", useAllowedCountries);
-    formData.append("enableGoogleAds", enableGoogleAds);
-    formData.append("enableAdsterraAds", enableAdsterraAds);
+    formData.append("enableMangaSection", enableMangaSection.toString());
+    formData.append("enableManhuaSection", enableManhuaSection.toString());
+    formData.append("enableManhwaSection", enableManhwaSection.toString());
+    formData.append(
+      "enableSubscriptionSection",
+      enableSubscriptionSection.toString()
+    );
+    formData.append("enableMainSlider", enableMainSlider.toString());
+    formData.append("enableMainBanner", enableMainBanner.toString());
+    formData.append("useBlockedCountries", useBlockedCountries.toString());
+    formData.append("useAllowedCountries", useAllowedCountries.toString());
+    formData.append("enableGoogleAds", enableGoogleAds.toString());
+    formData.append("enableAdsterraAds", enableAdsterraAds.toString());
     formData.append("facebookUrl", facebookUrl);
     formData.append("twitterUrl", twitterUrl);
     formData.append("instagramUrl", instagramUrl);
@@ -334,8 +326,8 @@ export function AdminSettings({
                 label={_("enable_allowed_countries_whitelist")}
                 checked={useAllowedCountries}
                 onChange={(e) => {
-                    setUseAllowedCountries(e.target.checked);
-                    setUseBlockedCountries(false);
+                  setUseAllowedCountries(e.target.checked);
+                  setUseBlockedCountries(false);
                 }}
               />
               <p className="text-sm text-gray-500">
@@ -348,8 +340,8 @@ export function AdminSettings({
                 label={_("enable_blocked_countries_whitelist")}
                 checked={useBlockedCountries}
                 onChange={(e) => {
-                    setUseBlockedCountries(e.target.checked);
-                    setUseAllowedCountries(false);
+                  setUseBlockedCountries(e.target.checked);
+                  setUseAllowedCountries(false);
                 }}
               />
               <p className="text-sm text-gray-500">
@@ -384,7 +376,9 @@ export function AdminSettings({
                           minLength={2}
                           pattern="^[a-z]{2}$"
                           value={countryLanguage}
-                          onChange={(e) => setCountryLanguage(e.target.value.toLowerCase())}
+                          onChange={(e) =>
+                            setCountryLanguage(e.target.value.toLowerCase())
+                          }
                         />
                       </div>
                       <div>
@@ -399,7 +393,9 @@ export function AdminSettings({
                           minLength={2}
                           pattern="^[A-Z]{2}$"
                           value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
+                          onChange={(e) =>
+                            setCountryCode(e.target.value.toUpperCase())
+                          }
                         />
                       </div>
                     </div>

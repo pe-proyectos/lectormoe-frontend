@@ -1,28 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import {
   Card,
   CardHeader,
   CardBody,
-  CardFooter,
   Typography,
-  Avatar,
-  Button,
-  Chip,
-  Alert,
-  Carousel,
 } from "@material-tailwind/react";
-import { callAPI } from "../util/callApi";
-import { MangaCardsScroller } from "./MangaCardsScroller";
-import { FeaturedMangaCard } from "./FeaturedMangaCard";
-import { MangaCard } from "./MangaCard";
-import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
-import { SubscriptionPlanCard } from "./SubscriptionPlanCard";
 
 export function MangaAdCard({
-  organization,
-  user,
+  language,
   logged,
   subscriptionPlansData,
   manga,
@@ -32,7 +17,7 @@ export function MangaAdCard({
     ? manga?.chapters?.find((chapter) => chapter.number === chapterNumber)
     : null;
 
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   const getValidMangaSubscriptionPlans = () => {
     return subscriptionPlansData.filter(

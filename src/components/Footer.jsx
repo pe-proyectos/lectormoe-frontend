@@ -3,8 +3,8 @@ import { getTranslator } from "../util/translate";
 
 const currentYear = new Date().getFullYear();
 
-export function Footer({ organization }) {
-    const _ = getTranslator(organization.language);
+export function Footer({ organization, language }) {
+    const _ = getTranslator(language);
 
     return (
         <footer className="relative w-full">

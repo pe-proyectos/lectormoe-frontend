@@ -9,8 +9,8 @@ import { DatePicker } from '../DatePicker';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminDashboard({ organization }) {
-    const _ = getTranslator(organization.language);
+export function AdminDashboard({ organization, language }) {
+    const _ = getTranslator(language);
 
     const [loading, setLoading] = useState(false);
     const [stats, setStats] = useState(null);
@@ -86,7 +86,7 @@ export function AdminDashboard({ organization }) {
                         {_("from")}
                     </Typography>
                     <DatePicker
-                        organization={organization}
+                        language={language}
                         value={from}
                         onChange={setFrom}
                         disabled={loading}
@@ -97,7 +97,7 @@ export function AdminDashboard({ organization }) {
                         {_("to")}
                     </Typography>
                     <DatePicker
-                        organization={organization}
+                        language={language}
                         value={to}
                         onChange={setTo}
                         disabled={loading}

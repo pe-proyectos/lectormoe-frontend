@@ -4,19 +4,25 @@ import { AdminMangasBreadcrumb } from "../../../components/admin/AdminMangasBrea
 import { AdminMangaCustomChapters } from "../../../components/admin/AdminMangaCustomChapters.jsx";
 import { getTranslator } from "../../../util/translate";
 
-const { organization } = Astro.locals;
+const { language } = Astro.locals;
 const { mangaSlug } = Astro.params;
-const _ = getTranslator(organization.language);
+const _ = getTranslator(language);
 
-const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(`/api/manga-custom/${mangaSlug}`);
+const { status: mangaStatus, data: manga } = await Astro.locals.callAPI(
+  `/api/manga-custom/${mangaSlug}`
+);
 
 if (!mangaStatus) {
-    return Astro.redirect('/404');
+  return Astro.redirect("/404");
 }
 ---
 
 <AdminLayout title={_("admin_manga_title")} page="mangas">
-  <AdminMangasBreadcrumb organization={organization} client:only="react"/>
+  <AdminMangasBreadcrumb language={language} client:only="react" />
   <div class="py-2"></div>
-  <AdminMangaCustomChapters organization={organization} initialMangaCustom={manga} client:only="react"/>
+  <AdminMangaCustomChapters
+    language={language}
+    initialMangaCustom={manga}
+    client:only="react"
+  />
 </AdminLayout>

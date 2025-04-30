@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import {
     Alert,
     Spinner,
@@ -10,8 +10,8 @@ import { AdminCreateAuthorDialog } from './AdminCreateAuthorDialog';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 
-export function AdminAuthorGrid({ organization }) {
-    const _ = getTranslator(organization.language);
+export function AdminAuthorGrid({ organization, language }) {
+    const _ = getTranslator(language);
 
     const [loading, setLoading] = useState(true);
     const [authors, setAuthors] = useState([]);

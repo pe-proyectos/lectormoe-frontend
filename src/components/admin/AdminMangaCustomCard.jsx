@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   CardHeader,
@@ -9,14 +8,12 @@ import {
   Tooltip,
 } from "@material-tailwind/react";
 import {
-  TrashIcon,
   PencilIcon,
-  DocumentPlusIcon,
 } from "@heroicons/react/24/outline";
 import { getTranslator } from "../../util/translate";
 
-export function AdminMangaCustomCard({ organization, mangaCustom, onClick }) {
-  const _ = getTranslator(organization.language);
+export function AdminMangaCustomCard({ language, mangaCustom, onClick }) {
+  const _ = getTranslator(language);
 
   return (
     <Card className="w-56">

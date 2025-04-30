@@ -1,7 +1,5 @@
-import React from 'react';
 import {
     Card,
-    CardHeader,
     CardBody,
     CardFooter,
     Typography,
@@ -9,8 +7,8 @@ import {
 } from "@material-tailwind/react";
 import { getTranslator } from "../../util/translate";
 
-export function AdminGenreCard({ organization, genre, handleEdit, handleDelete }) {
-    const _ = getTranslator(organization.language);
+export function AdminGenreCard({ language, genre, handleEdit, handleDelete }) {
+    const _ = getTranslator(language);
 
     return (
         <Card className="w-56">

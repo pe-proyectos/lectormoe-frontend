@@ -13,8 +13,7 @@ import { getTranslator } from "../util/translate";
 import { MangaAdCard } from "./MangaAdCard";
 
 export function RegisterCard({
-  organization,
-  user,
+  language,
   logged,
   manga,
   chapterNumber,
@@ -24,7 +23,7 @@ export function RegisterCard({
     ? manga?.chapters?.find((chapter) => chapter.number === chapterNumber)
     : null;
 
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -99,8 +98,7 @@ export function RegisterCard({
     <div className="flex flex-wrap justify-around gap-8 md:mx-8 py-12 align-middle">
       {manga && chapter && (
         <MangaAdCard
-          organization={organization}
-          user={user}
+          language={language}
           logged={logged}
           subscriptionPlansData={subscriptionPlansData}
           manga={manga}

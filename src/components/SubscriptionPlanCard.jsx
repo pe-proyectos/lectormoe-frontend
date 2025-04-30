@@ -31,12 +31,12 @@ function CheckIcon() {
 
 export function SubscriptionPlanCard({
   subscriptionPlan,
-  organization,
+  language,
   user,
   logged,
   paypalClientId,
 }) {
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   useEffect(() => {
     if (logged) {

@@ -14,8 +14,13 @@ import { MangaCard } from "./MangaCard";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
-export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
-  const _ = getTranslator(organization.language);
+export function MangaGrid({
+  organization,
+  language,
+  logged,
+  subscriptionPlans,
+}) {
+  const _ = getTranslator(language);
 
   const [loadingLatest, setLoadingLatest] = useState(true);
   const [mangaLatestList, setMangaLatestList] = useState([]);
@@ -73,7 +78,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
   const formatDate = (date) => {
     if (!date) return "";
     const dt = new Date(date);
-    const diff = (new Date()).getTime() - dt.getTime();
+    const diff = new Date().getTime() - dt.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -194,12 +199,14 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
         <div className="grid grid-cols-1 md:grid-cols-2 justify-center">
           <FeaturedMangaCard
             organization={organization}
+            language={language}
             manga={mangaFeaturedList?.[0]}
             className="h-[32rem] w-full p-2"
           />
           <div className="flex flex-wrap w-full items-center">
             {
               <FeaturedMangaCard
+                language={language}
                 organization={organization}
                 manga={mangaFeaturedList?.[1]}
                 className="h-[16rem] w-full p-2"
@@ -207,6 +214,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
             }
             {
               <FeaturedMangaCard
+                language={language}
                 organization={organization}
                 manga={mangaFeaturedList?.[2]}
                 className="h-[16rem] w-full p-2"
@@ -228,7 +236,10 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                   .sort((a, b) => b.price - a.price)
                   .filter((plan) => plan.subscriptions.length > 0)
                   .map((plan, index) => (
-                    <div key={plan.id} className="w-full text-center my-2">
+                    <div
+                      key={`plan-${plan.id}`}
+                      className="w-full text-center my-2"
+                    >
                       <a
                         className={
                           "font-semibold underline underline-offset-2 text-center " +
@@ -243,11 +254,12 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                       {plan.subscriptions
                         .sort(
                           (a, b) =>
-                            new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+                            new Date(a.startDate).getTime() -
+                            new Date(b.startDate).getTime()
                         )
                         .map((subscription) => (
                           <div
-                            key={subscription.id}
+                            key={`subscription-${subscription?.user?.username}`}
                             className={
                               "flex items-center justify-between bg-black bg-opacity-80 rounded-md py-2 px-4 my-1 mx-2 " +
                               (index === 0 &&
@@ -261,7 +273,9 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
                               {(() => {
                                 const days = Math.floor(
                                   (new Date().getTime() -
-                                    new Date(subscription.startDate).getTime()) /
+                                    new Date(
+                                      subscription.startDate
+                                    ).getTime()) /
                                     (1000 * 60 * 60 * 24)
                                 );
                                 if (days === 0) return _("less_than_a_day");
@@ -372,7 +386,12 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
               "123456789"
                 .split("")
                 .map((n) => (
-                  <MangaCard organization={organization} key={n} manga={null} />
+                  <MangaCard
+                    organization={organization}
+                    language={language}
+                    key={n}
+                    manga={null}
+                  />
                 ))}
             {mangaPopularList.map((manga, index) => (
               <div
@@ -381,6 +400,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
               >
                 <MangaCard
                   organization={organization}
+                  language={language}
                   key={manga.id}
                   manga={manga}
                 />
@@ -418,7 +438,12 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
               "123456789"
                 .split("")
                 .map((n) => (
-                  <MangaCard organization={organization} key={n} manga={null} />
+                  <MangaCard
+                    organization={organization}
+                    language={language}
+                    key={n}
+                    manga={null}
+                  />
                 ))}
             {mangaLatestList.map((manga, index) => (
               <div
@@ -427,6 +452,7 @@ export function MangaGrid({ organization, user, logged, subscriptionPlans }) {
               >
                 <MangaCard
                   organization={organization}
+                  language={language}
                   key={manga.id}
                   manga={manga}
                 />

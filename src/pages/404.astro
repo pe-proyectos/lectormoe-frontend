@@ -1,15 +1,15 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 import { getTranslator } from "../util/translate";
 
-const { organization } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { language } = Astro.locals;
+const _ = getTranslator(language);
 ---
 
 <Layout title={_("error_404_page_title")} showAds={false}>
-    <div class="mx-auto max-w-screen-md py-12">
-        <h1>{_("error_404")}</h1>
-        <h3>{_("error_404_title")}</h3>
-        <p>{_("error_404_description")}</p>
-    </div>
+  <div class="mx-auto max-w-screen-md py-12">
+    <h1>{_("error_404")}</h1>
+    <h3>{_("error_404_title")}</h3>
+    <p>{_("error_404_description")}</p>
+  </div>
 </Layout>

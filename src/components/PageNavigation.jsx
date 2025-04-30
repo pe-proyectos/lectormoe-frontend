@@ -8,8 +8,8 @@ import {
 } from "@heroicons/react/24/solid";
 import { getTranslator } from "../util/translate";
 
-export function PageNavigation({ organization, page, setPage, maxPage, loading, data }) {
-    const _ = getTranslator(organization.language);
+export function PageNavigation({ language, page, setPage, maxPage, loading, data }) {
+    const _ = getTranslator(language);
 
     return (
         <div className="flex items-center gap-8">

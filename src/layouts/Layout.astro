@@ -15,7 +15,7 @@ interface Props {
 
 const { title, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
 let { showAds } = Astro.props;
-const { theme, organization, userSlug, username, user } = Astro.locals
+const { theme, organization, userSlug, username, user, language } = Astro.locals
 const isDecember = new Date().getMonth() === 11;
 if (user && user?.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan.hideAds === true) {
 	showAds = false;
@@ -26,7 +26,7 @@ if (user && user?.hideAds === true) {
 ---
 
 <!doctype html>
-<html data-theme={theme} lang={organization.language || "es"}>
+<html data-theme={theme} lang={language || organization.language || "es"}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="description" content={description || organization?.description || "Mangas"} />
@@ -102,6 +102,7 @@ if (user && user?.hideAds === true) {
 			user={user}
 			userSlug={userSlug}
 			staticNavbar={staticNavbar}
+			language={language}
 			client:only="react"
 		/>
 		<div class="min-h-[80vh]">

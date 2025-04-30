@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "react-toastify";
 import {
-  Card,
   ButtonGroup,
   Button,
   Typography,
@@ -14,13 +13,13 @@ import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 
 export function AdminChaptersTable({
-  organization,
+  language,
   mangaCustom,
   onChapterClick,
   onChapterDownload,
   onChapterDelete,
 }) {
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   const columns = useMemo(
     () => [

@@ -1,12 +1,16 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { BookSearch } from "../components/BookSearch.jsx"
+import { BookSearch } from "../components/BookSearch.jsx";
 import { getTranslator } from "../util/translate";
 
-const { organization } = Astro.locals;
-const _ = getTranslator(organization.language);
+const { organization, language } = Astro.locals;
+const _ = getTranslator(language);
 ---
 
 <Layout title={_("search_title")}>
-	<BookSearch organization={organization} client:only="react"/>
+  <BookSearch
+    organization={organization}
+    language={language}
+    client:only="react"
+  />
 </Layout>

@@ -23,6 +23,7 @@ import { MangaAdCard } from "./MangaAdCard";
 
 export function Subscriptions({
   organization,
+  language,
   user,
   logged,
   paypalClientId,
@@ -34,7 +35,7 @@ export function Subscriptions({
     ? manga?.chapters?.find((chapter) => chapter.number === chapterNumber)
     : null;
 
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);
   const [loadingLatest, setLoadingLatest] = useState(true);

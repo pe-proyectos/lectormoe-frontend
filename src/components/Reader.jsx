@@ -37,14 +37,14 @@ import { CommentsCard } from "./CommentsCard";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 
 export function Reader({
-  organization,
+  language,
   manga,
   chapter,
   chapterNumber,
   logged,
   user,
 }) {
-  const _ = getTranslator(organization.language);
+  const _ = getTranslator(language);
 
   const readTypes = {
     PAGINATED: "paginated",
@@ -56,9 +56,7 @@ export function Reader({
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
 
-  const [showSideComments, setShowSideComments] = useState(
-    window.innerWidth >= 720
-  );
+  const [showSideComments, setShowSideComments] = useState(false);
 
   const [screenIsMobile, setScreenIsMobile] = useState(false);
 
@@ -695,7 +693,7 @@ export function Reader({
                     {_("previous_chapter_will_be_released_in")}{" "}
                     {formatDate(
                       chapter.previousChapter?.releasedAt,
-                      organization.language
+                      language
                     )}
                   </Button>
                 ))}
@@ -717,7 +715,7 @@ export function Reader({
                     {_("next_chapter_will_be_released_in")}{" "}
                     {formatDate(
                       chapter.nextChapter?.releasedAt,
-                      organization.language
+                      language
                     )}
                   </Button>
                 ))}

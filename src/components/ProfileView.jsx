@@ -1,25 +1,13 @@
 import { useEffect, useState } from "react";
-import {
-  Typography,
-  Tooltip,
-  Chip,
-  Button,
-  ButtonGroup,
-  Accordion,
-  AccordionHeader,
-  AccordionBody,
-  Alert,
-} from "@material-tailwind/react";
-import StickyBox from "react-sticky-box";
+import { Typography, Button } from "@material-tailwind/react";
 import { callAPI } from "../util/callApi";
-import { LazyImage } from "./LazyImage";
 import { toast } from "react-toastify";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import { pascalCase } from "../util/pascalCase";
 
-export function ProfileView({ organization, user, userSlug, username }) {
-  const _ = getTranslator(organization.language);
+export function ProfileView({ language, user, username }) {
+  const _ = getTranslator(language);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [userChapterHistoryList, setUserChapterHistoryList] = useState([]);
   const [userChapterHistoryTotal, setUserChapterHistoryTotal] = useState([]);
@@ -61,7 +49,10 @@ export function ProfileView({ organization, user, userSlug, username }) {
             <div className="flex flex-col items-center text-center">
               <img
                 className="w-24 h-24 mb-3 rounded-full shadow-lg"
-                src={user.imageUrl || "https://cdn.pixabay.com/photo/2018/11/13/21/43/avatar-3814049_1280.png"}
+                src={
+                  user.imageUrl ||
+                  "https://cdn.pixabay.com/photo/2018/11/13/21/43/avatar-3814049_1280.png"
+                }
                 alt={username}
               />
               <h5 className="text-xl font-medium text-white dark:text-white">
@@ -72,7 +63,11 @@ export function ProfileView({ organization, user, userSlug, username }) {
             <div className="flex flex-col justify-center text-center">
               <div>
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                  {pascalCase(user?.subscriptions.length > 0 ? user.subscriptions[0].subscriptionPlan.name : user.role || "user")}
+                  {pascalCase(
+                    user?.subscriptions.length > 0
+                      ? user.subscriptions[0].subscriptionPlan.name
+                      : user.role || "user"
+                  )}
                 </span>
               </div>
               <p className="mb-4 text-white my-5">
@@ -95,7 +90,9 @@ export function ProfileView({ organization, user, userSlug, username }) {
           </div>
           <div>
             <div className="border border-gray-200 rounded-lg p-4 text-center mb-2">
-              <h3 className="text-lg font-bold mb-2">{_("continue_reading")}</h3>
+              <h3 className="text-lg font-bold mb-2">
+                {_("continue_reading")}
+              </h3>
             </div>
             <div className=" rounded-lg p-4">
               <div className="flex flex-wrap gap-4 justify-center mb-4">
@@ -141,7 +138,8 @@ export function ProfileView({ organization, user, userSlug, username }) {
                           </p>
                           <div className="grow justify-items-end">
                             <p className="text-xs mt-auto">
-                              {_("seen")} {formatDate(history.lastReadAt)}
+                              {_("seen")}{" "}
+                              {formatDate(history.lastReadAt, language)}
                             </p>
                           </div>
                         </div>
