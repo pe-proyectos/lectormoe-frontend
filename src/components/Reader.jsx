@@ -93,7 +93,7 @@ export function Reader({
     if (!chapterData.pages.length) return 0;
     const widths = chapterData.pages.map((p) => p.imageWidth).sort((a, b) => a - b);
     const mid = Math.floor(widths.length / 2);
-    return widths.length % 2 !== 0 ? widths[mid] : (widths[mid - 1] + widths[mid]) / 2;
+    return (widths.length % 2 !== 0 ? widths[mid] : (widths[mid - 1] + widths[mid]) / 2) * 1.1;
   }, [chapterData.pages]);
 
   // Helper to check if a page is single (width <= median)
