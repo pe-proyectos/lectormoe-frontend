@@ -46,6 +46,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         return null;
     });
     const [pages, setPages] = useState([]);
+    const [singlePageIndexes, setSinglePageIndexes] = useState([]);
     const [dragId, setDragId] = useState();
 
     const handleDrag = (ev) => {
@@ -53,23 +54,44 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
     };
 
     const handleDrop = (ev) => {
+        if (!dragId) return;
+        // @ts-ignore
         const dragPageIndex = parseInt(dragId.split('-').pop());
         const dropPageIndex = parseInt(ev.currentTarget.id.split('-').pop());
         const newPagesOrder = [...pages];
         const [draggedPage] = newPagesOrder.splice(dragPageIndex, 1);
         newPagesOrder.splice(dropPageIndex, 0, draggedPage);
         setPages(newPagesOrder);
+
+        // Actualizar los índices de páginas simples después de reordenar
+        const newSinglePageIndexes = singlePageIndexes.map(index => {
+            if (index === dragPageIndex) return dropPageIndex;
+            if (index < dragPageIndex && index >= dropPageIndex) return index + 1;
+            if (index > dragPageIndex && index <= dropPageIndex) return index - 1;
+            return index;
+        });
+        setSinglePageIndexes(newSinglePageIndexes);
     };
 
     const removePage = (index) => {
-        const newPages = pages.filter((page, i) => i !== index);
+        const newPages = pages.filter((_page, i) => i !== index);
         setPages(newPages);
+        
+        // Actualizar los índices de páginas simples después de eliminar
+        const newSinglePageIndexes = singlePageIndexes
+            .filter(i => i !== index)
+            .map(i => i > index ? i - 1 : i);
+        setSinglePageIndexes(newSinglePageIndexes);
     };
 
-    const minusDays = (date, days) => {
-        const newDate = new Date(date);
-        newDate.setDate(date.getDate() - days);
-        return newDate;
+    const togglePageType = (index) => {
+        setSinglePageIndexes(prev => {
+            if (prev.includes(index)) {
+                return prev.filter(i => i !== index);
+            } else {
+                return [...prev, index].sort((a, b) => a - b);
+            }
+        });
     };
 
     const formatDateToInput = (date) => {
@@ -90,7 +112,14 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
-                .then(chapterPages => setPages(chapterPages))
+                .then(chapterPages => {
+                    setPages(chapterPages);
+                    // Inicializar los índices de páginas simples
+                    const initialSinglePageIndexes = chapterPages
+                        .map((page, index) => page.isSinglePage ? index : null)
+                        .filter(index => index !== null);
+                    setSinglePageIndexes(initialSinglePageIndexes);
+                })
                 .catch(error => toast.error(error?.message))
                 .finally(() => setLoading(false));
         } else {
@@ -103,6 +132,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             setSubscribersOnly(false);
             setChapterImageFile(null);
             setPages([]);
+            setSinglePageIndexes([]);
             setLoading(false);
         }
     }, [chapter, mangaCustom]);
@@ -117,12 +147,18 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         const formData = new FormData();
         formData.append('title', title);
         formData.append('number', number);
-        formData.append('releasedAt', releasedAt);
+        formData.append('releasedAt', releasedAt.toString());
         formData.append('subscribersOnly', subscribersOnly);
         if (chapterImageFile || chapter) formData.append('image', chapterImageFile);
+
+        // Añadir las páginas
         pages.forEach((page) => {
             formData.append('pages', page instanceof File ? page : page?.imageUrl);
         });
+
+        // Añadir el array de índices de páginas simples
+        formData.append('singlePages', JSON.stringify(singlePageIndexes));
+
         setLoading(true);
         callAPI(
             chapter
@@ -132,11 +168,12 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                 method: chapter ? 'PATCH' : 'POST',
                 body: formData,
             })
-            .then(response => {
+            .then(_response => {
                 setTitle('');
                 setNumber(1);
                 setChapterImageFile(null);
                 setPages([]);
+                setSinglePageIndexes([]);
                 toast.success(_("chapter_created"));
                 setOpen(false);
             })
@@ -177,6 +214,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             value={number}
                             onChange={(e) => setNumber(e.target.value)}
                             type='number'
+                            crossOrigin={undefined}
                         />
                         <Typography className="-mb-2" variant="h6" color="gray">
                             {_("upload_chapter_of")}Título
@@ -186,6 +224,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             autoComplete='off'
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
+                            crossOrigin={undefined}
                         />
                         <Typography className="-mb-2" variant="h6" color="gray">
                             {_("chapter_miniature")}
@@ -195,7 +234,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             label={_("chapter_miniature_label")}
                             alt={_("chapter_miniature_alt")}
                             onChange={(files) => files[0] ? setChapterImageFile(files[0]) : null}
-                            onDelete={(file) => setChapterImageFile(null)}
+                            onDelete={(_file) => setChapterImageFile(null)}
                         />
                         <Typography className="-mb-2" variant="h5" color="blue-gray">
                             {_("options")}
@@ -207,6 +246,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             label={_("subscribers_only")}
                             checked={subscribersOnly}
                             onChange={(e) => setSubscribersOnly(e.target.checked)}
+                            crossOrigin={undefined}
                         />
                         <Typography variant="small" color="gray" className="font-normal">
                             {_("subscribers_only_description")}
@@ -233,6 +273,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             dropzoneClass="!max-h-24 !min-h-24 !p-2"
                             dropzoneText={_("drag_and_drop_images")}
                             dropzoneParagraphClass="!text-base"
+                            // @ts-ignore
                             Icon={''}
                             cancelButtonText={_("cancel")}
                             submitButtonText={_("upload")}
@@ -257,7 +298,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                     id={`preview-page-${index}`}
                                     onDragStart={handleDrag}
                                     onDrop={handleDrop}
-                                    className="w-40 min-w-40 max-w-40 max-h-72"
+                                    className="w-40 min-w-40 max-w-40 max-h-80"
                                 >
                                     <img
                                         src={
@@ -271,39 +312,51 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                         className="w-full max-w-full h-56 max-h-56 object-cover rounded-md bg-gray-900"
                                     />
                                     <CardFooter className="p-0">
-                                        <div className="flex justify-between items-center gap-2 p-2">
-                                            <IconButton
-                                                variant="text"
-                                                size="sm"
-                                                className="rounded-full"
-                                            >
-                                                <svg fill="#000" version="1.1" id="icon" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
-                                                    width="1.8rem" height="1.8rem" viewBox="0 0 32 32" xmlSpace="preserve">
-                                                    <style type="text/css">
-                                                        .st0{"{fill:none;}"}
-                                                    </style>
-                                                    <rect x="10" y="6" width="4" height="4" />
-                                                    <rect x="18" y="6" width="4" height="4" />
-                                                    <rect x="10" y="14" width="4" height="4" />
-                                                    <rect x="18" y="14" width="4" height="4" />
-                                                    <rect x="10" y="22" width="4" height="4" />
-                                                    <rect x="18" y="22" width="4" height="4" />
-                                                    <rect id="_Transparent_Rectangle_" className="st0" width="32" height="32" />
-                                                </svg>
-                                            </IconButton>
-                                            <Typography variant="small" color="blue-gray">
-                                                {_("page")} {index + 1}
-                                            </Typography>
-                                            <IconButton
-                                                variant="text"
-                                                size="sm"
-                                                className="rounded-full"
-                                                onClick={() => removePage(index)}
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                                </svg>
-                                            </IconButton>
+                                        <div className="flex flex-col gap-2 p-2">
+                                            <div className="flex justify-between items-center gap-2">
+                                                <IconButton
+                                                    variant="text"
+                                                    size="sm"
+                                                    className="rounded-full"
+                                                >
+                                                    <svg fill="#000" version="1.1" id="icon" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                                                        width="1.8rem" height="1.8rem" viewBox="0 0 32 32" xmlSpace="preserve">
+                                                        <style type="text/css">
+                                                            .st0{"{fill:none;}"}
+                                                        </style>
+                                                        <rect x="10" y="6" width="4" height="4" />
+                                                        <rect x="18" y="6" width="4" height="4" />
+                                                        <rect x="10" y="14" width="4" height="4" />
+                                                        <rect x="18" y="14" width="4" height="4" />
+                                                        <rect x="10" y="22" width="4" height="4" />
+                                                        <rect x="18" y="22" width="4" height="4" />
+                                                        <rect id="_Transparent_Rectangle_" className="st0" width="32" height="32" />
+                                                    </svg>
+                                                </IconButton>
+                                                <Typography variant="small" color="blue-gray">
+                                                    {_("page")} {index + 1}
+                                                </Typography>
+                                                <IconButton
+                                                    variant="text"
+                                                    size="sm"
+                                                    className="rounded-full"
+                                                    onClick={() => removePage(index)}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                                    </svg>
+                                                </IconButton>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Typography variant="small" color="blue-gray">
+                                                    Pagina sola
+                                                </Typography>
+                                                <Switch
+                                                    checked={singlePageIndexes.includes(index)}
+                                                    onChange={() => togglePageType(index)}
+                                                    crossOrigin={undefined}
+                                                />
+                                            </div>
                                         </div>
                                     </CardFooter>
                                 </Card>

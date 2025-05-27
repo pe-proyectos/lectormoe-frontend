@@ -80,17 +80,74 @@ export function Reader({
       manga?.bookType?.default_read_type ||
       readTypes.CASCADE,
     limitPageHeight: localStorage.getItem("limitPageHeight") === "true",
+    useDoublePages: localStorage.getItem("useDoublePages") === "true",
     showFloatButtons: localStorage.getItem("showFloatButtons") !== "false",
     showChapterComments:
       localStorage.getItem("showChapterComments") !== "false",
-    limitPageWidth: parseInt(localStorage.getItem("limitPageWidth") || "100"),
     chapterSettings: localStorage.getItem("chapterSettings") === "true",
+    pageGap: localStorage.getItem("pageGap") || "minimo",
   }));
 
+  // Helper to get median width
+  const getMedianWidth = useCallback(() => {
+    if (!chapterData.pages.length) return 0;
+    const widths = chapterData.pages.map((p) => p.imageWidth).sort((a, b) => a - b);
+    const mid = Math.floor(widths.length / 2);
+    return widths.length % 2 !== 0 ? widths[mid] : (widths[mid - 1] + widths[mid]) / 2;
+  }, [chapterData.pages]);
+
+  // Helper to check if a page is single (width <= median)
+  const isSinglePage = useCallback((page, medianWidth) => {
+    if (!page) return false;
+    // If page has isSinglePage attribute, use if true
+    if (page.isSinglePage === true) {
+      // We return false because if the page is marked as Single Page from db we
+      // we should consider it probably is a double page already or is meant to be alone
+      // setting this to true would cause the site to think its an individual page
+      // and thu must be put together and rendered side by side
+      return false;
+    }
+    // Otherwise, check width against median
+    return page.imageWidth <= medianWidth;
+  }, []);
+
+  // Helper to determine if a page should be rendered side by side based on context
+  const shouldRenderSideBySide = useCallback((pageIndex, pages, medianWidth) => {
+    if (!settings.useDoublePages) return false;
+    
+    const currentPage = pages[pageIndex];
+    const nextPage = pages[pageIndex + 1];
+    
+    // If we don't have both current and next page, can't render side by side
+    if (!currentPage || !nextPage) return false;
+    
+    const currentIsSingle = isSinglePage(currentPage, medianWidth);
+    const nextIsSingle = isSinglePage(nextPage, medianWidth);
+    
+    // If either current or next page is not single, can't render side by side
+    if (!currentIsSingle || !nextIsSingle) return false;
+
+    // If both pages are single, render them side by side
+    return true;
+  }, [settings.useDoublePages, isSinglePage]);
+
   const shouldShowPage = useCallback(
-    (pageNumber) =>
-      settings.readType === readTypes.CASCADE || currentPage === pageNumber,
-    [settings.readType, currentPage]
+    (pageNumber) => {
+      if (settings.readType === readTypes.CASCADE) return true;
+      
+      const currentPageIndex = chapterData.pages.findIndex(p => p.number === currentPage);
+      const isNextPage = pageNumber === currentPage + 1;
+      
+      // In paginated mode, show current page and next page only if they should be side by side
+      if (settings.readType === readTypes.PAGINATED) {
+        if (pageNumber === currentPage) return true;
+        if (isNextPage && shouldRenderSideBySide(currentPageIndex, chapterData.pages, getMedianWidth())) return true;
+        return false;
+      }
+      
+      return false;
+    },
+    [settings.readType, currentPage, chapterData.pages, shouldRenderSideBySide, getMedianWidth]
   );
 
   const handleSetReadType = (type) => {
@@ -139,17 +196,6 @@ export function Reader({
     };
   };
 
-  const handleLimitPageWidth = debounce((evt) => {
-    localStorage.setItem(
-      "limitPageWidth",
-      parseInt(evt.target.value).toString()
-    );
-    setSettings((prev) => ({
-      ...prev,
-      limitPageWidth: parseInt(evt.target.value),
-    }));
-  }, 1000);
-
   const handleLimitPageHeight = () => {
     localStorage.setItem(
       "limitPageHeight",
@@ -161,15 +207,32 @@ export function Reader({
     }));
   };
 
+  const handleToggleUseDoublePages = () => {
+    localStorage.setItem(
+      "useDoublePages",
+      !settings.useDoublePages ? "true" : "false"
+    );
+    setSettings((prev) => ({ ...prev, useDoublePages: !prev.useDoublePages }));
+  };
+
   const handlePagesDialog = () => {
     setOpenPagesDialog((prev) => !prev);
   };
 
-  const handlePageClick = (evt, pageIndex) => {
-    const rect = evt.target.getBoundingClientRect();
-    const x = evt.clientX - rect.left;
-    if (x > rect.width / 2) {
-      const page = chapterData.pages?.[pageIndex + 1];
+  const handlePageClick = (evt) => {
+    // Get click position relative to window width
+    const x = evt.clientX;
+    const windowWidth = window.innerWidth;
+    const isRightHalf = x > windowWidth / 2;
+
+    const currentPageIndex = chapterData.pages.findIndex(p => p.number === currentPage);
+    const medianWidth = getMedianWidth();
+
+    if (isRightHalf) {
+      // Going forward: if current page is part of a side-by-side pair, jump 2 pages
+      const isSideBySide = shouldRenderSideBySide(currentPageIndex, chapterData.pages, medianWidth);
+      const pageJump = isSideBySide ? 2 : 1;
+      const page = chapterData.pages?.[currentPageIndex + pageJump];
       if (page) {
         setCurrentPage(page.number);
         location.href =
@@ -178,7 +241,16 @@ export function Reader({
             : `#page-${page.number}`;
       }
     } else {
-      const page = chapterData.pages?.[pageIndex - 1];
+      // Going backward: check if previous page is part of a side-by-side pair
+      const prevPageIndex = currentPageIndex - 1;
+      const isPrevPageSideBySide = prevPageIndex >= 0 && 
+        shouldRenderSideBySide(prevPageIndex, chapterData.pages, medianWidth);
+      
+      // If previous page is part of a side-by-side pair, jump back 2 pages
+      // Otherwise, jump back 1 page
+      const pageJump = isPrevPageSideBySide ? 2 : 1;
+      const page = chapterData.pages?.[currentPageIndex - pageJump];
+      
       if (page) {
         setCurrentPage(page.number);
         location.href =
@@ -186,6 +258,29 @@ export function Reader({
             ? "#manga-pages-top"
             : `#page-${page.number}`;
       }
+    }
+  };
+
+  const handlePageGap = (value) => {
+    localStorage.setItem("pageGap", value);
+    setSettings((prev) => ({
+      ...prev,
+      pageGap: value,
+    }));
+  };
+
+  const getGapValue = (gapType) => {
+    switch (gapType) {
+      case "ninguno":
+        return 0;
+      case "minimo":
+        return 2;
+      case "medio":
+        return 5;
+      case "grande":
+        return 10;
+      default:
+        return 0;
     }
   };
 
@@ -389,6 +484,31 @@ export function Reader({
     </div>
   );
 
+  // Common styles for page containers
+  const getPageContainerStyle = useCallback((isCascade) => ({
+    marginBottom: isCascade ? `${getGapValue(settings.pageGap)}px` : '0'
+  }), [settings.pageGap]);
+
+  // Common class names for page containers
+  const getPageContainerClassName = useCallback((isCascade, isDouble = false, shouldShow = true) => {
+    const baseClass = isCascade
+      ? "w-full flex justify-center select-none cursor-pointer"
+      : "w-full flex justify-center select-none cursor-pointer";
+    return `${baseClass}${isDouble ? " flex-row" : ""}${shouldShow ? "" : " hidden"}`;
+  }, []);
+
+  // Common LazyImage component
+  const PageImage = useCallback(({ page, isSideBySide = false }) => (
+    <LazyImage
+      id={`page-${page.number}-img`}
+      src={page.imageUrl}
+      className={`pointer-events-none object-contain ${isSideBySide ? 'w-1/2' : 'max-w-full'} ${settings.limitPageHeight ? 'max-h-[100vh]' : ''}`}
+      width={`${page.imageWidth}px`}
+      height={`${page.imageHeight}px`}
+      alt={`${_("page")} ${page.number}`}
+    />
+  ), [settings.limitPageHeight]);
+
   return (
     <div id="reader-top">
       <div className="relative w-full min-h-44 group py-4">
@@ -474,6 +594,19 @@ export function Reader({
                   </div>
                   <div className="my-2 mx-4">
                     <Switch
+                      color="red"
+                      label={
+                        <Typography className="text-gray-100">
+                          {_("use_double_pages")}
+                        </Typography>
+                      }
+                      checked={settings.useDoublePages}
+                      onChange={() => handleToggleUseDoublePages()}
+                      crossOrigin={undefined}
+                    />
+                  </div>
+                  <div className="my-2 mx-4">
+                    <Switch
                       color="green"
                       label={
                         <Typography className="text-gray-100">
@@ -485,22 +618,25 @@ export function Reader({
                       crossOrigin={undefined}
                     />
                   </div>
-                  <div className="my-2 mx-4">
-                    <Typography className="text-gray-100">
-                      Ancho de pagina {settings.limitPageWidth}%
-                    </Typography>
-                    <div className="w-72">
-                      <div className="flex gap-10">
-                        <Slider
-                          size="lg"
-                          defaultValue={settings.limitPageWidth}
-                          onChange={(value) => handleLimitPageWidth(value)}
-                          min={30}
-                          max={100}
-                        />
+                  {settings.readType === readTypes.CASCADE && (
+                    <div className="my-2 mx-4">
+                      <Typography className="text-gray-100">
+                        Espacio entre páginas
+                      </Typography>
+                      <div className="w-72 mt-2">
+                        <select
+                          value={settings.pageGap}
+                          onChange={(e) => handlePageGap(e.target.value)}
+                          className="w-full bg-gray-800 text-white rounded-lg p-2"
+                        >
+                          <option value="ninguno">Ninguno (0px)</option>
+                          <option value="minimo">Mínimo (2px)</option>
+                          <option value="medio">Medio (5px)</option>
+                          <option value="grande">Grande (10px)</option>
+                        </select>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div className="mx-auto sm:mx-0">
                   <p className="text-gray-400 ml-1">{_("read_type")}</p>
@@ -528,11 +664,11 @@ export function Reader({
           </Accordion>
         </div>
       </div>
-      <div className="flex flex-wrap w-full min-h-[90vh] justify-center">
+      <div className="flex flex-wrap w-full min-h-[100vh] justify-center">
         {/* PAGINAS */}
         <div
           id="manga-pages-top"
-          className="w-full min-h-[100vh] select-none bg-black"
+          className={`w-full select-none bg-black ${settings.readType === readTypes.CASCADE ? 'min-h-[100vh]' : ''}`}
         >
           {chapterData.pages.length === 0 && loading && (
             <div className="flex min-h-full w-full justify-center py-4">
@@ -546,7 +682,7 @@ export function Reader({
             </div>
           )}
 
-          <div className="flex w-full h-full flex-row-reverse gap-2">
+          <div className="flex min-h-[100vh] w-full h-full flex-row-reverse gap-2">
             {showSideComments && chapterData.pages.length > 0 && !loading && (
               <div className="sticky top-0 h-full min-w-96 max-h-[100vh] p-4 rounded-lg overflow-hidden hidden md:block">
                 <CommentsCard
@@ -556,67 +692,66 @@ export function Reader({
                 />
               </div>
             )}
-            <div className="flex-grow w-full h-full">
-              {chapterData.pages.map((page, pageIndex) => (
-                <div
-                  key={page.number}
-                  id={`page-${page.number}`}
-                  className={
-                    (settings.readType === readTypes.CASCADE
-                      ? "w-full flex justify-center select-none cursor-pointer "
-                      : "w-full h-full flex justify-center select-none cursor-pointer ") +
-                    (shouldShowPage(page.number) ? "" : " hidden")
-                  }
-                  onClick={(evt) => handlePageClick(evt, pageIndex)}
-                >
-                  {!chapterData.pages.find((p) => p.number === page.number) && (
-                    <img
-                      width={`${
-                        page.imageWidth * (settings.limitPageWidth / 100)
-                      }px`}
-                      height={`${
-                        page.imageHeight * (settings.limitPageWidth / 100)
-                      }px`}
-                      className="bg-gray-300 !opacity-20 animate-pulse"
-                      style={
-                        settings.limitPageHeight
-                          ? {
-                              maxHeight: "100vh",
-                              width: "auto",
-                              height: "auto",
-                              maxWidth: "100%",
-                            }
-                          : {}
-                      }
-                    />
-                  )}
-                  <LazyImage
-                    id={`page-${page.number}-img`}
-                    src={page.imageUrl}
-                    className="max-w-full m-auto pointer-events-none"
-                    width={`${
-                      page.imageWidth * (settings.limitPageWidth / 100)
-                    }px`}
-                    height={`${
-                      page.imageHeight * (settings.limitPageWidth / 100)
-                    }px`}
-                    alt={`${_("page")} ${page.number}`}
-                    hidden={
-                      !chapterData.pages.find((p) => p.number === page.number)
-                    }
-                    style={
-                      settings.limitPageHeight
-                        ? {
-                            maxHeight: "100vh",
-                            width: "auto",
-                            height: "auto",
-                            maxWidth: "100%",
-                          }
-                        : {}
-                    }
+            <div className={`relative flex items-center justify-center flex-grow w-full ${settings.readType === readTypes.CASCADE ? 'h-full flex-col' : ''}`}>
+              {/* <div className="relative"> */}
+                {settings.readType === readTypes.PAGINATED && (
+                  <div 
+                    className="absolute inset-0 z-10 cursor-pointer"
+                    onClick={handlePageClick}
                   />
-                </div>
-              ))}
+                )}
+                {(() => {
+                  if (!settings.useDoublePages) {
+                    // Default: render one page per row
+                    return chapterData.pages.map((page, pageIndex) => (
+                      <div
+                        key={page.number}
+                        id={`page-${page.number}`}
+                        className={getPageContainerClassName(settings.readType === readTypes.CASCADE, false, shouldShowPage(page.number))}
+                        style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
+                      >
+                        <PageImage page={page} isSideBySide={false} />
+                      </div>
+                    ));
+                  }
+                  // Double pages logic
+                  const medianWidth = getMedianWidth();
+                  const rendered = [];
+                  for (let i = 0; i < chapterData.pages.length; ) {
+                    const page = chapterData.pages[i];
+                    const nextPage = chapterData.pages[i + 1];
+
+                    if (shouldRenderSideBySide(i, chapterData.pages, medianWidth)) {
+                      // Render side by side
+                      rendered.push(
+                        <div
+                          key={`double-${page.number}-${nextPage.number}`}
+                          className={`flex w-full cursor-pointer flex-row justify-center select-none mb-0 ${shouldShowPage(page.number) ? "" : " hidden"}`}
+                          style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
+                        >
+                          <PageImage page={nextPage} isSideBySide={true} />
+                          <PageImage page={page} isSideBySide={true} />
+                        </div>
+                      );
+                      i += 2;
+                    } else {
+                      // Render single (either double page or last single)
+                      rendered.push(
+                        <div
+                          key={page.number}
+                          id={`page-${page.number}`}
+                          className={getPageContainerClassName(settings.readType === readTypes.CASCADE, false, shouldShowPage(page.number))}
+                          style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
+                        >
+                          <PageImage page={page} isSideBySide={false} />
+                        </div>
+                      );
+                      i += 1;
+                    }
+                  }
+                  return rendered;
+                })()}
+              {/* </div> */}
             </div>
           </div>
         </div>
@@ -659,10 +794,16 @@ export function Reader({
                 width:
                   settings.readType === readTypes.PAGINATED
                     ? `${
-                        (currentPage /
-                          (Math.max(...chapterData.pages.map((p) => p.number)) -
-                            1)) *
+                      Math.min(
+                        Math.max(
+                          (currentPage /
+                            (Math.max(...chapterData.pages.map((p) => p.number)) -
+                              1)) *
+                          100,
+                          0
+                        ),
                         100
+                      )
                       }%`
                     : `${scrollInfo.readScrollPercentage}%`,
 

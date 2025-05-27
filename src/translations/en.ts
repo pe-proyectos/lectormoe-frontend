@@ -252,6 +252,13 @@ export const translations: Record<string, string> = {
   short_description: "Short description",
   characters: "characters",
   optional: "Optional",
+  recover_password: "Recover password",
+  forgot_password: "Forgot password?",
+  forgot_password_click_here: "Click here to reset your password",
+  forgot_password_description:
+    "Enter your email to receive a password reset link.",
+  reset_password: "Reset password",
+  send_reset_email: "Send reset email",
   short_description_less_than_300:
     "A description of less than 300 characters...",
   synopsis: "Synopsis",
@@ -454,6 +461,7 @@ export const translations: Record<string, string> = {
   you_are_in_last_chapter: "You are in the last published chapter",
   click_here_chapter_list: "Click here to go to the chapter list",
   limit_page_height: "Limit page height",
+  use_double_pages: "Use double pages",
   show_float_buttons: "Show floating buttons",
   read_type: "Reading mode",
   paginated: "Paginated",

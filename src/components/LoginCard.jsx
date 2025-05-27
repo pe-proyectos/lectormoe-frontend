@@ -157,6 +157,12 @@ export function LoginCard({
                 {_("register_here")}
               </a>
             </Typography>
+            <Typography color="gray" className="mt-2 text-center font-normal">
+              {_("forgot_password")}{" "}
+              <a href="/forgot" className="font-medium text-gray-900">
+                {_("forgot_password_click_here")}
+              </a>
+            </Typography>
           </form>
         </CardBody>
       </Card>
