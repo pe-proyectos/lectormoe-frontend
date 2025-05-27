@@ -498,16 +498,23 @@ export function Reader({
   }, []);
 
   // Common LazyImage component
-  const PageImage = useCallback(({ page, isSideBySide = false }) => (
-    <LazyImage
-      id={`page-${page.number}-img`}
-      src={page.imageUrl}
-      className={`pointer-events-none object-contain ${isSideBySide ? 'w-1/2' : 'max-w-full'} ${settings.limitPageHeight ? 'max-h-[100vh]' : ''}`}
-      width={`${page.imageWidth}px`}
-      height={`${page.imageHeight}px`}
-      alt={`${_("page")} ${page.number}`}
-    />
-  ), [settings.limitPageHeight]);
+  const PageImage = useCallback(
+    ({ page, isSideBySide = false, isLeft = false }) => (
+      <LazyImage
+        id={`page-${page.number}-img`}
+        src={page.imageUrl}
+        className={`pointer-events-none object-contain ${
+          isSideBySide ? "w-1/2" : "max-w-full"
+        } ${settings.limitPageHeight ? "max-h-[100vh]" : ""} ${
+          isSideBySide && (isLeft ? "object-left" : "object-right")
+        }`}
+        width={`${page.imageWidth}px`}
+        height={`${page.imageHeight}px`}
+        alt={`${_("page")} ${page.number}`}
+      />
+    ),
+    [settings.limitPageHeight]
+  );
 
   return (
     <div id="reader-top">
@@ -729,8 +736,8 @@ export function Reader({
                           className={`flex w-full cursor-pointer flex-row justify-center select-none mb-0 ${shouldShowPage(page.number) ? "" : " hidden"}`}
                           style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
                         >
-                          <PageImage page={nextPage} isSideBySide={true} />
-                          <PageImage page={page} isSideBySide={true} />
+                          <PageImage page={nextPage} isSideBySide={true} isLeft={false} />
+                          <PageImage page={page} isSideBySide={true} isLeft={true} />
                         </div>
                       );
                       i += 2;
