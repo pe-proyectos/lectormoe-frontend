@@ -314,7 +314,7 @@ export function MangaView({ manga, organization, language, logged, user }) {
       const blobs = await Promise.all(pagePromises);
       blobs.forEach((blob, index) => {
         folder.file(
-          `${chapter.number} - ${chapterPages[index].number}.jpg`,
+          `${chapter.number.toString().padStart(6, '0')} - ${chapterPages[index].number.toString().padStart(6, '0')}.jpg`,
           blob,
           {
             // @ts-ignore

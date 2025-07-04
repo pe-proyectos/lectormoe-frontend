@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import {
   Alert,
@@ -6,8 +6,13 @@ import {
   Typography,
   IconButton,
   Button,
+  Input,
 } from "@material-tailwind/react";
-import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/solid";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/solid";
 import { AdminMangaCustomCard } from "./AdminMangaCustomCard";
 import { AdminMangaCustomDialog } from "./AdminMangaCustomDialog";
 import { callAPI } from "../../util/callApi";
@@ -24,22 +29,39 @@ export function AdminMangaCustomGrid({ organization, language }) {
   const [selectedManga, setSelectedManga] = useState(null);
   const [isCreateMangaCustomDialogOpen, setIsCreateMangaCustomDialogOpen] =
     useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     refreshMangaProfile();
     refreshSubscriptionPlans();
-  }, [page]);
+  }, [page, debouncedSearchTerm]);
 
   useEffect(() => {
     if (!isCreateMangaCustomDialogOpen) refreshMangaProfile();
   }, [isCreateMangaCustomDialogOpen]);
 
-  const refreshMangaProfile = () => {
+    const refreshMangaProfile = useCallback(() => {
     setLoading(true);
     const query = new URLSearchParams({
-      page,
-      limit: 20,
+      page: page.toString(),
+      order: "latest",
+      limit: "20",
     });
+    
+    if (debouncedSearchTerm.trim()) {
+      query.append("search", debouncedSearchTerm.trim());
+    }
+    
     callAPI(`/api/manga-custom?${query}`)
       .then(({ data, maxPage }) => {
         setMangaList(data);
@@ -47,7 +69,7 @@ export function AdminMangaCustomGrid({ organization, language }) {
       })
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoading(false));
-  };
+  }, [page, debouncedSearchTerm]);
 
   const refreshSubscriptionPlans = () => {
     return callAPI(`/api/subscription-plan`)
@@ -62,6 +84,16 @@ export function AdminMangaCustomGrid({ organization, language }) {
     setIsCreateMangaCustomDialogOpen(true);
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setDebouncedSearchTerm(searchTerm); // Force immediate search on submit
+  };
+
   return (
     <div className="w-full my-4">
       <AdminMangaCustomDialog
@@ -73,27 +105,50 @@ export function AdminMangaCustomGrid({ organization, language }) {
         setMangaCustom={setSelectedManga}
         subscriptionPlans={subscriptionPlans}
       />
-      <Button
-        variant="outlined"
-        className="flex items-center gap-3 h-full sm:m-4"
-        onClick={() => setIsCreateMangaCustomDialogOpen(true)}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="w-6 h-6"
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between sm:m-4">
+        <Button
+          variant="outlined"
+          className="flex items-center gap-3 h-full"
+          onClick={() => setIsCreateMangaCustomDialogOpen(true)}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+            />
+          </svg>
+          {_("add_manga")}
+        </Button>
+
+        <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-72">
+          <Input
+            type="text"
+            placeholder={_("search_mangas")}
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="!border !border-gray-300 bg-white text-gray-900 shadow-lg shadow-gray-900/5 ring-4 ring-transparent placeholder:text-gray-500 focus:!border-gray-900 focus:!border-t-gray-900 focus:ring-gray-900/10"
+            labelProps={{
+              className: "hidden",
+            }}
+            containerProps={{ className: "min-w-[100px]" }}
+            crossOrigin={undefined}
           />
-        </svg>
-        {_("add_manga")}
-      </Button>
+          <button
+            type="submit"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 hover:text-gray-700 cursor-pointer"
+          >
+            <MagnifyingGlassIcon className="h-4 w-4" />
+          </button>
+        </form>
+      </div>
       {!loading && mangaList.length > 0 && (
         <div className="w-full flex flex-wrap items-center justify-around gap-2 sm:gap-4 select-none my-4">
           <div className="flex items-center gap-8">

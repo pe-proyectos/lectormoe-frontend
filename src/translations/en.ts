@@ -415,6 +415,7 @@ export const translations: Record<string, string> = {
   manhuas: "Manhuas",
   manhwas: "Manhwas",
   search_manga: "Search manga...",
+  search_mangas: "Search mangas...",
   my_profile: "My Profile",
   admin: "Admin",
   logout: "Logout",
