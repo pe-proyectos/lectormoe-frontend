@@ -695,7 +695,7 @@ export function Reader({
                 <CommentsCard
                   logged={logged}
                   user={user}
-                  identifier={`${manga.slug}_${chapterNumber}`}
+                  identifier={`${manga.slug}_${chapterNumber}_sidebar`}
                 />
               </div>
             )}
@@ -789,7 +789,7 @@ export function Reader({
           <CommentsCard
             logged={logged}
             user={user}
-            identifier={`${manga.slug}_${chapterNumber}`}
+            identifier={`${manga.slug}_${chapterNumber}_drawer`}
           />
         </Drawer>
         {/* Progress Bar */}
@@ -891,7 +891,7 @@ export function Reader({
                 <CommentsCard
                   logged={logged}
                   user={user}
-                  identifier={`${manga.slug}_${chapterNumber}`}
+                  identifier={`${manga.slug}_${chapterNumber}_accordion`}
                 />
               </AccordionBody>
             </Accordion>

@@ -34,6 +34,15 @@ const formatDate = (date) => {
     : "hoy";
 };
 
+const getSubscriptionDays = (subscriptionDate) => {
+  if (!subscriptionDate) return 0;
+  const startDate = new Date(subscriptionDate);
+  const currentDate = new Date();
+  const diffTime = Math.abs(currentDate.getTime() - startDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
 const CommentListItem = ({
   user,
   logged,
@@ -43,6 +52,9 @@ const CommentListItem = ({
   getComments,
   setSelectedZoomImage,
   setZoomImageDialogOpen,
+  isReply = false,
+  onReply,
+  onHide,
 }) => {
   const [comment, setComment] = useState(initialCommentData);
   const [isVoting, setIsVoting] = useState(false);
@@ -186,89 +198,140 @@ const CommentListItem = ({
       <div className="w-full">
         <div className="flex justify-between items-center">
           <div className="flex gap-2 justify-center items-center">
-            {comment?.user?.imageUrl && (
-              <Avatar
-                variant="circular"
-                alt={comment.user.username}
-                src={comment.user.imageUrl}
-                size="xs"
-              />
-            )}
-            {!comment?.user?.imageUrl && (
-              <IconButton className="rounded-full bg-gray-700" size="sm">
-                <svg
-                  className="w-6 h-6 text-gray-300"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4h-4Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </IconButton>
-            )}
+                         {comment?.user?.imageUrl && (
+               <Avatar
+                 variant="circular"
+                 alt={comment.user.username}
+                 src={comment.user.imageUrl}
+                 size="xs"
+                 className="rounded-full"
+               />
+             )}
+             {!comment?.user?.imageUrl && (
+               <IconButton className="rounded-full bg-gray-700" size="sm">
+                 <svg
+                   className="w-6 h-6 text-gray-300"
+                   aria-hidden="true"
+                   xmlns="http://www.w3.org/2000/svg"
+                   width="24"
+                   height="24"
+                   fill="currentColor"
+                   viewBox="0 0 24 24"
+                 >
+                   <path
+                     fillRule="evenodd"
+                     d="M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2 9a4 4 0 0 0-4 4v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1a4 4 0 0 0-4-4h-4Z"
+                     clipRule="evenodd"
+                   />
+                 </svg>
+               </IconButton>
+             )}
             <div className="flex flex-col">
               <span className="text-gray-400 text-xs">
                 {comment?.user?.username}
               </span>
+                             {comment?.user?.subscriptions && comment.user.subscriptions.length > 0 && (
+                 <span className="text-blue-400 text-xs font-medium">
+                   {comment.user.subscriptions[0].subscriptionPlan.name} • {getSubscriptionDays(comment.user.subscriptions[0].createdAt)} días
+                 </span>
+               )}
               <span className="text-gray-400 text-xs">
                 {formatDate(comment?.createdAt)}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Typography variant="small" color="gray" className="text-xs">
-              {formatDate(comment?.createdAt)}
-            </Typography>
-            {user?.id === comment?.userId && (
-              <button
-                onClick={handleEdit}
-                className="text-gray-400 hover:text-blue-500"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-              </button>
-            )}
-            {(user?.id === comment?.userId || user?.canDeleteComment) && (
-              <button
-                onClick={handleDelete}
-                className="text-gray-400 hover:text-red-500"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
+                     <div className="flex items-center gap-2">
+             <Typography variant="small" color="gray" className="text-xs">
+               {formatDate(comment?.createdAt)}
+             </Typography>
+             <span className="text-gray-500 text-xs">#{comment.id}</span>
+             {!isReply && logged && (
+               <button
+                 onClick={() => onReply(comment.id)}
+                 className="text-gray-400 hover:text-blue-500"
+               >
+                 <svg
+                   xmlns="http://www.w3.org/2000/svg"
+                   className="h-4 w-4"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor"
+                 >
+                   <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     strokeWidth={2}
+                     d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                   />
+                 </svg>
+               </button>
+             )}
+             {user?.id === comment?.userId && (
+               <button
+                 onClick={handleEdit}
+                 className="text-gray-400 hover:text-blue-500"
+               >
+                 <svg
+                   xmlns="http://www.w3.org/2000/svg"
+                   className="h-4 w-4"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor"
+                 >
+                   <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     strokeWidth={2}
+                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                   />
+                 </svg>
+               </button>
+             )}
+             {/* Botón eliminar solo para el autor del comentario */}
+             {user?.id === comment?.userId && (
+               <button
+                 onClick={handleDelete}
+                 className="text-gray-400 hover:text-red-500"
+               >
+                 <svg
+                   xmlns="http://www.w3.org/2000/svg"
+                   className="h-4 w-4"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor"
+                 >
+                   <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     strokeWidth={2}
+                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                   />
+                 </svg>
+               </button>
+             )}
+             {/* Botón ocultar solo para administradores */}
+             {user?.canHideComment && user?.id !== comment?.userId && (
+               <button
+                 onClick={() => onHide(comment)}
+                 className="text-gray-400 hover:text-orange-500"
+               >
+                 <svg
+                   xmlns="http://www.w3.org/2000/svg"
+                   className="h-4 w-4"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   stroke="currentColor"
+                 >
+                   <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     strokeWidth={2}
+                     d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                   />
+                 </svg>
+               </button>
+             )}
+           </div>
         </div>
         <div className="ml-[40px] py-2">
           <Typography
@@ -398,15 +461,41 @@ export function CommentsCard({ identifier, logged, user }) {
   const [zoomImageDialogOpen, setZoomImageDialogOpen] = useState(false);
   const [selectedZoomImage, setSelectedZoomImage] = useState(null);
 
-  const getComments = () => {
-    callAPI(`/api/comment?identifier=${identifier}`).then((comments) => {
+  // Estados para respuestas
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyingToComment, setReplyingToComment] = useState(null);
+
+  // Estados para ocultar comentario (admin)
+  const [hideDialogOpen, setHideDialogOpen] = useState(false);
+  const [selectedCommentToHide, setSelectedCommentToHide] = useState(null);
+  const [hideReason, setHideReason] = useState("");
+  const [isHidingComment, setIsHidingComment] = useState(false);
+
+  // Estado de carga
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Crear un ID único para este componente basado en el identifier
+  const uniqueId = `image-upload-${identifier}`;
+  
+  // Extraer el identifier base (sin el sufijo) para las llamadas a la API
+  const baseIdentifier = identifier.replace(/_sidebar$|_drawer$|_accordion$/, '');
+
+  const getComments = async () => {
+    try {
+      setIsLoading(true);
+      const comments = await callAPI(`/api/comment?identifier=${baseIdentifier}`);
       setComments(comments);
-    });
+    } catch (error) {
+      console.error("Error al cargar comentarios", error);
+      toast.error("Error al cargar comentarios");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
     getComments();
-  }, []);
+  }, [baseIdentifier]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -436,6 +525,60 @@ export function CommentsCard({ identifier, logged, user }) {
     setImagePreview(null);
   };
 
+  const handleReply = (commentId) => {
+    setReplyingTo(commentId);
+    // Encontrar el comentario al que se está respondiendo
+    const targetComment = comments.find(c => c.id === commentId) || 
+                         comments.flatMap(c => c.replies || []).find(r => r.id === commentId);
+    setReplyingToComment(targetComment);
+    // Limpiar la caja de texto principal
+    setCommentText("");
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+    setReplyingToComment(null);
+  };
+
+
+
+  const postReply = async () => {
+    if (!logged) {
+      toast.error("Debes estar logueado para comentar");
+      return;
+    }
+    if (commentText.length < 1) {
+      toast.error("La respuesta no puede estar vacía");
+      return;
+    }
+    if (commentText.length > 200) {
+      toast.error("La respuesta no puede tener más de 200 caracteres");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("identifier", baseIdentifier);
+    formData.append("parentId", replyingTo.toString());
+    if (imageFile) formData.append("image", imageFile);
+    formData.append("comment", commentText.trim());
+    
+    try {
+      await callAPI("/api/comment", {
+        method: "POST",
+        body: formData,
+      });
+      cancelReply();
+      setCommentText("");
+      clearImage();
+      getComments();
+    } catch (error) {
+      console.error("Error al responder", error);
+      toast.error("Error al responder");
+    }
+  };
+
   const postComment = async () => {
     if (!logged) {
       toast.error("Debes estar logueado para comentar");
@@ -450,24 +593,57 @@ export function CommentsCard({ identifier, logged, user }) {
       return;
     }
 
-    setCommentText("");
-    clearImage();
+    // Si estamos respondiendo a un comentario, usar postReply
+    if (replyingTo) {
+      await postReply();
+      return;
+    }
 
     const formData = new FormData();
-    formData.append("identifier", identifier);
+    formData.append("identifier", baseIdentifier);
     if (imageFile) formData.append("image", imageFile);
     formData.append("comment", commentText.trim());
-    callAPI("/api/comment", {
-      method: "POST",
-      body: formData,
-    })
-      .then(() => {
-        getComments();
-      })
-      .catch((error) => {
-        console.error("Error al comentar", error);
-        toast.error("Error al comentar");
+    
+    try {
+      await callAPI("/api/comment", {
+        method: "POST",
+        body: formData,
       });
+      setCommentText("");
+      clearImage();
+      getComments();
+    } catch (error) {
+      console.error("Error al comentar", error);
+      toast.error("Error al comentar");
+    }
+  };
+
+  // Función para manejar el ocultamiento de comentarios (admin)
+  const handleHideComment = async () => {
+    if (!selectedCommentToHide || isHidingComment) return;
+
+    try {
+      setIsHidingComment(true);
+      await callAPI(`/api/comment/${selectedCommentToHide.id}/hide`, {
+        method: "POST",
+        body: JSON.stringify({ reason: hideReason }),
+      });
+      toast.success("Comentario ocultado exitosamente");
+      getComments();
+      setHideDialogOpen(false);
+      setHideReason("");
+      setSelectedCommentToHide(null);
+    } catch (error) {
+      console.error("Error al ocultar comentario", error);
+      toast.error("Error al ocultar el comentario");
+    } finally {
+      setIsHidingComment(false);
+    }
+  };
+
+  const handleHide = (comment) => {
+    setSelectedCommentToHide(comment);
+    setHideDialogOpen(true);
   };
 
   return (
@@ -482,71 +658,96 @@ export function CommentsCard({ identifier, logged, user }) {
         className="h-full w-full overflow-y-scroll [&::-webkit-scrollbar]:w-1
   [&::-webkit-scrollbar-track]:bg-gray-800
   [&::-webkit-scrollbar-thumb]:bg-gray-600"
-      >
-        {comments.length === 0 ? (
-          <div className="flex h-full w-full flex-col gap-2 justify-center items-center py-4">
-            <Typography
-              variant="paragraph"
-              color="gray"
-              className="text-center"
-            >
-              Aún no hay comentarios.
-            </Typography>
-            <Typography
-              variant="paragraph"
-              color="gray"
-              className="text-center"
-            >
-              ¡Sé el primero en comentar!
-            </Typography>
-          </div>
-        ) : (
+             >
+         {isLoading ? (
+           <div className="flex h-full w-full flex-col gap-2 justify-center items-center py-4">
+             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+             <Typography
+               variant="paragraph"
+               color="gray"
+               className="text-center"
+             >
+               Cargando comentarios...
+             </Typography>
+           </div>
+         ) : comments.length === 0 ? (
+           <div className="flex h-full w-full flex-col gap-2 justify-center items-center py-4">
+             <Typography
+               variant="paragraph"
+               color="gray"
+               className="text-center"
+             >
+               Aún no hay comentarios.
+             </Typography>
+             <Typography
+               variant="paragraph"
+               color="gray"
+               className="text-center"
+             >
+               ¡Sé el primero en comentar!
+             </Typography>
+           </div>
+         ) : (
           <List className="py-0 my-0">
             {comments.map((comment) => (
-              <CommentListItem
-                key={comment.id}
-                user={user}
-                comment={comment}
-                logged={logged}
-                comments={comments}
-                setComments={setComments}
-                getComments={getComments}
-                setSelectedZoomImage={setSelectedZoomImage}
-                setZoomImageDialogOpen={setZoomImageDialogOpen}
-              />
+              <div key={comment.id}>
+                <CommentListItem
+                  user={user}
+                  comment={comment}
+                  logged={logged}
+                  comments={comments}
+                  setComments={setComments}
+                  getComments={getComments}
+                  setSelectedZoomImage={setSelectedZoomImage}
+                  setZoomImageDialogOpen={setZoomImageDialogOpen}
+                  onReply={handleReply}
+                  onHide={handleHide}
+                />
+                
+                
+
+                                 {/* Mostrar respuestas */}
+                 {comment.replies && comment.replies.length > 0 && (
+                   <div className="ml-8">
+                     {comment.replies.map((reply) => (
+                       <CommentListItem
+                         key={reply.id}
+                         user={user}
+                         comment={reply}
+                         logged={logged}
+                         comments={comments}
+                         setComments={setComments}
+                         getComments={getComments}
+                         setSelectedZoomImage={setSelectedZoomImage}
+                         setZoomImageDialogOpen={setZoomImageDialogOpen}
+                         isReply={true}
+                         onReply={handleReply}
+                         onHide={handleHide}
+                       />
+                     ))}
+                   </div>
+                 )}
+              </div>
             ))}
           </List>
         )}
       </div>
-      {/* Caja comentarios */}
-      <div
-        className={
-          "mt-4 flex flex-col border border-gray-700 p-2 m-0 " +
-          (logged ? "bg-gray-800" : "bg-gray-900")
-        }
-      >
-        <div className="flex w-full flex-row items-center gap-2">
-          <div className="flex w-4 min-w-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-              id="image-upload"
-              disabled={!logged}
-            />
-            <label
-              htmlFor="image-upload"
-              className={"cursor-pointer " + (!logged && "opacity-50")}
-            >
-              <IconButton
-                variant="text"
-                className="rounded-full text-white"
-                type="button"
-                disabled={!logged}
-                onClick={() => {
-                  document.getElementById("image-upload").click();
-                }}
+             {/* Caja comentarios */}
+       <div
+         className={
+           "mt-4 flex flex-col border border-gray-700 p-2 m-0 " +
+           (logged ? "bg-gray-800" : "bg-gray-900")
+         }
+       >
+                   {/* Indicador de respuesta */}
+          {replyingTo && replyingToComment && (
+            <div className="flex items-center gap-2 mb-2 p-2 bg-blue-900/20 rounded-md">
+              <span className="text-blue-400 text-sm">
+                Respondiendo al comentario #{replyingToComment.id}
+              </span>
+              <button
+                onClick={cancelReply}
+                className="text-red-400 hover:text-red-300"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -554,66 +755,112 @@ export function CommentsCard({ identifier, logged, user }) {
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M12 4.5v15m7.5-7.5h-15"
+                    d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-              </IconButton>
-            </label>
-          </div>
-          <div className="flex-grow flex flex-col gap-4 justify-center items-center">
-            <Textarea
-              rows={1}
-              resize={true}
-              placeholder={logged ? "Comentar" : "Inicia sesión para comentar"}
-              maxLength={200}
-              minLength={1}
-              className="min-h-full !border-0 focus:border-transparent text-white bg-transparent no-scrollbar"
-              disabled={!logged}
-              containerProps={{
-                className: "grid h-full",
-              }}
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  postComment();
-                }
-              }}
-            />
-          </div>
-          <div>
-            <IconButton
-              variant="text"
-              className="rounded-full text-white"
-              onClick={postComment}
-              disabled={!logged}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                className="h-5 w-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
-                />
-              </svg>
-            </IconButton>
-          </div>
-        </div>
+              </button>
+            </div>
+          )}
+         <div className="flex w-full flex-row items-center gap-2">
+           <div className="flex w-4 min-w-4">
+             <input
+               type="file"
+               accept="image/*"
+               onChange={handleImageUpload}
+               className="hidden"
+               id={uniqueId}
+               disabled={!logged}
+             />
+             <label
+               htmlFor={uniqueId}
+               className={"cursor-pointer " + (!logged && "opacity-50")}
+             >
+               <IconButton
+                 variant="text"
+                 className="rounded-full text-white"
+                 type="button"
+                 disabled={!logged}
+                 onClick={() => {
+                   document.getElementById(uniqueId).click();
+                 }}
+               >
+                 <svg
+                   xmlns="http://www.w3.org/2000/svg"
+                   fill="none"
+                   viewBox="0 0 24 24"
+                   strokeWidth={1.5}
+                   stroke="currentColor"
+                   className="w-5 h-5"
+                 >
+                   <path
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                     d="M12 4.5v15m7.5-7.5h-15"
+                   />
+                 </svg>
+               </IconButton>
+             </label>
+           </div>
+           <div className="flex-grow flex flex-col gap-4 justify-center items-center">
+             <Textarea
+               rows={1}
+               resize={true}
+               placeholder={
+                 replyingTo 
+                   ? "Escribir respuesta..." 
+                   : logged 
+                     ? "Comentar" 
+                     : "Inicia sesión para comentar"
+               }
+               maxLength={200}
+               minLength={1}
+               className="min-h-full !border-0 focus:border-transparent text-white bg-transparent no-scrollbar"
+               disabled={!logged}
+               containerProps={{
+                 className: "grid h-full",
+               }}
+               labelProps={{
+                 className: "before:content-none after:content-none",
+               }}
+               value={commentText}
+               onChange={(e) => setCommentText(e.target.value)}
+               onKeyDown={(e) => {
+                 if (e.key === "Enter") {
+                   e.preventDefault();
+                   postComment();
+                 }
+               }}
+             />
+           </div>
+           <div>
+             <IconButton
+               variant="text"
+               className="rounded-full text-white"
+               onClick={postComment}
+               disabled={!logged}
+             >
+               <svg
+                 xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor"
+                 strokeWidth={2}
+                 className="h-5 w-5"
+               >
+                 <path
+                   strokeLinecap="round"
+                   strokeLinejoin="round"
+                   d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                 />
+               </svg>
+             </IconButton>
+           </div>
+         </div>
         <div className="flex-grow flex flex-col gap-4 justify-center items-center">
           {imagePreview && (
             <div className="relative mt-2">
@@ -668,6 +915,53 @@ export function CommentsCard({ identifier, logged, user }) {
             className="mr-1"
           >
             <span>Cerrar</span>
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Dialog para ocultar comentario */}
+      <Dialog open={hideDialogOpen} handler={() => setHideDialogOpen(false)}>
+        <DialogHeader className="text-white bg-gray-900">
+          Ocultar Comentario #{selectedCommentToHide?.id}
+        </DialogHeader>
+        <DialogBody className="bg-gray-900">
+          <div className="mb-4">
+            <Typography variant="small" color="gray" className="text-white">
+              Comentario de: {selectedCommentToHide?.user?.username}
+            </Typography>
+            <Typography variant="paragraph" className="mt-2 text-white">
+              "{selectedCommentToHide?.comment}"
+            </Typography>
+          </div>
+          <Textarea
+            label="Razón para ocultar"
+            value={hideReason}
+            onChange={(e) => setHideReason(e.target.value)}
+            placeholder="Explica por qué ocultas este comentario..."
+            className="text-white bg-gray-800"
+            labelProps={{
+              className: "text-gray-400",
+            }}
+            disabled={isHidingComment}
+          />
+        </DialogBody>
+        <DialogFooter className="bg-gray-900">
+          <Button
+            variant="text"
+            color="red"
+            onClick={() => setHideDialogOpen(false)}
+            className="mr-1"
+            disabled={isHidingComment}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="gradient" 
+            color="orange" 
+            onClick={handleHideComment}
+            disabled={isHidingComment}
+          >
+            {isHidingComment ? "Ocultando..." : "Ocultar Comentario"}
           </Button>
         </DialogFooter>
       </Dialog>
