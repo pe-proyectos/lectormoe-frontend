@@ -507,4 +507,11 @@ export const translations: Record<string, string> = {
   hierarchy_level: "Hierarchy level",
   profile_image: "Profile image",
   drop_profile_image: "Drag and drop profile image",
+  edit_profile: "Edit Profile",
+  upload_profile_picture: "Upload profile picture",
+  current_profile_picture: "Current profile picture:",
+  write_description: "Write a description about yourself...",
+  profile_updated_successfully: "Profile updated successfully",
+  error_updating_profile: "Error updating profile",
+  saving: "Saving...",
 };

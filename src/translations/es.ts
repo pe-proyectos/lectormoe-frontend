@@ -517,4 +517,11 @@ export const translations: Record<string, string> = {
   hierarchy_level: "Nivel de jerarquía",
   profile_image: "Imagen de perfil",
   drop_profile_image: "Arrastra y suelta la imagen de perfil",
+  edit_profile: "Editar Perfil",
+  upload_profile_picture: "Subir foto de perfil",
+  current_profile_picture: "Foto de perfil actual:",
+  write_description: "Escribe una descripción sobre ti...",
+  profile_updated_successfully: "Perfil actualizado exitosamente",
+  error_updating_profile: "Error al actualizar el perfil",
+  saving: "Guardando...",
 };
