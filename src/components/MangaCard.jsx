@@ -9,7 +9,7 @@ import {
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
-export function MangaCard({ organization, language, manga }) {
+export function MangaCard({ organization, language, manga, user}) {
   const _ = getTranslator(language);
 
   if (!manga) {
@@ -22,6 +22,34 @@ export function MangaCard({ organization, language, manga }) {
       </Card>
     );
   }
+
+  function isAdult(birthdate) {
+    if (!birthdate) return false;
+    const today = new Date();
+    const dateBirthdate = new Date(birthdate);
+
+    let age = today.getFullYear() - dateBirthdate.getFullYear();
+
+    const agemonth = today.getMonth() - dateBirthdate.getMonth();
+    const ageday = today.getDate() - dateBirthdate.getDate();
+
+    if (agemonth < 0 || (agemonth === 0 && ageday < 0)) {
+      age--;
+    }
+    return age >= 18;
+  }
+
+  const HandleNSFWClick = (e, href) => {
+    e.preventDefault();
+
+    if (!user.birthdate || !isAdult(user.birthdate)) {
+      location.href = `/profile/${user.slug}`;
+      return;
+    }
+
+    location.href = href;
+  }
+
   const formatDate = (date) => {
     if (!date) return "";
     const dt = new Date(date);
@@ -58,6 +86,7 @@ export function MangaCard({ organization, language, manga }) {
     return "hoy";
   };
 
+  const shouldBlur = manga.isNSFW === true && (!user?.birthdate || !isAdult(user.birthdate));
   return (
     <Card
       shadow={false}
@@ -74,57 +103,67 @@ export function MangaCard({ organization, language, manga }) {
           alt={manga.title}
           decoding="async"
           loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300 group-hover:filter group-hover:brightness-90 select-none"
+          className={`absolute inset-0 w-full h-full object-cover 
+                     hover:scale-105 transition-transform duration-300 
+                     group-hover:filter group-hover:brightness-90 select-none
+                     ${shouldBlur ? "blur-md" : ""}`}
         />
+
         {/* if lastChapterAt was released in the last 3 days show a chip */}
-        <div className="absolute top-2 right-2">
-          <div className="flex flex-wrap gap-2">
-            {manga?.lastChapterAt &&
-              new Date(manga.lastChapterAt) >
+        {!shouldBlur && (
+          <div className="absolute top-2 right-2">
+            <div className="flex flex-wrap gap-2">
+              {manga?.lastChapterAt &&
+                new Date(manga.lastChapterAt) >
                 new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
-                <Tooltip
-                  content={
-                    new Date(manga.lastChapterAt).getTime() >
-                    new Date().setHours(0, 0, 0, 0)
-                      ? manga?.lastChapters?.[0]?.number
-                        ? `${_("the_chapter")} ${
-                            manga?.lastChapters?.[0]?.number
+                  <Tooltip
+                    content={
+                      new Date(manga.lastChapterAt).getTime() >
+                        new Date().setHours(0, 0, 0, 0)
+                        ? manga?.lastChapters?.[0]?.number
+                          ? `${_("the_chapter")} ${manga?.lastChapters?.[0]?.number
                           } ${_("was_released_today")}`
-                        : _("most_recent_chapter_was_released_today")
-                      : manga?.lastChapters?.[0]?.number
-                      ? `${_("the_chapter")} ${
-                          manga?.lastChapters?.[0]?.number
-                        } ${_("was_released_at")} ${new Date(
-                          manga.lastChapterAt
-                        ).toLocaleDateString()}`
-                      : `${_("most_recent_chapter_was_released_at")} ${new Date(
-                          manga.lastChapterAt
-                        ).toLocaleDateString()}`
-                  }
-                >
+                          : _("most_recent_chapter_was_released_today")
+                        : manga?.lastChapters?.[0]?.number
+                          ? `${_("the_chapter")} ${manga?.lastChapters?.[0]?.number
+                          } ${_("was_released_at")} ${new Date(
+                            manga.lastChapterAt
+                          ).toLocaleDateString()}`
+                          : `${_("most_recent_chapter_was_released_at")} ${new Date(
+                            manga.lastChapterAt
+                          ).toLocaleDateString()}`
+                    }
+                  >
+                    <Chip
+                      variant="outlined"
+                      value={_("new_chapter")}
+                      //@ts-ignore
+                      onClick={(e) => {
+                        const href = manga?.lastChapters?.[0]
+                          ? `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`
+                          : `/manga/${manga.slug}`;
+
+                        if (manga.isNSFW === true) {
+                          HandleNSFWClick(e, href);
+                        } else {
+                          location.href = href;
+                        }
+                      }}
+                    />
+                  </Tooltip>
+                )}
+              {manga?.isSimulRelease && (
+                <Tooltip content={_("simulrelease_tooltip")}>
                   <Chip
                     variant="outlined"
-                    value={_("new_chapter")}
-                    className="backdrop-blur-sm bg-green-500 bg-opacity-80 text-white cursor-pointer"
-                    onClick={() => {
-                      location.href = manga?.lastChapters?.[0]
-                        ? `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`
-                        : `/manga/${manga.slug}`;
-                    }}
+                    value={_("simulrelease")}
+                    className="backdrop-blur-sm bg-gradient-to-r bg-red-500 bg-opacity-80 text-white"
                   />
                 </Tooltip>
               )}
-            {manga?.isSimulRelease && (
-              <Tooltip content={_("simulrelease_tooltip")}>
-                <Chip
-                  variant="outlined"
-                  value={_("simulrelease")}
-                  className="backdrop-blur-sm bg-gradient-to-r bg-red-500 bg-opacity-80 text-white"
-                />
-              </Tooltip>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </CardHeader>
       <CardBody className="relative py-14 px-6 md:px-12">
         <figcaption
@@ -135,9 +174,14 @@ export function MangaCard({ organization, language, manga }) {
             <Tooltip content={manga.title}>
               <Typography
                 as="a"
-                href={`/manga/${manga.slug}`}
+                href={manga.isNSFW === true ? `/profile/${user.slug}` : `/manga/${manga.slug}`}
                 color="blue-gray"
                 className="font-semibold hover:underline cursor-pointer"
+                onClick={(e) => {
+                  if (manga.isNSFW === true) {
+                    HandleNSFWClick(e, `/manga/${manga.slug}`);
+                  }
+                }}
               >
                 {manga.title.length > 40
                   ? manga.title.slice(0, 40 - 3) + "..."
@@ -150,7 +194,7 @@ export function MangaCard({ organization, language, manga }) {
               <div>
                 <Typography
                   as="a"
-                  href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
+                  href={manga.isNSFW === true ? "/profile" : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
                   color="gray"
                   className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                 >
@@ -158,9 +202,14 @@ export function MangaCard({ organization, language, manga }) {
                 </Typography>
                 <Typography
                   as="a"
-                  href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
+                  href={manga.isNSFW === true ? "/profile" : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
                   color="gray"
                   className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
+                  onClick={(e) => {
+                    if (manga.isNSFW === true) {
+                      HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`);
+                    }
+                  }}
                 >
                   {manga?.lastChapters?.[0]?.subscribersOnly
                     ? _("only_for_subscribers")
@@ -172,17 +221,27 @@ export function MangaCard({ organization, language, manga }) {
               <div>
                 <Typography
                   as="a"
-                  href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                  href={manga.isNSFW === true ? "/profile" : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
                   color="gray"
                   className="font-normal text-xs hover:underline cursor-pointer"
+                  onClick={(e) => {
+                    if (manga.isNSFW === true) {
+                      HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`);
+                    }
+                  }}
                 >
                   {_("chapter")} {manga?.lastChapters?.[1]?.number}
                 </Typography>
                 <Typography
                   as="a"
-                  href={`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                  href={manga.isNSFW === true ? "/profile" : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
                   color="gray"
                   className="font-normal text-xs hover:underline cursor-pointer"
+                  onClick={(e) => {
+                    if (manga.isNSFW === true) {
+                      HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`);
+                    }
+                  }}
                 >
                   {manga?.lastChapters?.[1]?.subscribersOnly
                     ? _("only_for_subscribers")

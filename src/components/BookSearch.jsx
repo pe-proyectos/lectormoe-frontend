@@ -6,7 +6,7 @@ import { MangaCard } from "./MangaCard";
 import { PageNavigation } from "./PageNavigation";
 import { getTranslator } from "../util/translate";
 
-export function BookSearch({ organization, language }) {
+export function BookSearch({ organization, language, user }) {
   const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);
@@ -293,6 +293,7 @@ export function BookSearch({ organization, language }) {
             organization={organization}
             language={language}
             manga={manga}
+            user ={user}
           />
         ))}
       </div>

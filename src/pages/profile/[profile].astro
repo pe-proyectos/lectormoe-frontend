@@ -8,6 +8,7 @@ const { language, user, logged, username } = Astro.locals;
 const _ = getTranslator(language);
 if (!logged) {
   Astro.redirect("/login");
+  
 }
 ---
 
@@ -18,4 +19,5 @@ if (!logged) {
     username={username}
     client:only="react"
   />
+  
 </Layout>

@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import { BookSearch } from "../components/BookSearch.jsx";
 import { getTranslator } from "../util/translate";
 
-const { organization, language } = Astro.locals;
+const { organization, language, user } = Astro.locals;
 const _ = getTranslator(language);
 ---
 
@@ -11,6 +11,7 @@ const _ = getTranslator(language);
   <BookSearch
     organization={organization}
     language={language}
+    user={user}
     client:only="react"
   />
 </Layout>

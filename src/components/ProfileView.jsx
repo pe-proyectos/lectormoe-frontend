@@ -18,6 +18,9 @@ export function ProfileView({ language, user, username }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [newImage, setNewImage] = useState(null);
   const [newDescription, setNewDescription] = useState(user.description || "");
+  
+  const [newBirthdate, setBirthdate] = useState(user?.birthdate? new Date(user.birthdate).toISOString().slice(0,10) : "");
+
   const [updating, setUpdating] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
 
@@ -68,6 +71,9 @@ export function ProfileView({ language, user, username }) {
       if (newDescription !== currentUser.description) {
         formData.append('description', newDescription);
       }
+      if (newBirthdate !== currentUser.birthdate) {
+        formData.append('birthdate', newBirthdate);
+      }
 
       const response = await callAPI(`/api/user/${currentUser.id}`, {
         method: 'PATCH',
@@ -80,6 +86,7 @@ export function ProfileView({ language, user, username }) {
         setEditDialogOpen(false);
         setNewImage(null);
         setNewDescription(response.data.description || "");
+        setBirthdate(response.data.birthdate || "");
       }
     } catch (error) {
       toast.error(error?.message || _("error_updating_profile") || "Error al actualizar el perfil");
@@ -92,6 +99,7 @@ export function ProfileView({ language, user, username }) {
     setEditDialogOpen(false);
     setNewImage(null);
     setNewDescription(currentUser.description || "");
+    setBirthdate(currentUser.data.birthdate || "");
   };
 
   return (
@@ -236,13 +244,18 @@ export function ProfileView({ language, user, username }) {
 
       {/* Edit Profile Dialog */}
       <Dialog open={editDialogOpen} handler={() => setEditDialogOpen(false)} size="md">
+
         <DialogHeader>
           <Typography variant="h5">
             {_("edit_profile") || "Editar Perfil"}
           </Typography>
         </DialogHeader>
+
+
         <DialogBody className="overflow-y-auto max-h-[60vh]">
           <div className="space-y-6">
+
+
             <div>
               <Typography variant="h6" className="mb-3">
                 {_("profile_picture") || "Foto de Perfil"}
@@ -269,6 +282,22 @@ export function ProfileView({ language, user, username }) {
             </div>
 
             <div>
+
+              <Typography variant="h6" className="mb-3">
+                {_("birthdate") || "Fecha de Nacimiento"}
+              </Typography>
+
+              <input 
+              type="date" 
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+              value={newBirthdate} 
+              onChange={(e) => setBirthdate(e.target.value)}>
+              </input>
+
+            </div>
+
+
+            <div>
               <Typography variant="h6" className="mb-3">
                 {_("description") || "Descripción"}
               </Typography>
@@ -280,6 +309,8 @@ export function ProfileView({ language, user, username }) {
                 placeholder={_("write_description") || "Escribe una descripción sobre ti..."}
               />
             </div>
+
+
           </div>
         </DialogBody>
         <DialogFooter>

@@ -182,6 +182,7 @@ export const translations: Record<string, string> = {
   price: "Precio",
   price_usd: "Precio (USD)",
   interval: "Intervalo",
+  birthdate: "Fecha de Nacimiento",
   currency: "Moneda",
   daily: "Diario",
   weekly: "Semanal",
@@ -518,6 +519,7 @@ export const translations: Record<string, string> = {
   profile_image: "Imagen de perfil",
   drop_profile_image: "Arrastra y suelta la imagen de perfil",
   edit_profile: "Editar Perfil",
+  
   upload_profile_picture: "Subir foto de perfil",
   current_profile_picture: "Foto de perfil actual:",
   write_description: "Escribe una descripción sobre ti...",

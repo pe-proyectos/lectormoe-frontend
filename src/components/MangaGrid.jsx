@@ -19,7 +19,8 @@ export function MangaGrid({
   organization,
   language,
   logged,
-  subscriptionPlans,
+  subscriptionPlans, 
+  user
 }) {
   const _ = getTranslator(language);
 
@@ -335,6 +336,7 @@ export function MangaGrid({
                     organization={organization}
                     language={language}
                     key={n}
+                    user={user}
                     manga={null}
                   />
                 ))}
@@ -347,6 +349,7 @@ export function MangaGrid({
                   organization={organization}
                   language={language}
                   key={manga.id}
+                  user={user}
                   manga={manga}
                 />
               </div>
@@ -387,6 +390,7 @@ export function MangaGrid({
                     organization={organization}
                     language={language}
                     key={n}
+                    user={user}
                     manga={null}
                   />
                 ))}
@@ -399,6 +403,7 @@ export function MangaGrid({
                   organization={organization}
                   language={language}
                   key={manga.id}
+                  user={user}
                   manga={manga}
                 />
               </div>
