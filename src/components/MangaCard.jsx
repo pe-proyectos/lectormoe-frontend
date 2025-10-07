@@ -9,7 +9,7 @@ import {
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 
-export function MangaCard({ organization, language, manga, user}) {
+export function MangaCard({ organization, language, manga, user }) {
   const _ = getTranslator(language);
 
   if (!manga) {
@@ -41,6 +41,10 @@ export function MangaCard({ organization, language, manga, user}) {
 
   const HandleNSFWClick = (e, href) => {
     e.preventDefault();
+    if (!user?.slug) {
+      location.href = `/register?redirect=${location.pathname}`;
+      return;
+    }
 
     if (!user?.birthdate || !isAdult(user?.birthdate)) {
       location.href = `/profile/${user.slug}`;
@@ -137,6 +141,7 @@ export function MangaCard({ organization, language, manga, user}) {
                     <Chip
                       variant="outlined"
                       value={_("new_chapter")}
+                      className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer"
                       //@ts-ignore
                       onClick={(e) => {
                         const href = manga?.lastChapters?.[0]
@@ -174,11 +179,12 @@ export function MangaCard({ organization, language, manga, user}) {
             <Tooltip content={manga.title}>
               <Typography
                 as="a"
-                href={manga.isNSFW === true ? (user?.slug? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}`}
+                href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}`}
                 color="blue-gray"
                 className="font-semibold hover:underline cursor-pointer"
                 onClick={(e) => {
                   if (manga.isNSFW === true) {
+                    e.preventDefault();
                     HandleNSFWClick(e, `/manga/${manga.slug}`);
                   }
                 }}
@@ -194,7 +200,7 @@ export function MangaCard({ organization, language, manga, user}) {
               <div>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
                   color="gray"
                   className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                 >
@@ -202,11 +208,12 @@ export function MangaCard({ organization, language, manga, user}) {
                 </Typography>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
                   color="gray"
                   className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                   onClick={(e) => {
                     if (manga.isNSFW === true) {
+                      e.preventDefault();
                       HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`);
                     }
                   }}
@@ -221,11 +228,12 @@ export function MangaCard({ organization, language, manga, user}) {
               <div>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
                   color="gray"
                   className="font-normal text-xs hover:underline cursor-pointer"
                   onClick={(e) => {
                     if (manga.isNSFW === true) {
+                      e.preventDefault();
                       HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`);
                     }
                   }}
@@ -234,7 +242,7 @@ export function MangaCard({ organization, language, manga, user}) {
                 </Typography>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
                   color="gray"
                   className="font-normal text-xs hover:underline cursor-pointer"
                   onClick={(e) => {
