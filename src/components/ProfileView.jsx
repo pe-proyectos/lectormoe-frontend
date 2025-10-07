@@ -19,7 +19,7 @@ export function ProfileView({ language, user, username }) {
   const [newImage, setNewImage] = useState(null);
   const [newDescription, setNewDescription] = useState(user.description || "");
   
-  const [newBirthdate, setBirthdate] = useState(user?.birthdate? new Date(user.birthdate).toISOString().slice(0,10) : "");
+  const [newBirthdate, setBirthdate] = useState(user?.birthdate? new Date(user?.birthdate).toISOString().slice(0,10) : "");
 
   const [updating, setUpdating] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
