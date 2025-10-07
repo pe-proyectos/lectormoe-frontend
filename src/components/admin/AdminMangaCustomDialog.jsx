@@ -54,6 +54,7 @@ export function AdminMangaCustomDialog({
   const [nextChapterDate, setNextChapterDate] = useState(null);
   const [requireLogin, setRequireLogin] = useState(false);
   const [isSimulRelease, setIsSimulRelease] = useState(false);
+  const [isNSFW, setIsNSFW] = useState(false);
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [bannerImageFile, setBannerImageFile] = useState(null);
 
@@ -68,6 +69,7 @@ export function AdminMangaCustomDialog({
     setNextChapterDate(mangaCustom?.nextChapterAt || null);
     setRequireLogin(mangaCustom?.requireLogin || false);
     setIsSimulRelease(mangaCustom?.isSimulRelease || false);
+    setIsNSFW(mangaCustom?.isNSFW || false);
     setCoverImageFile(mangaCustom?.imageUrl || null);
     setBannerImageFile(mangaCustom?.bannerUrl || null);
     setSelectedGenres(mangaCustom?.genres || []);
@@ -86,6 +88,7 @@ export function AdminMangaCustomDialog({
       setNextChapterDate(null);
       setRequireLogin(false);
       setIsSimulRelease(false);
+      setIsNSFW(false);
       setCoverImageFile(null);
       setBannerImageFile(null);
       setSelectedGenres([]);
@@ -152,6 +155,8 @@ export function AdminMangaCustomDialog({
       formData.append("requireLogin", requireLogin.toString());
     if (isSimulRelease !== undefined)
       formData.append("isSimulRelease", isSimulRelease.toString());
+    if (isNSFW !== undefined)
+      formData.append("isNSFW", isNSFW.toString());
     if (selectedGenres.length > 0)
       formData.append(
         "genreIds",
@@ -186,6 +191,7 @@ export function AdminMangaCustomDialog({
         setNextChapterDate(null);
         setRequireLogin(false);
         setIsSimulRelease(false);
+        setIsNSFW(false);
         setCoverImageFile(null);
         setBannerImageFile(null);
         setSelectedGenres([]);
@@ -422,6 +428,14 @@ export function AdminMangaCustomDialog({
           label={_("SimulRelease")}
           checked={isSimulRelease}
           onChange={(e) => setIsSimulRelease(e.target.checked)}
+        />
+        <Typography className="-mb-2" variant="h6" color="gray">
+          {_("Manga +18")}
+        </Typography>
+        <Checkbox
+          label={_("NSFW")}
+          checked={isNSFW}
+          onChange={(e) => setIsNSFW(e.target.checked)}
         />
         <Typography className="-mb-2" variant="h6" color="gray">
           {_("require_login")} ({_("optional")})
