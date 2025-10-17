@@ -352,6 +352,13 @@ export const translations: Record<string, string> = {
   portuguese: "Portuguese",
   manga_section: "Manga Section",
   enable_manga_section: "Enable manga section",
+
+  main_DiscordWebhookNewChapter: "Enable Discord Webhook URL",
+  enable_DiscordWebhookNewChapter: "Enable Discord Webhook (New Chapter)",
+
+  main_DiscordWebhookNewSubscription: "Enable Discord Webhook URL",
+  enable_DiscordWebhookNewSubscription: "Enable Discord Webhook (New Subscription)",
+
   manhua_section: "Manhua Section",
   enable_manhua_section: "Enable manhua section",
   manhwa_section: "Manhwa Section",

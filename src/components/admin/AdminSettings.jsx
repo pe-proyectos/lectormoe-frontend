@@ -37,6 +37,14 @@ export function AdminSettings({
     useState(false);
   const [enableMainSlider, setEnableMainSlider] = useState(false);
   const [enableMainBanner, setEnableMainBanner] = useState(false);
+
+
+  const [enableDiscordWebhookNewChapter, setEnableDiscordWebhookNewChapter] = useState(false);
+  const [enableDiscordWebhookNewSubscription, setEnableDiscordWebhookNewSubscription] = useState(false);
+
+  const [discordWebhookUrlNewChapter, setDiscordWebhookUrlNewChapter] = useState("");
+  const [discordWebhookUrlNewSubscription, setDiscordWebhookUrlNewSubscription] = useState("");
+
   const [useBlockedCountries, setUseBlockedCountries] = useState(false);
   const [useAllowedCountries, setUseAllowedCountries] = useState(false);
   const [enableGoogleAds, setEnableGoogleAds] = useState(false);
@@ -123,9 +131,7 @@ export function AdminSettings({
         setEnableMangaSection(organization.enableMangaSection || false);
         setEnableManhuaSection(organization.enableManhuaSection || false);
         setEnableManhwaSection(organization.enableManhwaSection || false);
-        setEnableSubscriptionSection(
-          organization.enableSubscriptionSection || false
-        );
+        setEnableSubscriptionSection(organization.enableSubscriptionSection || false);
         setEnableMainSlider(organization.enableMainSlider || false);
         setEnableMainBanner(organization.enableMainBanner || false);
         setUseBlockedCountries(organization.useBlockedCountries || false);
@@ -134,6 +140,21 @@ export function AdminSettings({
         // Integrations
         setEnableGoogleAds(organization.enableGoogleAds || false);
         setEnableAdsterraAds(organization.enableAdsterraAds || false);
+
+        setEnableDiscordWebhookNewChapter(
+          organization.enableDiscordWebhookNewChapter === true ||
+          organization.enableDiscordWebhookNewChapter === "true"
+        );
+        setEnableDiscordWebhookNewSubscription(
+          organization.enableDiscordWebhookNewSubscription === true ||
+          organization.enableDiscordWebhookNewSubscription === "true"
+        );
+
+        setDiscordWebhookUrlNewChapter(organization.discordWebhookUrlNewChapter || "");
+        setDiscordWebhookUrlNewSubscription(
+          organization.discordWebhookUrlNewSubscription || ""
+        );
+
         // Social
         setFacebookUrl(organization.facebookUrl || "");
         setTwitterUrl(organization.twitterUrl || "");
@@ -174,6 +195,13 @@ export function AdminSettings({
     );
     formData.append("enableMainSlider", enableMainSlider.toString());
     formData.append("enableMainBanner", enableMainBanner.toString());
+
+    formData.append("enableDiscordWebhookNewChapter", enableDiscordWebhookNewChapter.toString());
+    formData.append("enableDiscordWebhookNewSubscription", enableDiscordWebhookNewSubscription.toString());
+
+    formData.append("discordWebhookUrlNewChapter", discordWebhookUrlNewChapter);
+    formData.append("discordWebhookUrlNewSubscription", discordWebhookUrlNewSubscription);
+
     formData.append("useBlockedCountries", useBlockedCountries.toString());
     formData.append("useAllowedCountries", useAllowedCountries.toString());
     formData.append("enableGoogleAds", enableGoogleAds.toString());
@@ -215,6 +243,7 @@ export function AdminSettings({
             {_("information")}
           </AccordionHeader>
           <AccordionBody>
+
             <div className="flex flex-col gap-4 sm:ml-4">
               <Typography className="-mb-2" variant="h6" color="gray">
                 {_("name")}
@@ -310,6 +339,52 @@ export function AdminSettings({
                 checked={enableMainBanner}
                 onChange={(e) => setEnableMainBanner(e.target.checked)}
               />
+
+
+              <Typography className="-mb-2" variant="h6" color="gray">
+                {_("main_DiscordWebhookNewChapter")}
+              </Typography>
+              <Switch
+                label={_("enable_DiscordWebhookNewChapter")}
+                checked={enableDiscordWebhookNewChapter}
+                onChange={(e) => setEnableDiscordWebhookNewChapter(e.target.checked)}
+              />
+              <div className="flex flex-col gap-4 sm:ml-4">
+                <Typography className="-mb-2" variant="h6" color="gray">
+                  {_("text_DiscordWebhookNewChapter")}
+                </Typography>
+                <Input
+                  size="md"
+                  label={_("Discord Webhook (New Chapter)")}
+                  autoComplete="off"
+                  value={discordWebhookUrlNewChapter}
+                  onChange={(e) => setDiscordWebhookUrlNewChapter(e.target.value)}
+                />
+              </div>
+
+              <Typography className="-mb-2" variant="h6" color="gray">
+                {_("main_DiscordWebhookNewSubscription")}
+              </Typography>
+              <Switch
+                label={_("enable_DiscordWebhookNewSubscription")}
+                checked={enableDiscordWebhookNewSubscription}
+                onChange={(e) => setEnableDiscordWebhookNewSubscription(e.target.checked)}
+              />
+              <div className="flex flex-col gap-4 sm:ml-4">
+                <Typography className="-mb-2" variant="h6" color="gray">
+                  {_("text_DiscordWebhookNewSubscription")}
+                </Typography>
+                <Input
+                  size="md"
+                  label={_("Discord Webhook (New Subscription)")}
+                  autoComplete="off"
+                  value={discordWebhookUrlNewSubscription}
+                  onChange={(e) => setDiscordWebhookUrlNewSubscription(e.target.value)}
+                />
+              </div>
+
+
+
             </div>
           </AccordionBody>
         </Accordion>
@@ -432,11 +507,11 @@ export function AdminSettings({
                                   setCountryOptions((oldValue) =>
                                     oldValue.map((option) =>
                                       option.countryCode ===
-                                      countryOption.countryCode
+                                        countryOption.countryCode
                                         ? {
-                                            ...option,
-                                            allowed: e.target.checked,
-                                          }
+                                          ...option,
+                                          allowed: e.target.checked,
+                                        }
                                         : option
                                     )
                                   )
@@ -453,11 +528,11 @@ export function AdminSettings({
                                   setCountryOptions((oldValue) =>
                                     oldValue.map((option) =>
                                       option.countryCode ===
-                                      countryOption.countryCode
+                                        countryOption.countryCode
                                         ? {
-                                            ...option,
-                                            blocked: e.target.checked,
-                                          }
+                                          ...option,
+                                          blocked: e.target.checked,
+                                        }
                                         : option
                                     )
                                   )

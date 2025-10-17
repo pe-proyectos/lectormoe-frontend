@@ -176,6 +176,16 @@ export const translations: Record<string, string> = {
   enable_main_slider: "Activar slider principal",
   main_banner: "Banner principal",
   enable_main_banner: "Activar banner principal",
+
+  main_DiscordWebhookNewChapter: "Activar url discord WebHook (Nuevo Capítulo)",
+  enable_DiscordWebhookNewChapter: "Activar Webhook de discord (Nuevo Capítulo)",
+  text_DiscordWebhookNewChapter:"Url Discord WebHook Nuevo Capitulo",
+  
+  main_DiscordWebhookNewSubscription: "Activar url discord WebHook (Nuevo Subscriptor)",
+  enable_DiscordWebhookNewSubscription: "Activar Webhook de discord (Nuevo Subscriptor)",
+  text_DiscordWebhookNewSubscription: "Url Discord WebHook Nuevo Subscriptor",
+  url_DiscordWebhookNewSubscription: "Activar Webhook de discord (Nuevo Subscriptor)",
+
   chapter_deleted: "Capítulo eliminado",
   description: "Descripción",
   no_description: "Sin descripción",
@@ -519,7 +529,7 @@ export const translations: Record<string, string> = {
   profile_image: "Imagen de perfil",
   drop_profile_image: "Arrastra y suelta la imagen de perfil",
   edit_profile: "Editar Perfil",
-  
+
   upload_profile_picture: "Subir foto de perfil",
   current_profile_picture: "Foto de perfil actual:",
   write_description: "Escribe una descripción sobre ti...",
