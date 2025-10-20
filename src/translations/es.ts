@@ -177,10 +177,26 @@ export const translations: Record<string, string> = {
   main_banner: "Banner principal",
   enable_main_banner: "Activar banner principal",
 
+  Discord_WebHook: "Discord Webhook",
+  Discord_WebHook_Chapter: "Configuración Webhook Nuevo Capítulo",
+  Discord_WebHook_Subscription: "Configuración Webhook Nuevo Subscriptor",
+  Message_mandatory: "Mensaje Template (Obligatorio)",
+  Template: "Template",
+
+  prefix: "Nota Perfix: ",
+  nota: "Usa las siguientes variables para personalizar tu mensaje.",
+  prefix_chapter: " - Capítulo del manga.",
+  prefix_manga: " - Título del manga.",
+  prefix_link: " - Link de lectura del capítulo.",
+  prefix_image: " - Previsualizaciónn del capitulo.",
+  prefix_user: " - Nombre de usuario.",
+  prefix_plan: " - Plan afiliado.",
+  prefix_amount: " - Monto de pago.",
+
   main_DiscordWebhookNewChapter: "Activar url discord WebHook (Nuevo Capítulo)",
   enable_DiscordWebhookNewChapter: "Activar Webhook de discord (Nuevo Capítulo)",
-  text_DiscordWebhookNewChapter:"Url Discord WebHook Nuevo Capitulo",
-  
+  text_DiscordWebhookNewChapter: "Url Discord WebHook Nuevo Capitulo",
+
   main_DiscordWebhookNewSubscription: "Activar url discord WebHook (Nuevo Subscriptor)",
   enable_DiscordWebhookNewSubscription: "Activar Webhook de discord (Nuevo Subscriptor)",
   text_DiscordWebhookNewSubscription: "Url Discord WebHook Nuevo Subscriptor",
