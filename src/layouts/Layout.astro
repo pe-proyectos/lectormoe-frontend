@@ -115,16 +115,26 @@ if (user && user?.hideAds === true) {
 		}
 		{
 			isDecember && (
-			<script src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
 			<script>
-				window.snow = new Snowflakes({
-					color: "#e8f4f7"
-				});
-				if (localStorage.getItem('snowActive') !== 'false') {
-					window.snow.show();
-				} else {
-					window.snow.hide();
-				}
+				const script = document.createElement('script');
+				script.src = 'https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js';
+				script.onload = function() {
+					// @ts-ignore - Snowflakes se carga dinámicamente desde el CDN
+					if (typeof Snowflakes !== 'undefined') {
+						// @ts-ignore
+						window.snow = new Snowflakes({
+							color: "#e8f4f7"
+						});
+						if (localStorage.getItem('snowActive') !== 'false') {
+							// @ts-ignore
+							window.snow.show();
+						} else {
+							// @ts-ignore
+							window.snow.hide();
+						}
+					}
+				};
+				document.head.appendChild(script);
 			</script>
 			)
 		}

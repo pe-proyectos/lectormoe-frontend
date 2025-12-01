@@ -173,11 +173,30 @@ export function StickyNavbar({
                 color="white"
                 onClick={() => {
                   setSnowActive(!snowActive);
-                  localStorage.setItem("snowActive", !snowActive);
-                  if (snowActive) {
-                    window.snow.hide();
-                  } else {
-                    window.snow.show();
+                  localStorage.setItem("snowActive", String(!snowActive));
+                  
+                  // window.snow y Snowflakes se cargan dinámicamente
+                  // @ts-ignore
+                  const win = window;
+                  
+                  // Inicializar window.snow si no existe pero Snowflakes está disponible
+                  // @ts-ignore
+                  if (!win.snow && typeof win.Snowflakes !== 'undefined') {
+                    // @ts-ignore
+                    win.snow = new win.Snowflakes({
+                      color: "#e8f4f7"
+                    });
+                  }
+                  
+                  // @ts-ignore
+                  if (win.snow) {
+                    if (snowActive) {
+                      // @ts-ignore
+                      win.snow.hide();
+                    } else {
+                      // @ts-ignore
+                      win.snow.show();
+                    }
                   }
                 }}
               >
