@@ -43,6 +43,8 @@ export function AdminSettings({
   const [enableDiscordWebhookNewSubscription, setEnableDiscordWebhookNewSubscription] = useState(false);
 
   const [discordWebhookUrlNewChapter, setDiscordWebhookUrlNewChapter] = useState("");
+  const [discordWebhookMessageTemplateNewChapter, setDiscordWebhookMessageTemplateNewChapter] = useState("");
+  const [discordWebhookMessageTemplateNewSubscription, setDiscordWebhookMessageTemplateNewSubscription] = useState("");
   const [discordWebhookUrlNewSubscription, setDiscordWebhookUrlNewSubscription] = useState("");
 
   const [useBlockedCountries, setUseBlockedCountries] = useState(false);
@@ -72,6 +74,12 @@ export function AdminSettings({
   const [openCountriesAccordion, setOpenCountriesAccordion] = useState(false);
   const [openIntegrationsAccordion, setOpenIntegrationsAccordion] =
     useState(false);
+  const [openDiscordWebhookAccordion, setOpenDiscordWebhookAccordion] =
+    useState(false);
+  const [openDiscordWebhookChapterAccordion, setOpenDiscordWebhookChapterAccordion] =
+    useState(false);
+  const [openDiscordWebhookSubAccordion, setOpenDiscordWebhookSubAccordion] =
+    useState(false);
   const [openImagesAccordion, setOpenImagesAccordion] = useState(false);
   const [openSocialAccordion, setOpenSocialAccordion] = useState(false);
 
@@ -81,7 +89,18 @@ export function AdminSettings({
     setOpenCountriesAccordion(!openCountriesAccordion);
   const handleIntegrationsAccordion = () =>
     setOpenIntegrationsAccordion(!openIntegrationsAccordion);
+
+  const handleDiscordWebhookAccordion = () =>
+    setOpenDiscordWebhookAccordion(!openDiscordWebhookAccordion);
+
+  const handleDiscordWebhookChapterAccordion = () =>
+    setOpenDiscordWebhookChapterAccordion(!openDiscordWebhookChapterAccordion);
+
+  const handleDiscordWebhookSubAccordion = () =>
+    setOpenDiscordWebhookSubAccordion(!openDiscordWebhookSubAccordion);
+
   const handleImagesAccordion = () =>
+
     setOpenImagesAccordion(!openImagesAccordion);
   const handleSocialAccordion = () =>
     setOpenSocialAccordion(!openSocialAccordion);
@@ -151,6 +170,8 @@ export function AdminSettings({
         );
 
         setDiscordWebhookUrlNewChapter(organization.discordWebhookUrlNewChapter || "");
+        setDiscordWebhookMessageTemplateNewChapter(organization.discordWebhookMessageTemplateNewChapter || "");
+        setDiscordWebhookMessageTemplateNewSubscription(organization.discordWebhookMessageTemplateNewSubscription || "");
         setDiscordWebhookUrlNewSubscription(
           organization.discordWebhookUrlNewSubscription || ""
         );
@@ -201,6 +222,8 @@ export function AdminSettings({
 
     formData.append("discordWebhookUrlNewChapter", discordWebhookUrlNewChapter);
     formData.append("discordWebhookUrlNewSubscription", discordWebhookUrlNewSubscription);
+    formData.append("discordWebhookMessageTemplateNewChapter", discordWebhookMessageTemplateNewChapter);
+    formData.append("discordWebhookMessageTemplateNewSubscription", discordWebhookMessageTemplateNewSubscription);
 
     formData.append("useBlockedCountries", useBlockedCountries.toString());
     formData.append("useAllowedCountries", useAllowedCountries.toString());
@@ -339,55 +362,125 @@ export function AdminSettings({
                 checked={enableMainBanner}
                 onChange={(e) => setEnableMainBanner(e.target.checked)}
               />
-
-
-              <Typography className="-mb-2" variant="h6" color="gray">
-                {_("main_DiscordWebhookNewChapter")}
-              </Typography>
-              <Switch
-                label={_("enable_DiscordWebhookNewChapter")}
-                checked={enableDiscordWebhookNewChapter}
-                onChange={(e) => setEnableDiscordWebhookNewChapter(e.target.checked)}
-              />
-              <div className="flex flex-col gap-4 sm:ml-4">
-                <Typography className="-mb-2" variant="h6" color="gray">
-                  {_("text_DiscordWebhookNewChapter")}
-                </Typography>
-                <Input
-                  size="md"
-                  label={_("Discord Webhook (New Chapter)")}
-                  autoComplete="off"
-                  value={discordWebhookUrlNewChapter}
-                  onChange={(e) => setDiscordWebhookUrlNewChapter(e.target.value)}
-                />
-              </div>
-
-              <Typography className="-mb-2" variant="h6" color="gray">
-                {_("main_DiscordWebhookNewSubscription")}
-              </Typography>
-              <Switch
-                label={_("enable_DiscordWebhookNewSubscription")}
-                checked={enableDiscordWebhookNewSubscription}
-                onChange={(e) => setEnableDiscordWebhookNewSubscription(e.target.checked)}
-              />
-              <div className="flex flex-col gap-4 sm:ml-4">
-                <Typography className="-mb-2" variant="h6" color="gray">
-                  {_("text_DiscordWebhookNewSubscription")}
-                </Typography>
-                <Input
-                  size="md"
-                  label={_("Discord Webhook (New Subscription)")}
-                  autoComplete="off"
-                  value={discordWebhookUrlNewSubscription}
-                  onChange={(e) => setDiscordWebhookUrlNewSubscription(e.target.value)}
-                />
-              </div>
-
-
-
             </div>
           </AccordionBody>
         </Accordion>
+
+
+        <Accordion open={openDiscordWebhookAccordion}>
+
+          <AccordionHeader onClick={handleDiscordWebhookAccordion}>
+            {_("Discord_WebHook")}
+          </AccordionHeader>
+
+          <AccordionBody>
+
+            <div className="flex flex-col gap-4 sm:ml-4">
+              <Accordion open={openDiscordWebhookChapterAccordion}>
+                <AccordionHeader onClick={handleDiscordWebhookChapterAccordion}>
+                  {_("Discord_WebHook_Chapter")}
+                </AccordionHeader>
+                <AccordionBody>
+                  <div className="flex flex-col gap-4 sm:ml-4">
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                      {_("main_DiscordWebhookNewChapter")}
+                    </Typography>
+                    <Switch
+                      label={_("enable_DiscordWebhookNewChapter")}
+                      checked={enableDiscordWebhookNewChapter}
+                      onChange={(e) => setEnableDiscordWebhookNewChapter(e.target.checked)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                      {_("text_DiscordWebhookNewChapter")}
+                    </Typography>
+                    <Input
+                      size="md"
+                      label={_("Discord Webhook (New Chapter)")}
+                      autoComplete="off"
+                      value={discordWebhookUrlNewChapter}
+                      onChange={(e) => setDiscordWebhookUrlNewChapter(e.target.value)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                      {_("Message_mandatory")}
+                    </Typography>
+                    <Textarea
+                      size="lg"
+                      label={_("Template")}
+                      value={discordWebhookMessageTemplateNewChapter}
+                      onChange={(e) => setDiscordWebhookMessageTemplateNewChapter(e.target.value)}
+                    />
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">Nota Prefix:</span> {_("nota")}
+                    </p>
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">%manga%</span> {_("prefix_manga")}
+                    </p>
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">%chapter%</span> {_("prefix_chapter")}
+                    </p>
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">%link%</span> {_("prefix_link")}
+                    </p>                    
+                  </div>
+                </AccordionBody>
+              </Accordion>
+            </div>
+
+            <div className="flex flex-col gap-4 sm:ml-4">
+              <Accordion open={openDiscordWebhookSubAccordion}>
+                <AccordionHeader onClick={handleDiscordWebhookSubAccordion}>
+                  {_("Discord_WebHook_Subscription")}
+                </AccordionHeader>
+                <AccordionBody>
+                  <div className="flex flex-col gap-4 sm:ml-4">
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                      {_("main_DiscordWebhookNewSubscription")}
+                    </Typography>
+                    <Switch
+                      label={_("enable_DiscordWebhookNewSubscription")}
+                      checked={enableDiscordWebhookNewSubscription}
+                      onChange={(e) => setEnableDiscordWebhookNewSubscription(e.target.checked)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                      {_("text_DiscordWebhookNewSubscription")}
+                    </Typography>
+                    <Input
+                      size="md"
+                      label={_("Discord Webhook (New Subscription)")}
+                      autoComplete="off"
+                      value={discordWebhookUrlNewSubscription}
+                      onChange={(e) => setDiscordWebhookUrlNewSubscription(e.target.value)}
+                    />
+                    <Typography className="-mb-2" variant="h6" color="gray">
+                      {_("Message_mandatory")}
+                    </Typography>
+                    <Textarea
+                      size="lg"
+                      label={_("Template")}
+                      value={discordWebhookMessageTemplateNewSubscription}
+                      onChange={(e) => setDiscordWebhookMessageTemplateNewSubscription(e.target.value)}
+                    />
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">Nota Prefix:</span> {_("nota")}
+                    </p>
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">%user%</span> {_("prefix_user")}
+                    </p>
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">%plan%</span> {_("prefix_plan")}
+                    </p>
+                    <p className="text-base text-gray-800">
+                      <span className="font-extrabold">%amount%</span> {_("prefix_amount")}
+                    </p>
+                  </div>
+                </AccordionBody>
+              </Accordion>
+            </div>
+
+          </AccordionBody>
+
+        </Accordion>
+
         <Accordion open={openCountriesAccordion}>
           <AccordionHeader onClick={handleCountriesAccordion}>
             {_("countries")}

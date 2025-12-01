@@ -112,6 +112,24 @@ export const translations: Record<string, string> = {
   login: "Login",
   login_title: "Login",
   subscriptions_title: "Subscriptions",
+
+  Discord_WebHook: "Discord Webhook",
+  Discord_WebHook_Chapter: "New Chapter Webhook Setup",
+  Discord_WebHook_Subscription: "New Subscriber Webhook Setup",
+  Message_mandatory: "Message Template (Required)",
+  Template: "Template",
+
+  prefix: "Perfix Note: ",
+  note: "Use the following variables to customize your message.",
+  prefix_chapter: " - Manga chapter.",
+  prefix_manga: " - Manga title.",
+  prefix_link: " - Chapter reading link.",
+  prefix_image: " - Chapter preview.",
+  prefix_user: " - Username.",
+  prefix_plan: " - Affiliate plan.",
+  prefix_amount: " - Payment amount.",
+
+
   error_404: "Error 404",
   error_404_title: "Oops! We couldn't find the page you're looking for.",
   error_404_description:
