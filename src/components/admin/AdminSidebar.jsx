@@ -21,9 +21,13 @@ import {
   ChatBubbleBottomCenterTextIcon,
 } from "@heroicons/react/24/solid";
 import { getTranslator } from "../../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../../util/get-org-path";
 
-export function AdminSidebar({ language, page }) {
+export function AdminSidebar({ language, page, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [openAlert, setOpenAlert] = React.useState(true);
 
@@ -36,7 +40,7 @@ export function AdminSidebar({ language, page }) {
       </div>
       <List>
         <hr className="my-2 border-blue-gray-50" />
-        <a href="/admin">
+        <a href={getOrgPath("/admin", orgSlug)}>
           <ListItem selected={page === "dashboard"}>
             <ListItemPrefix>
               <ChartBarIcon className="h-5 w-5" />
@@ -44,7 +48,7 @@ export function AdminSidebar({ language, page }) {
             {_("dashboard")}
           </ListItem>
         </a>
-        <a href="/admin/authors">
+        <a href={getOrgPath("/admin/authors", orgSlug)}>
           <ListItem selected={page === "authors"}>
             <ListItemPrefix>
               <AcademicCapIcon className="h-5 w-5" />
@@ -52,7 +56,7 @@ export function AdminSidebar({ language, page }) {
             {_("authors")}
           </ListItem>
         </a>
-        <a href="/admin/genres">
+        <a href={getOrgPath("/admin/genres", orgSlug)}>
           <ListItem selected={page === "genres"}>
             <ListItemPrefix>
               <InboxIcon className="h-5 w-5" /> {/* Changed icon for genres */}
@@ -60,7 +64,7 @@ export function AdminSidebar({ language, page }) {
             {_("genres")}
           </ListItem>
         </a>
-        <a href="/admin/mangas">
+        <a href={getOrgPath("/admin/mangas", orgSlug)}>
           <ListItem selected={page === "mangas"}>
             <ListItemPrefix>
               <BookOpenIcon className="h-5 w-5" />
@@ -71,7 +75,7 @@ export function AdminSidebar({ language, page }) {
                         </ListItemSuffix> */}
           </ListItem>
         </a>
-        <a href="/admin/users">
+        <a href={getOrgPath("/admin/users", orgSlug)}>
           <ListItem selected={page === "users"}>
             <ListItemPrefix>
               <UsersIcon className="h-5 w-5" />
@@ -79,7 +83,7 @@ export function AdminSidebar({ language, page }) {
             {_("users")}
           </ListItem>
         </a>
-        <a href="/admin/subscription-plans">
+        <a href={getOrgPath("/admin/subscription-plans", orgSlug)}>
           <ListItem selected={page === "subscription_plans"}>
             <ListItemPrefix>
               <TicketIcon className="h-5 w-5" />
@@ -87,7 +91,7 @@ export function AdminSidebar({ language, page }) {
             {_("subscription_plans")}
           </ListItem>
         </a>
-        <a href="/admin/finance">
+        <a href={getOrgPath("/admin/finance", orgSlug)}>
           <ListItem selected={page === "finance"}>
             <ListItemPrefix>
               <BanknotesIcon className="h-5 w-5" />
@@ -95,7 +99,7 @@ export function AdminSidebar({ language, page }) {
             {_("Finanzas")}
           </ListItem>
         </a>
-        <a href="/admin/comments">
+        <a href={getOrgPath("/admin/comments", orgSlug)}>
           <ListItem selected={page === "comments"}>
             <ListItemPrefix>
               <ChatBubbleBottomCenterTextIcon className="h-5 w-5" />
@@ -103,7 +107,7 @@ export function AdminSidebar({ language, page }) {
             {_("comments")}
           </ListItem>
         </a>
-        <a href="/admin/storage">
+        <a href={getOrgPath("/admin/storage", orgSlug)}>
           <ListItem selected={page === "storage"}>
             <ListItemPrefix>
               <ServerStackIcon strokeWidth={3} className="h-5 w-5" />
@@ -111,7 +115,7 @@ export function AdminSidebar({ language, page }) {
             {_("storage")}
           </ListItem>
         </a>
-        <a href="/admin/settings">
+        <a href={getOrgPath("/admin/settings", orgSlug)}>
           <ListItem selected={page === "settings"}>
             <ListItemPrefix>
               <Cog6ToothIcon className="h-5 w-5" />

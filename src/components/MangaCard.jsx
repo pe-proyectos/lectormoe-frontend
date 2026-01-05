@@ -8,9 +8,13 @@ import {
 } from "@material-tailwind/react";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
-export function MangaCard({ organization, language, manga, user }) {
+export function MangaCard({ organization, language, manga, user, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   if (!manga) {
     return (
@@ -42,12 +46,12 @@ export function MangaCard({ organization, language, manga, user }) {
   const HandleNSFWClick = (e, href) => {
     e.preventDefault();
     if (!user?.slug) {
-      location.href = `/register?redirect=${location.pathname}`;
+      location.href = getOrgPath(`/register?redirect=${location.pathname}`, orgSlug);
       return;
     }
 
     if (!user?.birthdate || !isAdult(user?.birthdate)) {
-      location.href = `/profile/${user.slug}`;
+      location.href = getOrgPath(`/profile/${user.slug}`, orgSlug);
       return;
     }
 
@@ -145,8 +149,8 @@ export function MangaCard({ organization, language, manga, user }) {
                       //@ts-ignore
                       onClick={(e) => {
                         const href = manga?.lastChapters?.[0]
-                          ? `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`
-                          : `/manga/${manga.slug}`;
+                          ? getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
+                          : getOrgPath(`/manga/${manga.slug}`, orgSlug);
 
                         if (manga.isNSFW === true) {
                           HandleNSFWClick(e, href);
@@ -179,13 +183,13 @@ export function MangaCard({ organization, language, manga, user }) {
             <Tooltip content={manga.title}>
               <Typography
                 as="a"
-                href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}`}
+                href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}`, orgSlug)}
                 color="blue-gray"
                 className="font-semibold hover:underline cursor-pointer"
                 onClick={(e) => {
                   if (manga.isNSFW === true) {
                     e.preventDefault();
-                    HandleNSFWClick(e, `/manga/${manga.slug}`);
+                    HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}`, orgSlug));
                   }
                 }}
               >
@@ -200,7 +204,7 @@ export function MangaCard({ organization, language, manga, user }) {
               <div>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)}
                   color="gray"
                   className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                 >
@@ -208,13 +212,13 @@ export function MangaCard({ organization, language, manga, user }) {
                 </Typography>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)}
                   color="gray"
                   className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer"
                   onClick={(e) => {
                     if (manga.isNSFW === true) {
                       e.preventDefault();
-                      HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`);
+                      HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug));
                     }
                   }}
                 >
@@ -228,13 +232,13 @@ export function MangaCard({ organization, language, manga, user }) {
               <div>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug)}
                   color="gray"
                   className="font-normal text-xs hover:underline cursor-pointer"
                   onClick={(e) => {
                     if (manga.isNSFW === true) {
                       e.preventDefault();
-                      HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`);
+                      HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug));
                     }
                   }}
                 >
@@ -242,12 +246,12 @@ export function MangaCard({ organization, language, manga, user }) {
                 </Typography>
                 <Typography
                   as="a"
-                  href={manga.isNSFW === true ? (user?.slug ? `/profile/${user.slug}` : "/register") : `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`}
+                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug)}
                   color="gray"
                   className="font-normal text-xs hover:underline cursor-pointer"
                   onClick={(e) => {
                     if (manga.isNSFW === true) {
-                      HandleNSFWClick(e, `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`);
+                      HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug));
                     }
                   }}
                 >

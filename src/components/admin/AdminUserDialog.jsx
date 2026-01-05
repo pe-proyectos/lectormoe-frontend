@@ -57,36 +57,38 @@ export function AdminUserDialog({ language, open, setOpen, user, setUser }) {
 
   useEffect(() => {
     if (!user) return;
-    setRole(user.role || "user");
+    // Usar permisos del usuario si están disponibles, sino usar valores por defecto
+    const userPermissions = user.permissions || {};
+    setRole(userPermissions.role || "user");
     setDescription(user.description || "");
-    setHierarchyLevel(user.hierarchyLevel || 0);
+    setHierarchyLevel(userPermissions.hierarchyLevel || 0);
     setPermissions({
-      canSeeAdminPanel: user.canSeeAdminPanel,
-      canEditOrganization: user.canEditOrganization,
-      canDeleteOrganization: user.canDeleteOrganization,
-      canEditUser: user.canEditUser,
-      canDeleteUser: user.canDeleteUser,
-      canCreateAuthor: user.canCreateAuthor,
-      canCreateMangaProfile: user.canCreateMangaProfile,
-      canCreateMangaCustom: user.canCreateMangaCustom,
-      canEditMangaCustom: user.canEditMangaCustom,
-      canDeleteMangaCustom: user.canDeleteMangaCustom,
-      canCreateGenre: user.canCreateGenre,
-      canEditGenre: user.canEditGenre,
-      canDeleteGenre: user.canDeleteGenre,
-      canCreateChapter: user.canCreateChapter,
-      canEditChapter: user.canEditChapter,
-      canDeleteChapter: user.canDeleteChapter,
-      canCreatePage: user.canCreatePage,
-      canEditPage: user.canEditPage,
-      canDeletePage: user.canDeletePage,
-      canCreateSubscriptionPlan: user.canCreateSubscriptionPlan,
-      canEditSubscriptionPlan: user.canEditSubscriptionPlan,
-      canDeleteSubscriptionPlan: user.canDeleteSubscriptionPlan,
-      canDeleteComment: user.canDeleteComment,
-      hideAds: user.hideAds,
-      canDownload: user.canDownload,
-      canReadUnreleased: user.canReadUnreleased,
+      canSeeAdminPanel: userPermissions.canSeeAdminPanel || false,
+      canEditOrganization: userPermissions.canEditOrganization || false,
+      canDeleteOrganization: userPermissions.canDeleteOrganization || false,
+      canEditUser: userPermissions.canEditUser || false,
+      canDeleteUser: userPermissions.canDeleteUser || false,
+      canCreateAuthor: userPermissions.canCreateAuthor || false,
+      canCreateMangaProfile: userPermissions.canCreateMangaProfile || false,
+      canCreateMangaCustom: userPermissions.canCreateMangaCustom || false,
+      canEditMangaCustom: userPermissions.canEditMangaCustom || false,
+      canDeleteMangaCustom: userPermissions.canDeleteMangaCustom || false,
+      canCreateGenre: userPermissions.canCreateGenre || false,
+      canEditGenre: userPermissions.canEditGenre || false,
+      canDeleteGenre: userPermissions.canDeleteGenre || false,
+      canCreateChapter: userPermissions.canCreateChapter || false,
+      canEditChapter: userPermissions.canEditChapter || false,
+      canDeleteChapter: userPermissions.canDeleteChapter || false,
+      canCreatePage: userPermissions.canCreatePage || false,
+      canEditPage: userPermissions.canEditPage || false,
+      canDeletePage: userPermissions.canDeletePage || false,
+      canCreateSubscriptionPlan: userPermissions.canCreateSubscriptionPlan || false,
+      canEditSubscriptionPlan: userPermissions.canEditSubscriptionPlan || false,
+      canDeleteSubscriptionPlan: userPermissions.canDeleteSubscriptionPlan || false,
+      canDeleteComment: userPermissions.canDeleteComment || false,
+      hideAds: userPermissions.hideAds || false,
+      canDownload: userPermissions.canDownload || false,
+      canReadUnreleased: userPermissions.canReadUnreleased || false,
     });
   }, [user]);
 

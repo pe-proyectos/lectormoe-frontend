@@ -33,8 +33,9 @@ import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
-import { CommentsCard } from "./CommentsCard";
+import CommentsSection from "./landing/CommentsSection";
 import { XMarkIcon } from "@heroicons/react/24/solid";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 export function Reader({
   language,
@@ -43,8 +44,12 @@ export function Reader({
   chapterNumber,
   logged,
   user,
+  organizationSlug,
 }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const readTypes = {
     PAGINATED: "paginated",
@@ -433,7 +438,7 @@ export function Reader({
       className="flex flex-grow items-center h-full justify-center group/nav"
       onClick={() => {
         if (chapter?.previousChapter?.number)
-          location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`;
+          location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`, orgSlug);
       }}
       {...props}
     >
@@ -461,7 +466,7 @@ export function Reader({
       className="flex flex-grow items-center h-full justify-center group/nav"
       onClick={() => {
         if (chapter?.nextChapter?.number)
-          location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`;
+          location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`, orgSlug);
       }}
       {...props}
     >
@@ -532,7 +537,7 @@ export function Reader({
             <div className="flex md:hidden w-full">
               <PreviousChapterArrow />
               <a
-                href={`/manga/${manga?.slug}`}
+                href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
                 className="flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors"
               >
                 <Tooltip
@@ -548,7 +553,7 @@ export function Reader({
             </div>
             <div className="flex w-full items-center gap-x-4">
               <a
-                href={`/manga/${manga?.slug}`}
+                href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
                 className="hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors"
               >
                 <Tooltip
@@ -563,7 +568,7 @@ export function Reader({
               <div className="flex flex-grow flex-wrap items-center justify-start">
                 <span className="w-full text-xl md:text-3xl">
                   <a
-                    href={`/manga/${manga?.slug}`}
+                    href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
                     className="transition-colors hover:text-red-100"
                   >
                     {manga?.title}
@@ -692,10 +697,13 @@ export function Reader({
           <div className="flex min-h-[100vh] w-full h-full flex-row-reverse gap-2">
             {showSideComments && chapterData.pages.length > 0 && !loading && (
               <div className="sticky top-0 h-full min-w-96 max-h-[100vh] p-4 rounded-lg overflow-hidden hidden md:block">
-                <CommentsCard
+                <CommentsSection
                   logged={logged}
                   user={user}
                   identifier={`${manga.slug}_${chapterNumber}_sidebar`}
+                  onLogin={() => {
+                    window.location.href = getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug);
+                  }}
                 />
               </div>
             )}
@@ -786,10 +794,13 @@ export function Reader({
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          <CommentsCard
+          <CommentsSection
             logged={logged}
             user={user}
             identifier={`${manga.slug}_${chapterNumber}_drawer`}
+            onLogin={() => {
+              window.location.href = getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug);
+            }}
           />
         </Drawer>
         {/* Progress Bar */}
@@ -830,7 +841,7 @@ export function Reader({
                 new Date().getTime() ? (
                   <Button
                     onClick={() =>
-                      (location.href = `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`)
+                      (location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`, orgSlug))
                     }
                   >
                     {_("previous_chapter")}#{chapter?.previousChapter?.number}{" "}
@@ -845,7 +856,7 @@ export function Reader({
                     )}
                   </Button>
                 ))}
-              <Button onClick={() => (location.href = `/manga/${manga.slug}`)}>
+              <Button onClick={() => (location.href = getOrgPath(`/manga/${manga.slug}`, orgSlug))}>
                 {_("back_to_chapter_list")}
               </Button>
               {chapter?.nextChapter &&
@@ -853,7 +864,7 @@ export function Reader({
                 new Date().getTime() ? (
                   <Button
                     onClick={() =>
-                      (location.href = `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`)
+                      (location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`, orgSlug))
                     }
                   >
                     {_("next_chapter")}
@@ -888,10 +899,13 @@ export function Reader({
                 </h3>
               </AccordionHeader>
               <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
-                <CommentsCard
+                <CommentsSection
                   logged={logged}
                   user={user}
                   identifier={`${manga.slug}_${chapterNumber}_accordion`}
+                  onLogin={() => {
+                    window.location.href = getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug);
+                  }}
                 />
               </AccordionBody>
             </Accordion>

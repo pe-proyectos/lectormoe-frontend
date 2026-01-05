@@ -23,9 +23,13 @@ import { toast } from "react-toastify";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import { CommentsCard } from "./CommentsCard";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
-export function MangaView({ manga, organization, language, logged, user }) {
+export function MangaView({ manga, organization, language, logged, user, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [chapterGroups, setChapterGroups] = useState({});
@@ -131,12 +135,12 @@ export function MangaView({ manga, organization, language, logged, user }) {
 
   const goToReadChapter = (chapter) => {
     if (!logged && manga?.requireLogin === true) {
-      window.location.href = `/login?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}&redirect=${window.location.pathname}`;
+      window.location.href = getOrgPath(`/login?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}&redirect=${window.location.pathname}`, orgSlug);
       return;
     }
 
     if (!userHasAccessToChapter(chapter)) {
-      window.location.href = `/subscriptions?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}`;
+      window.location.href = getOrgPath(`/subscriptions?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}`, orgSlug);
       return;
     }
 
@@ -144,15 +148,15 @@ export function MangaView({ manga, organization, language, logged, user }) {
       const history = getChapterHistory(chapter.number);
       if (!history?.finishedAt) {
         if (history?.pageNumber) {
-          window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}?page=${history?.pageNumber}`;
+          window.location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter.number}?page=${history?.pageNumber}`, orgSlug);
         } else {
-          window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}`;
+          window.location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter.number}`, orgSlug);
         }
         return;
       }
     }
 
-    window.location.href = `/manga/${manga.slug}/chapters/${chapter.number}`;
+    window.location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter.number}`, orgSlug);
   };
 
   const userHasAccessToChapter = (chapter) => {
@@ -163,9 +167,10 @@ export function MangaView({ manga, organization, language, logged, user }) {
     )
       return true;
     if (!logged) return false;
-    if (user?.canReadUnreleased === true) return true;
-    if (user?.canEditChapter === true) return true;
-    if (user?.canEditPage === true) return true;
+    const permissions = user?.permissions || {};
+    if (permissions.canReadUnreleased === true) return true;
+    if (permissions.canEditChapter === true) return true;
+    if (permissions.canEditPage === true) return true;
     for (const subscription of user?.subscriptions || []) {
       if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
         return true;
@@ -530,7 +535,7 @@ export function MangaView({ manga, organization, language, logged, user }) {
                   {manga?.demography && (
                     <a
                       key={manga?.demography.slug}
-                      href={`/search?genres=${manga?.demography.slug}`}
+                      href={getOrgPath(`/search?genres=${manga?.demography.slug}`, orgSlug)}
                       className="text-sm font-semibold px-2 text-center"
                     >
                       {manga?.demography.name}
@@ -563,7 +568,7 @@ export function MangaView({ manga, organization, language, logged, user }) {
                     <Button
                       className="text-[0.6rem]"
                       onClick={() =>
-                        (location.href = `/manga/${manga.slug}/chapters/${firstChapter?.number}`)
+                        (location.href = getOrgPath(`/manga/${manga.slug}/chapters/${firstChapter?.number}`, orgSlug))
                       }
                     >
                       {_("go_to_first_chapter")}
@@ -573,7 +578,7 @@ export function MangaView({ manga, organization, language, logged, user }) {
                     <Button
                       className="text-[0.6rem]"
                       onClick={() =>
-                        (location.href = `/manga/${manga.slug}/chapters/${lastChapter?.number}`)
+                        (location.href = getOrgPath(`/manga/${manga.slug}/chapters/${lastChapter?.number}`, orgSlug))
                       }
                     >
                       {_("go_to_last_chapter")}
@@ -587,7 +592,7 @@ export function MangaView({ manga, organization, language, logged, user }) {
                             </span>
                             <div className="flex flex-wrap gap-2 items-center">
                                 {manga?.similarMangas?.map(similar => (
-                                    <a key={similar.id} href={`/manga/${similar.slug}`} className="text-sm font-semibold px-2 text-center">{similar.title}</a>
+                                    <a key={similar.id} href={getOrgPath(`/manga/${similar.slug}`, orgSlug)} className="text-sm font-semibold px-2 text-center">{similar.title}</a>
                                 ))}
                             </div>
                         </div> */}

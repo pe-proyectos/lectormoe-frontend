@@ -9,9 +9,13 @@ import { AdminAuthorCard } from './AdminAuthorCard';
 import { AdminCreateAuthorDialog } from './AdminCreateAuthorDialog';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../../util/get-org-path";
 
-export function AdminAuthorGrid({ organization, language }) {
+export function AdminAuthorGrid({ organization, language, organizationSlug }) {
     const _ = getTranslator(language);
+    
+    // Get organization slug from path if not provided
+    const orgSlug = organizationSlug || getOrgSlugFromPath();
 
     const [loading, setLoading] = useState(true);
     const [authors, setAuthors] = useState([]);
@@ -47,7 +51,7 @@ export function AdminAuthorGrid({ organization, language }) {
                 {!loading && authors.length === 0 &&
                     <Alert>
                         {_("no_authors")},
-                        <a href="/admin/authors/create" className='hover:text-light-blue-200'>{" "}{_("add_author_here")}{" "}</a>
+                        <a href={getOrgPath("/admin/authors/create", orgSlug)} className='hover:text-light-blue-200'>{" "}{_("add_author_here")}{" "}</a>
                     </Alert>
                 }
             </div>

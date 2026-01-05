@@ -1,17 +1,17 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import { BookSearch } from "../components/BookSearch.jsx";
-import { getTranslator } from "../util/translate";
+import LandingLayout from "../layouts/LandingLayout.astro";
+import ExplorePageContainer from "../components/landing/ExplorePageContainer";
 
-const { organization, language, user } = Astro.locals;
-const _ = getTranslator(language);
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { organization, language, logged, user, organizationSlug } = Astro.locals;
 ---
 
-<Layout title={_("search_title")}>
-  <BookSearch
+<LandingLayout>
+  <ExplorePageContainer
     organization={organization}
-    language={language}
+    organizationSlug={organizationSlug}
     user={user}
+    logged={logged}
     client:only="react"
   />
-</Layout>
+</LandingLayout>

@@ -6,6 +6,7 @@ import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import { pascalCase } from "../util/pascalCase";
 import { ImageDropzone } from "./ImageDropzone";
+import { uploadFile } from "../util/uploadFile";
 
 export function ProfileView({ language, user, username }) {
   const _ = getTranslator(language);
@@ -64,20 +65,18 @@ export function ProfileView({ language, user, username }) {
   const handleSaveProfile = async () => {
     setUpdating(true);
     try {
-      const formData = new FormData();
+      let imageKey = "null";
       if (newImage) {
-        formData.append('image', newImage);
-      }
-      if (newDescription !== currentUser.description) {
-        formData.append('description', newDescription);
-      }
-      if (newBirthdate !== currentUser.birthdate) {
-        formData.append('birthdate', newBirthdate);
+        imageKey = await uploadFile(newImage);
       }
 
       const response = await callAPI(`/api/user/${currentUser.id}`, {
         method: 'PATCH',
-        body: formData,
+        body: JSON.stringify({
+          ...(newImage ? { image: imageKey } : {}),
+          ...(newDescription !== currentUser.description ? { description: newDescription } : {}),
+          ...(newBirthdate !== currentUser.birthdate ? { birthdate: newBirthdate } : {}),
+        }),
       });
 
       if (response.status) {
@@ -145,7 +144,7 @@ export function ProfileView({ language, user, username }) {
                   {pascalCase(
                     currentUser?.subscriptions.length > 0
                       ? currentUser.subscriptions[0].subscriptionPlan.name
-                      : currentUser.role || "user"
+                      : currentUser?.permissions?.role || "user"
                   )}
                 </span>
               </div>

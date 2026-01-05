@@ -1,37 +1,51 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import LandingLayout from "../layouts/LandingLayout.astro";
 import { MangaGrid } from "../components/MangaGrid.jsx";
 import { MangaSlider } from "../components/MangaSlider";
+import LandingApp from "../components/landing/LandingApp.tsx";
 
-const { organization, language, logged, callAPI, user } = Astro.locals;
+// @ts-ignore - isLandingPage se define dinámicamente en el middleware
+const { organization, language, logged, callAPI, user, isLandingPage } = Astro.locals;
 
-async function getSubscriptionPlans() {
-  try {
-    const { data: subscriptionPlansData } = await callAPI(
-      `/api/subscription-plan`
-    );
-    return subscriptionPlansData.data;
-  } catch (error) {
-    console.error(error);
-    return [];
+let subscriptionPlans = [];
+
+// Si no es landing page, obtener planes de suscripción para tenants
+if (!isLandingPage) {
+  async function getSubscriptionPlans() {
+    try {
+      const { data: subscriptionPlansData } = await callAPI(
+        `/api/subscription-plan`
+      );
+      return subscriptionPlansData.data;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
   }
-}
 
-const subscriptionPlans = await getSubscriptionPlans();
+  subscriptionPlans = await getSubscriptionPlans();
+}
 ---
 
-<Layout>
-  <MangaSlider
-    organization={organization}
-    language={language}
-    client:only="react"
-  />
-  <MangaGrid
-    organization={organization}
-    language={language}
-    logged={logged}
-    user={user}
-    subscriptionPlans={subscriptionPlans}
-    client:only="react"
-  />
-</Layout>
+{isLandingPage ? (
+  <LandingLayout>
+    <LandingApp client:only="react" user={user} logged={logged} />
+  </LandingLayout>
+) : (
+  <Layout>
+    <MangaSlider
+      organization={organization}
+      language={language}
+      client:only="react"
+    />
+    <MangaGrid
+      organization={organization}
+      language={language}
+      logged={logged}
+      user={user}
+      subscriptionPlans={subscriptionPlans}
+      client:only="react"
+    />
+  </Layout>
+)}

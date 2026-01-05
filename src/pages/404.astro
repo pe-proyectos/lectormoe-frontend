@@ -1,15 +1,18 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import { getTranslator } from "../util/translate";
+import LandingLayout from "../layouts/LandingLayout.astro";
+import Error404Page from "../components/landing/Error404Page";
 
-const { language } = Astro.locals;
-const _ = getTranslator(language);
+const { organizationSlug } = Astro.locals as any;
 ---
 
-<Layout title={_("error_404_page_title")} showAds={false}>
-  <div class="mx-auto max-w-screen-md py-12">
-    <h1>{_("error_404")}</h1>
-    <h3>{_("error_404_title")}</h3>
-    <p>{_("error_404_description")}</p>
-  </div>
-</Layout>
+<LandingLayout title="404 - Página no encontrada">
+  <Error404Page 
+    onNavigateHome={() => {
+      window.location.href = organizationSlug ? `/${organizationSlug}` : '/';
+    }}
+    onNavigateSearch={() => {
+      window.location.href = organizationSlug ? `/${organizationSlug}/search` : '/search';
+    }}
+    client:load 
+  />
+</LandingLayout>

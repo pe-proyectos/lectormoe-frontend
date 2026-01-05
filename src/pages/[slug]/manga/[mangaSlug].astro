@@ -1,0 +1,40 @@
+---
+import LandingLayout from '../../../layouts/LandingLayout.astro';
+import MangaDetailPageContainer from '../../../components/landing/MangaDetailPageContainer';
+
+const { mangaSlug } = Astro.params;
+const { organization, logged, user, callAPI, organizationSlug, language } = Astro.locals;
+
+// Si no hay organización, redirigir a 404
+if (!organization) {
+  return Astro.redirect("/404");
+}
+
+// callAPI retorna directamente data cuando status === true, o { status: false, ... } cuando falla
+const mangaResult = await callAPI(`/api/manga-custom/${mangaSlug}`);
+
+// Si el resultado tiene status: false, significa que hubo un error
+if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'object' || !mangaResult.slug) {
+    return Astro.redirect('/404');
+}
+
+// Si llegamos aquí, mangaResult es directamente el objeto manga (data)
+const manga = mangaResult;
+---
+
+<LandingLayout 
+  title={`${manga.title} | ${organization.name}`}
+  description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
+  organization={organization}
+>
+  <MangaDetailPageContainer
+    manga={manga}
+    organization={organization}
+    organizationSlug={organizationSlug}
+    user={user}
+    logged={logged}
+    language={language}
+    client:load
+  />
+</LandingLayout>
+

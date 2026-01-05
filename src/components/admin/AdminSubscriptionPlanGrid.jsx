@@ -5,9 +5,13 @@ import { AdminSubscriptionPlanCard } from "./AdminSubscriptionPlanCard";
 import { AdminSubscriptionPlanDialog } from "./AdminSubscriptionPlanDialog";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../../util/get-org-path";
 
-export function AdminSubscriptionPlanGrid({ language }) {
+export function AdminSubscriptionPlanGrid({ language, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [loading, setLoading] = useState(true);
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
@@ -73,7 +77,7 @@ export function AdminSubscriptionPlanGrid({ language }) {
           <Alert>
             {_("no_subscription_plans_available")},
             <a
-              href="/admin/subscription-plans/create"
+              href={getOrgPath("/admin/subscription-plans/create", orgSlug)}
               className="hover:text-light-blue-200"
             >
               {_("create_one_to_start")}

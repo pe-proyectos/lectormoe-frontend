@@ -39,6 +39,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
       : undefined;
   } catch (error) {}
 
+  // Establecer logged basado en si existe token y user
+  context.locals.logged = !!(context.locals.token && context.locals.user);
+
+  // Variable para almacenar el identifier de la organización (slug o domain)
+  let organizationIdentifier: string | null = null;
+
   const callAPI = async (
     url: string,
     fetchOptions?: Partial<RequestInit> & { includeIp?: any }
@@ -48,6 +54,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       ...(fetchOptions || {}),
       headers: {
         "organization-domain":
+          organizationIdentifier ||
           process.env["PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN"] ||
           context.url.hostname,
         "Content-Type": "application/json",
@@ -59,8 +66,28 @@ export const onRequest = defineMiddleware(async (context, next) => {
         ...(fetchOptions?.headers || {}),
       },
     });
-    const data = await response.json();
-    return data;
+    
+    // Si la respuesta no es OK, retornar un objeto con status: false
+    if (!response.ok) {
+      try {
+        const errorResult = await response.json();
+        return errorResult;
+      } catch {
+        return { status: false, message: `HTTP ${response.status}` };
+      }
+    }
+    
+    const result = await response.json();
+    // Si el resultado tiene status: false, retornar el objeto completo para que el código pueda manejarlo
+    if (result?.status === false) {
+      return result;
+    }
+    // Si tiene status: true, retornar solo el data
+    if (result?.status === true && result?.data) {
+      return result.data;
+    }
+    // Si no tiene status, retornar el resultado completo (para compatibilidad)
+    return result;
   };
 
   context.locals.callAPI = callAPI;
@@ -89,35 +116,238 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   context.locals.formatDate = formatDate;
 
+  // Rutas reservadas que no deben ser tratadas como slugs de organización
+  // Nota: login, register, forgot-password están aquí para rutas globales, pero también pueden estar dentro de un slug (ej: /senshimanga/login)
+  const reservedRoutes = [
+    'logout',
+    '404',
+    '500',
+    'forgot',
+    'forgot-password',
+    'login',
+    'register',
+    'search',
+    'scans',
+    'subscriptions',
+    'organizations',
+    'profile',
+    'settings',
+    '.well-known', // Rutas de certificados SSL y otros estándares web
+  ];
+
+  // Extraer el primer segmento de la ruta
+  const pathSegments = context.url.pathname.split('/').filter(Boolean);
+  const firstSegment = pathSegments[0] || '';
+  
+  // Determinar si es landing page
+  // Es landing si la ruta es "/" o si el primer segmento es una ruta reservada
+  const isLandingPage = context.url.pathname === '/' || 
+    (firstSegment && reservedRoutes.includes(firstSegment));
+  
+  context.locals.isLandingPage = isLandingPage;
+  
+  // Si es landing page, verificar autenticación pero sin requerir organización
+  if (isLandingPage) {
+    context.locals.organization = null;
+    context.locals.organizationSlug = null;
+    
+    // Verificar autenticación si hay token (pero sin requerir organización específica)
+    if (context.locals.token && context.locals.user) {
+      try {
+        organizationIdentifier = context.url.hostname;
+        
+        const authCheck = await callAPI("/api/auth/check");
+        
+        if (authCheck?.token && authCheck?.user) {
+          // Token válido, actualizar cookies con datos frescos
+          context.locals.token = authCheck.token;
+          context.locals.username = authCheck.user.username;
+          context.locals.userSlug = authCheck.user.slug;
+          if (authCheck.user) {
+            context.locals.user = authCheck.user;
+          }
+          context.cookies.set("token", authCheck.token, {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          context.cookies.set("username", authCheck.user.username, {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          context.cookies.set("userSlug", authCheck.user.slug, {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          if (authCheck.user) {
+            context.cookies.set("user", JSON.stringify(authCheck.user), {
+              maxAge: 60 * 60 * 24 * 7,
+              path: '/',
+              sameSite: 'lax',
+            });
+          }
+          context.locals.logged = true;
+        } else {
+          // Token inválido en el servidor, cerrar sesión
+          context.locals.logged = false;
+          context.locals.token = null;
+          context.locals.user = null;
+          context.locals.username = null;
+          context.locals.userSlug = null;
+          context.cookies.delete("token");
+          context.cookies.delete("username");
+          context.cookies.delete("userSlug");
+          context.cookies.delete("user");
+        }
+      } catch (error) {
+        // Si el check falla (error de red, etc.), mantener la sesión activa
+        context.locals.logged = true; // Mantener sesión activa
+      }
+    } else if (context.locals.token) {
+      // Solo hacer check si hay token pero no user (para refrescar datos)
+      try {
+        organizationIdentifier = context.url.hostname;
+        
+        const authCheck = await callAPI("/api/auth/check");
+        
+        // callAPI retorna result.data directamente, así que authCheck ya es { token, user }
+        if (authCheck?.token && authCheck?.user) {
+          context.locals.token = authCheck.token;
+          context.locals.username = authCheck.user.username;
+          context.locals.userSlug = authCheck.user.slug;
+          if (authCheck.user) {
+            context.locals.user = authCheck.user;
+          }
+          context.cookies.set("token", authCheck.token, {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          context.cookies.set("username", authCheck.user.username, {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          context.cookies.set("userSlug", authCheck.user.slug, {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          if (authCheck.user) {
+            context.cookies.set("user", JSON.stringify(authCheck.user), {
+              maxAge: 60 * 60 * 24 * 7,
+              path: '/',
+              sameSite: 'lax',
+            });
+          }
+          context.cookies.set("auth-check-time", Date.now().toString(), {
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+            sameSite: 'lax',
+          });
+          context.locals.logged = true;
+        } else {
+          // Si no hay token o user, la sesión no es válida
+          context.locals.logged = false;
+          context.locals.token = null;
+          context.locals.user = null;
+          context.locals.username = null;
+          context.locals.userSlug = null;
+          context.cookies.delete("token");
+          context.cookies.delete("username");
+          context.cookies.delete("userSlug");
+          context.cookies.delete("user");
+          context.cookies.delete("auth-check-time");
+        }
+      } catch (error) {
+        // Si callAPI lanza un error, NO borrar las cookies inmediatamente
+        // Puede ser un error temporal de red, mantener las cookies existentes
+        console.warn('Auth check failed, but keeping existing cookies:', error);
+        // Solo marcar como no logueado si no hay user en cookies
+        if (!context.locals.user) {
+          context.locals.logged = false;
+        } else {
+          context.locals.logged = true;
+        }
+      }
+    } else {
+      context.locals.logged = false;
+    }
+    
+    return await next();
+  }
+
+  // Extraer el slug de la organización del primer segmento de la ruta
+  const organizationSlug = firstSegment;
+  context.locals.organizationSlug = organizationSlug;
+  
+  // Si es una ruta reservada o especial, no buscar organización
+  if (reservedRoutes.includes(organizationSlug) || organizationSlug.startsWith('.')) {
+    return await next();
+  }
+  
+  // Establecer el identifier para las llamadas al API (usar slug en lugar de domain)
+  organizationIdentifier = organizationSlug;
+
   try {
-    const [authCheck, organizationCheck] = await Promise.all([
+    // Para la verificación de organización, hacer la llamada sin el header organization-domain
+    // porque aún no sabemos qué organización es y el endpoint debe usar solo el query param
+    const API_URL = process.env["PUBLIC_API_URL"] || "";
+    const organizationCheckResponse = await fetch(API_URL + `/api/organization/check?slug=${organizationSlug}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: context.locals.token
+          ? `Bearer ${context.locals.token}`
+          : "",
+        ip: getIP(context.request.headers) || "0.0.0.0",
+        "Accept-Language": context.locals.language,
+        // NO incluir organization-domain aquí para que el endpoint use solo el query param
+      },
+    });
+    
+    let organizationCheck;
+    if (!organizationCheckResponse.ok) {
+      try {
+        const errorResult = await organizationCheckResponse.json();
+        organizationCheck = errorResult;
+      } catch {
+        organizationCheck = { status: false, message: `HTTP ${organizationCheckResponse.status}` };
+      }
+    } else {
+      const result = await organizationCheckResponse.json();
+      // Mantener la estructura { status, data } para consistencia con el resto del código
+      if (result?.status === true && result?.data) {
+        organizationCheck = result;
+      } else {
+        organizationCheck = result;
+      }
+    }
+    
+    const [authCheck] = await Promise.all([
       callAPI("/api/auth/check"),
-      callAPI(
-        `/api/organization/check?domain=${
-          process.env["PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN"] ||
-          context.url.hostname
-        }`
-      ),
     ]);
 
-    if (authCheck?.status === true) {
-      context.locals.token = authCheck.data.token;
-      context.locals.username = authCheck.data.user.username;
-      context.locals.userSlug = authCheck.data.user.slug;
-      if (authCheck.data.user) {
-        context.locals.user = authCheck.data.user;
+    // El callAPI del middleware retorna data directamente, así que authCheck ya es { token, user } o { status: false, message: '...' }
+    if (authCheck?.token && authCheck?.user) {
+      context.locals.token = authCheck.token;
+      context.locals.username = authCheck.user.username;
+      context.locals.userSlug = authCheck.user.slug;
+      if (authCheck.user) {
+        context.locals.user = authCheck.user;
       }
-      context.cookies.set("token", authCheck.data.token, {
+      context.cookies.set("token", authCheck.token, {
         maxAge: 60 * 60 * 24 * 7,
       });
-      context.cookies.set("username", authCheck.data.user.username, {
+      context.cookies.set("username", authCheck.user.username, {
         maxAge: 60 * 60 * 24 * 7,
       });
-      context.cookies.set("userSlug", authCheck.data.user.slug, {
+      context.cookies.set("userSlug", authCheck.user.slug, {
         maxAge: 60 * 60 * 24 * 7,
       });
-      if (authCheck.data.user) {
-        context.cookies.set("user", JSON.stringify(authCheck.data.user), {
+      if (authCheck.user) {
+        context.cookies.set("user", JSON.stringify(authCheck.user), {
           maxAge: 60 * 60 * 24 * 7,
         });
       }
@@ -134,32 +364,49 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.locals.logged = false;
     }
 
-    if (organizationCheck?.status !== true) {
+    // callAPI retorna result.data cuando status === true, o el objeto completo cuando status === false
+    // Si organizationCheck es null/undefined o tiene status: false, significa que no se encontró la organización
+    if (!organizationCheck) {
+      return context.redirect("/404");
+    }
+    
+    // Si organizationCheck tiene la propiedad status y es false, redirigir a 404
+    if (organizationCheck.status === false) {
       return context.redirect("/404");
     }
 
-    context.locals.organization = organizationCheck.data;
+    // Si organizationCheck es directamente el objeto de la organización (porque callAPI retorna result.data cuando status === true)
+    // o si tiene la propiedad data
+    const organization = organizationCheck.data || organizationCheck;
+    context.locals.organization = organization;
+    // Actualizar el identifier con el slug de la organización para las siguientes llamadas al API
+    organizationIdentifier = organization.slug;
+    // También guardar el slug en una cookie para que el cliente pueda usarlo
+    context.cookies.set("organization-domain", organization.slug, {
+      maxAge: 60 * 60 * 24, // 24 horas
+      path: "/",
+    });
 
     if (context.url.pathname === "/ads.txt") {
-      const adstxt = organizationCheck.data?.googleAdsAdsTxtContent || "";
+      const adstxt = organization?.googleAdsAdsTxtContent || "";
       return new Response(adstxt, {
         headers: { "Content-Type": "text/plain" },
       });
     }
 
     if (
-      organizationCheck.data.useBlockedCountries ||
-      organizationCheck.data.useAllowedCountries
+      organization?.useBlockedCountries ||
+      organization?.useAllowedCountries
     ) {
       const userCountry = context.request.headers.get("cf-ipcountry") || "XX";
       if (userCountry) {
-        const countryOption = organizationCheck.data.countryOptions.find(
+        const countryOption = organization?.countryOptions?.find(
           (option: any) =>
             option.countryCode === userCountry.trim().toUpperCase().slice(0, 2)
         );
         if (countryOption) {
           if (
-            organizationCheck.data.useBlockedCountries &&
+            organization?.useBlockedCountries &&
             countryOption.blocked
           ) {
             return new Response("Country blocked", {
@@ -168,7 +415,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
             });
           }
           if (
-            organizationCheck.data.useAllowedCountries &&
+            organization?.useAllowedCountries &&
             !countryOption.allowed
           ) {
             return new Response("Country not allowed", {

@@ -1,0 +1,27 @@
+---
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import SettingsPageContainer from '../../components/landing/SettingsPageContainer';
+
+const { user, logged, language, organization, organizationSlug } = Astro.locals;
+
+// Redirect if not logged in
+if (!logged || !user) {
+  return Astro.redirect(`/${organizationSlug}/login`);
+}
+---
+
+<LandingLayout 
+  title={`Ajustes | ${organization?.name || 'Capibara Traductor'}`}
+  description="Configura tu cuenta y preferencias"
+  organization={organization}
+>
+  <SettingsPageContainer
+    user={user}
+    logged={logged}
+    language={language}
+    organization={organization}
+    organizationSlug={organizationSlug}
+    client:load
+  />
+</LandingLayout>
+

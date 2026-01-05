@@ -16,6 +16,7 @@ import { ImageDropzone } from "../ImageDropzone";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 import { TrashIcon } from "@heroicons/react/24/outline";
+import { uploadFile } from "../../util/uploadFile";
 
 export function AdminSettings({
   organization: { domain: organizationDomain },
@@ -202,57 +203,73 @@ export function AdminSettings({
     if (!name) {
       return toast.error(_("name_is_required"));
     }
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("language", language);
-    formData.append("enableMangaSection", enableMangaSection.toString());
-    formData.append("enableManhuaSection", enableManhuaSection.toString());
-    formData.append("enableManhwaSection", enableManhwaSection.toString());
-    formData.append(
-      "enableSubscriptionSection",
-      enableSubscriptionSection.toString()
-    );
-    formData.append("enableMainSlider", enableMainSlider.toString());
-    formData.append("enableMainBanner", enableMainBanner.toString());
-
-    formData.append("enableDiscordWebhookNewChapter", enableDiscordWebhookNewChapter.toString());
-    formData.append("enableDiscordWebhookNewSubscription", enableDiscordWebhookNewSubscription.toString());
-
-    formData.append("discordWebhookUrlNewChapter", discordWebhookUrlNewChapter);
-    formData.append("discordWebhookUrlNewSubscription", discordWebhookUrlNewSubscription);
-    formData.append("discordWebhookMessageTemplateNewChapter", discordWebhookMessageTemplateNewChapter);
-    formData.append("discordWebhookMessageTemplateNewSubscription", discordWebhookMessageTemplateNewSubscription);
-
-    formData.append("useBlockedCountries", useBlockedCountries.toString());
-    formData.append("useAllowedCountries", useAllowedCountries.toString());
-    formData.append("enableGoogleAds", enableGoogleAds.toString());
-    formData.append("enableAdsterraAds", enableAdsterraAds.toString());
-    formData.append("facebookUrl", facebookUrl);
-    formData.append("twitterUrl", twitterUrl);
-    formData.append("instagramUrl", instagramUrl);
-    formData.append("youtubeUrl", youtubeUrl);
-    formData.append("patreonUrl", patreonUrl);
-    formData.append("tiktokUrl", tiktokUrl);
-    formData.append("discordUrl", discordUrl);
-    formData.append("twitchUrl", twitchUrl);
-    formData.append("logo", logoImageFile);
-    formData.append("image", imageImageFile);
-    formData.append("banner", bannerImageFile);
-    formData.append("favicon", faviconImageFile);
-    formData.append("countryOptions", JSON.stringify(countryOptions));
     setLoading(true);
-    callAPI("/api/organization", {
-      method: "PATCH",
-      body: formData,
-    })
-      .then((response) => {
-        toast.success(_("options_saved_successfully"));
-        refreshOrganization();
-      })
-      .catch((error) => toast.error(error?.message))
-      .finally(() => setLoading(false));
+    try {
+      // Upload files to R2 using presigned URLs
+      let logoKey = logoImageFile instanceof File ? null : (logoImageFile || "null");
+      let imageKey = imageImageFile instanceof File ? null : (imageImageFile || "null");
+      let bannerKey = bannerImageFile instanceof File ? null : (bannerImageFile || "null");
+      let faviconKey = faviconImageFile instanceof File ? null : (faviconImageFile || "null");
+
+      if (logoImageFile instanceof File) {
+        logoKey = await uploadFile(logoImageFile);
+      }
+      if (imageImageFile instanceof File) {
+        imageKey = await uploadFile(imageImageFile);
+      }
+      if (bannerImageFile instanceof File) {
+        bannerKey = await uploadFile(bannerImageFile);
+      }
+      if (faviconImageFile instanceof File) {
+        faviconKey = await uploadFile(faviconImageFile);
+      }
+
+      // Send JSON instead of FormData
+      const response = await callAPI("/api/organization", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name,
+          title,
+          description,
+          language,
+          enableMangaSection,
+          enableManhuaSection,
+          enableManhwaSection,
+          enableSubscriptionSection,
+          enableMainSlider,
+          enableMainBanner,
+          enableDiscordWebhookNewChapter,
+          enableDiscordWebhookNewSubscription,
+          discordWebhookUrlNewChapter,
+          discordWebhookUrlNewSubscription,
+          discordWebhookMessageTemplateNewChapter,
+          discordWebhookMessageTemplateNewSubscription,
+          useBlockedCountries,
+          useAllowedCountries,
+          enableGoogleAds,
+          enableAdsterraAds,
+          facebookUrl,
+          twitterUrl,
+          instagramUrl,
+          youtubeUrl,
+          patreonUrl,
+          tiktokUrl,
+          discordUrl,
+          twitchUrl,
+          logo: logoKey,
+          image: imageKey,
+          banner: bannerKey,
+          favicon: faviconKey,
+          countryOptions,
+        }),
+      });
+      toast.success(_("options_saved_successfully"));
+      refreshOrganization();
+    } catch (error) {
+      toast.error(error?.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

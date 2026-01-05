@@ -1,12 +1,17 @@
 ---
-import { RegisterCard } from "../../components/RegisterCard";
-import Layout from "../../layouts/Layout.astro";
-import { getTranslator } from "../../util/translate";
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import RegisterScanPageContainer from "../../components/landing/RegisterScanPageContainer";
 
-const { language } = Astro.locals;
-const _ = getTranslator(language);
+const { user, logged, language, organization, organizationSlug } = Astro.locals as any;
 ---
 
-<Layout title={_("register")}>
-  <RegisterCard language={language} client:only="react" />
-</Layout>
+<LandingLayout title="Registra tu Scan">
+  <RegisterScanPageContainer 
+    user={user}
+    logged={logged}
+    language={language}
+    organization={organization}
+    organizationSlug={organizationSlug}
+    client:load 
+  />
+</LandingLayout>

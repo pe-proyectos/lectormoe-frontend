@@ -5,9 +5,13 @@ import { AdminGenreCard } from "./AdminGenreCard";
 import { AdminGenreDialog } from "./AdminGenreDialog";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../../util/get-org-path";
 
-export function AdminGenreGrid({ organization, language }) {
+export function AdminGenreGrid({ organization, language, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [loading, setLoading] = useState(true);
   const [genres, setGenres] = useState([]);
@@ -85,7 +89,7 @@ export function AdminGenreGrid({ organization, language }) {
           <Alert>
             {_("no_genres")},
             <a
-              href="/admin/genres/create"
+              href={getOrgPath("/admin/genres/create", orgSlug)}
               className="hover:text-light-blue-200"
             >
               {" "}

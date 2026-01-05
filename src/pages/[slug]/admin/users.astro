@@ -1,0 +1,30 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { AdminUserGrid } from "../../../components/admin/AdminUserGrid";
+import { getTranslator } from "../../../util/translate";
+
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { language, callAPI, logged, organizationSlug } = Astro.locals;
+const _ = getTranslator(language);
+
+// Si no hay organización, redirigir a 404
+if (!organizationSlug) {
+  return Astro.redirect("/404");
+}
+
+if (!logged) {
+  return Astro.redirect(`/${organizationSlug}/login`);
+}
+
+const { data: subscriptionPlansData } = await callAPI(`/api/subscription-plan`);
+---
+
+<AdminLayout title={_("admin_users_title")} page="users" organizationSlug={organizationSlug}>
+  <AdminUserGrid
+    language={language}
+    subscriptionPlans={subscriptionPlansData.data}
+    organizationSlug={organizationSlug}
+    client:only="react"
+  />
+</AdminLayout>
+

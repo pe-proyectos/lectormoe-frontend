@@ -17,9 +17,13 @@ import { AdminMangaCustomCard } from "./AdminMangaCustomCard";
 import { AdminMangaCustomDialog } from "./AdminMangaCustomDialog";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../../util/get-org-path";
 
-export function AdminMangaCustomGrid({ organization, language }) {
+export function AdminMangaCustomGrid({ organization, language, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [loading, setLoading] = useState(true);
   const [mangaList, setMangaList] = useState([]);
@@ -181,7 +185,7 @@ export function AdminMangaCustomGrid({ organization, language }) {
           <Alert>
             {_("no_mangas_available")},{" "}
             <a
-              href="/admin/mangas/create"
+              href={getOrgPath("/admin/mangas/create", orgSlug)}
               className="hover:text-light-blue-200"
             >
               {_("create_one")}
@@ -197,6 +201,7 @@ export function AdminMangaCustomGrid({ organization, language }) {
             key={mangaCustom.id}
             mangaCustom={mangaCustom}
             onClick={() => handleCardClick(mangaCustom)}
+            organizationSlug={orgSlug}
           />
         ))}
       </div>

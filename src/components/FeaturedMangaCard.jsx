@@ -1,14 +1,16 @@
 import { Typography, Tooltip, Chip } from "@material-tailwind/react";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
-export function FeaturedMangaCard({ organization, language, manga, ...props }) {
+export function FeaturedMangaCard({ organization, language, manga, organizationSlug, ...props }) {
   const _ = getTranslator(language);
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   if (!manga) {
     return (
       <div {...props}>
-        <a href={manga?.slug ? `/manga/${manga?.slug}` : "#"}>
+        <a href={manga?.slug ? getOrgPath(`/manga/${manga?.slug}`, orgSlug) : "#"}>
           <div className="relative w-full h-full bg-gray-900 group overflow-hidden rounded-md shadow-md hover:scale-[101%] transition-transform duration-300"></div>
         </a>
       </div>
@@ -16,7 +18,7 @@ export function FeaturedMangaCard({ organization, language, manga, ...props }) {
   }
   return (
     <div {...props}>
-      <a href={manga?.slug ? `/manga/${manga?.slug}` : "#"}>
+      <a href={manga?.slug ? getOrgPath(`/manga/${manga?.slug}`, orgSlug) : "#"}>
         <div className="relative w-full h-full group overflow-hidden rounded-md shadow-md hover:scale-[101%] transition-transform duration-300">
           {manga?.bannerUrl ? (
             <LazyImage
@@ -62,8 +64,8 @@ export function FeaturedMangaCard({ organization, language, manga, ...props }) {
                       className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer"
                       onClick={() =>
                         (location.href = manga?.lastChapters?.[0]
-                          ? `/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`
-                          : `/manga/${manga.slug}`)
+                          ? getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
+                          : getOrgPath(`/manga/${manga.slug}`, orgSlug))
                       }
                     />
                   </Tooltip>

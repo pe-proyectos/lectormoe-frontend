@@ -15,6 +15,7 @@ import { BellIcon, UserIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { callAPI } from "../util/callApi";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 export function StickyNavbar({
   organization,
@@ -23,8 +24,12 @@ export function StickyNavbar({
   user,
   staticNavbar,
   language,
+  organizationSlug,
 }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -44,7 +49,7 @@ export function StickyNavbar({
   const doLogout = async () => {
     callAPI("/api/auth/logout")
       .then(() => {
-        window.location.href = "/logout?redirect=" + window.location.href;
+        window.location.href = getOrgPath("/logout?redirect=" + window.location.href, orgSlug);
       })
       .catch((error) => {
         console.error(error);
@@ -56,28 +61,28 @@ export function StickyNavbar({
   if (organization.enableSubscriptionSection) {
     navOptions.push({
       name: _("subscription_plans"),
-      href: "/subscriptions",
+      href: getOrgPath("/subscriptions", orgSlug),
     });
   }
 
   if (organization.enableMangaSection) {
     navOptions.push({
       name: _("mangas"),
-      href: "/search?type=manga",
+      href: getOrgPath("/search?type=manga", orgSlug),
     });
   }
 
   if (organization.enableManhuaSection) {
     navOptions.push({
       name: _("manhuas"),
-      href: "/search?type=manhua",
+      href: getOrgPath("/search?type=manhua", orgSlug),
     });
   }
 
   if (organization.enableManhwaSection) {
     navOptions.push({
       name: _("manhwas"),
-      href: "/search?type=manhwa",
+      href: getOrgPath("/search?type=manhwa", orgSlug),
     });
   }
 
@@ -85,7 +90,7 @@ export function StickyNavbar({
     <ul className="mt-2 mb-4 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
       {navOptions.map((option) => (
         <a
-          href={navOptions.length > 1 ? option.href : "/search"}
+          href={navOptions.length > 1 ? option.href : getOrgPath("/search", orgSlug)}
           key={option.name}
           className="flex items-center"
         >
@@ -148,7 +153,7 @@ export function StickyNavbar({
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  location.href = `/search?q=${search}`;
+                  location.href = getOrgPath(`/search?q=${search}`, orgSlug);
                 }
               }}
               containerProps={{
@@ -248,7 +253,7 @@ export function StickyNavbar({
                   <MenuList>
                     <MenuItem disabled>{username}</MenuItem>
                     {user?.subscriptions.length > 0 && (
-                      <a href="/subscriptions">
+                      <a href={getOrgPath("/subscriptions", orgSlug)}>
                         <MenuItem disabled>
                           {user.subscriptions[0].subscriptionPlan.name}
                         </MenuItem>
@@ -259,8 +264,8 @@ export function StickyNavbar({
                         <MenuItem>{_("my_profile")}</MenuItem>
                       </a>
                     }
-                    {user?.canSeeAdminPanel === true && (
-                      <a href="/admin/mangas">
+                    {user?.permissions?.canSeeAdminPanel === true && (
+                      <a href={getOrgPath("/admin/mangas", orgSlug)}>
                         <MenuItem>{_("admin")}</MenuItem>
                       </a>
                     )}
@@ -271,7 +276,7 @@ export function StickyNavbar({
                 </Menu>
               ) : (
                 <>
-                  <a href={`/login?redirect=${location.pathname}`}>
+                  <a href={getOrgPath(`/login?redirect=${location.pathname}`, orgSlug)}>
                     <Button
                       variant="text"
                       color="white"
@@ -281,7 +286,7 @@ export function StickyNavbar({
                       <span>{_("login")}</span>
                     </Button>
                   </a>
-                  <a href={`/register?redirect=${location.pathname}`}>
+                  <a href={getOrgPath(`/register?redirect=${location.pathname}`, orgSlug)}>
                     <Button
                       variant="gradient"
                       size="sm"
@@ -359,7 +364,7 @@ export function StickyNavbar({
               variant="gradient"
               className="!absolute right-1 top-1 rounded"
               onClick={() => {
-                location.href = `/search?q=${search}`;
+                location.href = getOrgPath(`/search?q=${search}`, orgSlug);
               }}
             >
               {_("search")}
@@ -368,12 +373,12 @@ export function StickyNavbar({
         </div>
         {!username && (
           <div className="flex items-center justify-center gap-x-1">
-            <a href="/login">
+            <a href={getOrgPath("/login", orgSlug)}>
               <Button fullWidth variant="text" color="white" size="sm">
                 <span>{_("login")}</span>
               </Button>
             </a>
-            <a href="/register">
+            <a href={getOrgPath("/register", orgSlug)}>
               <Button fullWidth variant="gradient" size="sm" className="">
                 <span>{_("register")}</span>
               </Button>

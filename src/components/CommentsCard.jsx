@@ -15,6 +15,7 @@ import {
   DialogHeader,
 } from "@material-tailwind/react";
 import { callAPI } from "../util/callApi";
+import { uploadFile } from "../util/uploadFile";
 
 const formatDate = (date) => {
   if (!date) return "";
@@ -71,7 +72,8 @@ const CommentListItem = ({
 
   const handleDelete = async () => {
     try {
-      if (user?.id !== comment?.userId && !user?.canDeleteComment) {
+      const permissions = user?.permissions || {};
+      if (user?.id !== comment?.userId && !permissions.canDeleteComment) {
         toast.error("No tienes permisos para eliminar este comentario");
         return;
       }
@@ -310,7 +312,7 @@ const CommentListItem = ({
                </button>
              )}
              {/* Botón ocultar solo para administradores */}
-             {user?.canHideComment && user?.id !== comment?.userId && (
+             {user?.permissions?.canHideComment && user?.id !== comment?.userId && (
                <button
                  onClick={() => onHide(comment)}
                  className="text-gray-400 hover:text-orange-500"
@@ -558,16 +560,20 @@ export function CommentsCard({ identifier, logged, user }) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("identifier", baseIdentifier);
-    formData.append("parentId", replyingTo.toString());
-    if (imageFile) formData.append("image", imageFile);
-    formData.append("comment", commentText.trim());
-    
     try {
+      let imageKey = null;
+      if (imageFile) {
+        imageKey = await uploadFile(imageFile);
+      }
+      
       await callAPI("/api/comment", {
         method: "POST",
-        body: formData,
+        body: JSON.stringify({
+          identifier: baseIdentifier,
+          parentId: replyingTo.toString(),
+          comment: commentText.trim(),
+          ...(imageKey ? { image: imageKey } : {}),
+        }),
       });
       cancelReply();
       setCommentText("");
@@ -599,15 +605,19 @@ export function CommentsCard({ identifier, logged, user }) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("identifier", baseIdentifier);
-    if (imageFile) formData.append("image", imageFile);
-    formData.append("comment", commentText.trim());
-    
     try {
+      let imageKey = null;
+      if (imageFile) {
+        imageKey = await uploadFile(imageFile);
+      }
+      
       await callAPI("/api/comment", {
         method: "POST",
-        body: formData,
+        body: JSON.stringify({
+          identifier: baseIdentifier,
+          comment: commentText.trim(),
+          ...(imageKey ? { image: imageKey } : {}),
+        }),
       });
       setCommentText("");
       clearImage();

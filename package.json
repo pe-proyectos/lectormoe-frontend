@@ -37,6 +37,7 @@
     "daisyui": "^4.12.24",
     "date-fns": "^3.6.0",
     "jszip": "^3.10.1",
+    "lucide-react": "^0.562.0",
     "material-react-table": "^2.13.3",
     "material-ui-dropzone": "^3.5.0",
     "nanostores": "^0.10.3",

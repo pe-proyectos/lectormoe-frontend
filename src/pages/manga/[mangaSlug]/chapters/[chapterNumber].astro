@@ -31,9 +31,10 @@ const userHasAccessToChapter = (chapter: any) => {
   )
     return true;
   if (!logged) return false;
-  if (user?.canReadUnreleased === true) return true;
-  if (user?.canEditChapter === true) return true;
-  if (user?.canEditPage === true) return true;
+  const permissions = user?.permissions || {};
+  if (permissions.canReadUnreleased === true) return true;
+  if (permissions.canEditChapter === true) return true;
+  if (permissions.canEditPage === true) return true;
   for (const subscription of user?.subscriptions || []) {
     if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
       return true;

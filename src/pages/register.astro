@@ -1,35 +1,19 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import { RegisterCard } from "../components/RegisterCard.jsx";
-import { getTranslator } from "../util/translate";
+import LandingLayout from "../layouts/LandingLayout.astro";
+import RegisterPage from "../components/landing/RegisterPage";
 
-const { language, logged, callAPI } = Astro.locals;
-const _ = getTranslator(language);
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { organization, language, logged, user } = Astro.locals;
 
-const { status: subscriptionPlansStatus, data: subscriptionPlansData } =
-  await callAPI(`/api/subscription-plan`);
-
-if (!subscriptionPlansStatus) {
-  return Astro.redirect("/404");
+// Si ya está logueado, redirigir al inicio
+if (logged) {
+  return Astro.redirect("/");
 }
-
-const url = new URL(Astro.request.url);
-const params = new URLSearchParams(url.search);
-const { mangaSlug, chapterNumber } = Object.fromEntries(params.entries());
-
-const { data: manga } =
-  mangaSlug && chapterNumber
-    ? await callAPI(`/api/manga-custom/${mangaSlug}`)
-    : { data: null };
 ---
 
-<Layout title={_("register_title")} showAds={false}>
-  <RegisterCard
-    language={language}
-    logged={logged}
-    manga={manga}
-    chapterNumber={chapterNumber ? parseInt(chapterNumber) : null}
-    subscriptionPlansData={subscriptionPlansData.data}
+<LandingLayout>
+  <RegisterPage 
+    isScanContext={false}
     client:only="react"
   />
-</Layout>
+</LandingLayout>

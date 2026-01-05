@@ -11,6 +11,7 @@ import {
 import { callAPI } from "../util/callApi";
 import { getTranslator } from "../util/translate";
 import { MangaAdCard } from "./MangaAdCard";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 export function RegisterCard({
   language,
@@ -18,12 +19,16 @@ export function RegisterCard({
   manga,
   chapterNumber,
   subscriptionPlansData,
+  organizationSlug,
 }) {
   const chapter = manga
     ? manga?.chapters?.find((chapter) => chapter.number === chapterNumber)
     : null;
 
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");

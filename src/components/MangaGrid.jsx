@@ -14,15 +14,20 @@ import { MangaCard } from "./MangaCard";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { MangaSlider } from "./MangaSlider";
+import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 export function MangaGrid({
   organization,
   language,
   logged,
   subscriptionPlans, 
-  user
+  user,
+  organizationSlug,
 }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   const [loadingLatest, setLoadingLatest] = useState(true);
   const [mangaLatestList, setMangaLatestList] = useState([]);
@@ -193,7 +198,7 @@ export function MangaGrid({
                             ? "text-4xl text-gray-100"
                             : "text-xl text-gray-300")
                         }
-                        href="/subscriptions"
+                        href={getOrgPath("/subscriptions", orgSlug)}
                       >
                         {plan.name}
                       </a>
@@ -252,11 +257,14 @@ export function MangaGrid({
                 {(showAllChapterHistoryList
                   ? userChapterHistoryList
                   : userChapterHistoryList.slice(0, 6)
-                ).map((history) => (
+                ).map((history) => {
+                  const historyOrgSlug = history.chapter.mangaCustom.organization.slug;
+                  const chapterUrl = `/${historyOrgSlug}/manga/${history.chapter.mangaCustom.manga.slug}/chapters/${history.chapter.number}?page=${history.pageNumber}`;
+                  return (
                   <a
                     key={history.id}
                     className="w-full"
-                    href={`/manga/${history.chapter.mangaCustom.manga.slug}/chapters/${history.chapter.number}?page=${history.pageNumber}`}
+                    href={chapterUrl}
                   >
                     <Alert
                       variant="ghost"
@@ -272,7 +280,8 @@ export function MangaGrid({
                       </span>
                     </Alert>
                   </a>
-                ))}
+                  );
+                })}
                 {userChapterHistoryList.length > 6 && (
                   <Button
                     color="gray"
@@ -288,11 +297,11 @@ export function MangaGrid({
               <div className="flex flex-wrap gap-4 justify-center mb-4">
                 <div className="flex flex-col items-center justify-center text-center w-full h-full">
                   <span className="font-light text-gray-700 text-lg">
-                    <a href="/register" className="hover:underline">
+                    <a href={getOrgPath("/register", orgSlug)} className="hover:underline">
                       {_("register")}
                     </a>
                     &nbsp;o&nbsp;
-                    <a href="/login" className="hover:underline">
+                    <a href={getOrgPath("/login", orgSlug)} className="hover:underline">
                       {_("login")}
                     </a>
                     &nbsp;{_("to_access_history")}
@@ -333,6 +342,7 @@ export function MangaGrid({
                 .split("")
                 .map((n) => (
                   <MangaCard
+                    organizationSlug={orgSlug}
                     organization={organization}
                     language={language}
                     key={n}
@@ -387,6 +397,7 @@ export function MangaGrid({
                 .split("")
                 .map((n) => (
                   <MangaCard
+                    organizationSlug={orgSlug}
                     organization={organization}
                     language={language}
                     key={n}

@@ -15,9 +15,10 @@ interface Props {
 
 const { title, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
 let { showAds } = Astro.props;
-const { theme, organization, userSlug, username, user, language } = Astro.locals
+// @ts-ignore - organizationSlug se define dinámicamente en el middleware
+const { theme, organization, userSlug, username, user, language, organizationSlug } = Astro.locals
 const isDecember = new Date().getMonth() === 11;
-if (user && user?.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan.hideAds === true) {
+if (user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan?.hideAds === true) {
 	showAds = false;
 }
 if (user && user?.hideAds === true) {
@@ -31,7 +32,7 @@ if (user && user?.hideAds === true) {
 		<meta charset="UTF-8" />
 		<meta name="description" content={description || organization?.description || "Mangas"} />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href={organization?.faviconUrl || "/favicon.svg"} />
+		<link rel="icon" type="image/png" href={organization?.faviconUrl || "/images/faviconcaptrad.png"} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google Ads */}
@@ -64,7 +65,7 @@ if (user && user?.hideAds === true) {
 		<meta property="og:description" content={description || organization?.description || organization?.title || "Mangas"}>
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content={Astro.url} />
-		<meta property="og:image" content={imageUrl || organization?.bannerUrl} />
+		<meta property="og:image" content={imageUrl || organization?.bannerUrl || "/images/logocaptrad.png"} />
 		<meta property="og:image:width" content="1200">
 		<meta property="og:image:height" content="630">
 		<meta property="og:image:alt" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
@@ -74,7 +75,7 @@ if (user && user?.hideAds === true) {
 		<meta name="twitter:site" content={"@" + (organization?.title || "Mangas")}>
 		<meta name="twitter:domain" content={organization?.domain || Astro.url}>
 		<meta name="twitter:card" content="summary_large_image">
-		<meta name="twitter:image:src" content={imageUrl || organization?.bannerUrl}>
+		<meta name="twitter:image:src" content={imageUrl || organization?.bannerUrl || "/images/logocaptrad.png"}>
 		<meta property="og:locale:alternate" content="es_ES">
 		<meta name="theme-color" content="#ff1a1a">
 		<script defer src="https://monitor.lector.moe/script.js" data-website-id={organization?.monitorWebsiteId}></script>
@@ -103,6 +104,7 @@ if (user && user?.hideAds === true) {
 			userSlug={userSlug}
 			staticNavbar={staticNavbar}
 			language={language}
+			organizationSlug={organizationSlug}
 			client:only="react"
 		/>
 		<div class="min-h-[80vh]">

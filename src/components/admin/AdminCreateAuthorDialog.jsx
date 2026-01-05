@@ -13,6 +13,7 @@ import {
 import { ImageDropzone } from '../ImageDropzone';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
+import { uploadFile } from "../../util/uploadFile";
 
 export function AdminCreateAuthorDialog({ language, open, setOpen }) {
     const _ = getTranslator(language);
@@ -29,26 +30,33 @@ export function AdminCreateAuthorDialog({ language, open, setOpen }) {
         if (!name) {
             return toast.error(_('name_is_required'));
         }
-        const formData = new FormData();
-        formData.append('name', name);
-        if (shortDescription) formData.append('shortDescription', shortDescription);
-        if (description) formData.append('description', description);
-        if (coverImageFile) formData.append('image', coverImageFile);
         setLoading(true);
-        callAPI('/api/author', {
-            method: 'POST',
-            body: formData,
-        })
-            .then(response => {
-                toast.success(_('author_created'));
-                setName('');
-                setDescription('');
-                setShortDescription('');
-                setCoverImageFile(null);
-                setOpen(false);
-            })
-            .catch(error => toast.error(error?.message))
-            .finally(() => setLoading(false));
+        try {
+            let imageKey = null;
+            if (coverImageFile) {
+                imageKey = await uploadFile(coverImageFile);
+            }
+            
+            const response = await callAPI('/api/author', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name,
+                    shortDescription,
+                    description,
+                    ...(imageKey ? { image: imageKey } : {}),
+                }),
+            });
+            toast.success(_('author_created'));
+            setName('');
+            setDescription('');
+            setShortDescription('');
+            setCoverImageFile(null);
+            setOpen(false);
+        } catch (error) {
+            toast.error(error?.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

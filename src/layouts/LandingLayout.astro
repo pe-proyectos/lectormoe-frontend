@@ -1,0 +1,117 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  organization?: any;
+}
+
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { organization } = Astro.locals;
+const { title: propTitle, description: propDescription } = Astro.props;
+
+// Determinar título y descripción basados en la organización o props
+const title = propTitle || (organization?.title ? `${organization.title} - ${organization.name || 'Mangas'}` : "CapibaraTraductor - El Hub de tus Scans Favoritos");
+const description = propDescription || organization?.description || organization?.shortDescription || "Infraestructura independiente para comunidades de scanlation. Tu scan merece su propio espacio.";
+const faviconUrl = organization?.faviconUrl || "/images/faviconcaptrad.png";
+const bannerUrl = organization?.bannerUrl || organization?.logoUrl || "/images/logocaptrad.png";
+const siteName = organization?.title || organization?.name || "CapibaraTraductor";
+---
+
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/png" href={faviconUrl} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    {/* Open Graph / Facebook */}
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.url} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={siteName} />
+    {bannerUrl && (
+      <>
+        <meta property="og:image" content={bannerUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={title} />
+      </>
+    )}
+    <meta property="og:locale" content="es_ES" />
+    
+    {/* Twitter */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {bannerUrl && <meta name="twitter:image:src" content={bannerUrl} />}
+    {organization?.domain && <meta name="twitter:domain" content={organization.domain} />}
+    
+    {/* Theme */}
+    <meta name="theme-color" content="#050505" />
+    
+    {/* Fonts */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #050505;
+    color: #f4f4f5;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .text-outline-white {
+    -webkit-text-stroke: 1.5px white;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #050505;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #18181b;
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
+  }
+</style>
+

@@ -21,6 +21,7 @@ import { ImageDropzone } from "../ImageDropzone";
 import { AdminMangaProfileDialog } from "./AdminMangaProfileDialog";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
+import { uploadFile } from "../../util/uploadFile";
 
 export function AdminMangaCustomDialog({
   organization,
@@ -142,64 +143,65 @@ export function AdminMangaCustomDialog({
     if (!title) {
       return toast.error(_("title_mandatory"));
     }
-    const formData = new FormData();
-    if (!mangaCustom) formData.append("mangaId", mangaProfile.id);
-    if (mangaCustom) formData.append("mangaCustomId", mangaCustom.id);
-    if (status) formData.append("status", status);
-    if (title) formData.append("title", title);
-    if (shortDescription) formData.append("shortDescription", shortDescription);
-    if (description) formData.append("description", description);
-    if (releasedDate) formData.append("releasedAt", releasedDate);
-    if (nextChapterDate) formData.append("nextChapterAt", nextChapterDate);
-    if (requireLogin !== undefined)
-      formData.append("requireLogin", requireLogin.toString());
-    if (isSimulRelease !== undefined)
-      formData.append("isSimulRelease", isSimulRelease.toString());
-    if (isNSFW !== undefined)
-      formData.append("isNSFW", isNSFW.toString());
-    if (selectedGenres.length > 0)
-      formData.append(
-        "genreIds",
-        selectedGenres.map((genre) => genre.id).join(",")
-      );
-    if (selectedSubscriptionPlans.length > 0)
-      formData.append(
-        "subscriptionPlanIds",
-        selectedSubscriptionPlans.map((plan) => plan.id).join(",")
-      );
-    formData.append("image", coverImageFile);
-    formData.append("banner", bannerImageFile);
     setLoading(true);
-    callAPI(
-      mangaCustom
-        ? `/api/manga-custom/${mangaCustom.slug}`
-        : `/api/manga-custom`,
-      {
-        method: mangaCustom ? "PATCH" : "POST",
-        body: formData,
+    try {
+      // Upload files to R2 using presigned URLs
+      let imageKey = coverImageFile instanceof File ? null : (coverImageFile || "null");
+      let bannerKey = bannerImageFile instanceof File ? null : (bannerImageFile || "null");
+
+      if (coverImageFile instanceof File) {
+        imageKey = await uploadFile(coverImageFile);
       }
-    )
-      .then((response) => {
-        toast.success(_("manga_created"));
-        setMangaProfile(null);
-        setMangaCustom(null);
-        setStatus("ongoing");
-        setTitle("");
-        setShortDescription("");
-        setDescription("");
-        setReleasedDate(null);
-        setNextChapterDate(null);
-        setRequireLogin(false);
-        setIsSimulRelease(false);
-        setIsNSFW(false);
-        setCoverImageFile(null);
-        setBannerImageFile(null);
-        setSelectedGenres([]);
-        setSelectedSubscriptionPlans([]);
-        setOpen(false);
-      })
-      .catch((error) => toast.error(error?.message))
-      .finally(() => setLoading(false));
+      if (bannerImageFile instanceof File) {
+        bannerKey = await uploadFile(bannerImageFile);
+      }
+
+      const response = await callAPI(
+        mangaCustom
+          ? `/api/manga-custom/${mangaCustom.slug}`
+          : `/api/manga-custom`,
+        {
+          method: mangaCustom ? "PATCH" : "POST",
+          body: JSON.stringify({
+            ...(mangaCustom ? { mangaCustomId: mangaCustom.id } : { mangaId: mangaProfile.id }),
+            status,
+            title,
+            shortDescription,
+            description,
+            releasedAt: releasedDate,
+            nextChapterAt: nextChapterDate,
+            requireLogin,
+            isSimulRelease,
+            isNSFW,
+            genreIds: selectedGenres.map((genre) => genre.id),
+            subscriptionPlanIds: selectedSubscriptionPlans.map((plan) => plan.id),
+            image: imageKey,
+            banner: bannerKey,
+          }),
+        }
+      );
+      toast.success(_("manga_created"));
+      setMangaProfile(null);
+      setMangaCustom(null);
+      setStatus("ongoing");
+      setTitle("");
+      setShortDescription("");
+      setDescription("");
+      setReleasedDate(null);
+      setNextChapterDate(null);
+      setRequireLogin(false);
+      setIsSimulRelease(false);
+      setIsNSFW(false);
+      setCoverImageFile(null);
+      setBannerImageFile(null);
+      setSelectedGenres([]);
+      setSelectedSubscriptionPlans([]);
+      setOpen(false);
+    } catch (error) {
+      toast.error(error?.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,15 +1,18 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import { getTranslator } from "../util/translate";
+import LandingLayout from "../layouts/LandingLayout.astro";
+import Error500Page from "../components/landing/Error500Page";
 
-const { language } = Astro.locals;
-const _ = getTranslator(language);
+const { organizationSlug } = Astro.locals as any;
 ---
 
-<Layout title={_("error_500_page_title")} showAds={false}>
-  <div class="mx-auto max-w-screen-md py-12">
-    <h1>{_("error_500")}</h1>
-    <h3>{_("error_500_title")}</h3>
-    <p>{_("error_500_description")}</p>
-  </div>
-</Layout>
+<LandingLayout title="500 - Error del servidor">
+  <Error500Page 
+    onNavigateHome={() => {
+      window.location.href = organizationSlug ? `/${organizationSlug}` : '/';
+    }}
+    onRefresh={() => {
+      window.location.reload();
+    }}
+    client:load 
+  />
+</LandingLayout>

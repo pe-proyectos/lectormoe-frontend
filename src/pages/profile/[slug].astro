@@ -1,0 +1,51 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import ProfilePageContainer from "../../components/landing/ProfilePageContainer";
+
+const { user: currentUser, logged, language, callAPI, isLandingPage, organizationSlug } = Astro.locals;
+const { slug } = Astro.params;
+
+// Si no es landing page, redirigir
+if (!isLandingPage) {
+  return Astro.redirect("/404");
+}
+
+// Obtener datos del usuario
+let userData = currentUser;
+if (!userData && logged) {
+  try {
+    const authCheck = await callAPI("/api/auth/check");
+    if (authCheck?.status === true && authCheck.data?.user) {
+      userData = authCheck.data.user;
+    }
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+  }
+}
+
+// Si no está logueado, redirigir
+if (!logged) {
+  return Astro.redirect("/");
+}
+
+// Si no hay datos del usuario después de intentar obtenerlos, redirigir
+if (!userData) {
+  return Astro.redirect("/");
+}
+
+// Verificar que el slug coincida con el usuario actual (permitir acceso al propio perfil)
+// Solo verificar si el usuario tiene slug definido
+if (userData.slug && userData.slug !== slug) {
+  return Astro.redirect("/404");
+}
+---
+
+<LandingLayout>
+  <ProfilePageContainer 
+    user={userData} 
+    logged={logged}
+    organizationSlug={organizationSlug}
+    client:only="react" 
+  />
+</LandingLayout>
+

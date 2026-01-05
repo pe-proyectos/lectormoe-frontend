@@ -1,0 +1,32 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { AdminMangasBreadcrumb } from "../../../components/admin/AdminMangasBreadcrumb.jsx";
+import { AdminAuthorGrid } from "../../../components/admin/AdminAuthorGrid.jsx";
+import { getTranslator } from "../../../util/translate";
+
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { organization, language, logged, organizationSlug } = Astro.locals;
+const _ = getTranslator(language);
+
+// Si no hay organización, redirigir a 404
+if (!organization) {
+  return Astro.redirect("/404");
+}
+
+if (!logged) {
+  return Astro.redirect(`/${organizationSlug}/login`);
+}
+---
+
+<AdminLayout title={_("admin_authors_title")} page="authors" organizationSlug={organizationSlug}>
+  <AdminMangasBreadcrumb language={language} organizationSlug={organizationSlug} client:only="react" />
+  <div class="py-2"></div>
+  <h1>Autores</h1>
+  <AdminAuthorGrid
+    organization={organization}
+    language={language}
+    organizationSlug={organizationSlug}
+    client:only="react"
+  />
+</AdminLayout>
+

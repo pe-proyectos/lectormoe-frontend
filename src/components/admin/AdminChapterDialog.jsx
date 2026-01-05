@@ -18,6 +18,7 @@ import { DropzoneArea } from 'material-ui-dropzone';
 import { ImageDropzone } from '../ImageDropzone';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
+import { uploadFile } from "../../util/uploadFile";
 
 export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapter }) {
     const _ = getTranslator(language);
@@ -144,43 +145,62 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         if (!number) {
             return toast.error(_("mandatory_number"));
         }
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('number', number);
-        formData.append('releasedAt', releasedAt.toString());
-        formData.append('subscribersOnly', subscribersOnly);
-        if (chapterImageFile || chapter) formData.append('image', chapterImageFile);
-
-        // Añadir las páginas
-        pages.forEach((page) => {
-            formData.append('pages', page instanceof File ? page : page?.imageUrl);
-        });
-
-        // Añadir el array de índices de páginas simples
-        formData.append('singlePages', JSON.stringify(singlePageIndexes));
-
         setLoading(true);
-        callAPI(
-            chapter
-                ? `/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}`
-                : `/api/manga-custom/${mangaCustom.slug}/chapter`,
-            {
-                method: chapter ? 'PATCH' : 'POST',
-                body: formData,
-            })
-            .then(_response => {
-                setTitle('');
-                setNumber(1);
-                setChapterImageFile(null);
-                setPages([]);
-                setSinglePageIndexes([]);
-                toast.success(_("chapter_created"));
-                setOpen(false);
-            })
-            .catch(error => {
-                toast.error(error?.message);
-            })
-            .finally(() => setLoading(false));
+        try {
+            // Upload chapter image if it's a new file
+            let imageKey = chapterImageFile instanceof File ? null : (chapterImageFile || "null");
+            if (chapterImageFile instanceof File) {
+                imageKey = await uploadFile(chapterImageFile);
+            }
+
+            // Upload pages that are new files
+            const pageKeys = await Promise.all(
+                pages.map(async (page) => {
+                    if (page instanceof File) {
+                        return await uploadFile(page);
+                    } else if (page?.imageUrl) {
+                        // Extract fileKey from URL if it's a full URL, otherwise use as-is
+                        const url = page.imageUrl;
+                        if (url.startsWith('http')) {
+                            // Extract the fileKey from the URL
+                            const parts = url.split('/');
+                            return parts[parts.length - 1];
+                        }
+                        return url;
+                    }
+                    return page;
+                })
+            );
+
+            const response = await callAPI(
+                chapter
+                    ? `/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}`
+                    : `/api/manga-custom/${mangaCustom.slug}/chapter`,
+                {
+                    method: chapter ? 'PATCH' : 'POST',
+                    body: JSON.stringify({
+                        title,
+                        number,
+                        releasedAt: releasedAt.toString(),
+                        subscribersOnly,
+                        image: imageKey,
+                        pages: pageKeys,
+                        singlePages: singlePageIndexes,
+                    }),
+                }
+            );
+            setTitle('');
+            setNumber(1);
+            setChapterImageFile(null);
+            setPages([]);
+            setSinglePageIndexes([]);
+            toast.success(_("chapter_created"));
+            setOpen(false);
+        } catch (error) {
+            toast.error(error?.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

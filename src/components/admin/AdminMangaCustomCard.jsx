@@ -11,9 +11,13 @@ import {
   PencilIcon,
 } from "@heroicons/react/24/outline";
 import { getTranslator } from "../../util/translate";
+import { getOrgPath, getOrgSlugFromPath } from "../../util/get-org-path";
 
-export function AdminMangaCustomCard({ language, mangaCustom, onClick }) {
+export function AdminMangaCustomCard({ language, mangaCustom, onClick, organizationSlug }) {
   const _ = getTranslator(language);
+  
+  // Get organization slug from path if not provided
+  const orgSlug = organizationSlug || getOrgSlugFromPath();
 
   return (
     <Card className="w-56">
@@ -75,7 +79,7 @@ export function AdminMangaCustomCard({ language, mangaCustom, onClick }) {
           <p>{mangaCustom.views}</p>
         </div>
         <div className="flex items-center">
-          <a href={`/admin/mangas/${mangaCustom.slug}`}>
+          <a href={getOrgPath(`/admin/mangas/${mangaCustom.slug}`, orgSlug)}>
             <Button variant="text" className="px-2" size="sm">
               {_("chapters")}
             </Button>
