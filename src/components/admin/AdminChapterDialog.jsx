@@ -146,6 +146,11 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             return toast.error(_("mandatory_number"));
         }
         setLoading(true);
+        
+        // Declarar variables fuera del bloque try para que estén disponibles en todo el scope
+        let imageKey = chapterImageFile;
+        const pageKeys = [];
+        
         try {
             // Contar archivos a subir
             const filesToUpload = [
@@ -164,8 +169,6 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
 
             try {
                 // Upload chapter image if it's a new file
-                let imageKey = chapterImageFile;
-                
                 if (chapterImageFile instanceof File) {
                     uploadedCount++;
                     toast.update(toastId, { 
@@ -176,7 +179,6 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                 }
 
                 // Upload pages that are new files (secuencialmente para actualizar contador)
-                const pageKeys = [];
                 for (const page of pages) {
                     if (page instanceof File) {
                         uploadedCount++;
