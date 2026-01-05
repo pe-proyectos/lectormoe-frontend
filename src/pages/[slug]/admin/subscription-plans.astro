@@ -5,11 +5,11 @@ import { AdminSubscriptionPlanGrid } from "../../../components/admin/AdminSubscr
 import { getTranslator } from "../../../util/translate";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { language, logged, organizationSlug } = Astro.locals;
+const { language, logged, organization, organizationSlug } = Astro.locals;
 const _ = getTranslator(language);
 
 // Si no hay organización, redirigir a 404
-if (!organizationSlug) {
+if (!organization) {
   return Astro.redirect("/404");
 }
 

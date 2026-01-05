@@ -1,5 +1,5 @@
 ---
-import { AdminSidebar } from "../../../components/admin/AdminSidebar.jsx";
+import { AdminSidebar } from "../../../components/admin/AdminSidebar";
 import { getTranslator } from "../../../util/translate";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 
@@ -17,7 +17,7 @@ if (!logged) {
 }
 ---
 
-<AdminLayout title={_("admin_storage_title")} page="storage" organizationSlug={organizationSlug}>
-  <AdminSidebar language={language} page="storage" organizationSlug={organizationSlug} client:only="react" />
+<AdminLayout title={_("admin_analytics_title")} page="analytics" organizationSlug={organizationSlug}>
+  <AdminSidebar language={language} page="analytics" organizationSlug={organizationSlug} client:only="react" />
 </AdminLayout>
 

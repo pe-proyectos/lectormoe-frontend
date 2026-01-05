@@ -14,7 +14,7 @@ import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 import { MonthlyRevenueChart } from "./MonthlyRevenueChart";
 
-export function AdminFinance({ language }) {
+export function AdminFinance({ language, organization, organizationSlug }) {
   const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);

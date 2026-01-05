@@ -19,7 +19,7 @@ import { getTranslator } from "../../util/translate";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
-export function AdminUserGrid({ language, subscriptionPlans }) {
+export function AdminUserGrid({ language, subscriptionPlans, organizationSlug }) {
   const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);

@@ -253,7 +253,7 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, currentUser }) => {
   );
 };
 
-export function AdminComments({ language, user }) {
+export function AdminComments({ language, user, organizationSlug, organization }) {
   const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);

@@ -11,6 +11,7 @@ import { getTranslator } from "../../util/translate";
 export function AdminMangaCustomChapters({
   language,
   initialMangaCustom,
+  organizationSlug,
 }) {
   const _ = getTranslator(language);
 

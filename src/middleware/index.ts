@@ -483,13 +483,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     context.locals.logged = context.locals.token ? true : false;
 
-    if (context.url.pathname.startsWith("/admin")) {
+    // Validar acceso a rutas de admin (/{slug}/admin/*)
+    if (context.url.pathname.includes("/admin")) {
       if (!context.locals.logged) {
+        // Si es una ruta de scan, redirigir al login de ese scan
+        if (context.locals.organizationSlug) {
+          return context.redirect(`/${context.locals.organizationSlug}/login`);
+        }
         return context.redirect("/login");
       }
-      if (!context.locals.user?.canSeeAdminPanel) {
-        return context.redirect("/");
-      }
+      // Las páginas de admin ya validan permisos individualmente mediante el API
+      // No necesitamos validar aquí porque cada endpoint del API valida canSeeAdminPanel
     }
 
     return await next();

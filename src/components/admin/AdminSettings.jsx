@@ -21,6 +21,7 @@ import { uploadFile } from "../../util/uploadFile";
 export function AdminSettings({
   organization: { domain: organizationDomain },
   language: translatorLanguage,
+  organizationSlug,
 }) {
   const _ = getTranslator(translatorLanguage);
 
