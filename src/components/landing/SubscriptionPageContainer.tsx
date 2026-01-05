@@ -25,7 +25,7 @@ const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ o
       <Navbar 
         onOpenRegister={() => navigateTo(`/${organizationSlug}/register`)}
         onOpenLogin={() => navigateTo(`/${organizationSlug}/login`)}
-        onGoHome={() => navigateTo('/')} 
+        onGoHome={() => navigateTo(`/${organizationSlug}`)} 
         onGoExplore={() => navigateTo('/scans')}
         onGoSearch={() => navigateTo(`/${organizationSlug}/search`)}
         onGoSubscriptions={handleGoToSub}

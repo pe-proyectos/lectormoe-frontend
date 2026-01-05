@@ -42,6 +42,36 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Establecer logged basado en si existe token y user
   context.locals.logged = !!(context.locals.token && context.locals.user);
 
+  // Mapeo de dominios/subdominios antiguos a slugs de organización
+  const domainToSlugMap: Record<string, string> = {
+    // Subdominios de capibaratraductor.com
+    '6ianfranc9.capibaratraductor.com': '6ianfranc9',
+    'senshimanga.capibaratraductor.com': 'senshimanga',
+    
+    // Dominios independientes
+    'mangaclub.moe': 'mangaclub',
+    'doujinclub.icu': 'doujinclub',
+    'ouroborosnetwork.org': 'ouroborosnetwork',
+  };
+  
+  const hostname = context.url.hostname;
+  const mainDomain = "capibaratraductor.com";
+  const localhostPattern = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
+  
+  // Solo hacer redirección si no es localhost y si está en el mapeo
+  if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
+    const targetSlug = domainToSlugMap[hostname];
+    
+    if (targetSlug) {
+      // Construir la nueva URL con formato de slug
+      const newPath = `/${targetSlug}${context.url.pathname}${context.url.search}`;
+      const newUrl = `${context.url.protocol}//${mainDomain}${newPath}`;
+      
+      // Redirigir permanentemente (301) a la nueva URL
+      return context.redirect(newUrl, 301);
+    }
+  }
+
   // Variable para almacenar el identifier de la organización (slug o domain)
   let organizationIdentifier: string | null = null;
 

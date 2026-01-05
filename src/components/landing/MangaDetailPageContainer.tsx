@@ -44,7 +44,7 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
         } : undefined}
         initialUser={user}
         initialLogged={logged}
-        onGoHome={() => navigateTo('/')}
+        onGoHome={() => navigateTo(organizationSlug ? `/${organizationSlug}` : '/')}
         onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
         onGoSubscriptions={() => navigateTo(organizationSlug ? `/${organizationSlug}/subscriptions` : '/')}
         onOpenLogin={() => navigateTo(organizationSlug ? `/${organizationSlug}/login` : '/login')}

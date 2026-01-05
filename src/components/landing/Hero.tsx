@@ -6,9 +6,11 @@ import { callAPI } from '../../util/callApi';
 interface Manga {
   id: string;
   slug?: string;
+  mangaSlug?: string;
   title: string;
   cover: string;
   scan?: string;
+  scanSlug?: string;
   scanName?: string;
   status?: 'Ongoing' | 'Completed' | 'Hiatus';
   lastUpdate?: string;
@@ -62,12 +64,13 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
       const loadFavorites = async () => {
         const favStatus: Record<string, boolean> = {};
         for (const manga of mangas) {
-          if (manga.slug) {
+          const mangaSlug = manga.mangaSlug || manga.slug;
+          if (mangaSlug) {
             try {
-              const isFav = await callAPI(`/api/favorites/manga-custom/${manga.slug}`);
-              favStatus[manga.slug] = isFav;
+              const isFav = await callAPI(`/api/favorites/manga-custom/${mangaSlug}`);
+              favStatus[mangaSlug] = isFav;
             } catch {
-              favStatus[manga.slug] = false;
+              favStatus[mangaSlug] = false;
             }
           }
         }
@@ -94,21 +97,22 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
     }
 
     const currentManga = mangas[active];
-    if (!currentManga.slug) return;
+    const mangaSlug = currentManga.mangaSlug || currentManga.slug;
+    if (!mangaSlug) return;
 
-    const isFavorite = favorites[currentManga.slug];
+    const isFavorite = favorites[mangaSlug];
 
     // Optimistic update
-    setFavorites({ ...favorites, [currentManga.slug]: !isFavorite });
+    setFavorites({ ...favorites, [mangaSlug]: !isFavorite });
 
     try {
       if (isFavorite) {
-        await callAPI(`/api/favorites/manga-custom/${currentManga.slug}`, {
+        await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, {
           method: 'DELETE',
         });
         setFeedback({ message: 'Eliminado de favoritos', type: 'success' });
       } else {
-        await callAPI(`/api/favorites/manga-custom/${currentManga.slug}`, {
+        await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, {
           method: 'POST',
         });
         setFeedback({ message: 'Agregado a favoritos', type: 'success' });
@@ -116,7 +120,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
       setTimeout(() => setFeedback(null), 3000);
     } catch (error) {
       // Revert on error
-      setFavorites({ ...favorites, [currentManga.slug]: isFavorite });
+      setFavorites({ ...favorites, [mangaSlug]: isFavorite });
       setFeedback({ message: 'Error al actualizar favoritos', type: 'error' });
       setTimeout(() => setFeedback(null), 3000);
     }
@@ -179,12 +183,15 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
             <div className="flex items-center gap-3 pt-2">
               <button 
                 onClick={() => {
-                  if (current.slug && current.scan) {
+                  const mangaSlug = current.mangaSlug || current.slug;
+                  const scanSlug = current.scanSlug || current.scan;
+                  
+                  if (mangaSlug && scanSlug) {
                     // Navegar al detalle del manga
-                    window.location.href = `/${current.scan}/manga/${current.slug}`;
-                  } else if (current.slug) {
+                    window.location.href = `/${scanSlug}/manga/${mangaSlug}`;
+                  } else if (mangaSlug) {
                     // Si no hay scan, buscar en todos
-                    window.location.href = `/manga/${current.slug}`;
+                    window.location.href = `/manga/${mangaSlug}`;
                   } else {
                     // Fallback al explorador
                     onExplore();
@@ -198,12 +205,12 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
                 <button 
                   onClick={toggleFavorite}
                   className={`backdrop-blur-md font-black px-8 py-3.5 rounded-xl border flex items-center gap-2 transition-all text-sm ${
-                    favorites[current.slug || '']
+                    favorites[current.mangaSlug || current.slug || '']
                       ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30'
                       : 'bg-zinc-900/80 border-zinc-700/50 text-white hover:bg-zinc-800'
                   }`}
                 >
-                  {favorites[current.slug || ''] ? (
+                  {favorites[current.mangaSlug || current.slug || ''] ? (
                     <><Check size={16} /> EN FAVORITOS</>
                   ) : (
                     <><Plus size={16} /> MI LISTA</>

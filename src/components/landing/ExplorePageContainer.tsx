@@ -26,7 +26,7 @@ const ExplorePageContainer: React.FC<ExplorePageContainerProps> = ({ organizatio
       <Navbar 
         onOpenRegister={() => navigateTo(organizationSlug ? `/${organizationSlug}/register` : '/register')}
         onOpenLogin={() => navigateTo(organizationSlug ? `/${organizationSlug}/login` : '/login')}
-        onGoHome={() => navigateTo('/')} 
+        onGoHome={() => navigateTo(organizationSlug ? `/${organizationSlug}` : '/')} 
         onGoExplore={() => navigateTo('/scans')}
         onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
         onGoSubscriptions={handleGoToSub}
