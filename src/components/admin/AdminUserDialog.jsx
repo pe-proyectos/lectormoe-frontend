@@ -50,6 +50,8 @@ export function AdminUserDialog({ language, open, setOpen, user, setUser }) {
     canEditSubscriptionPlan: false,
     canDeleteSubscriptionPlan: false,
     canDeleteComment: false,
+    canEditComment: false,
+    canHideComment: false,
     hideAds: false,
     canDownload: false,
     canReadUnreleased: false,
@@ -58,6 +60,7 @@ export function AdminUserDialog({ language, open, setOpen, user, setUser }) {
   useEffect(() => {
     if (!user) return;
     // Usar permisos del usuario si están disponibles, sino usar valores por defecto
+    // Nota: El API ahora siempre devuelve permissions (con valores por defecto si el usuario no tiene registro de permisos)
     const userPermissions = user.permissions || {};
     setRole(userPermissions.role || "user");
     setDescription(user.description || "");
@@ -86,6 +89,8 @@ export function AdminUserDialog({ language, open, setOpen, user, setUser }) {
       canEditSubscriptionPlan: userPermissions.canEditSubscriptionPlan || false,
       canDeleteSubscriptionPlan: userPermissions.canDeleteSubscriptionPlan || false,
       canDeleteComment: userPermissions.canDeleteComment || false,
+      canEditComment: userPermissions.canEditComment || false,
+      canHideComment: userPermissions.canHideComment || false,
       hideAds: userPermissions.hideAds || false,
       canDownload: userPermissions.canDownload || false,
       canReadUnreleased: userPermissions.canReadUnreleased || false,
@@ -488,6 +493,29 @@ export function AdminUserDialog({ language, open, setOpen, user, setUser }) {
               })
             }
           />
+          <Checkbox
+            label={_("can_edit_comment")}
+            checked={permissions.canEditComment}
+            onChange={(e) =>
+              setPermissions({
+                ...permissions,
+                canEditComment: e.target.checked,
+              })
+            }
+          />
+          <Checkbox
+            label={_("can_hide_comment")}
+            checked={permissions.canHideComment}
+            onChange={(e) =>
+              setPermissions({
+                ...permissions,
+                canHideComment: e.target.checked,
+              })
+            }
+          />
+          <Typography className="-mb-2" variant="h6" color="gray">
+            {_("perks")}
+          </Typography>
           <Checkbox
             label={_("hide_ads")}
             checked={permissions.hideAds}

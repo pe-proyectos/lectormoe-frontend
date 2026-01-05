@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, Search, Users, ChevronDown, User as UserIcon, LogOut, Settings, ChevronLeft, Sparkles, CreditCard } from 'lucide-react';
+import { Menu, X, Search, Users, ChevronDown, User as UserIcon, LogOut, Settings, ChevronLeft, CreditCard, Shield } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface NavbarProps {
@@ -15,9 +15,10 @@ interface NavbarProps {
   logged?: boolean;
   activeScan?: any; // Organization/Scan object for contextual branding
   isSticky?: boolean; // Whether the navbar should be sticky (default true)
+  userPermissions?: any; // User permissions for the current organization
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, onGoExplore, onGoSearch, onGoSubscriptions, activeView, user: initialUser, logged: initialLogged, activeScan, isSticky = true }) => {
+const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, onGoExplore, onGoSearch, onGoSubscriptions, activeView, user: initialUser, logged: initialLogged, activeScan, isSticky = true, userPermissions }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -170,15 +171,12 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
             {activeScan ? (
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-cyan-500 shadow-lg shadow-cyan-500/10 transition-transform group-hover:scale-110">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-zinc-900/50 transition-transform group-hover:scale-110">
                     <img 
                       src={activeScan.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeScan.name)}&background=27272a&color=fff&size=48`} 
                       alt={activeScan.name} 
                       className="w-full h-full object-cover" 
                     />
-                  </div>
-                  <div className="absolute -top-1 -right-1 bg-yellow-500 p-0.5 rounded-full border-2 border-zinc-950">
-                    <Sparkles size={8} className="text-zinc-950" />
                   </div>
                 </div>
                 <div className="flex flex-col">
@@ -206,7 +204,7 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
         <div className="hidden md:flex items-center gap-8">
           {activeScan && (
             <button 
-              onClick={onGoHome} 
+              onClick={() => navigateTo('/')} 
               className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-all mr-2 group/back"
             >
               <ChevronLeft size={16} className="group-hover/back:-translate-x-1 transition-transform" /> Inicio
@@ -277,6 +275,17 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
                   >
                     <Settings size={16} className="text-zinc-500" /> Ajustes
                   </button>
+                  {activeScan && userPermissions?.canSeeAdminPanel && (
+                    <button 
+                      onClick={() => { 
+                        navigateTo(`/${activeScan.slug}/admin`); 
+                        setProfileDropdownOpen(false); 
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+                    >
+                      <Shield size={16} className="text-purple-500" /> Panel Admin
+                    </button>
+                  )}
                   <div className="h-px bg-zinc-800 my-2" />
                   <button 
                     onClick={() => {
@@ -321,7 +330,7 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl">
           {activeScan && (
-            <button onClick={() => { onGoHome(); setMobileMenuOpen(false); }} className="text-zinc-500 font-bold flex items-center gap-4 text-lg"><ChevronLeft size={20} /> Inicio</button>
+            <button onClick={() => { navigateTo('/'); setMobileMenuOpen(false); }} className="text-zinc-500 font-bold flex items-center gap-4 text-lg"><ChevronLeft size={20} /> Inicio</button>
           )}
           <button onClick={() => { onGoSearch(); setMobileMenuOpen(false); }} className={`text-xl font-bold flex items-center gap-4 ${activeView === 'search' ? 'text-cyan-500' : 'text-zinc-100'}`}><Search size={20} /> Catálogo</button>
           {activeScan && onGoSubscriptions ? (
@@ -349,6 +358,9 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
               </div>
               <button onClick={() => { navigateToProfile(); setMobileMenuOpen(false); }} className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"><UserIcon size={20} /> Mi Perfil</button>
               <button onClick={() => { navigateTo(activeScan ? `/${activeScan.slug}/settings` : '/settings'); setMobileMenuOpen(false); }} className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"><Settings size={20} /> Ajustes</button>
+              {activeScan && userPermissions?.canSeeAdminPanel && (
+                <button onClick={() => { navigateTo(`/${activeScan.slug}/admin`); setMobileMenuOpen(false); }} className="w-full flex items-center gap-4 text-purple-400 font-bold text-lg"><Shield size={20} /> Panel Admin</button>
+              )}
               <button 
                 onClick={() => {
                   handleLogout();

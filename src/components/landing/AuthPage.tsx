@@ -163,7 +163,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization
 
           {/* Forms */}
           <form onSubmit={(e) => {
-            console.log('🔵 Form submitted!');
             handleSubmit(e);
           }} className="space-y-5">
             {error && (

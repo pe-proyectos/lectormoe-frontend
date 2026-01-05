@@ -1,18 +1,24 @@
 ---
 import Layout from './Layout.astro';
 import { AdminSidebar } from '../components/admin/AdminSidebar.jsx';
+import AdminNavbar from '../components/admin/AdminNavbar';
 
 // @ts-ignore - organizationSlug se define dinámicamente en el middleware
 const { title, page, organizationSlug } = Astro.props;
 const { organization } = Astro.locals;
 ---
 
-<Layout title={title + " - Admin"} isAdmin={true} showAds={false}>
-    <div class="flex">
-        <div class="min-w-[320px]">
+<Layout title={title + " - Admin"} isAdmin={true} showAds={false} staticNavbar={true}>
+    <AdminNavbar 
+        organization={organization}
+        organizationSlug={organizationSlug}
+        client:load
+    />
+    <div class="flex pt-16 md:pt-[72px]">
+        <div class="hidden md:block min-w-[320px] bg-zinc-950">
             <AdminSidebar language={organization.language} page={page} organizationSlug={organizationSlug} client:only="react"/>
         </div>
-        <div class="w-full h-full p-4">
+        <div class="w-full h-full p-4 bg-zinc-950">
             <slot />
         </div>
     </div>

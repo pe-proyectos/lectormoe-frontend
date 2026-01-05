@@ -19,7 +19,6 @@ import { TrashIcon } from "@heroicons/react/24/outline";
 import { uploadFile } from "../../util/uploadFile";
 
 export function AdminSettings({
-  organization: { domain: organizationDomain },
   language: translatorLanguage,
   organizationSlug,
 }) {
@@ -142,7 +141,7 @@ export function AdminSettings({
 
   const refreshOrganization = () => {
     setLoading(true);
-    callAPI(`/api/organization/check?domain=${organizationDomain}`)
+    callAPI(`/api/organization/check?slug=${organizationSlug}`)
       .then((organization) => {
         // Information
         setName(organization.name || "");
@@ -207,22 +206,83 @@ export function AdminSettings({
     setLoading(true);
     try {
       // Upload files to R2 using presigned URLs
-      let logoKey = logoImageFile instanceof File ? null : (logoImageFile || "null");
-      let imageKey = imageImageFile instanceof File ? null : (imageImageFile || "null");
-      let bannerKey = bannerImageFile instanceof File ? null : (bannerImageFile || "null");
-      let faviconKey = faviconImageFile instanceof File ? null : (faviconImageFile || "null");
+      // Mantener las URLs existentes si no se cambian, o subir archivos nuevos
+      let logoKey = logoImageFile;
+      let imageKey = imageImageFile;
+      let bannerKey = bannerImageFile;
+      let faviconKey = faviconImageFile;
 
-      if (logoImageFile instanceof File) {
-        logoKey = await uploadFile(logoImageFile);
+      // Contar cuántos archivos nuevos hay que subir
+      const filesToUpload = [
+        logoImageFile instanceof File,
+        imageImageFile instanceof File,
+        bannerImageFile instanceof File,
+        faviconImageFile instanceof File
+      ].filter(Boolean).length;
+
+      // Si hay archivos que subir, mostrar un toast de progreso
+      let toastId = null;
+      let uploadedCount = 0;
+
+      if (filesToUpload > 0) {
+        toastId = toast.loading(`Subiendo archivos ${uploadedCount + 1}/${filesToUpload}`, {
+          position: "bottom-right"
+        });
       }
-      if (imageImageFile instanceof File) {
-        imageKey = await uploadFile(imageImageFile);
-      }
-      if (bannerImageFile instanceof File) {
-        bannerKey = await uploadFile(bannerImageFile);
-      }
-      if (faviconImageFile instanceof File) {
-        faviconKey = await uploadFile(faviconImageFile);
+
+      try {
+        // Si se seleccionó un archivo nuevo (File object), subirlo y obtener el fileKey
+        if (logoImageFile instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          logoKey = await uploadFile(logoImageFile, undefined, 'organization');
+        }
+        
+        if (imageImageFile instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          imageKey = await uploadFile(imageImageFile, undefined, 'organization');
+        }
+        
+        if (bannerImageFile instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          bannerKey = await uploadFile(bannerImageFile, undefined, 'organization');
+        }
+        
+        if (faviconImageFile instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          faviconKey = await uploadFile(faviconImageFile, undefined, 'organization');
+        }
+
+        // Si había archivos que subir, cerrar el toast de progreso y mostrar éxito
+        if (toastId) {
+          toast.dismiss(toastId);
+          toast.success(`${filesToUpload} ${filesToUpload === 1 ? 'archivo subido' : 'archivos subidos'} correctamente`, {
+            position: "bottom-right"
+          });
+        }
+      } catch (error) {
+        if (toastId) {
+          toast.dismiss(toastId);
+          toast.error("Error al subir archivos", {
+            position: "bottom-right"
+          });
+        }
+        throw error;
       }
 
       // Send JSON instead of FormData

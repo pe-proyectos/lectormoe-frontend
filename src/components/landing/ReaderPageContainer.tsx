@@ -11,6 +11,7 @@ interface ReaderPageContainerProps {
   user: any;
   organizationSlug: string;
   organization?: any;
+  hasAccess?: boolean;
 }
 
 const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
@@ -22,6 +23,7 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
   user,
   organizationSlug,
   organization,
+  hasAccess = true,
 }) => {
   const [Reader, setReader] = useState<any>(null);
 
@@ -84,6 +86,7 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
             logged={logged}
             user={user}
             organizationSlug={organizationSlug}
+            hasAccess={hasAccess}
           />
         ) : (
           <div className="flex items-center justify-center min-h-screen">

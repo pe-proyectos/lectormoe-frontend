@@ -45,6 +45,7 @@ export function Reader({
   logged,
   user,
   organizationSlug,
+  hasAccess = true,
 }) {
   const _ = getTranslator(language);
   
@@ -78,6 +79,8 @@ export function Reader({
     chapter: null,
     pages: [],
   });
+
+  const [accessError, setAccessError] = useState(null);
 
   const [settings, setSettings] = useState(() => ({
     readType:
@@ -416,9 +419,42 @@ export function Reader({
 
   // useEffect on initial load
   useEffect(() => {
+    // If user doesn't have access from server-side validation, show error immediately
+    if (!hasAccess) {
+      const errorType = !logged && manga?.requireLogin === true
+        ? "login_required"
+        : chapter?.subscribersOnly === true
+          ? "subscription_required"
+          : "not_released";
+      
+      const errorMessage = errorType === "login_required"
+        ? "Debes iniciar sesión para leer este manga."
+        : errorType === "subscription_required"
+          ? "Este capítulo es exclusivo para suscriptores. Suscríbete para acceder a contenido premium."
+          : "Este capítulo aún no ha sido publicado. Solo los suscriptores pueden acceder a capítulos anticipados.";
+      
+      setAccessError({
+        message: errorMessage,
+        errorType: errorType
+      });
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages`)
-      .then((pages) => {
+      .then((result) => {
+        // Check if the API returned an access denied error
+        if (result && result.status === false) {
+          setAccessError({
+            message: result.message || "No tienes acceso a este capítulo.",
+            errorType: result.errorType || "unknown"
+          });
+          setLoading(false);
+          return;
+        }
+
+        const pages = result;
         setChapterData((prev) => ({ ...prev, pages: pages }));
         if (pages.length > 0) {
           const urlParams = new URLSearchParams(window.location.search);
@@ -427,11 +463,17 @@ export function Reader({
             pages.findIndex((page) => page.number === initialPageNumber) || 0;
           setCurrentPage(pages[pageIndex].number);
         }
+        setLoading(false);
       })
-
-      .catch((error) => toast.error(error?.message))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((error) => {
+        console.error("Error loading chapter pages:", error);
+        setAccessError({
+          message: error?.message || "Error al cargar el capítulo. Por favor, intenta de nuevo.",
+          errorType: "error"
+        });
+        setLoading(false);
+      });
+  }, [hasAccess]);
 
   const PreviousChapterArrow = ({ ...props }) => (
     <div
@@ -682,13 +724,81 @@ export function Reader({
           id="manga-pages-top"
           className={`w-full select-none bg-black ${settings.readType === readTypes.CASCADE ? 'min-h-[100vh]' : ''}`}
         >
-          {chapterData.pages.length === 0 && loading && (
+          {chapterData.pages.length === 0 && loading && !accessError && (
             <div className="flex min-h-full w-full justify-center py-4">
               <Spinner color="red" />
             </div>
           )}
 
-          {chapterData.pages.length === 0 && !loading && (
+          {accessError && (
+            <div className="flex min-h-screen w-full justify-center items-center py-8 px-4">
+              <div className="max-w-2xl w-full bg-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 shadow-2xl">
+                <div className="flex flex-col items-center text-center space-y-6">
+                  {/* Lock Icon */}
+                  <div className="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  
+                  {/* Title */}
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tight">
+                    Acceso Denegado
+                  </h2>
+                  
+                  {/* Message */}
+                  <p className="text-lg text-zinc-300 leading-relaxed">
+                    {accessError.message}
+                  </p>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 w-full mt-4">
+                    {(accessError.errorType === "login_required" || accessError.errorType === "subscription_required") && !logged && (
+                      <a
+                        href={getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug)}
+                        className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider shadow-xl hover:shadow-cyan-500/20"
+                      >
+                        Iniciar Sesión
+                      </a>
+                    )}
+                    
+                    {accessError.errorType === "subscription_required" && (
+                      <a
+                        href={getOrgPath(`/subscriptions?mangaSlug=${manga.slug}`, orgSlug)}
+                        className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider shadow-xl hover:shadow-yellow-500/20"
+                      >
+                        Ver Planes
+                      </a>
+                    )}
+                    
+                    <a
+                      href={getOrgPath(`/manga/${manga.slug}`, orgSlug)}
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider border-2 border-zinc-700"
+                    >
+                      Volver al Manga
+                    </a>
+                  </div>
+                  
+                  {/* Additional Info */}
+                  <div className="mt-6 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
+                    <p className="text-sm text-zinc-400">
+                      {accessError.errorType === "subscription_required" && (
+                        <>Suscríbete para obtener acceso anticipado a capítulos exclusivos y apoyar a los creadores.</>
+                      )}
+                      {accessError.errorType === "not_released" && (
+                        <>Este capítulo estará disponible para todos después de su fecha de lanzamiento oficial.</>
+                      )}
+                      {accessError.errorType === "login_required" && (
+                        <>Inicia sesión con tu cuenta para continuar leyendo este contenido.</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {chapterData.pages.length === 0 && !loading && !accessError && (
             <div className="flex min-h-full w-full justify-center py-4">
               <h3 className="text-white">{_("no_pages_found")}</h3>
             </div>

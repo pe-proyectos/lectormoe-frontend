@@ -176,9 +176,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           'Content-Type': 'application/json',
         };
         
-        // Solo agregar organization-domain si hay un slug válido
+        // Solo agregar organization si hay un slug válido
         if (organizationSlug) {
-          headers['organization-domain'] = organizationSlug;
+          headers['x-organization'] = organizationSlug;
         }
         
         const response = await fetch(`${API_URL}/api/landing/scans`, {
@@ -229,9 +229,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           'Content-Type': 'application/json',
         };
         
-        // Solo agregar organization-domain si hay un slug válido
+        // Solo agregar x-organization si hay un slug válido
         if (organizationSlug) {
-          headers['organization-domain'] = organizationSlug;
+          headers['x-organization'] = organizationSlug;
         }
         
         // Solo agregar Authorization si hay token

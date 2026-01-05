@@ -67,9 +67,15 @@ export function AdminMangaCustomGrid({ organization, language, organizationSlug 
     }
     
     callAPI(`/api/manga-custom?${query}`)
-      .then(({ data, maxPage }) => {
-        setMangaList(data);
-        setMaxPage(maxPage);
+      .then((result) => {
+        // callAPI ya extrae el data, pero puede devolver { data, maxPage, total }
+        if (result && Array.isArray(result.data)) {
+          setMangaList(result.data);
+          setMaxPage(result.maxPage || 1);
+        } else if (Array.isArray(result)) {
+          setMangaList(result);
+          setMaxPage(1);
+        }
       })
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoading(false));
@@ -77,7 +83,14 @@ export function AdminMangaCustomGrid({ organization, language, organizationSlug 
 
   const refreshSubscriptionPlans = () => {
     return callAPI(`/api/subscription-plan`)
-      .then(({ data }) => setSubscriptionPlans(data))
+      .then((result) => {
+        // callAPI ya extrae el data
+        if (result && Array.isArray(result.data)) {
+          setSubscriptionPlans(result.data);
+        } else if (Array.isArray(result)) {
+          setSubscriptionPlans(result);
+        }
+      })
       .catch((error) =>
         toast.error(error?.message || _("error_loading_subscription_plans"))
       );

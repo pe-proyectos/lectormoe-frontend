@@ -346,9 +346,11 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     try {
       setIsLoading(true);
       const response = await callAPI(`/api/comment?identifier=${baseIdentifier}`);
-      setComments(response.data || response || []);
+      // callAPI ya extrae el data, response es directamente el array de comentarios
+      setComments(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error al cargar comentarios', error);
+      setComments([]);
     } finally {
       setIsLoading(false);
     }
@@ -415,7 +417,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       setIsPosting(true);
       let imageKey = null;
       if (imageFile) {
-        imageKey = await uploadFile(imageFile);
+        imageKey = await uploadFile(imageFile, undefined, 'comments');
       }
 
       await callAPI('/api/comment', {

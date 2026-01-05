@@ -27,8 +27,13 @@ export function AdminSubscriptionPlanGrid({ language, organizationSlug }) {
   const refreshSubscriptionPlans = () => {
     setLoading(true);
     callAPI(`/api/subscription-plan`)
-      .then(({ data }) => {
-        setSubscriptionPlans(data);
+      .then((result) => {
+        // callAPI ya extrae el data, manejamos ambos formatos
+        if (result && Array.isArray(result.data)) {
+          setSubscriptionPlans(result.data);
+        } else if (Array.isArray(result)) {
+          setSubscriptionPlans(result);
+        }
       })
       .catch((error) =>
         toast.error(error?.message || _("error_loading_subscription_plans"))

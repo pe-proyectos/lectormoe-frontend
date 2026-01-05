@@ -9,9 +9,10 @@ interface SubscriptionPageContainerProps {
   user?: any;
   logged?: boolean;
   paypalClientId?: string;
+  userPermissions?: any;
 }
 
-const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ organization, organizationSlug, user, logged, paypalClientId }) => {
+const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ organization, organizationSlug, user, logged, paypalClientId, userPermissions }) => {
   const navigateTo = (path: string) => {
     window.location.href = path;
   };
@@ -33,6 +34,7 @@ const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ o
         user={user}
         logged={logged}
         activeScan={organization}
+        userPermissions={userPermissions}
       />
 
       <SubscriptionPage 

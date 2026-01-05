@@ -91,7 +91,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
         const API_URL = import.meta.env['PUBLIC_API_URL'];
         const response = await fetch(`${API_URL}/api/subscription-plan`, {
           headers: {
-            'organization-domain': organizationSlug,
+            'x-organization': organizationSlug,
           },
           credentials: 'include',
         });

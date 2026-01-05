@@ -3,7 +3,7 @@ import LandingLayout from '../../../layouts/LandingLayout.astro';
 import MangaDetailPageContainer from '../../../components/landing/MangaDetailPageContainer';
 
 const { mangaSlug } = Astro.params;
-const { organization, logged, user, callAPI, organizationSlug, language } = Astro.locals;
+const { organization, logged, user, callAPI, organizationSlug, language, permissions } = Astro.locals;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -34,6 +34,7 @@ const manga = mangaResult;
     user={user}
     logged={logged}
     language={language}
+    userPermissions={permissions}
     client:load
   />
 </LandingLayout>

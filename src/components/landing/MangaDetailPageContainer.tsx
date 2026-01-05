@@ -18,6 +18,7 @@ interface MangaDetailPageContainerProps {
   user?: any;
   logged?: boolean;
   language?: string;
+  userPermissions?: any;
 }
 
 const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({ 
@@ -26,7 +27,8 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
   organizationSlug,
   user,
   logged,
-  language
+  language,
+  userPermissions
 }) => {
   const navigateTo = (path: string) => {
     if (typeof window !== 'undefined') {
@@ -42,13 +44,15 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
           slug: organization.slug,
           logo: organization.logoUrl || '',
         } : undefined}
-        initialUser={user}
-        initialLogged={logged}
+        user={user}
+        logged={logged}
+        userPermissions={userPermissions}
         onGoHome={() => navigateTo(organizationSlug ? `/${organizationSlug}` : '/')}
         onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
         onGoSubscriptions={() => navigateTo(organizationSlug ? `/${organizationSlug}/subscriptions` : '/')}
         onOpenLogin={() => navigateTo(organizationSlug ? `/${organizationSlug}/login` : '/login')}
         onOpenRegister={() => navigateTo(organizationSlug ? `/${organizationSlug}/register` : '/register')}
+        onGoExplore={() => navigateTo('/scans')}
         activeView="manga"
       />
       

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Star, Share2, Eye, Download, ChevronRight, ExternalLink, MessageCircle, ThumbsUp, ThumbsDown, LogIn, EyeOff, Check } from 'lucide-react';
+import { Star, Share2, Eye, Download, ChevronRight, ExternalLink, MessageCircle, ThumbsUp, ThumbsDown, LogIn, EyeOff, Lock, LockOpen, Crown } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { translateStatus } from '../../util/landing/translateStatus';
 import CommentsSection from './CommentsSection';
@@ -599,17 +599,43 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                               </div>
                               <div className="space-y-1">
                                 <div className="flex items-center gap-3">
-                                  <h4 className="text-white font-bold text-lg">Capítulo {chapter.number}</h4>
-                                  {hasAccess && !chapter.subscribersOnly && (
-                                    <span className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">
-                                      Disponible para todos: {formatDate(chapter.releasedAt)}
-                                    </span>
-                                  )}
-                                  {!hasAccess && chapter.subscribersOnly && (
-                                    <span className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">
-                                      Solo para suscriptores
-                                    </span>
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    {/* Lock/Unlock Icon with Tooltip */}
+                                    <div className="relative group/lock">
+                                      {chapter.subscribersOnly && hasAccess && (
+                                        <>
+                                          <LockOpen size={16} className="text-green-400 animate-pulse" />
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10">
+                                            Desbloqueado - Tienes acceso premium
+                                          </div>
+                                        </>
+                                      )}
+                                      
+                                      {chapter.subscribersOnly && !hasAccess && (
+                                        <>
+                                          <Lock size={16} className="text-yellow-400" />
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10">
+                                            Bloqueado - Solo para suscriptores
+                                          </div>
+                                        </>
+                                      )}
+                                      
+                                      {!chapter.subscribersOnly && (
+                                        <>
+                                          <LockOpen size={16} className="text-cyan-400" />
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10">
+                                            Gratis - Disponible para todos
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                    
+                                    <h4 className="text-white font-bold text-lg">Capítulo {chapter.number}</h4>
+                                  </div>
+                                  
+                                  <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-wide">
+                                    {formatDate(chapter.releasedAt)}
+                                  </span>
                                 </div>
                                 <p className="text-zinc-400 text-base font-bold italic tracking-tight uppercase group-hover:text-cyan-400 transition-colors">
                                   "{chapter.title}"
@@ -617,7 +643,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                               </div>
                             </div>
                             
-                            <div className="flex flex-col items-end gap-3">
+                              <div className="flex flex-col items-end gap-3">
                               <div className="flex items-center gap-4 text-zinc-500 relative">
                                 <div className="relative group/tooltip">
                                   <button 
@@ -684,7 +710,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                               </div>
                               <button 
                                 onClick={() => goToReadChapter(chapter)}
-                                className="text-white text-xs font-bold uppercase tracking-widest hover:text-cyan-400 transition-colors"
+                                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                                  hasAccess
+                                    ? 'text-cyan-400 hover:text-cyan-300'
+                                    : 'text-yellow-400 hover:text-yellow-300'
+                                }`}
                               >
                                 {getChapterLabel(chapter)}
                               </button>

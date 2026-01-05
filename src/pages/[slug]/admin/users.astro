@@ -16,13 +16,13 @@ if (!logged) {
   return Astro.redirect(`/${organizationSlug}/login`);
 }
 
-const { data: subscriptionPlansData } = await callAPI(`/api/subscription-plan`);
+const subscriptionPlansData = await callAPI(`/api/subscription-plan`);
 ---
 
 <AdminLayout title={_("admin_users_title")} page="users" organizationSlug={organizationSlug}>
   <AdminUserGrid
     language={language}
-    subscriptionPlans={subscriptionPlansData.data}
+    subscriptionPlans={subscriptionPlansData?.data || []}
     organizationSlug={organizationSlug}
     client:only="react"
   />

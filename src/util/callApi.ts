@@ -22,7 +22,7 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
                 // @ts-ignore
                 token = await window.cookieStore.get('token');
                 // @ts-ignore
-                organizationDomain = await window.cookieStore.get('organization-domain');
+                organizationDomain = await window.cookieStore.get('x-organization');
             } catch (e) {
                 // Si cookieStore falla, usar document.cookie
             }
@@ -41,8 +41,8 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
             if (!token && cookies['token']) {
                 token = { value: cookies['token'] };
             }
-            if (!organizationDomain && cookies['organization-domain']) {
-                organizationDomain = { value: cookies['organization-domain'] };
+            if (!organizationDomain && cookies['x-organization']) {
+                organizationDomain = { value: cookies['x-organization'] };
             }
         }
         
@@ -54,7 +54,7 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
         const isOrgLoginPage = pathSegments.length === 2 && (pathSegments[1] === 'login' || pathSegments[1] === 'register');
         const isLandingPage = window.location.pathname === '/' || (firstSegment && reservedRoutes.includes(firstSegment) && !isOrgLoginPage);
         
-        // Determinar el organization-domain a usar
+        // Determinar el x-organization a usar
         let orgDomain: string | null = null;
         
         if (!isLandingPage || isOrgLoginPage) {
@@ -62,10 +62,9 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
             if (isOrgLoginPage) {
                 orgDomain = firstSegment;
             } else {
-                // Solo buscar organization-domain si NO estamos en la landing page
+                // Solo buscar x-organization si NO estamos en la landing page
                 // Ignorar cookie si estamos en landing page
-                orgDomain = import.meta.env.PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN || null;
-                if (!orgDomain && organizationDomain?.value) {
+                if (organizationDomain?.value) {
                     orgDomain = organizationDomain.value;
                 }
                 if (!orgDomain) {
@@ -86,10 +85,10 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
             ...(fetchOptions?.includeIp ? { 'ip': await getIpFromCloudflare() } : {}),
         };
         
-        // Solo agregar organization-domain si no estamos en la landing page global y tenemos un dominio
+        // Solo agregar x-organization si no estamos en la landing page global y tenemos un dominio
         // O si estamos en una página de login/register de organización
         if ((!isLandingPage || isOrgLoginPage) && orgDomain) {
-            headers['organization-domain'] = orgDomain;
+            headers['x-organization'] = orgDomain;
         }
         
         const response = await fetch(API_URL + url, {

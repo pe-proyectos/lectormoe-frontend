@@ -32,7 +32,7 @@ export function AdminSidebar({ language, page, organizationSlug }) {
   const [openAlert, setOpenAlert] = React.useState(true);
 
   return (
-    <Card className="sticky top-[calc(5rem)] h-[calc(100vh-100px)] w-full max-w-[20rem] p-4 shadow-xl shadow-blue-gray-900/5">
+    <Card className="sticky top-16 md:top-[72px] h-[calc(100vh-64px)] md:h-[calc(100vh-72px)] w-full max-w-[20rem] p-4 shadow-xl shadow-blue-gray-900/5 bg-zinc-900 border-zinc-800">
       <div className="mb-2 p-4">
         <Typography variant="h5" color="blue-gray">
           {_("administrator")}
@@ -97,6 +97,14 @@ export function AdminSidebar({ language, page, organizationSlug }) {
               <BanknotesIcon className="h-5 w-5" />
             </ListItemPrefix>
             {_("Finanzas")}
+          </ListItem>
+        </a>
+        <a href={getOrgPath("/admin/analytics", orgSlug)}>
+          <ListItem selected={page === "analytics"}>
+            <ListItemPrefix>
+              <ChartBarIcon className="h-5 w-5" />
+            </ListItemPrefix>
+            {_("Analytics")}
           </ListItem>
         </a>
         <a href={getOrgPath("/admin/comments", orgSlug)}>

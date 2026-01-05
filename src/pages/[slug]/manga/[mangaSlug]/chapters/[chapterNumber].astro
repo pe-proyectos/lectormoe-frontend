@@ -34,6 +34,8 @@ if (!chapter || chapter.status === false) {
   return Astro.redirect("/404");
 }
 
+// Check access but don't redirect here - let the Reader component handle it
+// This allows for better error messaging and user experience
 const userHasAccessToChapter = (chapter: any) => {
   if (!user && manga?.requireLogin === true) return false;
   if (
@@ -61,17 +63,9 @@ const userHasAccessToChapter = (chapter: any) => {
   return false;
 };
 
-if (!logged && manga?.requireLogin === true) {
-  return Astro.redirect(
-    getOrgPath(`/login?mangaSlug=${manga.slug}&chapterNumber=${chapter.number}&redirect=${Astro.url.pathname}`, organizationSlug)
-  );
-}
-
-if (!userHasAccessToChapter(chapter)) {
-  return Astro.redirect(
-    getOrgPath(`/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapterNumber}`, organizationSlug)
-  );
-}
+// We still validate access, but we pass the information to the Reader
+// so it can display appropriate error messages
+const hasAccess = userHasAccessToChapter(chapter);
 ---
 
 <LandingLayout
@@ -88,6 +82,7 @@ if (!userHasAccessToChapter(chapter)) {
     user={user}
     organizationSlug={organizationSlug}
     organization={organization}
+    hasAccess={hasAccess}
     client:load
   />
 </LandingLayout>

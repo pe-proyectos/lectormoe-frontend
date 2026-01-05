@@ -83,10 +83,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const response = await fetch(API_URL + url, {
       ...(fetchOptions || {}),
       headers: {
-        "organization-domain":
-          organizationIdentifier ||
-          process.env["PUBLIC_OVERRIDE_ORGANIZATION_DOMAIN"] ||
-          context.url.hostname,
+        "x-organization": organizationIdentifier,
         "Content-Type": "application/json",
         Authorization: context.locals.token
           ? `Bearer ${context.locals.token}`
@@ -322,7 +319,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   organizationIdentifier = organizationSlug;
 
   try {
-    // Para la verificación de organización, hacer la llamada sin el header organization-domain
+    // Para la verificación de organización, hacer la llamada sin el header x-organization
     // porque aún no sabemos qué organización es y el endpoint debe usar solo el query param
     const API_URL = process.env["PUBLIC_API_URL"] || "";
     const organizationCheckResponse = await fetch(API_URL + `/api/organization/check?slug=${organizationSlug}`, {
@@ -333,7 +330,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
           : "",
         ip: getIP(context.request.headers) || "0.0.0.0",
         "Accept-Language": context.locals.language,
-        // NO incluir organization-domain aquí para que el endpoint use solo el query param
+        // NO incluir x-organization aquí para que el endpoint use solo el query param
       },
     });
     
@@ -359,13 +356,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
       callAPI("/api/auth/check"),
     ]);
 
-    // El callAPI del middleware retorna data directamente, así que authCheck ya es { token, user } o { status: false, message: '...' }
+    // El callAPI del middleware retorna data directamente, así que authCheck ya es { token, user, permissions } o { status: false, message: '...' }
     if (authCheck?.token && authCheck?.user) {
       context.locals.token = authCheck.token;
       context.locals.username = authCheck.user.username;
       context.locals.userSlug = authCheck.user.slug;
       if (authCheck.user) {
         context.locals.user = authCheck.user;
+      }
+      // Guardar permisos si están disponibles
+      if (authCheck.permissions) {
+        context.locals.permissions = authCheck.permissions;
       }
       context.cookies.set("token", authCheck.token, {
         maxAge: 60 * 60 * 24 * 7,
@@ -387,6 +388,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.locals.username = undefined;
       context.locals.userSlug = undefined;
       context.locals.user = undefined;
+      context.locals.permissions = undefined;
       context.cookies.set("token", "", { maxAge: 0 });
       context.cookies.set("username", "", { maxAge: 0 });
       context.cookies.set("userSlug", "", { maxAge: 0 });
@@ -412,7 +414,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Actualizar el identifier con el slug de la organización para las siguientes llamadas al API
     organizationIdentifier = organization.slug;
     // También guardar el slug en una cookie para que el cliente pueda usarlo
-    context.cookies.set("organization-domain", organization.slug, {
+    context.cookies.set("x-organization", organization.slug, {
       maxAge: 60 * 60 * 24, // 24 horas
       path: "/",
     });

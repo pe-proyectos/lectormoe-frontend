@@ -34,7 +34,22 @@ export function AdminCreateAuthorDialog({ language, open, setOpen }) {
         try {
             let imageKey = null;
             if (coverImageFile) {
-                imageKey = await uploadFile(coverImageFile);
+                const toastId = toast.loading("Subiendo imagen...", {
+                    position: "bottom-right"
+                });
+                try {
+                    imageKey = await uploadFile(coverImageFile, undefined, 'authors');
+                    toast.dismiss(toastId);
+                    toast.success("Imagen subida correctamente", {
+                        position: "bottom-right"
+                    });
+                } catch (error) {
+                    toast.dismiss(toastId);
+                    toast.error("Error al subir imagen", {
+                        position: "bottom-right"
+                    });
+                    throw error;
+                }
             }
             
             const response = await callAPI('/api/author', {

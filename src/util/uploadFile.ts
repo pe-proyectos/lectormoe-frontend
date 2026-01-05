@@ -5,12 +5,14 @@ import { callAPI } from './callApi';
  * @param filename - The filename
  * @param contentType - The content type (optional, will be inferred from filename if not provided)
  * @param expiresIn - URL expiration time in seconds (default: 1 hour)
+ * @param contentFolder - Optional folder name for content type (e.g., 'chapters', 'mangas', 'profile_pictures')
  * @returns Object with uploadUrl and fileKey
  */
 export async function getPresignedUrl(
   filename: string,
   contentType?: string,
-  expiresIn?: number
+  expiresIn?: number,
+  contentFolder?: string
 ): Promise<{ uploadUrl: string; fileKey: string }> {
   const response = await callAPI('/api/files/presigned-url', {
     method: 'POST',
@@ -18,9 +20,11 @@ export async function getPresignedUrl(
       filename,
       contentType,
       expiresIn,
+      contentFolder,
     }),
   });
 
+  // callAPI already extracts the data
   return response;
 }
 
@@ -75,13 +79,15 @@ export async function uploadFileToR2(
  * This is a convenience function that combines getPresignedUrl and uploadFileToR2
  * @param file - The file to upload
  * @param onProgress - Optional progress callback
+ * @param contentFolder - Optional folder name for content type (e.g., 'chapters', 'mangas')
  * @returns The fileKey that can be used to reference the file
  */
 export async function uploadFile(
   file: File,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  contentFolder?: string
 ): Promise<string> {
-  const { uploadUrl, fileKey } = await getPresignedUrl(file.name, file.type);
+  const { uploadUrl, fileKey } = await getPresignedUrl(file.name, file.type, undefined, contentFolder);
   await uploadFileToR2(file, uploadUrl, onProgress);
   return fileKey;
 }

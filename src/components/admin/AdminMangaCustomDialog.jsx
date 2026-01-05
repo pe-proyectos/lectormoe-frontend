@@ -146,14 +146,57 @@ export function AdminMangaCustomDialog({
     setLoading(true);
     try {
       // Upload files to R2 using presigned URLs
-      let imageKey = coverImageFile instanceof File ? null : (coverImageFile || "null");
-      let bannerKey = bannerImageFile instanceof File ? null : (bannerImageFile || "null");
+      let imageKey = coverImageFile;
+      let bannerKey = bannerImageFile;
 
-      if (coverImageFile instanceof File) {
-        imageKey = await uploadFile(coverImageFile);
+      // Contar cuántos archivos nuevos hay que subir
+      const filesToUpload = [
+        coverImageFile instanceof File,
+        bannerImageFile instanceof File
+      ].filter(Boolean).length;
+
+      let toastId = null;
+      let uploadedCount = 0;
+
+      if (filesToUpload > 0) {
+        toastId = toast.loading(`Subiendo archivos ${uploadedCount + 1}/${filesToUpload}`, {
+          position: "bottom-right"
+        });
       }
-      if (bannerImageFile instanceof File) {
-        bannerKey = await uploadFile(bannerImageFile);
+
+      try {
+        if (coverImageFile instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          imageKey = await uploadFile(coverImageFile, undefined, 'mangas');
+        }
+        
+        if (bannerImageFile instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          bannerKey = await uploadFile(bannerImageFile, undefined, 'mangas');
+        }
+
+        if (toastId) {
+          toast.dismiss(toastId);
+          toast.success(`${filesToUpload} ${filesToUpload === 1 ? 'archivo subido' : 'archivos subidos'} correctamente`, {
+            position: "bottom-right"
+          });
+        }
+      } catch (error) {
+        if (toastId) {
+          toast.dismiss(toastId);
+          toast.error("Error al subir archivos", {
+            position: "bottom-right"
+          });
+        }
+        throw error;
       }
 
       const response = await callAPI(

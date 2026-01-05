@@ -254,7 +254,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       
       // Upload avatar if changed
       if (avatarFile) {
-        const avatarKey = await uploadFile(avatarFile);
+        const avatarKey = await uploadFile(avatarFile, undefined, 'profile_pictures');
         formData.append('image', avatarKey);
       } else if (editData.avatar && editData.avatar !== user.imageUrl && !editData.avatar.startsWith('data:')) {
         // If it's a URL (not a data URL), use it directly
@@ -264,7 +264,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       // Upload banner if changed (only for Pro users)
       if (isUserPro) {
         if (bannerFile) {
-          const bannerKey = await uploadFile(bannerFile);
+          const bannerKey = await uploadFile(bannerFile, undefined, 'profile_pictures');
           formData.append('banner', bannerKey);
         } else if (editData.banner && editData.banner !== user.bannerUrl && !editData.banner.startsWith('data:')) {
           formData.append('banner', editData.banner);

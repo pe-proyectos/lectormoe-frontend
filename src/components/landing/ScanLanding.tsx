@@ -13,9 +13,10 @@ interface ScanLandingProps {
   organizationSlug: string;
   user?: any;
   logged?: boolean;
+  userPermissions?: any;
 }
 
-const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlug, user, logged }) => {
+const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlug, user, logged, userPermissions }) => {
   const [featuredMangas, setFeaturedMangas] = useState<any[]>([]);
   const [topThreeMangas, setTopThreeMangas] = useState<any[]>([]);
   const [popular24h, setPopular24h] = useState<any[]>([]);
@@ -73,7 +74,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
         
         const heroResponse = await fetch(`${API_URL}/api/manga-custom?order=latest&limit=5`, {
           headers: {
-            'organization-domain': organizationSlug,
+            'x-organization': organizationSlug,
             'Authorization': token ? `Bearer ${token}` : '',
             'Content-Type': 'application/json',
           },
@@ -114,7 +115,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
         
         const topThreeResponse = await fetch(`${API_URL}/api/manga-custom?order=featured&limit=3`, {
           headers: {
-            'organization-domain': organizationSlug,
+            'x-organization': organizationSlug,
             'Authorization': token ? `Bearer ${token}` : '',
             'Content-Type': 'application/json',
           },
@@ -155,7 +156,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
         
         const popularResponse = await fetch(`${API_URL}/api/manga-custom?order=popular&limit=9`, {
           headers: {
-            'organization-domain': organizationSlug,
+            'x-organization': organizationSlug,
             'Authorization': token ? `Bearer ${token}` : '',
             'Content-Type': 'application/json',
           },
@@ -188,7 +189,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
         
         const recentResponse = await fetch(`${API_URL}/api/manga-custom?order=latest&limit=18`, {
           headers: {
-            'organization-domain': organizationSlug,
+            'x-organization': organizationSlug,
             'Authorization': token ? `Bearer ${token}` : '',
             'Content-Type': 'application/json',
           },
@@ -236,6 +237,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
         user={user}
         logged={logged}
         activeScan={organization}
+        userPermissions={userPermissions}
       />
       
       {/* Hero with independent skeleton */}

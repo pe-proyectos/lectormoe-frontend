@@ -46,7 +46,7 @@ const UnifiedProfileView: React.FC<UnifiedProfileViewProps> = ({ user, language 
   const refreshUserChapterHistory = async () => {
     setLoadingHistory(true);
     try {
-      // Obtener historial de todas las organizaciones (sin organization-domain header)
+      // Obtener historial de todas las organizaciones (sin x-organization header)
       const response = await callAPI(`/api/user-chapter-history?limit=30`);
       // callAPI devuelve result.data, que es { data, maxPage, total }
       setUserChapterHistoryList(response?.data || []);
@@ -61,7 +61,7 @@ const UnifiedProfileView: React.FC<UnifiedProfileViewProps> = ({ user, language 
   const refreshFavorites = async () => {
     setLoadingFavorites(true);
     try {
-      // Obtener favoritos de todas las organizaciones (sin organization-domain header)
+      // Obtener favoritos de todas las organizaciones (sin x-organization header)
       const response = await callAPI(`/api/favorites?limit=30`);
       // callAPI devuelve result.data, que es { data, maxPage, total }
       setFavoritesList(response?.data || []);
@@ -88,7 +88,22 @@ const UnifiedProfileView: React.FC<UnifiedProfileViewProps> = ({ user, language 
     try {
       let imageKey = "null";
       if (newImage) {
-        imageKey = await uploadFile(newImage);
+        const toastId = toast.loading("Subiendo imagen...", {
+          position: "bottom-right"
+        });
+        try {
+          imageKey = await uploadFile(newImage, undefined, 'profile_pictures');
+          toast.dismiss(toastId);
+          toast.success("Imagen subida correctamente", {
+            position: "bottom-right"
+          });
+        } catch (error) {
+          toast.dismiss(toastId);
+          toast.error("Error al subir imagen", {
+            position: "bottom-right"
+          });
+          throw error;
+        }
       }
 
       const response = await callAPI(`/api/user/${currentUser.id}`, {

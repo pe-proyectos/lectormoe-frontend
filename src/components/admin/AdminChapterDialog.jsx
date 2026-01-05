@@ -147,30 +147,69 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         }
         setLoading(true);
         try {
-            // Upload chapter image if it's a new file
-            let imageKey = chapterImageFile instanceof File ? null : (chapterImageFile || "null");
-            if (chapterImageFile instanceof File) {
-                imageKey = await uploadFile(chapterImageFile);
+            // Contar archivos a subir
+            const filesToUpload = [
+                chapterImageFile instanceof File,
+                ...pages.map(page => page instanceof File)
+            ].filter(Boolean).length;
+
+            let toastId = null;
+            let uploadedCount = 0;
+
+            if (filesToUpload > 0) {
+                toastId = toast.loading(`Subiendo archivos ${uploadedCount + 1}/${filesToUpload}`, {
+                    position: "bottom-right"
+                });
             }
 
-            // Upload pages that are new files
-            const pageKeys = await Promise.all(
-                pages.map(async (page) => {
+            try {
+                // Upload chapter image if it's a new file
+                let imageKey = chapterImageFile;
+                
+                if (chapterImageFile instanceof File) {
+                    uploadedCount++;
+                    toast.update(toastId, { 
+                        render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+                        position: "bottom-right"
+                    });
+                    imageKey = await uploadFile(chapterImageFile, undefined, 'chapters');
+                }
+
+                // Upload pages that are new files (secuencialmente para actualizar contador)
+                const pageKeys = [];
+                for (const page of pages) {
                     if (page instanceof File) {
-                        return await uploadFile(page);
+                        uploadedCount++;
+                        toast.update(toastId, { 
+                            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+                            position: "bottom-right"
+                        });
+                        const key = await uploadFile(page, undefined, 'chapters');
+                        pageKeys.push(key);
                     } else if (page?.imageUrl) {
-                        // Extract fileKey from URL if it's a full URL, otherwise use as-is
-                        const url = page.imageUrl;
-                        if (url.startsWith('http')) {
-                            // Extract the fileKey from the URL
-                            const parts = url.split('/');
-                            return parts[parts.length - 1];
-                        }
-                        return url;
+                        // Si ya tiene imageUrl (páginas existentes), mantener la URL completa
+                        pageKeys.push(page.imageUrl);
+                    } else {
+                        // Si es un string (fileKey o URL), mantenerlo como está
+                        pageKeys.push(page);
                     }
-                    return page;
-                })
-            );
+                }
+
+                if (toastId) {
+                    toast.dismiss(toastId);
+                    toast.success(`${filesToUpload} ${filesToUpload === 1 ? 'archivo subido' : 'archivos subidos'} correctamente`, {
+                        position: "bottom-right"
+                    });
+                }
+            } catch (error) {
+                if (toastId) {
+                    toast.dismiss(toastId);
+                    toast.error("Error al subir archivos", {
+                        position: "bottom-right"
+                    });
+                }
+                throw error;
+            }
 
             const response = await callAPI(
                 chapter
@@ -181,7 +220,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                     body: JSON.stringify({
                         title,
                         number,
-                        releasedAt: releasedAt.toString(),
+                        releasedAt: releasedAt.toISOString(),
                         subscribersOnly,
                         image: imageKey,
                         pages: pageKeys,
