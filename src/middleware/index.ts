@@ -3,81 +3,6 @@ import { getIP } from "../util/get-ip";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   // ============================================
-  // REDIRECCIÓN DE SUBDOMINIOS - DEBE SER LO PRIMERO
-  // ============================================
-  // Mapeo de dominios/subdominios antiguos a slugs de organización
-  const domainToSlugMap: Record<string, string> = {
-    // Subdominios de capibaratraductor.com
-    '6ianfranc9.capibaratraductor.com': '6ianfranc9',
-    'senshimanga.capibaratraductor.com': 'senshimanga',
-    
-    // Dominios independientes
-    'mangaclub.moe': 'mangaclub',
-    'doujinclub.icu': 'doujinclub',
-    'ouroborosnetwork.org': 'ouroborosnetwork',
-  };
-  
-  // Obtener hostname de diferentes fuentes (por si el proxy no lo pasa correctamente)
-  let hostname = context.url.hostname;
-  console.log(`\n\nHostname: ${hostname}\nURL: ${context.url.toString()} Pathname: ${context.url.pathname}\n\n`);
-  
-  const hostHeader = context.request.headers.get('host');
-  const xForwardedHost = context.request.headers.get('x-forwarded-host');
-  const xForwardedProto = context.request.headers.get('x-forwarded-proto');
-  
-  // Usar x-forwarded-host o host header si están disponibles (común en proxies)
-  if (xForwardedHost) {
-    hostname = xForwardedHost.split(':')[0]; // Remover puerto si existe
-  } else if (hostHeader) {
-    hostname = hostHeader.split(':')[0]; // Remover puerto si existe
-  }
-  
-  const mainDomain = "capibaratraductor.com";
-  const localhostPattern = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
-  
-  // Determinar el protocolo correcto (http o https)
-  let protocol = context.url.protocol;
-  if (xForwardedProto) {
-    protocol = xForwardedProto + ':';
-  } else if (context.request.headers.get('x-forwarded-ssl') === 'on') {
-    protocol = 'https:';
-  } else if (context.url.protocol === 'https:') {
-    protocol = 'https:';
-  } else {
-    protocol = 'https:'; // Por defecto usar https en producción
-  }
-  
-  // Solo hacer redirección si no es localhost y si está en el mapeo O si es un subdominio
-  // Esta redirección debe ocurrir ANTES de cualquier otro procesamiento para asegurar que todas las rutas se redirijan correctamente
-  if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
-    let targetSlug = domainToSlugMap[hostname];
-    
-    // Si no está en el mapeo, intentar extraer el subdominio automáticamente
-    if (!targetSlug && hostname.endsWith(`.${mainDomain}`)) {
-      // Extraer el subdominio (ejemplo: senshimanga.capibaratraductor.com -> senshimanga)
-      targetSlug = hostname.replace(`.${mainDomain}`, '');
-    }
-    
-    if (targetSlug) {
-      // Construir la nueva URL con formato de slug
-      // Preservar el pathname completo y los query params
-      const pathname = context.url.pathname;
-      const search = context.url.search;
-      const hash = context.url.hash || '';
-      
-      // Asegurar que el pathname siempre empiece con / y construir el path completo
-      const cleanPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
-      const newPath = `/${targetSlug}${cleanPathname === '/' ? '' : cleanPathname}${search}${hash}`;
-      const newUrl = `${protocol}//${mainDomain}${newPath}`;
-      
-      // Redirigir permanentemente (301) a la nueva URL
-      // Esto debe ocurrir antes de cualquier otro procesamiento
-      // Usar context.redirect de Astro para asegurar que funcione correctamente
-      return context.redirect(newUrl, 301);
-    }
-  }
-
-  // ============================================
   // CONFIGURACIONES BÁSICAS
   // ============================================
   context.locals.theme =
@@ -168,30 +93,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   };
 
   context.locals.callAPI = callAPI;
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, "0");
-    const months: { [key: number]: string } = {
-      0: "ENE",
-      1: "FEB",
-      2: "MAR",
-      3: "ABR",
-      4: "MAY",
-      5: "JUN",
-      6: "JUL",
-      7: "AGO",
-      8: "SEP",
-      9: "OCT",
-      10: "NOV",
-      11: "DIC",
-    };
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  context.locals.formatDate = formatDate;
 
   // Rutas reservadas que no deben ser tratadas como slugs de organización
   // Nota: login, register, forgot-password están aquí para rutas globales, pero también pueden estar dentro de un slug (ej: /senshimanga/login)
@@ -546,60 +447,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
         }
       }
     }
-
-    context.locals.formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      const day = date.getDate().toString().padStart(2, "0");
-      const months: { [key: number]: string } = (
-        {
-          es: {
-            0: "ENE",
-            1: "FEB",
-            2: "MAR",
-            3: "ABR",
-            4: "MAY",
-            5: "JUN",
-            6: "JUL",
-            7: "AGO",
-            8: "SEP",
-            9: "OCT",
-            10: "NOV",
-            11: "DIC",
-          },
-          en: {
-            0: "JAN",
-            1: "FEB",
-            2: "MAR",
-            3: "APR",
-            4: "MAY",
-            5: "JUN",
-            6: "JUL",
-            7: "AUG",
-            8: "SEP",
-            9: "OCT",
-            10: "NOV",
-            11: "DEC",
-          },
-          pt: {
-            0: "JAN",
-            1: "FEV",
-            2: "MAR",
-            3: "ABR",
-            4: "MAI",
-            5: "JUN",
-            6: "JUL",
-            7: "AGO",
-            8: "SET",
-            9: "OUT",
-            10: "NOV",
-            11: "DEZ",
-          },
-        } as any
-      )[context.locals.language];
-      const month = months[date.getMonth()];
-      const year = date.getFullYear();
-      return `${day} ${month} ${year}`;
-    };
 
     context.locals.logged = context.locals.token ? true : false;
 

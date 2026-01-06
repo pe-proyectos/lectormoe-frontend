@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { toast } from "react-toastify";
 import {
   Spinner,
@@ -33,30 +33,87 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 /**
- * Reader Component - Optimized and Simplified
- * 
- * Opciones de visualización:
- * 
- * 1. MODO DE LECTURA (readType):
- *    - PAGINATED: Muestra una página a la vez (o dos si están side-by-side)
- *    - CASCADE: Muestra todas las páginas en secuencia vertical
- * 
- * 2. LIMITAR ALTURA (limitPageHeight):
- *    - true: Las imágenes no exceden la altura de la pantalla (max-h-[100vh])
- *    - false: Las imágenes se muestran a tamaño completo
- *    - Excepción: En CASCADE + páginas dobles, NO se limita para mejor visualización
- * 
- * 3. PÁGINAS DOBLES (useDoublePages):
- *    - true: Agrupa páginas angostas automáticamente side-by-side
- *    - false: Muestra cada página individualmente
- *    - Usa ancho mediano para determinar qué páginas son "angostas"
- * 
- * Combinaciones recomendadas:
- * - CASCADE + limitPageHeight:false + useDoublePages:false → Lectura fluida vertical
- * - CASCADE + limitPageHeight:false + useDoublePages:true → Doble página vertical (mejor visualización)
- * - PAGINATED + limitPageHeight:true + useDoublePages:false → Página por página clásico
- * - PAGINATED + limitPageHeight:true + useDoublePages:true → Doble página tradicional
+ * OPTIMIZACIONES PRINCIPALES:
+ *
+ * 1. PageImage memoizado - evita re-renders innecesarios de imágenes
+ * 2. Cálculos costosos memoizados (medianWidth, shouldRenderSideBySide)
+ * 3. Callbacks estables con useCallback
+ * 4. Componentes pequeños memoizados
+ * 5. Reducción de dependencias en useEffect
  */
+
+// Componente memoizado para imágenes individuales
+// @ts-ignore
+const PageImage = memo((props) => {
+  const { page, isSideBySide, isLeft, getImageClassName, _ } = props;
+  return (
+    <LazyImage
+      id={`page-${page.number}-img`}
+      src={page.imageUrl}
+      className={`${getImageClassName(isSideBySide)} ${
+        isSideBySide && (isLeft ? "object-left" : "object-right")
+      }`}
+      alt={`${_("page")} ${page.number}`}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+});
+
+PageImage.displayName = "PageImage";
+
+// Componente memoizado para página individual
+// @ts-ignore
+const SinglePageContainer = memo((props) => {
+  const {
+    page,
+    isCascade,
+    shouldShow,
+    getPageContainerClassName,
+    getPageContainerStyle,
+    PageImageComponent,
+  } = props;
+  return (
+    <div
+      key={page.number}
+      id={`page-${page.number}`}
+      className={getPageContainerClassName(isCascade, false, shouldShow)}
+      style={getPageContainerStyle(isCascade)}
+    >
+      {PageImageComponent}
+    </div>
+  );
+});
+
+SinglePageContainer.displayName = "SinglePageContainer";
+
+// Componente memoizado para páginas dobles
+// @ts-ignore
+const DoublePageContainer = memo((props) => {
+  const {
+    page,
+    nextPage,
+    isCascade,
+    shouldShow,
+    getPageContainerClassName,
+    getPageContainerStyle,
+    LeftImageComponent,
+    RightImageComponent,
+  } = props;
+  return (
+    <div
+      key={`double-${page.number}-${nextPage.number}`}
+      className={getPageContainerClassName(isCascade, true, shouldShow)}
+      style={getPageContainerStyle(isCascade)}
+    >
+      {RightImageComponent}
+      {LeftImageComponent}
+    </div>
+  );
+});
+
+DoublePageContainer.displayName = "DoublePageContainer";
+
 export function Reader({
   language,
   manga,
@@ -68,31 +125,29 @@ export function Reader({
   hasAccess = true,
 }) {
   const _ = getTranslator(language);
-  
+
   // Get organization slug from path if not provided
   const orgSlug = organizationSlug || getOrgSlugFromPath();
 
-  const readTypes = {
-    PAGINATED: "paginated",
-    CASCADE: "cascade",
-  };
+  const readTypes = useMemo(
+    () => ({
+      PAGINATED: "paginated",
+      CASCADE: "cascade",
+    }),
+    []
+  );
 
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
-
   const [showSideComments, setShowSideComments] = useState(false);
-
   const [screenIsMobile, setScreenIsMobile] = useState(false);
-
-  useEffect(() => {
-    setScreenIsMobile(window.innerWidth < 720);
-  }, [window.innerWidth]);
 
   const [scrollInfo, setScrollInfo] = useState({
     scrollY: 0,
     readScrollPercentage: 0,
+    currentPageNumber: null,
   });
 
   const [chapterData, setChapterData] = useState({
@@ -116,175 +171,178 @@ export function Reader({
     pageGap: localStorage.getItem("pageGap") || "minimo",
   }));
 
-  // Helper to get median width
-  const getMedianWidth = useCallback(() => {
-    if (!chapterData.pages.length) return 0;
-    const widths = chapterData.pages.map((p) => p.imageWidth).sort((a, b) => a - b);
-    const mid = Math.floor(widths.length / 2);
-    return (widths.length % 2 !== 0 ? widths[mid] : (widths[mid - 1] + widths[mid]) / 2) * 1.1;
-  }, [chapterData.pages]);
-
-  // Helper to check if a page is single (width <= median)
-  const isSinglePage = useCallback((page, medianWidth) => {
-    if (!page) return false;
-    // If page has isSinglePage attribute, use if true
-    if (page.isSinglePage === true) {
-      // We return false because if the page is marked as Single Page from db we
-      // we should consider it probably is a double page already or is meant to be alone
-      // setting this to true would cause the site to think its an individual page
-      // and thu must be put together and rendered side by side
-      return false;
-    }
-    // Otherwise, check width against median
-    return page.imageWidth <= medianWidth;
+  // Memoizar detección de mobile
+  useEffect(() => {
+    const checkMobile = () => setScreenIsMobile(window.innerWidth < 720);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Helper to determine if a page should be rendered side by side based on context
-  const shouldRenderSideBySide = useCallback((pageIndex, pages, medianWidth) => {
-    if (!settings.useDoublePages) return false;
-    
-    const currentPage = pages[pageIndex];
-    const nextPage = pages[pageIndex + 1];
-    
-    // If we don't have both current and next page, can't render side by side
-    if (!currentPage || !nextPage) return false;
-    
-    const currentIsSingle = isSinglePage(currentPage, medianWidth);
-    const nextIsSingle = isSinglePage(nextPage, medianWidth);
-    
-    // If either current or next page is not single, can't render side by side
-    if (!currentIsSingle || !nextIsSingle) return false;
+  // Memoizar median width - solo recalcular cuando cambien las páginas
+  const medianWidth = useMemo(() => {
+    if (!chapterData.pages.length) return 0;
+    const widths = chapterData.pages
+      .map((p) => p.imageWidth)
+      .sort((a, b) => a - b);
+    const mid = Math.floor(widths.length / 2);
+    return (
+      (widths.length % 2 !== 0
+        ? widths[mid]
+        : (widths[mid - 1] + widths[mid]) / 2) * 1.1
+    );
+  }, [chapterData.pages]);
 
-    // If both pages are single, render them side by side
-    return true;
-  }, [settings.useDoublePages, isSinglePage]);
+  // Callbacks estables con useCallback
+  const isSinglePage = useCallback((page, median) => {
+    if (!page) return false;
+    if (page.isSinglePage === true) return false;
+    return page.imageWidth <= median;
+  }, []);
 
-  const shouldShowPage = useCallback(
-    (pageNumber) => {
-      if (settings.readType === readTypes.CASCADE) return true;
-      
-      const currentPageIndex = chapterData.pages.findIndex(p => p.number === currentPage);
-      const isNextPage = pageNumber === currentPage + 1;
-      
-      // In paginated mode, show current page and next page only if they should be side by side
-      if (settings.readType === readTypes.PAGINATED) {
-        if (pageNumber === currentPage) return true;
-        if (isNextPage && shouldRenderSideBySide(currentPageIndex, chapterData.pages, getMedianWidth())) return true;
-        return false;
-      }
-      
-      return false;
+  const shouldRenderSideBySide = useCallback(
+    (pageIndex, pages, median) => {
+      if (!settings.useDoublePages) return false;
+
+      const currentPage = pages[pageIndex];
+      const nextPage = pages[pageIndex + 1];
+
+      if (!currentPage || !nextPage) return false;
+
+      const currentIsSingle = isSinglePage(currentPage, median);
+      const nextIsSingle = isSinglePage(nextPage, median);
+
+      return currentIsSingle && nextIsSingle;
     },
-    [settings.readType, currentPage, chapterData.pages, shouldRenderSideBySide, getMedianWidth]
+    [settings.useDoublePages, isSinglePage]
   );
 
-  const handleSetReadType = (type) => {
+  // Memoizar qué páginas mostrar para evitar recalcular en cada render
+  const visiblePageNumbers = useMemo(() => {
+    if (settings.readType === readTypes.CASCADE) {
+      return new Set(chapterData.pages.map((p) => p.number));
+    }
+
+    const currentPageIndex = chapterData.pages.findIndex(
+      (p) => p.number === currentPage
+    );
+    if (currentPageIndex === -1) return new Set();
+
+    const visible = new Set([currentPage]);
+
+    if (
+      shouldRenderSideBySide(currentPageIndex, chapterData.pages, medianWidth)
+    ) {
+      const nextPage = chapterData.pages[currentPageIndex + 1];
+      if (nextPage) visible.add(nextPage.number);
+    }
+
+    return visible;
+  }, [
+    settings.readType,
+    currentPage,
+    chapterData.pages,
+    shouldRenderSideBySide,
+    medianWidth,
+    readTypes.CASCADE,
+  ]);
+
+  const shouldShowPage = useCallback(
+    (pageNumber) => visiblePageNumbers.has(pageNumber),
+    [visiblePageNumbers]
+  );
+
+  // Callbacks para settings - estables
+  const handleSetReadType = useCallback((type) => {
     localStorage.setItem("readType", type);
     setSettings((prev) => ({ ...prev, readType: type }));
-  };
+  }, []);
 
-  const handleToggleSettings = () => {
-    localStorage.setItem(
-      "chapterSettings",
-      !settings.chapterSettings ? "true" : "false"
-    );
-    setSettings((prev) => ({
-      ...prev,
-      chapterSettings: !prev.chapterSettings,
-    }));
-  };
+  const handleToggleSettings = useCallback(() => {
+    setSettings((prev) => {
+      const newValue = !prev.chapterSettings;
+      localStorage.setItem("chapterSettings", newValue ? "true" : "false");
+      return { ...prev, chapterSettings: newValue };
+    });
+  }, []);
 
-  const handleToggleComments = () => {
-    localStorage.setItem(
-      "showChapterComments",
-      !settings.showChapterComments ? "true" : "false"
-    );
-    setSettings((prev) => ({
-      ...prev,
-      showChapterComments: !prev.showChapterComments,
-    }));
-  };
+  const handleToggleComments = useCallback(() => {
+    setSettings((prev) => {
+      const newValue = !prev.showChapterComments;
+      localStorage.setItem("showChapterComments", newValue ? "true" : "false");
+      return { ...prev, showChapterComments: newValue };
+    });
+  }, []);
 
-  const handleToggleFloatButtons = () => {
-    localStorage.setItem(
-      "showFloatButtons",
-      !settings.showFloatButtons ? "true" : "false"
-    );
-    setSettings((prev) => ({
-      ...prev,
-      showFloatButtons: !prev.showFloatButtons,
-    }));
-  };
+  const handleToggleFloatButtons = useCallback(() => {
+    setSettings((prev) => {
+      const newValue = !prev.showFloatButtons;
+      localStorage.setItem("showFloatButtons", newValue ? "true" : "false");
+      return { ...prev, showFloatButtons: newValue };
+    });
+  }, []);
 
-  const debounce = (func, delay) => {
-    let timeout;
-    return function (...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), delay);
-    };
-  };
+  const handleLimitPageHeight = useCallback(() => {
+    setSettings((prev) => {
+      const newValue = !prev.limitPageHeight;
+      localStorage.setItem("limitPageHeight", newValue ? "true" : "false");
+      return { ...prev, limitPageHeight: newValue };
+    });
+  }, []);
 
-  const handleLimitPageHeight = () => {
-    localStorage.setItem(
-      "limitPageHeight",
-      !settings.limitPageHeight ? "true" : "false"
-    );
-    setSettings((prev) => ({
-      ...prev,
-      limitPageHeight: !prev.limitPageHeight,
-    }));
-  };
+  const handleToggleUseDoublePages = useCallback(() => {
+    setSettings((prev) => {
+      const newValue = !prev.useDoublePages;
+      localStorage.setItem("useDoublePages", newValue ? "true" : "false");
+      return { ...prev, useDoublePages: newValue };
+    });
+  }, []);
 
-  const handleToggleUseDoublePages = () => {
-    localStorage.setItem(
-      "useDoublePages",
-      !settings.useDoublePages ? "true" : "false"
-    );
-    setSettings((prev) => ({ ...prev, useDoublePages: !prev.useDoublePages }));
-  };
-
-  const handlePagesDialog = () => {
+  const handlePagesDialog = useCallback(() => {
     setOpenPagesDialog((prev) => !prev);
-  };
+  }, []);
 
-  const handlePageClick = (evt) => {
-    // Click en modo paginado: izquierda = atrás, derecha = adelante
-    const isGoingForward = evt.clientX > window.innerWidth / 2;
-    const currentPageIndex = chapterData.pages.findIndex(p => p.number === currentPage);
-    
-    if (currentPageIndex === -1) return;
+  const handlePageClick = useCallback(
+    (evt) => {
+      const isGoingForward = evt.clientX > window.innerWidth / 2;
+      const currentPageIndex = chapterData.pages.findIndex(
+        (p) => p.number === currentPage
+      );
 
-    const medianWidth = getMedianWidth();
-    let targetIndex;
-    
-    if (isGoingForward) {
-      // Avanzar: saltar 2 páginas si actual es side-by-side, sino 1
-      const isSideBySide = shouldRenderSideBySide(currentPageIndex, chapterData.pages, medianWidth);
-      targetIndex = currentPageIndex + (isSideBySide ? 2 : 1);
-    } else {
-      // Retroceder: saltar 2 páginas si la anterior es side-by-side, sino 1
-      const prevIndex = currentPageIndex - 1;
-      const isPrevSideBySide = prevIndex >= 0 && shouldRenderSideBySide(prevIndex, chapterData.pages, medianWidth);
-      targetIndex = currentPageIndex - (isPrevSideBySide ? 2 : 1);
-    }
-    
-    // Navegar a la página objetivo si existe
-    const targetPage = chapterData.pages[targetIndex];
-    if (targetPage) {
-      setCurrentPage(targetPage.number);
-      location.href = "#manga-pages-top";
-    }
-  };
+      if (currentPageIndex === -1) return;
 
-  const handlePageGap = (value) => {
+      let targetIndex;
+
+      if (isGoingForward) {
+        const isSideBySide = shouldRenderSideBySide(
+          currentPageIndex,
+          chapterData.pages,
+          medianWidth
+        );
+        targetIndex = currentPageIndex + (isSideBySide ? 2 : 1);
+      } else {
+        const prevIndex = currentPageIndex - 1;
+        const isPrevSideBySide =
+          prevIndex >= 0 &&
+          shouldRenderSideBySide(prevIndex, chapterData.pages, medianWidth);
+        targetIndex = currentPageIndex - (isPrevSideBySide ? 2 : 1);
+      }
+
+      const targetPage = chapterData.pages[targetIndex];
+      if (targetPage) {
+        setCurrentPage(targetPage.number);
+        location.href = "#manga-pages-top";
+      }
+    },
+    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth]
+  );
+
+  const handlePageGap = useCallback((value) => {
     localStorage.setItem("pageGap", value);
-    setSettings((prev) => ({
-      ...prev,
-      pageGap: value,
-    }));
-  };
+    setSettings((prev) => ({ ...prev, pageGap: value }));
+  }, []);
 
-  const getGapValue = (gapType) => {
+  const getGapValue = useCallback((gapType) => {
     switch (gapType) {
       case "ninguno":
         return 0;
@@ -297,8 +355,56 @@ export function Reader({
       default:
         return 0;
     }
-  };
+  }, []);
 
+  const getPageContainerStyle = useCallback(
+    (isCascade) => ({
+      marginBottom: isCascade ? `${getGapValue(settings.pageGap)}px` : "0",
+    }),
+    [settings.pageGap, getGapValue]
+  );
+
+  const getPageContainerClassName = useCallback(
+    (isCascade, isDouble = false, shouldShow = true) => {
+      const baseClass = "w-full flex justify-center select-none cursor-pointer";
+      return `${baseClass}${isDouble ? " flex-row" : ""}${
+        shouldShow ? "" : " hidden"
+      }`;
+    },
+    []
+  );
+
+  const getImageClassName = useCallback(
+    (isSideBySide) => {
+      const isPage = settings.readType === readTypes.PAGINATED;
+      const isCascade = settings.readType === readTypes.CASCADE;
+
+      let className = "pointer-events-none object-contain";
+
+      if (isSideBySide) {
+        className += " w-1/2";
+      } else {
+        className += " w-auto max-w-full";
+      }
+
+      if (settings.limitPageHeight) {
+        // Aplicar limitación de altura en todos los casos cuando está activado
+        className += " max-h-[100vh] h-auto";
+      } else {
+        className += " h-auto";
+      }
+
+      return className;
+    },
+    [
+      settings.limitPageHeight,
+      settings.readType,
+      readTypes.PAGINATED,
+      readTypes.CASCADE,
+    ]
+  );
+
+  // Analytics - solo una vez por cambio de settings
   useEffect(() => {
     callAPI("/api/analytics", {
       method: "POST",
@@ -318,131 +424,164 @@ export function Reader({
     }).catch(console.error);
   }, [settings, manga.slug, chapterNumber]);
 
+  // Save chapter history - con debounce
   useEffect(() => {
-    if (!logged) {
-      return;
-    }
-    const url = `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${currentPage}`;
-    if (lastSaveUrl === url) {
-      return;
-    }
-    setLastSaveUrl(url);
-    callAPI(url).catch((error) => {
-      console.error("Failed to save chapter history", error);
-    });
-  }, [currentPage]);
+    if (!logged) return;
 
+    const url = `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${currentPage}`;
+    if (lastSaveUrl === url) return;
+
+    const timeoutId = setTimeout(() => {
+      setLastSaveUrl(url);
+      callAPI(url).catch((error) => {
+        console.error("Failed to save chapter history", error);
+      });
+    }, 500); // Debounce de 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [currentPage, logged, manga.slug, chapterNumber, lastSaveUrl]);
+
+  // Track view - solo una vez
   useEffect(() => {
     callAPI(`/api/views/manga-custom/${manga.slug}/chapter/${chapterNumber}`, {
       includeIp: true,
     }).catch(() => {});
-  }, []);
+  }, [manga.slug, chapterNumber]);
 
-  // useEffect on page change
+  // Update URL - con debounce
   useEffect(() => {
-    if (!chapter) {
-      return;
-    }
-    if (!chapterData.pages) {
-      return;
-    }
+    if (!chapter || !chapterData.pages.length || loading) return;
+
     const page = chapterData.pages.find((p) => p.number === currentPage);
+    if (!page) return;
 
-    if (!page) {
-      return;
-    }
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      urlParams.set("page", page.number);
-      window.history.replaceState(
-        {},
-        "",
-        `${window.location.pathname}?${urlParams}`
-      );
-    } catch (error) {
-      console.error("Failed to update page in URL", error);
-    }
-  }, [currentPage]);
+    const timeoutId = setTimeout(() => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentPageParam = urlParams.get("page");
 
-  // useEffect on scroll to determine what page is being read in cascade mode
+        if (currentPageParam !== page.number.toString()) {
+          urlParams.set("page", page.number);
+          window.history.replaceState(
+            {},
+            "",
+            `${window.location.pathname}?${urlParams}`
+          );
+        }
+      } catch (error) {
+        console.error("Failed to update page in URL", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentPage, loading, chapterData.pages, chapter]);
+
+  // Scroll tracking - con debounce mejorado
   useEffect(() => {
-    if (settings.readType !== readTypes.CASCADE) {
+    if (
+      settings.readType !== readTypes.CASCADE ||
+      loading ||
+      !chapterData.pages.length
+    ) {
       return;
     }
 
-    const firstPageImage = document.getElementById(
-      `page-${chapterData.pages[0]?.number}-img`
-    );
-    const lastPageImage = document.getElementById(
-      `page-${chapterData.pages[chapterData.pages.length - 1]?.number}-img`
-    );
+    let animationFrameId;
+    let lastUpdate = 0;
+    const updateInterval = 100; // Actualizar máximo cada 100ms
 
-    if (!firstPageImage || !lastPageImage) {
-      return;
-    }
-    const scrollY = window.scrollY;
-    const pageTopY =
-      firstPageImage.getBoundingClientRect().top + window.scrollY;
-    const pageBottomY =
-      lastPageImage.getBoundingClientRect().bottom +
-      window.scrollY -
-      window.innerHeight;
-    const readPercentage = Math.min(
-      100,
-      Math.max(0, ((scrollY - pageTopY) / (pageBottomY - pageTopY)) * 100)
-    );
-    if (readPercentage === scrollInfo.readScrollPercentage) {
-      return;
-    }
-    setScrollInfo((prev) => ({
-      ...prev,
-      readScrollPercentage: readPercentage,
-    }));
-    // setCurrentPage
-    const pageIndex = Math.floor(
-      (readPercentage / 100) * (chapterData.pages.length - 1)
-    );
+    const handleScroll = () => {
+      if (animationFrameId) return;
 
-    const page = chapterData.pages[pageIndex];
+      animationFrameId = requestAnimationFrame(() => {
+        const now = Date.now();
+        if (now - lastUpdate < updateInterval) {
+          animationFrameId = null;
+          return;
+        }
 
-    if (!page) {
-      return;
-    }
+        lastUpdate = now;
 
-    setCurrentPage(page.number);
-  }, [scrollInfo.scrollY]);
+        const firstPageImage = document.getElementById(
+          `page-${chapterData.pages[0]?.number}-img`
+        );
+        const lastPageImage = document.getElementById(
+          `page-${chapterData.pages[chapterData.pages.length - 1]?.number}-img`
+        );
 
-  const handleScroll = debounce(() => {
-    const currentScrollY = window.scrollY;
-    if (currentScrollY !== scrollInfo.scrollY) {
-      setScrollInfo((prev) => ({ ...prev, scrollY: currentScrollY }));
-    }
-  }, 100);
+        if (!firstPageImage || !lastPageImage) {
+          animationFrameId = null;
+          return;
+        }
 
+        const scrollY = window.scrollY;
+        const pageTopY =
+          firstPageImage.getBoundingClientRect().top + window.scrollY;
+        const pageBottomY =
+          lastPageImage.getBoundingClientRect().bottom +
+          window.scrollY -
+          window.innerHeight;
+        const readPercentage = Math.min(
+          100,
+          Math.max(0, ((scrollY - pageTopY) / (pageBottomY - pageTopY)) * 100)
+        );
+
+        setScrollInfo((prev) => {
+          if (prev.readScrollPercentage === readPercentage) {
+            animationFrameId = null;
+            return prev;
+          }
+
+          const pageIndex = Math.floor(
+            (readPercentage / 100) * (chapterData.pages.length - 1)
+          );
+          const page = chapterData.pages[pageIndex];
+
+          animationFrameId = null;
+
+          if (!page || page.number === prev.currentPageNumber) {
+            return { ...prev, scrollY, readScrollPercentage: readPercentage };
+          }
+
+          setCurrentPage(page.number);
+          return {
+            scrollY,
+            readScrollPercentage: readPercentage,
+            currentPageNumber: page.number,
+          };
+        });
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [settings.readType, readTypes.CASCADE, loading, chapterData.pages]);
+
+  // Initial load
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // useEffect on initial load
-  useEffect(() => {
-    // If user doesn't have access from server-side validation, show error immediately
     if (!hasAccess) {
-      const errorType = !logged && manga?.requireLogin === true
-        ? "login_required"
-        : chapter?.subscribersOnly === true
+      const errorType =
+        !logged && manga?.requireLogin === true
+          ? "login_required"
+          : chapter?.subscribersOnly === true
           ? "subscription_required"
           : "not_released";
-      
-      const errorMessage = errorType === "login_required"
-        ? "Debes iniciar sesión para leer este manga."
-        : errorType === "subscription_required"
+
+      const errorMessage =
+        errorType === "login_required"
+          ? "Debes iniciar sesión para leer este manga."
+          : errorType === "subscription_required"
           ? "Este capítulo es exclusivo para suscriptores. Suscríbete para acceder a contenido premium."
           : "Este capítulo aún no ha sido publicado. Solo los suscriptores pueden acceder a capítulos anticipados.";
-      
+
       setAccessError({
         message: errorMessage,
-        errorType: errorType
+        errorType: errorType,
       });
       setLoading(false);
       return;
@@ -451,11 +590,10 @@ export function Reader({
     setLoading(true);
     callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages`)
       .then((result) => {
-        // Check if the API returned an access denied error
         if (result && result.status === false) {
           setAccessError({
             message: result.message || "No tienes acceso a este capítulo.",
-            errorType: result.errorType || "unknown"
+            errorType: result.errorType || "unknown",
           });
           setLoading(false);
           return;
@@ -475,132 +613,226 @@ export function Reader({
       .catch((error) => {
         console.error("Error loading chapter pages:", error);
         setAccessError({
-          message: error?.message || "Error al cargar el capítulo. Por favor, intenta de nuevo.",
-          errorType: "error"
+          message:
+            error?.message ||
+            "Error al cargar el capítulo. Por favor, intenta de nuevo.",
+          errorType: "error",
         });
         setLoading(false);
       });
-  }, [hasAccess]);
+  }, [
+    hasAccess,
+    manga.slug,
+    chapterNumber,
+    logged,
+    manga?.requireLogin,
+    chapter?.subscribersOnly,
+  ]);
 
-  const PreviousChapterArrow = ({ ...props }) => (
-    <div
-      className="flex flex-grow items-center h-full justify-center group/nav"
-      onClick={() => {
-        if (chapter?.previousChapter?.number)
-          location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`, orgSlug);
-      }}
-      {...props}
-    >
-      <Tooltip
-        content={
-          chapter?.previousChapter
-            ? _("click_to_previous_chapter")
-            : _("you_are_in_first_chapter")
-        }
-        placement="bottom"
-      >
-        <ChevronLeftIcon
-          className={
-            chapter?.previousChapter
-              ? "h-16 w-16 text-white cursor-pointer opacity-20 group-hover/nav:opacity-80 transition-all duration-300 group-hover/nav:scale-150 transform"
-              : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
-          }
-        />
-      </Tooltip>
-    </div>
+  // Memoizar componentes de navegación
+  const PreviousChapterArrow = useMemo(
+    () =>
+      ({ ...props }) =>
+        (
+          <div
+            className="flex flex-grow items-center h-full justify-center group/nav"
+            onClick={() => {
+              if (chapter?.previousChapter?.number)
+                location.href = getOrgPath(
+                  `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`,
+                  orgSlug
+                );
+            }}
+            {...props}
+          >
+            <Tooltip
+              content={
+                chapter?.previousChapter
+                  ? _("click_to_previous_chapter")
+                  : _("you_are_in_first_chapter")
+              }
+              placement="bottom"
+            >
+              <ChevronLeftIcon
+                className={
+                  chapter?.previousChapter
+                    ? "h-16 w-16 text-white cursor-pointer opacity-20 group-hover/nav:opacity-80 transition-all duration-300 group-hover/nav:scale-150 transform"
+                    : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
+                }
+              />
+            </Tooltip>
+          </div>
+        ),
+    [chapter?.previousChapter, manga.slug, orgSlug, _]
   );
 
-  const NextChapterArrow = ({ ...props }) => (
-    <div
-      className="flex flex-grow items-center h-full justify-center group/nav"
-      onClick={() => {
-        if (chapter?.nextChapter?.number)
-          location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`, orgSlug);
-      }}
-      {...props}
-    >
-      <Tooltip
-        content={
-          chapter?.nextChapter
-            ? _("click_to_next_chapter")
-            : _("you_are_in_last_chapter")
-        }
-        placement="bottom"
-      >
-        <ChevronRightIcon
-          className={
-            chapter?.nextChapter
-              ? "h-16 w-16 text-white cursor-pointer opacity-20 group-hover/nav:opacity-80 transition-all duration-300 group-hover/nav:scale-150 transform"
-              : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
-          }
-        />
-      </Tooltip>
-    </div>
+  const NextChapterArrow = useMemo(
+    () =>
+      ({ ...props }) =>
+        (
+          <div
+            className="flex flex-grow items-center h-full justify-center group/nav"
+            onClick={() => {
+              if (chapter?.nextChapter?.number)
+                location.href = getOrgPath(
+                  `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`,
+                  orgSlug
+                );
+            }}
+            {...props}
+          >
+            <Tooltip
+              content={
+                chapter?.nextChapter
+                  ? _("click_to_next_chapter")
+                  : _("you_are_in_last_chapter")
+              }
+              placement="bottom"
+            >
+              <ChevronRightIcon
+                className={
+                  chapter?.nextChapter
+                    ? "h-16 w-16 text-white cursor-pointer opacity-20 group-hover/nav:opacity-80 transition-all duration-300 group-hover/nav:scale-150 transform"
+                    : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
+                }
+              />
+            </Tooltip>
+          </div>
+        ),
+    [chapter?.nextChapter, manga.slug, orgSlug, _]
   );
 
-  // Common styles for page containers
-  const getPageContainerStyle = useCallback((isCascade) => ({
-    marginBottom: isCascade ? `${getGapValue(settings.pageGap)}px` : '0'
-  }), [settings.pageGap]);
+  // Renderizar páginas - OPTIMIZADO para evitar re-renders innecesarios
+  const renderedPages = useMemo(() => {
+    if (!chapterData.pages.length) return null;
 
-  // Common class names for page containers
-  const getPageContainerClassName = useCallback((isCascade, isDouble = false, shouldShow = true) => {
-    const baseClass = "w-full flex justify-center select-none cursor-pointer";
-    return `${baseClass}${isDouble ? " flex-row" : ""}${shouldShow ? "" : " hidden"}`;
-  }, []);
-
-  // Determina el estilo correcto de la imagen según el contexto
-  const getImageClassName = useCallback((isSideBySide) => {
-    const isPage = settings.readType === readTypes.PAGINATED;
     const isCascade = settings.readType === readTypes.CASCADE;
-    
-    let className = "pointer-events-none object-contain";
-    
-    // Ancho
-    if (isSideBySide) {
-      // Páginas dobles: cada imagen ocupa 50%
-      className += " w-1/2";
-    } else {
-      // Página única: ocupar todo el ancho disponible
-      className += " w-auto max-w-full";
-    }
-    
-    // Altura - siempre establecer una altura adecuada
-    if (settings.limitPageHeight) {
-      if (isSideBySide && isCascade) {
-        // En cascada con páginas dobles, NO limitar altura para que se vean bien
-        className += " h-auto";
-      } else if (isPage) {
-        // En modo paginado, limitar a altura de pantalla
-        className += " max-h-[100vh] h-auto";
-      } else {
-        // En cascada sin páginas dobles, limitar altura
-        className += " max-h-[100vh] h-auto";
-      }
-    } else {
-      // Sin límite de altura, usar altura automática basada en aspecto ratio
-      className += " h-auto";
-    }
-    
-    return className;
-  }, [settings.limitPageHeight, settings.readType, readTypes.PAGINATED, readTypes.CASCADE]);
 
-  // Common LazyImage component
-  const PageImage = useCallback(
-    ({ page, isSideBySide = false, isLeft = false }) => (
-      <LazyImage
-        id={`page-${page.number}-img`}
-        src={page.imageUrl}
-        className={`${getImageClassName(isSideBySide)} ${
-          isSideBySide && (isLeft ? "object-left" : "object-right")
-        }`}
-        alt={`${_("page")} ${page.number}`}
-        loading="lazy"
-        decoding="async"
-      />
-    ),
-    [getImageClassName, _]
-  );
+    // Sin páginas dobles
+    if (!settings.useDoublePages) {
+      return chapterData.pages.map((page) => {
+        const shouldShow = shouldShowPage(page.number);
+        const PageImageComponent = (
+          // @ts-ignore
+          <PageImage
+            page={page}
+            isSideBySide={false}
+            getImageClassName={getImageClassName}
+            _={_}
+          />
+        );
+
+        return (
+          // @ts-ignore
+          <SinglePageContainer
+            key={page.number}
+            page={page}
+            isCascade={isCascade}
+            shouldShow={shouldShow}
+            getPageContainerClassName={getPageContainerClassName}
+            getPageContainerStyle={getPageContainerStyle}
+            PageImageComponent={PageImageComponent}
+          />
+        );
+      });
+    }
+
+    // Con páginas dobles
+    const rendered = [];
+    const processedIndices = new Set();
+
+    for (let i = 0; i < chapterData.pages.length; i++) {
+      if (processedIndices.has(i)) continue;
+
+      const page = chapterData.pages[i];
+      const nextPage = chapterData.pages[i + 1];
+      const shouldShow = shouldShowPage(page.number);
+
+      if (
+        nextPage &&
+        shouldRenderSideBySide(i, chapterData.pages, medianWidth)
+      ) {
+        processedIndices.add(i);
+        processedIndices.add(i + 1);
+
+        const LeftImageComponent = (
+          // @ts-ignore
+          <PageImage
+            page={page}
+            isSideBySide={true}
+            isLeft={true}
+            getImageClassName={getImageClassName}
+            _={_}
+          />
+        );
+
+        const RightImageComponent = (
+          // @ts-ignore
+          <PageImage
+            page={nextPage}
+            isSideBySide={true}
+            isLeft={false}
+            getImageClassName={getImageClassName}
+            _={_}
+          />
+        );
+
+        rendered.push(
+          // @ts-ignore
+          <DoublePageContainer
+            key={`double-${page.number}-${nextPage.number}`}
+            page={page}
+            nextPage={nextPage}
+            isCascade={isCascade}
+            shouldShow={shouldShow}
+            getPageContainerClassName={getPageContainerClassName}
+            getPageContainerStyle={getPageContainerStyle}
+            LeftImageComponent={LeftImageComponent}
+            RightImageComponent={RightImageComponent}
+          />
+        );
+      } else {
+        processedIndices.add(i);
+
+        const PageImageComponent = (
+          // @ts-ignore
+          <PageImage
+            page={page}
+            isSideBySide={false}
+            getImageClassName={getImageClassName}
+            _={_}
+          />
+        );
+
+        rendered.push(
+          // @ts-ignore
+          <SinglePageContainer
+            key={page.number}
+            page={page}
+            isCascade={isCascade}
+            shouldShow={shouldShow}
+            getPageContainerClassName={getPageContainerClassName}
+            getPageContainerStyle={getPageContainerStyle}
+            PageImageComponent={PageImageComponent}
+          />
+        );
+      }
+    }
+
+    return rendered;
+  }, [
+    chapterData.pages,
+    settings.readType,
+    settings.useDoublePages,
+    readTypes.CASCADE,
+    shouldShowPage,
+    shouldRenderSideBySide,
+    medianWidth,
+    getPageContainerClassName,
+    getPageContainerStyle,
+    getImageClassName,
+    _,
+  ]);
 
   return (
     <div id="reader-top">
@@ -679,7 +911,7 @@ export function Reader({
                         type="checkbox"
                         className="sr-only peer"
                         checked={settings.limitPageHeight}
-                        onChange={() => handleLimitPageHeight()}
+                        onChange={handleLimitPageHeight}
                       />
                       <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
                       <span className="ms-3 text-sm font-medium text-gray-100">
@@ -695,7 +927,7 @@ export function Reader({
                         type="checkbox"
                         className="sr-only peer"
                         checked={settings.useDoublePages}
-                        onChange={() => handleToggleUseDoublePages()}
+                        onChange={handleToggleUseDoublePages}
                       />
                       <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
                       <span className="ms-3 text-sm font-medium text-gray-100">
@@ -711,7 +943,7 @@ export function Reader({
                         type="checkbox"
                         className="sr-only peer"
                         checked={settings.showFloatButtons}
-                        onChange={() => handleToggleFloatButtons()}
+                        onChange={handleToggleFloatButtons}
                       />
                       <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                       <span className="ms-3 text-sm font-medium text-gray-100">
@@ -731,23 +963,33 @@ export function Reader({
                         onChange={(e) => handlePageGap(e.target.value)}
                         className="w-full sm:w-72 bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all cursor-pointer hover:bg-zinc-700"
                       >
-                        <option value="ninguno" className="bg-zinc-800">Ninguno (0px)</option>
-                        <option value="minimo" className="bg-zinc-800">Mínimo (2px)</option>
-                        <option value="medio" className="bg-zinc-800">Medio (5px)</option>
-                        <option value="grande" className="bg-zinc-800">Grande (10px)</option>
+                        <option value="ninguno" className="bg-zinc-800">
+                          Ninguno (0px)
+                        </option>
+                        <option value="minimo" className="bg-zinc-800">
+                          Mínimo (2px)
+                        </option>
+                        <option value="medio" className="bg-zinc-800">
+                          Medio (5px)
+                        </option>
+                        <option value="grande" className="bg-zinc-800">
+                          Grande (10px)
+                        </option>
                       </select>
                     </div>
                   )}
                 </div>
                 <div className="mx-auto sm:mx-0">
-                  <p className="text-gray-400 text-sm font-medium mb-3">{_("read_type")}</p>
+                  <p className="text-gray-400 text-sm font-medium mb-3">
+                    {_("read_type")}
+                  </p>
                   <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
                     <button
                       onClick={() => handleSetReadType(readTypes.PAGINATED)}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                         settings.readType === readTypes.PAGINATED
-                          ? 'bg-red-500 text-white shadow-lg'
-                          : 'text-gray-400 hover:text-white hover:bg-zinc-800'
+                          ? "bg-red-500 text-white shadow-lg"
+                          : "text-gray-400 hover:text-white hover:bg-zinc-800"
                       }`}
                     >
                       {_("paginated")}
@@ -756,8 +998,8 @@ export function Reader({
                       onClick={() => handleSetReadType(readTypes.CASCADE)}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                         settings.readType === readTypes.CASCADE
-                          ? 'bg-red-500 text-white shadow-lg'
-                          : 'text-gray-400 hover:text-white hover:bg-zinc-800'
+                          ? "bg-red-500 text-white shadow-lg"
+                          : "text-gray-400 hover:text-white hover:bg-zinc-800"
                       }`}
                     >
                       {_("cascade")}
@@ -773,7 +1015,9 @@ export function Reader({
         {/* PAGINAS */}
         <div
           id="manga-pages-top"
-          className={`w-full select-none bg-black ${settings.readType === readTypes.CASCADE ? 'min-h-[100vh]' : ''}`}
+          className={`w-full select-none bg-black ${
+            settings.readType === readTypes.CASCADE ? "min-h-[100vh]" : ""
+          }`}
         >
           {chapterData.pages.length === 0 && loading && !accessError && (
             <div className="flex min-h-full w-full justify-center py-4">
@@ -785,43 +1029,57 @@ export function Reader({
             <div className="flex min-h-screen w-full justify-center items-center py-8 px-4">
               <div className="max-w-2xl w-full bg-zinc-900 border-2 border-red-500/30 rounded-2xl p-8 shadow-2xl">
                 <div className="flex flex-col items-center text-center space-y-6">
-                  {/* Lock Icon */}
                   <div className="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <svg
+                      className="w-10 h-10 text-red-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
                     </svg>
                   </div>
-                  
-                  {/* Title */}
+
                   <h2 className="text-3xl font-black text-white uppercase tracking-tight">
                     Acceso Denegado
                   </h2>
-                  
-                  {/* Message */}
+
                   <p className="text-lg text-zinc-300 leading-relaxed">
                     {accessError.message}
                   </p>
-                  
-                  {/* Action Buttons */}
+
                   <div className="flex flex-col sm:flex-row gap-4 w-full mt-4">
-                    {(accessError.errorType === "login_required" || accessError.errorType === "subscription_required") && !logged && (
-                      <a
-                        href={getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug)}
-                        className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider shadow-xl hover:shadow-cyan-500/20"
-                      >
-                        Iniciar Sesión
-                      </a>
-                    )}
-                    
+                    {(accessError.errorType === "login_required" ||
+                      accessError.errorType === "subscription_required") &&
+                      !logged && (
+                        <a
+                          href={getOrgPath(
+                            `/login?redirect=${window.location.pathname}`,
+                            orgSlug
+                          )}
+                          className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider shadow-xl hover:shadow-cyan-500/20"
+                        >
+                          Iniciar Sesión
+                        </a>
+                      )}
+
                     {accessError.errorType === "subscription_required" && (
                       <a
-                        href={getOrgPath(`/subscriptions?mangaSlug=${manga.slug}`, orgSlug)}
+                        href={getOrgPath(
+                          `/subscriptions?mangaSlug=${manga.slug}`,
+                          orgSlug
+                        )}
                         className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider shadow-xl hover:shadow-yellow-500/20"
                       >
                         Ver Planes
                       </a>
                     )}
-                    
+
                     <a
                       href={getOrgPath(`/manga/${manga.slug}`, orgSlug)}
                       className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider border-2 border-zinc-700"
@@ -829,18 +1087,26 @@ export function Reader({
                       Volver al Manga
                     </a>
                   </div>
-                  
-                  {/* Additional Info */}
+
                   <div className="mt-6 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700">
                     <p className="text-sm text-zinc-400">
                       {accessError.errorType === "subscription_required" && (
-                        <>Suscríbete para obtener acceso anticipado a capítulos exclusivos y apoyar a los creadores.</>
+                        <>
+                          Suscríbete para obtener acceso anticipado a capítulos
+                          exclusivos y apoyar a los creadores.
+                        </>
                       )}
                       {accessError.errorType === "not_released" && (
-                        <>Este capítulo estará disponible para todos después de su fecha de lanzamiento oficial.</>
+                        <>
+                          Este capítulo estará disponible para todos después de
+                          su fecha de lanzamiento oficial.
+                        </>
                       )}
                       {accessError.errorType === "login_required" && (
-                        <>Inicia sesión con tu cuenta para continuar leyendo este contenido.</>
+                        <>
+                          Inicia sesión con tu cuenta para continuar leyendo
+                          este contenido.
+                        </>
                       )}
                     </p>
                   </div>
@@ -863,82 +1129,30 @@ export function Reader({
                   user={user}
                   identifier={`${manga.slug}_${chapterNumber}_sidebar`}
                   onLogin={() => {
-                    window.location.href = getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug);
+                    window.location.href = getOrgPath(
+                      `/login?redirect=${window.location.pathname}`,
+                      orgSlug
+                    );
                   }}
                 />
               </div>
             )}
-            <div className={`relative flex items-center justify-center flex-grow w-full ${settings.readType === readTypes.CASCADE ? 'h-full flex-col' : ''}`}>
-              {/* <div className="relative"> */}
-                {settings.readType === readTypes.PAGINATED && (
-                  <div 
-                    className="absolute inset-0 z-10 cursor-pointer"
-                    onClick={handlePageClick}
-                  />
-                )}
-                {(() => {
-                  const isCascade = settings.readType === readTypes.CASCADE;
-                  
-                  // Modo sin páginas dobles: renderizar cada página individualmente
-                  if (!settings.useDoublePages) {
-                    return chapterData.pages.map((page) => (
-                      <div
-                        key={page.number}
-                        id={`page-${page.number}`}
-                        className={getPageContainerClassName(isCascade, false, shouldShowPage(page.number))}
-                        style={getPageContainerStyle(isCascade)}
-                      >
-                        <PageImage page={page} isSideBySide={false} />
-                      </div>
-                    ));
-                  }
-                  
-                  // Modo con páginas dobles
-                  const medianWidth = getMedianWidth();
-                  const rendered = [];
-                  
-                  for (let i = 0; i < chapterData.pages.length; i++) {
-                    const page = chapterData.pages[i];
-                    const nextPage = chapterData.pages[i + 1];
-                    
-                    // Verificar si esta página ya fue procesada en un par
-                    if (i > 0 && shouldRenderSideBySide(i - 1, chapterData.pages, medianWidth)) {
-                      continue; // Ya fue renderizada con la página anterior
-                    }
-
-                    // Intentar renderizar páginas side by side
-                    if (nextPage && shouldRenderSideBySide(i, chapterData.pages, medianWidth)) {
-                      rendered.push(
-                        <div
-                          key={`double-${page.number}-${nextPage.number}`}
-                          className={getPageContainerClassName(isCascade, true, shouldShowPage(page.number))}
-                          style={getPageContainerStyle(isCascade)}
-                        >
-                          <PageImage page={nextPage} isSideBySide={true} isLeft={false} />
-                          <PageImage page={page} isSideBySide={true} isLeft={true} />
-                        </div>
-                      );
-                    } else {
-                      // Renderizar página única
-                      rendered.push(
-                        <div
-                          key={page.number}
-                          id={`page-${page.number}`}
-                          className={getPageContainerClassName(isCascade, false, shouldShowPage(page.number))}
-                          style={getPageContainerStyle(isCascade)}
-                        >
-                          <PageImage page={page} isSideBySide={false} />
-                        </div>
-                      );
-                    }
-                  }
-                  
-                  return rendered;
-                })()}
-              {/* </div> */}
+            <div
+              className={`relative flex items-center justify-center flex-grow w-full ${
+                settings.readType === readTypes.CASCADE ? "h-full flex-col" : ""
+              }`}
+            >
+              {settings.readType === readTypes.PAGINATED && (
+                <div
+                  className="absolute inset-0 z-10 cursor-pointer"
+                  onClick={handlePageClick}
+                />
+              )}
+              {renderedPages}
             </div>
           </div>
         </div>
+
         {/* Comments Drawer */}
         <Drawer
           placement="right"
@@ -968,10 +1182,14 @@ export function Reader({
             user={user}
             identifier={`${manga.slug}_${chapterNumber}_drawer`}
             onLogin={() => {
-              window.location.href = getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug);
+              window.location.href = getOrgPath(
+                `/login?redirect=${window.location.pathname}`,
+                orgSlug
+              );
             }}
           />
         </Drawer>
+
         {/* Progress Bar */}
         {chapterData.pages.length > 0 && (
           <div className="sticky bottom-0 left-0 w-full h-1 bg-black">
@@ -980,18 +1198,18 @@ export function Reader({
               style={{
                 width:
                   settings.readType === readTypes.PAGINATED
-                    ? `${
-                      Math.min(
+                    ? `${Math.min(
                         Math.max(
                           (currentPage /
-                            (Math.max(...chapterData.pages.map((p) => p.number)) -
+                            (Math.max(
+                              ...chapterData.pages.map((p) => p.number)
+                            ) -
                               1)) *
-                          100,
+                            100,
                           0
                         ),
                         100
-                      )
-                      }%`
+                      )}%`
                     : `${scrollInfo.readScrollPercentage}%`,
 
                 transition:
@@ -1002,6 +1220,7 @@ export function Reader({
             />
           </div>
         )}
+
         <div className="flex w-full justify-center mt-2">
           <div className=" m-2">
             <ButtonGroup>
@@ -1010,7 +1229,10 @@ export function Reader({
                 new Date().getTime() ? (
                   <Button
                     onClick={() =>
-                      (location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`, orgSlug))
+                      (location.href = getOrgPath(
+                        `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`,
+                        orgSlug
+                      ))
                     }
                   >
                     {_("previous_chapter")}#{chapter?.previousChapter?.number}{" "}
@@ -1019,13 +1241,14 @@ export function Reader({
                 ) : (
                   <Button disabled>
                     {_("previous_chapter_will_be_released_in")}{" "}
-                    {formatDate(
-                      chapter.previousChapter?.releasedAt,
-                      language
-                    )}
+                    {formatDate(chapter.previousChapter?.releasedAt, language)}
                   </Button>
                 ))}
-              <Button onClick={() => (location.href = getOrgPath(`/manga/${manga.slug}`, orgSlug))}>
+              <Button
+                onClick={() =>
+                  (location.href = getOrgPath(`/manga/${manga.slug}`, orgSlug))
+                }
+              >
                 {_("back_to_chapter_list")}
               </Button>
               {chapter?.nextChapter &&
@@ -1033,7 +1256,10 @@ export function Reader({
                 new Date().getTime() ? (
                   <Button
                     onClick={() =>
-                      (location.href = getOrgPath(`/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`, orgSlug))
+                      (location.href = getOrgPath(
+                        `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`,
+                        orgSlug
+                      ))
                     }
                   >
                     {_("next_chapter")}
@@ -1041,15 +1267,13 @@ export function Reader({
                 ) : (
                   <Button disabled>
                     {_("next_chapter_will_be_released_in")}{" "}
-                    {formatDate(
-                      chapter.nextChapter?.releasedAt,
-                      language
-                    )}
+                    {formatDate(chapter.nextChapter?.releasedAt, language)}
                   </Button>
                 ))}
             </ButtonGroup>
           </div>
         </div>
+
         <div className="flex w-full justify-center mt-2 mb-8">
           {settings.readType === readTypes.CASCADE &&
             chapterData.pages.length > 0 && (
@@ -1058,6 +1282,7 @@ export function Reader({
               </a>
             )}
         </div>
+
         <div className="w-full text-center">
           <div className="max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md">
             <Accordion open={settings.showChapterComments}>
@@ -1073,7 +1298,10 @@ export function Reader({
                   user={user}
                   identifier={`${manga.slug}_${chapterNumber}_accordion`}
                   onLogin={() => {
-                    window.location.href = getOrgPath(`/login?redirect=${window.location.pathname}`, orgSlug);
+                    window.location.href = getOrgPath(
+                      `/login?redirect=${window.location.pathname}`,
+                      orgSlug
+                    );
                   }}
                 />
               </AccordionBody>
@@ -1081,6 +1309,7 @@ export function Reader({
           </div>
         </div>
       </div>
+
       {/* Speed Dial */}
       {settings.showFloatButtons && (
         <>
@@ -1164,7 +1393,7 @@ export function Reader({
               <Tooltip content={_("pages_list")} placement="left">
                 <SpeedDialHandler
                   className="cursor-pointer"
-                  onClick={() => handlePagesDialog()}
+                  onClick={handlePagesDialog}
                 >
                   <IconButton size="lg" className="rounded-full bg-opacity-90">
                     <ListBulletIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
@@ -1175,6 +1404,7 @@ export function Reader({
           </div>
         </>
       )}
+
       {/* Pages Dialog */}
       <Dialog
         size="xs"
