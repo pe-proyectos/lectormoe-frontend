@@ -25,6 +25,7 @@ const manga = mangaResult;
 <LandingLayout 
   title={`${manga.title} | ${organization.name}`}
   description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
+  imageUrl={manga.imageUrl || manga.bannerUrl}
   organization={organization}
 >
   <MangaDetailPageContainer

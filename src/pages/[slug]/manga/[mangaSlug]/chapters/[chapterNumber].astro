@@ -70,7 +70,7 @@ const hasAccess = userHasAccessToChapter(chapter);
 
 <LandingLayout
   title={`${chapter.title} - ${manga.title} #${chapter.number}`}
-  imageUrl={chapter.imageUrl || manga.imageUrl || manga.bannerUrl}
+  imageUrl={manga.imageUrl || manga.bannerUrl}
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
 >
   <ReaderPageContainer

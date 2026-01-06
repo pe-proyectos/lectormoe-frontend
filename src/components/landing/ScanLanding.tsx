@@ -64,26 +64,53 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
     };
   };
 
-  // Fetch hero mangas
+  // Fetch all mangas in parallel for better performance
   useEffect(() => {
-    const fetchHeroMangas = async () => {
+    const fetchAllMangas = async () => {
+      if (!organization || !organizationSlug) return;
+
+      // Set all loading states
+      setLoadingHero(true);
+      setLoadingTopThree(true);
+      setLoadingPopular(true);
+      setLoadingRecent(true);
+
       try {
-        setLoadingHero(true);
         const API_URL = import.meta.env.PUBLIC_API_URL;
         const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
         
-        const heroResponse = await fetch(`${API_URL}/api/manga-custom?order=latest&limit=5`, {
-          headers: {
-            'x-organization': organizationSlug,
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        const heroResult = await heroResponse.json();
-        
-        if (heroResult?.status === true && heroResult?.data?.data) {
-          setFeaturedMangas(heroResult.data.data.map((m: any) => ({
+        const headers = {
+          'x-organization': organizationSlug,
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        };
+
+        // Fetch all data in parallel
+        const [heroResult, topThreeResult, popularResult, recentResult] = await Promise.allSettled([
+          fetch(`${API_URL}/api/manga-custom?order=latest&limit=5`, {
+            headers,
+            credentials: 'include',
+          }).then(res => res.json()),
+          
+          fetch(`${API_URL}/api/manga-custom?order=featured&limit=3`, {
+            headers,
+            credentials: 'include',
+          }).then(res => res.json()),
+          
+          fetch(`${API_URL}/api/manga-custom?order=popular&limit=9`, {
+            headers,
+            credentials: 'include',
+          }).then(res => res.json()),
+          
+          fetch(`${API_URL}/api/manga-custom?order=latest&limit=18`, {
+            headers,
+            credentials: 'include',
+          }).then(res => res.json()),
+        ]);
+
+        // Process hero mangas
+        if (heroResult.status === 'fulfilled' && heroResult.value?.status === true && heroResult.value?.data?.data) {
+          setFeaturedMangas(heroResult.value.data.data.map((m: any) => ({
             id: m.slug || m.id,
             title: m.title,
             cover: m.bannerUrl || m.imageUrl || '',
@@ -92,39 +119,13 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
             status: m.status || 'Ongoing',
             demography: m.demography?.name || null,
           })));
+        } else if (heroResult.status === 'rejected') {
+          console.error('Error fetching hero mangas:', heroResult.reason);
         }
-      } catch (error) {
-        console.error('Error fetching hero mangas:', error);
-      } finally {
-        setLoadingHero(false);
-      }
-    };
 
-    if (organization && organizationSlug) {
-      fetchHeroMangas();
-    }
-  }, [organization, organizationSlug]);
-
-  // Fetch top 3 mangas
-  useEffect(() => {
-    const fetchTopThree = async () => {
-      try {
-        setLoadingTopThree(true);
-        const API_URL = import.meta.env.PUBLIC_API_URL;
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        
-        const topThreeResponse = await fetch(`${API_URL}/api/manga-custom?order=featured&limit=3`, {
-          headers: {
-            'x-organization': organizationSlug,
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        const topThreeResult = await topThreeResponse.json();
-        
-        if (topThreeResult?.status === true && topThreeResult?.data?.data) {
-          setTopThreeMangas(topThreeResult.data.data.map((m: any) => ({
+        // Process top three mangas
+        if (topThreeResult.status === 'fulfilled' && topThreeResult.value?.status === true && topThreeResult.value?.data?.data) {
+          setTopThreeMangas(topThreeResult.value.data.data.map((m: any) => ({
             id: m.slug || m.id,
             title: m.title,
             cover: m.imageUrl || m.cover || '',
@@ -133,83 +134,36 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
             status: m.status || 'Ongoing',
             views: m.views || 0,
           })));
+        } else if (topThreeResult.status === 'rejected') {
+          console.error('Error fetching top three mangas:', topThreeResult.reason);
         }
+
+        // Process popular mangas
+        if (popularResult.status === 'fulfilled' && popularResult.value?.status === true && popularResult.value?.data?.data) {
+          setPopular24h(popularResult.value.data.data.map((m: any) => mapMangaData(m)));
+        } else if (popularResult.status === 'rejected') {
+          console.error('Error fetching popular mangas:', popularResult.reason);
+        }
+
+        // Process recent updates
+        if (recentResult.status === 'fulfilled' && recentResult.value?.status === true && recentResult.value?.data?.data) {
+          setRecentUpdates(recentResult.value.data.data.map((m: any) => mapMangaData(m)));
+        } else if (recentResult.status === 'rejected') {
+          console.error('Error fetching recent mangas:', recentResult.reason);
+        }
+
       } catch (error) {
-        console.error('Error fetching top three mangas:', error);
+        console.error('Error fetching mangas:', error);
       } finally {
+        // Set all loading states to false
+        setLoadingHero(false);
         setLoadingTopThree(false);
-      }
-    };
-
-    if (organization && organizationSlug) {
-      fetchTopThree();
-    }
-  }, [organization, organizationSlug]);
-
-  // Fetch popular 24h mangas
-  useEffect(() => {
-    const fetchPopular = async () => {
-      try {
-        setLoadingPopular(true);
-        const API_URL = import.meta.env.PUBLIC_API_URL;
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        
-        const popularResponse = await fetch(`${API_URL}/api/manga-custom?order=popular&limit=9`, {
-          headers: {
-            'x-organization': organizationSlug,
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        const popularResult = await popularResponse.json();
-        
-        if (popularResult?.status === true && popularResult?.data?.data) {
-          setPopular24h(popularResult.data.data.map((m: any) => mapMangaData(m)));
-        }
-      } catch (error) {
-        console.error('Error fetching popular mangas:', error);
-      } finally {
         setLoadingPopular(false);
-      }
-    };
-
-    if (organization && organizationSlug) {
-      fetchPopular();
-    }
-  }, [organization, organizationSlug, logged, user]);
-
-  // Fetch recent updates mangas
-  useEffect(() => {
-    const fetchRecent = async () => {
-      try {
-        setLoadingRecent(true);
-        const API_URL = import.meta.env.PUBLIC_API_URL;
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        
-        const recentResponse = await fetch(`${API_URL}/api/manga-custom?order=latest&limit=18`, {
-          headers: {
-            'x-organization': organizationSlug,
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        const recentResult = await recentResponse.json();
-        
-        if (recentResult?.status === true && recentResult?.data?.data) {
-          setRecentUpdates(recentResult.data.data.map((m: any) => mapMangaData(m)));
-        }
-      } catch (error) {
-        console.error('Error fetching recent mangas:', error);
-      } finally {
         setLoadingRecent(false);
       }
     };
 
-    if (organization && organizationSlug) {
-      fetchRecent();
-    }
+    fetchAllMangas();
   }, [organization, organizationSlug, logged, user]);
 
   const handleGoToSub = () => {

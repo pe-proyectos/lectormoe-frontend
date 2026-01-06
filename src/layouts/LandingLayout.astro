@@ -3,17 +3,19 @@ interface Props {
   title?: string;
   description?: string;
   organization?: any;
+  imageUrl?: string;
 }
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { organization } = Astro.locals;
-const { title: propTitle, description: propDescription } = Astro.props;
+const { title: propTitle, description: propDescription, imageUrl: propImageUrl } = Astro.props;
 
 // Determinar título y descripción basados en la organización o props
 const title = propTitle || (organization?.title ? `${organization.title} - ${organization.name || 'Mangas'}` : "CapibaraTraductor - El Hub de tus Scans Favoritos");
 const description = propDescription || organization?.description || organization?.shortDescription || "Infraestructura independiente para comunidades de scanlation. Tu scan merece su propio espacio.";
 const faviconUrl = organization?.faviconUrl || "/images/faviconcaptrad.png";
-const bannerUrl = organization?.bannerUrl || organization?.logoUrl || "/images/logocaptrad.png";
+// Usar la imagen específica si se proporciona, si no usar el banner de la organización
+const imageUrl = propImageUrl || organization?.bannerUrl || organization?.logoUrl || "/images/logocaptrad.png";
 const siteName = organization?.title || organization?.name || "CapibaraTraductor";
 ---
 
@@ -31,9 +33,9 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content={siteName} />
-    {bannerUrl && (
+    {imageUrl && (
       <>
-        <meta property="og:image" content={bannerUrl} />
+        <meta property="og:image" content={imageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={title} />
@@ -45,7 +47,7 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    {bannerUrl && <meta name="twitter:image:src" content={bannerUrl} />}
+    {imageUrl && <meta name="twitter:image:src" content={imageUrl} />}
     {organization?.domain && <meta name="twitter:domain" content={organization.domain} />}
     
     {/* Theme */}

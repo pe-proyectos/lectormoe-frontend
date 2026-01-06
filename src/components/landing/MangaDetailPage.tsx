@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Star, Share2, Eye, Download, ChevronRight, ExternalLink, MessageCircle, ThumbsUp, ThumbsDown, LogIn, EyeOff, Lock, LockOpen, Crown } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { translateStatus } from '../../util/landing/translateStatus';
+import { formatDate as formatDateUtil } from '../../util/date';
 import CommentsSection from './CommentsSection';
 
 interface Chapter {
@@ -405,19 +406,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
   };
 
-  // Format date
+  // Format date using the utility function that handles future dates correctly
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days === 0) return 'hoy';
-    if (days === 1) return 'hace 1 día';
-    if (days < 7) return `hace ${days} días`;
-    if (days < 30) return `hace ${Math.floor(days / 7)} semana${Math.floor(days / 7) > 1 ? 's' : ''}`;
-    if (days < 365) return `hace ${Math.floor(days / 30)} mes${Math.floor(days / 30) > 1 ? 'es' : ''}`;
-    return `hace ${Math.floor(days / 365)} año${Math.floor(days / 365) > 1 ? 's' : ''}`;
+    return formatDateUtil(dateString, 'es');
   };
 
   // Format comment date (more detailed)

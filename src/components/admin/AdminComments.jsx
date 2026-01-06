@@ -23,23 +23,11 @@ import {
 } from "@material-tailwind/react";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
+import { formatDate as formatDateUtil } from "../../util/date";
 
 const formatDate = (date) => {
   if (!date) return "";
-  const dt = new Date(date);
-  const diff = Math.floor((new Date().getTime() - dt.getTime()) / 1000);
-  const times = [
-    { unit: "mes", value: Math.floor(diff / (30 * 24 * 60 * 60)) },
-    { unit: "semana", value: Math.floor(diff / (7 * 24 * 60 * 60)) },
-    { unit: "día", value: Math.floor(diff / (24 * 60 * 60)) },
-    { unit: "hora", value: Math.floor(diff / (60 * 60)) },
-    { unit: "minuto", value: Math.floor(diff / 60) },
-    { unit: "segundo", value: diff },
-  ];
-  const time = times.find((t) => t.value > 0);
-  return time
-    ? `hace ${time.value} ${time.unit}${time.value > 1 ? "s" : ""}`
-    : "hoy";
+  return formatDateUtil(date, 'es');
 };
 
 const getSubscriptionDays = (subscriptionDate) => {
