@@ -4,9 +4,10 @@ import MangaCard3D from './MangaCard3D';
 
 interface ScanPopular24hProps {
   mangas: any[];
+  userPermissions?: any;
 }
 
-const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas }) => {
+const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -24,6 +25,7 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas }) => {
             key={`pop24h-${i}`} 
             manga={manga} 
             hideScan={true}
+            userPermissions={userPermissions}
           />
         ))}
       </div>

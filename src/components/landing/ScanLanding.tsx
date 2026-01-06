@@ -293,7 +293,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
                 </div>
               </div>
             ) : (
-              <ScanPopular24h mangas={popular24h} user={user} logged={logged} />
+              <ScanPopular24h mangas={popular24h} userPermissions={userPermissions} />
             )}
 
             {/* Recent Updates with independent skeleton */}
@@ -319,8 +319,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
                 mangas={recentUpdates} 
                 onExploreClick={handleGoToExplore}
                 organizationSlug={organizationSlug}
-                user={user}
-                logged={logged}
+                userPermissions={userPermissions}
               />
             )}
           </div>

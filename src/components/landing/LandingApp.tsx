@@ -86,7 +86,7 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
-                <FeaturedManga user={user} logged={logged} />
+                <FeaturedManga user={user} logged={logged} userPermissions={user?.permissions} />
               </div>
             </section>
             

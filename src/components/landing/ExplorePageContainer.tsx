@@ -8,9 +8,10 @@ interface ExplorePageContainerProps {
   organizationSlug?: string;
   user?: any;
   logged?: boolean;
+  userPermissions?: any;
 }
 
-const ExplorePageContainer: React.FC<ExplorePageContainerProps> = ({ organization, organizationSlug, user, logged }) => {
+const ExplorePageContainer: React.FC<ExplorePageContainerProps> = ({ organization, organizationSlug, user, logged, userPermissions }) => {
   const navigateTo = (path: string) => {
     window.location.href = path;
   };
@@ -34,6 +35,7 @@ const ExplorePageContainer: React.FC<ExplorePageContainerProps> = ({ organizatio
         user={user}
         logged={logged}
         activeScan={organization}
+        userPermissions={userPermissions}
       />
 
       <ExplorePage 
@@ -41,6 +43,7 @@ const ExplorePageContainer: React.FC<ExplorePageContainerProps> = ({ organizatio
         organizationSlug={organizationSlug}
         user={user}
         logged={logged}
+        userPermissions={userPermissions}
       />
 
       <Footer 

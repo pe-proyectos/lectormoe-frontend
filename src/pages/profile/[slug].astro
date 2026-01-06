@@ -2,7 +2,7 @@
 import LandingLayout from "../../layouts/LandingLayout.astro";
 import ProfilePageContainer from "../../components/landing/ProfilePageContainer";
 
-const { user: currentUser, logged, language, callAPI, isLandingPage, organizationSlug } = Astro.locals;
+const { user: currentUser, logged, language, callAPI, isLandingPage, organizationSlug, permissions } = Astro.locals;
 const { slug } = Astro.params;
 
 // Si no es landing page, redirigir
@@ -45,6 +45,7 @@ if (userData.slug && userData.slug !== slug) {
     user={userData} 
     logged={logged}
     organizationSlug={organizationSlug}
+    userPermissions={permissions || userData?.permissions}
     client:only="react" 
   />
 </LandingLayout>

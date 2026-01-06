@@ -7,9 +7,10 @@ interface ProfilePageContainerProps {
   user?: any;
   logged?: boolean;
   organizationSlug?: string;
+  userPermissions?: any;
 }
 
-const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logged, organizationSlug }) => {
+const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logged, organizationSlug, userPermissions }) => {
   const navigateTo = (path: string) => {
     window.location.href = path;
   };
@@ -27,12 +28,14 @@ const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logge
         logged={logged}
         initialUser={user}
         initialLogged={logged}
+        userPermissions={userPermissions}
       />
       
       <ProfilePageNew 
         user={user}
         logged={logged}
         organizationSlug={organizationSlug}
+        userPermissions={userPermissions || user?.permissions}
       />
 
       <Footer 

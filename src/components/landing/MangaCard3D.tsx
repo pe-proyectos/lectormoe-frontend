@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Clock, Book, ArrowRight, Check, Lock, CreditCard } from 'lucide-react';
+import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 
 interface Chapter {
@@ -34,16 +34,57 @@ interface Manga {
   userHasSubscription?: boolean; // Whether user has access to subscriber-only content
 }
 
+interface UserPermissions {
+  canReadUnreleased?: boolean;
+  canEditChapter?: boolean;
+  canEditPage?: boolean;
+}
+
 interface Props {
   manga: Manga;
   hideScan?: boolean;
   onSubscribe?: () => void;
   onClick?: () => void;
+  userPermissions?: UserPermissions;
 }
 
-const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, onClick }) => {
+const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, onClick, userPermissions }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
+
+  // Helper function to check if user has access (considering both subscription and permissions)
+  const userHasAccess = (chapter: Chapter): boolean => {
+    // If user has permission to read unreleased, they can read subscriber-only content
+    if (userPermissions?.canReadUnreleased || userPermissions?.canEditChapter || userPermissions?.canEditPage) {
+      return true;
+    }
+    // Otherwise, check subscription status
+    return !chapter.subscribersOnly || !!manga.userHasSubscription;
+  };
+
+  // Helper function to get access reason message
+  const getAccessReason = (chapter: Chapter): string => {
+    if (!chapter.subscribersOnly) return '';
+    
+    if (userPermissions?.canReadUnreleased) {
+      return 'Tienes acceso por permisos especiales de lectura anticipada';
+    }
+    if (userPermissions?.canEditChapter || userPermissions?.canEditPage) {
+      return 'Tienes acceso por permisos de edición';
+    }
+    if (manga.userHasSubscription) {
+      return 'Tienes acceso premium activo';
+    }
+    return '';
+  };
+
+  const handleLockClick = (e: React.MouseEvent, chapter: Chapter) => {
+    e.stopPropagation();
+    const reason = getAccessReason(chapter);
+    if (reason) {
+      alert(reason);
+    }
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -99,13 +140,21 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
           />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
           
-          {/* Lock Icon for Sub only - Show if latest chapter is subscriber-only and user doesn't have access */}
-          {manga.chapters && manga.chapters.length > 0 && 
-           manga.chapters[0].subscribersOnly && 
-           !manga.userHasSubscription && (
-            <div className="absolute top-3 left-3 z-30 p-1.5 bg-yellow-500 rounded-lg text-black shadow-lg">
-              <Lock size={12} fill="currentColor" />
-            </div>
+          {/* Lock Icon for Sub only - Show locked if no access, unlocked if has access */}
+          {manga.chapters && manga.chapters.length > 0 && manga.chapters[0].subscribersOnly && (
+            userHasAccess(manga.chapters[0]) ? (
+              <div 
+                className="absolute top-3 left-3 z-30 p-1.5 bg-green-500 rounded-lg text-white shadow-lg cursor-pointer hover:bg-green-400 transition-colors"
+                onClick={(e) => handleLockClick(e, manga.chapters[0])}
+                title={getAccessReason(manga.chapters[0])}
+              >
+                <Unlock size={12} />
+              </div>
+            ) : (
+              <div className="absolute top-3 left-3 z-30 p-1.5 bg-yellow-500 rounded-lg text-black shadow-lg">
+                <Lock size={12} fill="currentColor" />
+              </div>
+            )
           )}
 
           {/* Status badge */}
@@ -137,9 +186,10 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
             {/* Last 2 Chapters */}
             {manga.chapters && manga.chapters.length > 0 && manga.chapters.map((chapter, index) => {
               const isLatest = index === 0;
-              const canAccess = !chapter.subscribersOnly || manga.userHasSubscription;
+              const canAccess = userHasAccess(chapter);
               const isReleased = new Date(chapter.releasedAt).getTime() <= new Date().getTime();
               const canRead = canAccess && isReleased;
+              const needsSubscription = chapter.subscribersOnly && !canAccess;
               
               return (
                 <button
@@ -148,7 +198,7 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
                     e.stopPropagation();
                     if (canRead) {
                       window.location.href = chapter.chapterUrl;
-                    } else if (chapter.subscribersOnly && !manga.userHasSubscription) {
+                    } else if (needsSubscription) {
                       // Navigate to subscriptions page
                       if (manga.scanUrl) {
                         window.location.href = `${manga.scanUrl}/subscriptions`;
@@ -158,17 +208,30 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
                   disabled={!canRead}
                   className={`w-full ${
                     isLatest 
-                      ? `bg-zinc-900/90 border ${chapter.subscribersOnly && !manga.userHasSubscription ? 'border-yellow-500/30 opacity-80' : 'border-zinc-800'}`
+                      ? `bg-zinc-900/90 border ${needsSubscription ? 'border-yellow-500/30 opacity-80' : 'border-zinc-800'}`
                       : 'bg-zinc-900/40 border border-zinc-800/50'
                   } text-white p-2 rounded-xl text-left hover:border-cyan-500/50 transition-all group/btn`}
                 >
                   <div className="flex items-center justify-between mb-0.5">
                     <span className={`${
                       isLatest 
-                        ? (chapter.subscribersOnly && !manga.userHasSubscription ? 'text-yellow-500' : 'text-cyan-400')
+                        ? (needsSubscription ? 'text-yellow-500' : (chapter.subscribersOnly ? 'text-green-500' : 'text-cyan-400'))
                         : 'text-zinc-400'
                     } font-black text-[10px] uppercase flex items-center gap-1`}>
-                      Cap. {chapter.number} {chapter.subscribersOnly && !manga.userHasSubscription && <Lock size={8} />}
+                      Cap. {chapter.number} 
+                      {chapter.subscribersOnly && (
+                        canAccess ? (
+                          <span 
+                            className="cursor-pointer hover:scale-110 transition-transform"
+                            onClick={(e) => handleLockClick(e, chapter)}
+                            title={getAccessReason(chapter)}
+                          >
+                            <Unlock size={8} />
+                          </span>
+                        ) : (
+                          <Lock size={8} />
+                        )
+                      )}
                     </span>
                     {isLatest && (
                       <span className="text-zinc-600 text-[8px] font-bold">
@@ -177,7 +240,7 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
                     )}
                   </div>
                   <p className="text-[9px] font-bold truncate leading-none text-zinc-300">
-                    {chapter.subscribersOnly && !manga.userHasSubscription 
+                    {needsSubscription 
                       ? 'Solo para suscriptores' 
                       : `"${chapter.title || 'Nuevo capítulo'}"`
                     }
@@ -202,7 +265,7 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
             })}
 
             {/* Subscribe CTA in Hover - Show if any chapter is subscriber-only and user doesn't have access */}
-            {manga.chapters?.some(ch => ch.subscribersOnly && !manga.userHasSubscription) && (
+            {manga.chapters?.some(ch => ch.subscribersOnly && !userHasAccess(ch)) && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -225,13 +288,25 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
             </h3>
             <div className="flex items-center justify-between text-[10px]">
               {manga.chapters && manga.chapters.length > 0 && (
-                <span className={`font-black ${
-                  manga.chapters[0].subscribersOnly && !manga.userHasSubscription 
+                <span className={`font-black flex items-center gap-1 ${
+                  manga.chapters[0].subscribersOnly && !userHasAccess(manga.chapters[0]) 
                     ? 'text-yellow-500' 
-                    : 'text-white'
+                    : (manga.chapters[0].subscribersOnly ? 'text-green-500' : 'text-white')
                 }`}>
                   Cap. {manga.chapters[0].number}
-                  {manga.chapters[0].subscribersOnly && !manga.userHasSubscription && ' 🔒'}
+                  {manga.chapters[0].subscribersOnly && (
+                    userHasAccess(manga.chapters[0]) ? (
+                      <span 
+                        className="cursor-pointer hover:scale-110 transition-transform inline-flex items-center"
+                        onClick={(e) => handleLockClick(e, manga.chapters[0])}
+                        title={getAccessReason(manga.chapters[0])}
+                      >
+                        <Unlock size={10} />
+                      </span>
+                    ) : (
+                      <Lock size={10} />
+                    )
+                  )}
                 </span>
               )}
               {manga.chapters && manga.chapters.length > 0 && manga.chapters[0].releasedAt && (

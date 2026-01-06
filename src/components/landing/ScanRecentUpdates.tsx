@@ -6,9 +6,10 @@ interface ScanRecentUpdatesProps {
   mangas: any[];
   onExploreClick: () => void;
   organizationSlug: string;
+  userPermissions?: any;
 }
 
-const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExploreClick, organizationSlug }) => {
+const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExploreClick, organizationSlug, userPermissions }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -27,6 +28,7 @@ const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExplore
               key={`recent-${i}`} 
               manga={manga} 
               hideScan={true}
+              userPermissions={userPermissions}
             />
           ))}
         </div>

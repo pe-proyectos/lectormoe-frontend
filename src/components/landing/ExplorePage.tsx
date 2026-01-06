@@ -140,9 +140,10 @@ interface ExplorePageProps {
   user?: any;
   logged?: boolean;
   initialScan?: string;
+  userPermissions?: any;
 }
 
-const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged }) => {
+const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged, userPermissions }) => {
   const [search, setSearch] = useState('');
   const [selectedScan, setSelectedScan] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -482,6 +483,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                       ? manga.status 
                       : 'Ongoing' as 'Ongoing' | 'Completed' | 'Hiatus'
                   }}
+                  userPermissions={userPermissions}
                 />
               ))}
             </div>

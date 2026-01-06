@@ -3,7 +3,7 @@ import LandingLayout from "../../layouts/LandingLayout.astro";
 import ExplorePageContainer from "../../components/landing/ExplorePageContainer";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, callAPI, user, organizationSlug } = Astro.locals;
+const { organization, language, logged, callAPI, user, organizationSlug, permissions } = Astro.locals;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -17,6 +17,7 @@ if (!organization) {
     organizationSlug={organizationSlug}
     user={user}
     logged={logged}
+    userPermissions={permissions}
     client:only="react"
   />
 </LandingLayout>

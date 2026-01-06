@@ -8,6 +8,7 @@ interface ProfilePageProps {
   user?: any;
   logged?: boolean;
   organizationSlug?: string;
+  userPermissions?: any;
 }
 
 interface FollowedScan {
@@ -44,7 +45,7 @@ interface ReadingHistory {
   lastReadAt: string;
 }
 
-const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organizationSlug }) => {
+const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organizationSlug, userPermissions }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followedScans, setFollowedScans] = useState<FollowedScan[]>([]);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
@@ -601,6 +602,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                             chapters: chaptersWithReadStatus,
                             userHasSubscription: userHasSubscription,
                           }}
+                          userPermissions={userPermissions}
                         />
                       );
                     })}

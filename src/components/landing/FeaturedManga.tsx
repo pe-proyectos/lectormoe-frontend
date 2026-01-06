@@ -7,9 +7,10 @@ import MangaCard3D from './MangaCard3D';
 interface FeaturedMangaProps {
   user?: any;
   logged?: boolean;
+  userPermissions?: any;
 }
 
-const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged }) => {
+const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, userPermissions }) => {
   const [featuredManga, setFeaturedManga] = useState<Manga[]>(FEATURED_MANGA);
   const [loading, setLoading] = useState(true);
 
@@ -94,6 +95,7 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged }) => {
               chapters: chaptersWithReadStatus,
               userHasSubscription: userHasSubscription || false,
             }}
+            userPermissions={userPermissions}
             onClick={() => {
               // Prefer mangaUrl (direct link to manga page), fallback to scanUrl
               const url = manga.mangaUrl || (manga.scanSlug && manga.mangaSlug ? `/${manga.scanSlug}/manga/${manga.mangaSlug}` : manga.scanUrl);
