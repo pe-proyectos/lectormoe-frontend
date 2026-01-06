@@ -35,26 +35,38 @@ if (user && user?.hideAds === true) {
 		<link rel="icon" type="image/png" href={organization?.faviconUrl || "/images/faviconcaptrad.png"} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
-		{/* Google Ads */}
+		{/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
 		{
-			(showAds ?? true) && organization?.enableGoogleAds && (
+			!isAdmin && 
+			organization && 
+			(showAds ?? true) && 
+			organization.enableGoogleAds && 
+			organization.googleAdsMetaContent && (
 				<meta
 					name="google-adsense-account"
-					content={organization?.googleAdsMetaContent}
+					content={organization.googleAdsMetaContent}
 				/>
 			)
 		}
-		{/* Google Ads */}
+		{/* Google Ads Script - Solo en vistas de organización, no en admin ni globales */}
 		{
-			(showAds ?? true) && organization?.enableGoogleAds && (
-				<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
+			!isAdmin && 
+			organization && 
+			(showAds ?? true) && 
+			organization.enableGoogleAds && 
+			organization.googleAdsMetaContent && (
+				<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${organization.googleAdsMetaContent}`}
 					crossorigin="anonymous"></script>
 			)
 		}
-		{/* Adsterra Ads */}
+		{/* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */}
 		{
-			(showAds ?? true) && organization?.enableAdsterraAds && (
-				<script type='text/javascript' src={organization?.adsterraAdSource}></script>
+			!isAdmin && 
+			organization && 
+			(showAds ?? true) && 
+			organization.enableAdsterraAds && 
+			organization.adsterraAdSource && (
+				<script type='text/javascript' src={organization.adsterraAdSource}></script>
 			)
 		}
 		{/* Metadata General */}

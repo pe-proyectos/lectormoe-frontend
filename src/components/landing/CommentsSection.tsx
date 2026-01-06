@@ -211,7 +211,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             <img
               src={comment.imageUrl}
               alt="Comment attachment"
-              className="max-w-full w-auto h-auto rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200"
+              className="max-w-full w-auto max-h-96 object-contain rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200"
             />
           </div>
         )}
@@ -500,7 +500,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   };
 
   return (
-    <div className="mt-24 pt-16 border-t border-zinc-900 space-y-10 mb-20 relative z-10">
+    <div className="mt-24 pt-16 border-t border-zinc-900 space-y-10 mb-20 relative z-10 w-full max-h-[80vh] overflow-y-auto md:max-w-4xl md:mx-auto">
       <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Comentarios</h2>
 
       {/* Comments List */}

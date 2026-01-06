@@ -1186,7 +1186,7 @@ export function Reader({
           {/* Comments Section - Below Reader */}
           {chapterData.pages.length > 0 && !loading && (
             <CommentsSection
-              identifier={manga.slug}
+              identifier={`${manga.slug}_${chapterNumber}`}
               logged={logged || false}
               user={user}
               onLogin={() => {
