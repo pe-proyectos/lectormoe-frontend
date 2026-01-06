@@ -1,5 +1,5 @@
-import React from 'react';
-import { Flame } from 'lucide-react';
+import React, { useState } from 'react';
+import { Flame, ChevronDown } from 'lucide-react';
 import MangaCard3D from './MangaCard3D';
 
 interface ScanPopular24hProps {
@@ -8,6 +8,17 @@ interface ScanPopular24hProps {
 }
 
 const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions }) => {
+  const [showAll, setShowAll] = useState(false);
+  
+  // Mostrar solo la primera fila: 2 en mobile, 3 en desktop
+  const firstRowCount = {
+    mobile: 2,    // grid-cols-2
+    desktop: 3,   // sm:grid-cols-3
+  };
+  
+  const visibleMangas = showAll ? mangas : mangas.slice(0, firstRowCount.desktop);
+  const hasMore = mangas.length > firstRowCount.desktop;
+
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -20,7 +31,7 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions
       <div className="w-full h-0.5 bg-zinc-800 mb-8" />
       
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-        {mangas.map((manga, i) => (
+        {visibleMangas.map((manga, i) => (
           <MangaCard3D 
             key={`pop24h-${i}`} 
             manga={manga} 
@@ -29,6 +40,23 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions
           />
         ))}
       </div>
+
+      {hasMore && (
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="group flex items-center gap-2 px-6 py-3 bg-zinc-900/60 hover:bg-zinc-800/80 border border-zinc-800 hover:border-cyan-500/50 rounded-2xl transition-all duration-300"
+          >
+            <span className="text-sm font-bold text-zinc-300 group-hover:text-white">
+              {showAll ? 'Mostrar menos' : `Mostrar más (${mangas.length - firstRowCount.desktop})`}
+            </span>
+            <ChevronDown 
+              size={16} 
+              className={`text-zinc-500 group-hover:text-cyan-500 transition-transform duration-300 ${showAll ? 'rotate-180' : ''}`}
+            />
+          </button>
+        </div>
+      )}
     </section>
   );
 };
