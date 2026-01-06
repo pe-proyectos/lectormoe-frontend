@@ -1,7 +1,7 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import { AdminMangasBreadcrumb } from "../../../components/admin/AdminMangasBreadcrumb.jsx";
-import { AdminComments } from "../../../components/admin/AdminComments.jsx";
+import AdminMangasBreadcrumb from "../../../components/admin/AdminMangasBreadcrumb";
+import AdminComments from "../../../components/admin/AdminComments";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { organization, user, logged, organizationSlug } = Astro.locals;

@@ -56,18 +56,38 @@ export const onRequest = defineMiddleware(async (context, next) => {
     'ouroborosnetwork.org': 'ouroborosnetwork',
   };
   
-  const hostname = context.url.hostname;
+  // Obtener hostname de diferentes fuentes (por si el proxy no lo pasa correctamente)
+  let hostname = context.url.hostname;
+  const hostHeader = context.request.headers.get('host');
+  const xForwardedHost = context.request.headers.get('x-forwarded-host');
+  
+  // Usar x-forwarded-host o host header si están disponibles (común en proxies)
+  if (xForwardedHost) {
+    hostname = xForwardedHost.split(':')[0]; // Remover puerto si existe
+  } else if (hostHeader) {
+    hostname = hostHeader.split(':')[0]; // Remover puerto si existe
+  }
+  
   const mainDomain = "capibaratraductor.com";
   const localhostPattern = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
   
-  // Solo hacer redirección si no es localhost y si está en el mapeo
+  // Solo hacer redirección si no es localhost y si está en el mapeo O si es un subdominio
   if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
-    const targetSlug = domainToSlugMap[hostname];
+    let targetSlug = domainToSlugMap[hostname];
+    
+    // Si no está en el mapeo, intentar extraer el subdominio automáticamente
+    if (!targetSlug && hostname.endsWith(`.${mainDomain}`)) {
+      // Extraer el subdominio (ejemplo: senshimanga.capibaratraductor.com -> senshimanga)
+      targetSlug = hostname.replace(`.${mainDomain}`, '');
+      console.log(`[Auto-detect subdomain] ${hostname} -> slug: ${targetSlug}`);
+    }
     
     if (targetSlug) {
       // Construir la nueva URL con formato de slug
       const newPath = `/${targetSlug}${context.url.pathname}${context.url.search}`;
       const newUrl = `${context.url.protocol}//${mainDomain}${newPath}`;
+      
+      console.log(`[Redirect] ${hostname}${context.url.pathname} -> ${newUrl}`);
       
       // Redirigir permanentemente (301) a la nueva URL
       return context.redirect(newUrl, 301);
