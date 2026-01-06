@@ -2,6 +2,76 @@ import { defineMiddleware } from "astro:middleware";
 import { getIP } from "../util/get-ip";
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // ============================================
+  // REDIRECCIÓN DE SUBDOMINIOS - DEBE SER LO PRIMERO
+  // ============================================
+  // Mapeo de dominios/subdominios antiguos a slugs de organización
+  const domainToSlugMap: Record<string, string> = {
+    // Subdominios de capibaratraductor.com
+    '6ianfranc9.capibaratraductor.com': '6ianfranc9',
+    'senshimanga.capibaratraductor.com': 'senshimanga',
+    
+    // Dominios independientes
+    'mangaclub.moe': 'mangaclub',
+    'doujinclub.icu': 'doujinclub',
+    'ouroborosnetwork.org': 'ouroborosnetwork',
+  };
+  
+  // Obtener hostname de diferentes fuentes (por si el proxy no lo pasa correctamente)
+  let hostname = context.url.hostname;
+  const hostHeader = context.request.headers.get('host');
+  const xForwardedHost = context.request.headers.get('x-forwarded-host');
+  const xForwardedProto = context.request.headers.get('x-forwarded-proto');
+  
+  // Usar x-forwarded-host o host header si están disponibles (común en proxies)
+  if (xForwardedHost) {
+    hostname = xForwardedHost.split(':')[0]; // Remover puerto si existe
+  } else if (hostHeader) {
+    hostname = hostHeader.split(':')[0]; // Remover puerto si existe
+  }
+  
+  const mainDomain = "capibaratraductor.com";
+  const localhostPattern = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
+  
+  // Determinar el protocolo correcto (http o https)
+  let protocol = context.url.protocol;
+  if (xForwardedProto) {
+    protocol = xForwardedProto + ':';
+  } else if (context.request.headers.get('x-forwarded-ssl') === 'on') {
+    protocol = 'https:';
+  }
+  
+  // Solo hacer redirección si no es localhost y si está en el mapeo O si es un subdominio
+  // Esta redirección debe ocurrir ANTES de cualquier otro procesamiento para asegurar que todas las rutas se redirijan correctamente
+  if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
+    let targetSlug = domainToSlugMap[hostname];
+    
+    // Si no está en el mapeo, intentar extraer el subdominio automáticamente
+    if (!targetSlug && hostname.endsWith(`.${mainDomain}`)) {
+      // Extraer el subdominio (ejemplo: senshimanga.capibaratraductor.com -> senshimanga)
+      targetSlug = hostname.replace(`.${mainDomain}`, '');
+      console.log(`[Middleware] Auto-detect subdomain: ${hostname} -> slug: ${targetSlug}`);
+    }
+    
+    if (targetSlug) {
+      // Construir la nueva URL con formato de slug
+      // Preservar el pathname completo y los query params
+      const pathname = context.url.pathname;
+      const search = context.url.search;
+      const newPath = `/${targetSlug}${pathname === '/' ? '' : pathname}${search}`;
+      const newUrl = `${protocol}//${mainDomain}${newPath}`;
+      
+      console.log(`[Middleware] Redirecting: ${hostname}${pathname} -> ${newUrl}`);
+      
+      // Redirigir permanentemente (301) a la nueva URL
+      // Esto debe ocurrir antes de cualquier otro procesamiento
+      return context.redirect(newUrl, 301);
+    }
+  }
+
+  // ============================================
+  // CONFIGURACIONES BÁSICAS
+  // ============================================
   context.locals.theme =
     context.cookies.get("theme")?.value === "light" ? "light" : "black";
 
@@ -43,61 +113,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Establecer logged basado en si existe token y user
   context.locals.logged = !!(context.locals.token && context.locals.user);
-
-  // Mapeo de dominios/subdominios antiguos a slugs de organización
-  const domainToSlugMap: Record<string, string> = {
-    // Subdominios de capibaratraductor.com
-    '6ianfranc9.capibaratraductor.com': '6ianfranc9',
-    'senshimanga.capibaratraductor.com': 'senshimanga',
-    
-    // Dominios independientes
-    'mangaclub.moe': 'mangaclub',
-    'doujinclub.icu': 'doujinclub',
-    'ouroborosnetwork.org': 'ouroborosnetwork',
-  };
-  
-  // Obtener hostname de diferentes fuentes (por si el proxy no lo pasa correctamente)
-  let hostname = context.url.hostname;
-  const hostHeader = context.request.headers.get('host');
-  const xForwardedHost = context.request.headers.get('x-forwarded-host');
-  
-  // Usar x-forwarded-host o host header si están disponibles (común en proxies)
-  if (xForwardedHost) {
-    hostname = xForwardedHost.split(':')[0]; // Remover puerto si existe
-  } else if (hostHeader) {
-    hostname = hostHeader.split(':')[0]; // Remover puerto si existe
-  }
-  
-  const mainDomain = "capibaratraductor.com";
-  const localhostPattern = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
-  
-  // Solo hacer redirección si no es localhost y si está en el mapeo O si es un subdominio
-  // Esta redirección debe ocurrir ANTES de cualquier otro procesamiento para asegurar que todas las rutas se redirijan correctamente
-  if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
-    let targetSlug = domainToSlugMap[hostname];
-    
-    // Si no está en el mapeo, intentar extraer el subdominio automáticamente
-    if (!targetSlug && hostname.endsWith(`.${mainDomain}`)) {
-      // Extraer el subdominio (ejemplo: senshimanga.capibaratraductor.com -> senshimanga)
-      targetSlug = hostname.replace(`.${mainDomain}`, '');
-      console.log(`[Auto-detect subdomain] ${hostname} -> slug: ${targetSlug}`);
-    }
-    
-    if (targetSlug) {
-      // Construir la nueva URL con formato de slug
-      // Preservar el pathname completo y los query params
-      const pathname = context.url.pathname;
-      const search = context.url.search;
-      const newPath = `/${targetSlug}${pathname === '/' ? '' : pathname}${search}`;
-      const newUrl = `${context.url.protocol}//${mainDomain}${newPath}`;
-      
-      console.log(`[Redirect] ${hostname}${pathname} -> ${newUrl}`);
-      
-      // Redirigir permanentemente (301) a la nueva URL
-      // Esto debe ocurrir antes de cualquier otro procesamiento
-      return context.redirect(newUrl, 301);
-    }
-  }
 
   // Variable para almacenar el identifier de la organización (slug o domain)
   let organizationIdentifier: string | null = null;
