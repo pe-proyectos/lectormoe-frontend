@@ -102,18 +102,6 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
     };
   }, []);
 
-  const handleScansClick = () => {
-    if (activeView === 'home') {
-      const element = document.getElementById('scans-section');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      onGoExplore();
-    }
-    setMobileMenuOpen(false);
-  };
-
   const handleLogout = async () => {
     try {
       await callAPI("/api/auth/logout", { method: "POST" });
@@ -226,21 +214,14 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
             <Search size={16} /> Catálogo
           </button>
           
-          {activeScan && onGoSubscriptions ? (
+          {activeScan && onGoSubscriptions && (
             <button 
               onClick={onGoSubscriptions} 
               className={`text-sm font-bold transition-colors flex items-center gap-2 ${activeView === 'subscriptions' ? 'text-yellow-500' : 'text-zinc-400 hover:text-white'}`}
             >
               <CreditCard size={16} /> Suscripciones
             </button>
-          ) : !activeScan ? (
-            <button 
-              onClick={handleScansClick} 
-              className={`text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white`}
-            >
-              <Users size={16} /> Scans
-            </button>
-          ) : null}
+          )}
 
           <div className="h-6 w-px bg-zinc-800 mx-2" />
           
@@ -341,11 +322,9 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
             <button onClick={() => { navigateTo('/'); setMobileMenuOpen(false); }} className="text-zinc-500 font-bold flex items-center gap-4 text-lg"><ChevronLeft size={20} /> Inicio</button>
           )}
           <button onClick={() => { onGoSearch(); setMobileMenuOpen(false); }} className={`text-xl font-bold flex items-center gap-4 ${activeView === 'search' ? 'text-cyan-500' : 'text-zinc-100'}`}><Search size={20} /> Catálogo</button>
-          {activeScan && onGoSubscriptions ? (
+          {activeScan && onGoSubscriptions && (
             <button onClick={() => { onGoSubscriptions(); setMobileMenuOpen(false); }} className={`text-xl font-bold flex items-center gap-4 ${activeView === 'subscriptions' ? 'text-yellow-500' : 'text-zinc-100'}`}><CreditCard size={20} /> Suscripciones</button>
-          ) : !activeScan ? (
-            <button onClick={handleScansClick} className={`text-xl font-bold flex items-center gap-4 text-zinc-100`}><Users size={20} /> Scans</button>
-          ) : null}
+          )}
           
           {logged && user && (user.username || user.email) ? (
             <div className="space-y-4 pt-4 border-t border-zinc-800">

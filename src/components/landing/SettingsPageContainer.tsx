@@ -48,18 +48,16 @@ const SettingsPageContainer: React.FC<SettingsPageContainerProps> = ({
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Navbar
-        activeScan={organization ? {
-          name: organization.name,
-          slug: organization.slug,
-          logo: organization.logoUrl || '',
-        } : undefined}
-        initialUser={user}
-        initialLogged={logged}
-        onGoHome={() => navigateTo(organizationSlug ? `/${organizationSlug}` : '/')}
-        onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
-        onGoSubscriptions={() => navigateTo(organizationSlug ? `/${organizationSlug}/subscriptions` : '/')}
-        onOpenLogin={() => navigateTo(organizationSlug ? `/${organizationSlug}/login` : '/login')}
-        onOpenRegister={() => navigateTo(organizationSlug ? `/${organizationSlug}/register` : '/register')}
+        activeScan={undefined}
+        user={user}
+        logged={logged}
+        activeView="settings"
+        onGoHome={() => navigateTo('/')}
+        onGoSearch={() => navigateTo('/search')}
+        onGoExplore={() => navigateTo('/scans')}
+        onGoSubscriptions={organizationSlug ? () => navigateTo(`/${organizationSlug}/subscriptions`) : undefined}
+        onOpenLogin={() => navigateTo('/login')}
+        onOpenRegister={() => navigateTo('/register')}
       />
       
       <SettingsPage 

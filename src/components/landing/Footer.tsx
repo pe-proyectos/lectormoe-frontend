@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Twitter, Instagram, Github, Mail } from 'lucide-react';
+import { Twitter, Instagram, Github } from 'lucide-react';
 
 interface FooterProps {
   onNavigate?: (page: any, id?: string) => void;
@@ -29,7 +29,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, organization, organizationS
   return (
     <footer className="bg-zinc-950 border-t border-zinc-900 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1 space-y-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center">
@@ -93,20 +93,6 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, organization, organizationS
             </ul>
           </div>
 
-          <div>
-            <h4 className="text-white font-bold mb-6">Newsletter</h4>
-            <p className="text-zinc-500 text-sm mb-4">Suscríbete para recibir alertas de nuevos capítulos y lanzamientos premium.</p>
-            <form className="flex gap-2">
-              <input 
-                type="email" 
-                placeholder="tu@email.com" 
-                className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 flex-1"
-              />
-              <button className="bg-cyan-500 text-zinc-950 p-2 rounded-lg hover:bg-cyan-400 transition-all">
-                <Mail size={20} />
-              </button>
-            </form>
-          </div>
         </div>
 
         <div className="border-t border-zinc-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">

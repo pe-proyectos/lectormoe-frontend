@@ -39,11 +39,7 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Navbar
-        activeScan={organization ? {
-          name: organization.name,
-          slug: organization.slug,
-          logo: organization.logoUrl || '',
-        } : undefined}
+        activeScan={organization}
         user={user}
         logged={logged}
         userPermissions={userPermissions}

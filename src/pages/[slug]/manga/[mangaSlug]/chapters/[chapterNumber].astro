@@ -2,11 +2,10 @@
 import LandingLayout from "../../../../../layouts/LandingLayout.astro";
 import ReaderPageContainer from "../../../../../components/landing/ReaderPageContainer";
 import { getTranslator } from "../../../../../util/translate";
-import { getOrgPath } from "../../../../../util/get-org-path";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { mangaSlug, chapterNumber } = Astro.params;
-const { language, callAPI, logged, user, organizationSlug, organization } = Astro.locals as any;
+const { language, callAPI, logged, user, organizationSlug, organization, permissions } = Astro.locals as any;
 const _ = getTranslator(language);
 
 // Si no hay organización, redirigir a 404
@@ -83,6 +82,7 @@ const hasAccess = userHasAccessToChapter(chapter);
     organizationSlug={organizationSlug}
     organization={organization}
     hasAccess={hasAccess}
+    userPermissions={permissions}
     client:load
   />
 </LandingLayout>

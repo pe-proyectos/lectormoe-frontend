@@ -115,5 +115,44 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #52525b;
   }
+  
+  /* Ocultar scrollbar en mobile */
+  @media (max-width: 768px) {
+    ::-webkit-scrollbar {
+      width: 0;
+      display: none;
+    }
+    
+    ::-webkit-scrollbar-track {
+      display: none;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      display: none;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 0;
+      display: none;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+      display: none;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      display: none;
+    }
+    
+    /* Para Firefox */
+    * {
+      scrollbar-width: none;
+    }
+    
+    /* Para IE y Edge */
+    * {
+      -ms-overflow-style: none;
+    }
+  }
 </style>
 

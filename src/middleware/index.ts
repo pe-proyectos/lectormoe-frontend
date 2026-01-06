@@ -255,7 +255,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
           context.locals.username = authCheck.user.username;
           context.locals.userSlug = authCheck.user.slug;
           if (authCheck.user) {
-            context.locals.user = authCheck.user;
+            // Agregar permisos al objeto user si están disponibles
+            const userWithPermissions = {
+              ...authCheck.user,
+              permissions: authCheck.permissions || authCheck.user.permissions || null,
+            };
+            context.locals.user = userWithPermissions;
           }
           context.cookies.set("token", authCheck.token, {
             maxAge: 60 * 60 * 24 * 7,
@@ -273,7 +278,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
             sameSite: 'lax',
           });
           if (authCheck.user) {
-            context.cookies.set("user", JSON.stringify(authCheck.user), {
+            // Guardar user con permisos incluidos en las cookies
+            const userWithPermissions = {
+              ...authCheck.user,
+              permissions: authCheck.permissions || authCheck.user.permissions || null,
+            };
+            context.cookies.set("user", JSON.stringify(userWithPermissions), {
               maxAge: 60 * 60 * 24 * 7,
               path: '/',
               sameSite: 'lax',
@@ -303,13 +313,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
         
         const authCheck = await callAPI("/api/auth/check");
         
-        // callAPI retorna result.data directamente, así que authCheck ya es { token, user }
+        // callAPI retorna result.data directamente, así que authCheck ya es { token, user, permissions }
         if (authCheck?.token && authCheck?.user) {
           context.locals.token = authCheck.token;
           context.locals.username = authCheck.user.username;
           context.locals.userSlug = authCheck.user.slug;
           if (authCheck.user) {
-            context.locals.user = authCheck.user;
+            // Agregar permisos al objeto user si están disponibles
+            const userWithPermissions = {
+              ...authCheck.user,
+              permissions: authCheck.permissions || authCheck.user.permissions || null,
+            };
+            context.locals.user = userWithPermissions;
           }
           context.cookies.set("token", authCheck.token, {
             maxAge: 60 * 60 * 24 * 7,
@@ -327,7 +342,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
             sameSite: 'lax',
           });
           if (authCheck.user) {
-            context.cookies.set("user", JSON.stringify(authCheck.user), {
+            // Guardar user con permisos incluidos en las cookies
+            const userWithPermissions = {
+              ...authCheck.user,
+              permissions: authCheck.permissions || authCheck.user.permissions || null,
+            };
+            context.cookies.set("user", JSON.stringify(userWithPermissions), {
               maxAge: 60 * 60 * 24 * 7,
               path: '/',
               sameSite: 'lax',
@@ -426,7 +446,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.locals.username = authCheck.user.username;
       context.locals.userSlug = authCheck.user.slug;
       if (authCheck.user) {
-        context.locals.user = authCheck.user;
+        // Agregar permisos al objeto user si están disponibles
+        const userWithPermissions = {
+          ...authCheck.user,
+          permissions: authCheck.permissions || authCheck.user.permissions || null,
+        };
+        context.locals.user = userWithPermissions;
       }
       // Guardar permisos si están disponibles
       if (authCheck.permissions) {
@@ -448,7 +473,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
         sameSite: 'lax',
       });
       if (authCheck.user) {
-        context.cookies.set("user", JSON.stringify(authCheck.user), {
+        // Guardar user con permisos incluidos en las cookies
+        const userWithPermissions = {
+          ...authCheck.user,
+          permissions: authCheck.permissions || authCheck.user.permissions || null,
+        };
+        context.cookies.set("user", JSON.stringify(userWithPermissions), {
           maxAge: 60 * 60 * 24 * 7,
           path: '/',
           sameSite: 'lax',

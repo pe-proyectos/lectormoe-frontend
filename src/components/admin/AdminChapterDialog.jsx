@@ -51,10 +51,19 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
     const [dragId, setDragId] = useState();
 
     const handleDrag = (ev) => {
-        setDragId(ev.currentTarget.id);
+        // Obtener el índice desde el id de la imagen
+        const imageId = ev.currentTarget.id;
+        const pageIndex = parseInt(imageId.split('-').pop());
+        // Usar el id del Card padre para el drop
+        setDragId(`preview-page-${pageIndex}`);
+    };
+
+    const handleDragOver = (ev) => {
+        ev.preventDefault();
     };
 
     const handleDrop = (ev) => {
+        ev.preventDefault();
         if (!dragId) return;
         // @ts-ignore
         const dragPageIndex = parseInt(dragId.split('-').pop());
@@ -72,6 +81,11 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             return index;
         });
         setSinglePageIndexes(newSinglePageIndexes);
+        setDragId(null);
+    };
+
+    const handleDragEnd = () => {
+        setDragId(null);
     };
 
     const removePage = (index) => {
@@ -355,13 +369,16 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             {pages.map((page, index) => (
                                 <Card
                                     key={index}
-                                    draggable={true}
                                     id={`preview-page-${index}`}
-                                    onDragStart={handleDrag}
+                                    onDragOver={handleDragOver}
                                     onDrop={handleDrop}
                                     className="w-40 min-w-40 max-w-40 max-h-80"
                                 >
                                     <img
+                                        draggable={true}
+                                        id={`preview-page-image-${index}`}
+                                        onDragStart={handleDrag}
+                                        onDragEnd={handleDragEnd}
                                         src={
                                             page instanceof File
                                                 ? URL.createObjectURL(page)
@@ -370,7 +387,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                         alt={`${_("page")} ${index + 1}`}
                                         decoding="async"
                                         loading="lazy"
-                                        className="w-full max-w-full h-56 max-h-56 object-cover rounded-md bg-gray-900"
+                                        className="w-full max-w-full h-56 max-h-56 object-cover rounded-md bg-gray-900 cursor-move"
                                     />
                                     <CardFooter className="p-0">
                                         <div className="flex flex-col gap-2 p-2">

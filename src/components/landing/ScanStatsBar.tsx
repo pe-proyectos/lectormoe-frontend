@@ -93,9 +93,9 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, organizationS
 
   return (
     <div className="bg-zinc-900/50 border-b border-zinc-800 py-4">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-wrap items-center justify-center gap-4 md:justify-between md:gap-0">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">
               <img 
                 src={organization.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(organization.name)}&background=27272a&color=fff&size=32`} 
@@ -105,7 +105,7 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, organizationS
             </div>
             <span className="text-white font-black uppercase tracking-tighter text-sm italic">{organization.name}</span>
           </div>
-          <div className="h-4 w-px bg-zinc-800" />
+          <div className="hidden md:block h-4 w-px bg-zinc-800" />
           <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
             <Users size={12} /> {followerCount.toLocaleString()} Seguidores
           </span>

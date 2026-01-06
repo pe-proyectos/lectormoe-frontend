@@ -28,7 +28,15 @@ const ExplorePageContainer: React.FC<ExplorePageContainerProps> = ({ organizatio
         onOpenRegister={() => navigateTo(organizationSlug ? `/${organizationSlug}/register` : '/register')}
         onOpenLogin={() => navigateTo(organizationSlug ? `/${organizationSlug}/login` : '/login')}
         onGoHome={() => navigateTo(organizationSlug ? `/${organizationSlug}` : '/')} 
-        onGoExplore={() => navigateTo('/scans')}
+        onGoExplore={() => {
+          // Si es una ruta global (sin organization), ir a la página principal donde está la sección de scans
+          // Si es una ruta de organización, ir a la página principal de esa organización
+          if (organizationSlug) {
+            navigateTo(`/${organizationSlug}`);
+          } else {
+            navigateTo('/');
+          }
+        }}
         onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
         onGoSubscriptions={handleGoToSub}
         activeView="search"

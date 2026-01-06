@@ -12,6 +12,7 @@ interface ReaderPageContainerProps {
   organizationSlug: string;
   organization?: any;
   hasAccess?: boolean;
+  userPermissions?: any;
 }
 
 const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
@@ -24,6 +25,7 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
   organizationSlug,
   organization,
   hasAccess = true,
+  userPermissions,
 }) => {
   const [Reader, setReader] = useState<any>(null);
 
@@ -39,41 +41,29 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
       <Navbar
         user={user}
         logged={logged || false}
-        language={language || 'es'}
-        organization={organization}
-        organizationSlug={organizationSlug}
         activeScan={organization}
+        userPermissions={userPermissions}
         isSticky={false}
-        onLogin={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/login` : '/login';
-        }}
-        onRegister={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/register` : '/register';
-        }}
-        onProfile={() => {
-          if (user?.slug) {
-            window.location.href = `/profile/${user.slug}`;
-          }
-        }}
-        onSettings={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/settings` : '/settings';
-        }}
-        onLogout={() => {
-          window.location.href = '/logout';
-        }}
-        onHome={() => {
+        activeView="reader"
+        onGoHome={() => {
           window.location.href = organizationSlug ? `/${organizationSlug}` : '/';
         }}
-        onSearch={() => {
+        onGoSearch={() => {
           window.location.href = organizationSlug ? `/${organizationSlug}/search` : '/search';
         }}
         onGoExplore={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/search` : '/search';
+          window.location.href = '/scans';
         }}
         onGoSubscriptions={() => {
           if (organizationSlug) {
             window.location.href = `/${organizationSlug}/subscriptions`;
           }
+        }}
+        onOpenLogin={() => {
+          window.location.href = organizationSlug ? `/${organizationSlug}/login` : '/login';
+        }}
+        onOpenRegister={() => {
+          window.location.href = organizationSlug ? `/${organizationSlug}/register` : '/register';
         }}
       />
       <div className="flex-1">
