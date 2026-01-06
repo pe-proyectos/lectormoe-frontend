@@ -172,15 +172,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Correo Electrónico o Nombre de Usuario</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-cyan-500 transition-colors" size={18} />
                 <input 
-                  type="email" 
+                  type="text" 
                   required 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ejemplo@correo.com"
+                  placeholder="ejemplo@correo.com o tu_usuario"
                   className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500 transition-all"
                 />
               </div>

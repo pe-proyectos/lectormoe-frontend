@@ -9,7 +9,7 @@ interface LoginModalProps {
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [email, setEmail] = useState('');
+  const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -22,7 +22,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const formData = new FormData();
-      formData.append('email', email);
+      formData.append('email', emailOrUsername);
       formData.append('password', password);
 
       // @ts-ignore - callAPI se importa dinámicamente
@@ -108,13 +108,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             )}
 
             <div className="space-y-2">
-              <label className="block text-xs font-black uppercase text-slate-400">Correo electrónico</label>
+              <label className="block text-xs font-black uppercase text-slate-400">Correo electrónico o nombre de usuario</label>
               <input 
-                type="email" 
+                type="text" 
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
+                placeholder="tu@correo.com o tu_usuario"
                 className="w-full px-6 py-4 bg-slate-50 border-4 border-black font-bold text-lg focus:outline-none focus:bg-yellow-50 transition-all" 
               />
             </div>

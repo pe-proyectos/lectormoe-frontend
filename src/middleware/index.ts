@@ -72,6 +72,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const localhostPattern = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
   
   // Solo hacer redirección si no es localhost y si está en el mapeo O si es un subdominio
+  // Esta redirección debe ocurrir ANTES de cualquier otro procesamiento para asegurar que todas las rutas se redirijan correctamente
   if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
     let targetSlug = domainToSlugMap[hostname];
     
@@ -84,12 +85,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
     
     if (targetSlug) {
       // Construir la nueva URL con formato de slug
-      const newPath = `/${targetSlug}${context.url.pathname}${context.url.search}`;
+      // Preservar el pathname completo y los query params
+      const pathname = context.url.pathname;
+      const search = context.url.search;
+      const newPath = `/${targetSlug}${pathname === '/' ? '' : pathname}${search}`;
       const newUrl = `${context.url.protocol}//${mainDomain}${newPath}`;
       
-      console.log(`[Redirect] ${hostname}${context.url.pathname} -> ${newUrl}`);
+      console.log(`[Redirect] ${hostname}${pathname} -> ${newUrl}`);
       
       // Redirigir permanentemente (301) a la nueva URL
+      // Esto debe ocurrir antes de cualquier otro procesamiento
       return context.redirect(newUrl, 301);
     }
   }

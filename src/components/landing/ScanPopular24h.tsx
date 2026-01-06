@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flame, ChevronDown } from 'lucide-react';
 import MangaCard3D from './MangaCard3D';
 
@@ -9,15 +9,27 @@ interface ScanPopular24hProps {
 
 const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions }) => {
   const [showAll, setShowAll] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
-  // Mostrar solo la primera fila: 2 en mobile, 3 en desktop
-  const firstRowCount = {
-    mobile: 2,    // grid-cols-2
-    desktop: 3,   // sm:grid-cols-3
-  };
+  // Detectar si es mobile (< 640px = breakpoint sm de Tailwind)
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    // Check inicial
+    checkMobile();
+    
+    // Escuchar cambios de tamaño
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
-  const visibleMangas = showAll ? mangas : mangas.slice(0, firstRowCount.desktop);
-  const hasMore = mangas.length > firstRowCount.desktop;
+  // Mostrar solo la primera fila: 2 en mobile, 3 en desktop/tablet
+  const firstRowCount = isMobile ? 2 : 3;
+  
+  const visibleMangas = showAll ? mangas : mangas.slice(0, firstRowCount);
+  const hasMore = mangas.length > firstRowCount;
 
   return (
     <section>
@@ -48,7 +60,7 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions
             className="group flex items-center gap-2 px-6 py-3 bg-zinc-900/60 hover:bg-zinc-800/80 border border-zinc-800 hover:border-cyan-500/50 rounded-2xl transition-all duration-300"
           >
             <span className="text-sm font-bold text-zinc-300 group-hover:text-white">
-              {showAll ? 'Mostrar menos' : `Mostrar más (${mangas.length - firstRowCount.desktop})`}
+              {showAll ? 'Mostrar menos' : `Mostrar más (${mangas.length - firstRowCount})`}
             </span>
             <ChevronDown 
               size={16} 
