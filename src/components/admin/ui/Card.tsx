@@ -1,12 +1,12 @@
 import React from 'react';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-const Card: React.FC<CardProps> = ({ children, className = '', padding = 'md' }) => {
+const Card: React.FC<CardProps> = ({ children, className = '', padding = 'md', ...props }) => {
   const paddingStyles = {
     none: '',
     sm: 'p-4',
@@ -15,7 +15,10 @@ const Card: React.FC<CardProps> = ({ children, className = '', padding = 'md' })
   };
 
   return (
-    <div className={`bg-zinc-900/60 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl ${paddingStyles[padding]} ${className}`}>
+    <div 
+      className={`bg-zinc-900/60 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl ${paddingStyles[padding]} ${className}`}
+      {...props}
+    >
       {children}
     </div>
   );

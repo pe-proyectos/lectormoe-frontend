@@ -1,14 +1,7 @@
-import { useMemo } from "react";
 import { toast } from "react-toastify";
-import {
-  ButtonGroup,
-  Button,
-  Typography,
-} from "@material-tailwind/react";
-import {
-  MRT_TableContainer,
-  useMaterialReactTable,
-} from "material-react-table";
+import { Edit, Download, Trash2 } from "lucide-react";
+import Button from "./ui/Button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./ui/Table";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
 
@@ -21,107 +14,10 @@ export function AdminChaptersTable({
 }) {
   const _ = getTranslator(language);
 
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "imageUrl",
-        header: _("thumbnail"),
-        size: 50,
-        Cell: ({ row }) =>
-          row.original.imageUrl ? (
-            <img
-              src={row.original.imageUrl}
-              alt={
-                row.original.title || row.original.number || _("no_thumbnail")
-              }
-              decoding="async"
-              loading="lazy"
-              className="max-w-24 max-h-36 mx-auto"
-            />
-          ) : (
-            <Typography variant="h6" color="blue-gray" className="-mb-3">
-              {_("no_thumbnail")}
-            </Typography>
-          ),
-      },
-      {
-        accessorKey: "number",
-        header: _("number"),
-        size: 50,
-        Cell: ({ row }) => (
-          <Typography variant="h6" color="blue-gray" className="-mb-3">
-            {row.original.number}
-          </Typography>
-        ),
-      },
-      {
-        accessorKey: "title",
-        header: _("title"),
-        Cell: ({ row }) => (
-          <Typography variant="h6" color="blue-gray" className="-mb-3">
-            {row.original.title}
-          </Typography>
-        ),
-      },
-      {
-        accessorKey: "views",
-        header: _("views"),
-        size: 50,
-        Cell: ({ row }) => (
-          <Typography variant="h6" color="blue-gray" className="-mb-3">
-            {row.original.views}
-          </Typography>
-        ),
-      },
-      {
-        accessorKey: "releasedAt",
-        header: _("release_date"),
-        size: 50,
-        Cell: ({ row }) => (
-          <span>
-            {row.original.subscribersOnly
-              ? _("subscribers_only")
-              : new Date(row.original.releasedAt).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "id",
-        header: _("actions"),
-        Cell: ({ row }) => (
-          <ButtonGroup variant="text">
-            <Button variant="text" onClick={() => onChapterClick(row.original)}>
-              {_("edit")}
-            </Button>
-            <Button
-              variant="text"
-              onClick={() => onChapterDownload(row.original)}
-            >
-              {_("download")}
-            </Button>
-            <Button
-              variant="text"
-              className="hover:text-red-600"
-              onClick={() => deleteChapter(row.original)}
-            >
-              {_("delete")}
-            </Button>
-          </ButtonGroup>
-        ),
-      },
-    ],
-    []
-  );
-
-  const table = useMaterialReactTable({
-    columns,
-    data: mangaCustom.chapters,
-    enableRowOrdering: false,
-    enableColumnActions: false,
-    enablePagination: false,
-  });
-
   const deleteChapter = async (chapter) => {
+    if (!confirm(_("confirm_delete_chapter") || `¿Estás seguro de eliminar el capítulo ${chapter.number}?`)) {
+      return;
+    }
     callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}`, {
       method: "DELETE",
     })
@@ -134,9 +30,99 @@ export function AdminChaptersTable({
       });
   };
 
+  const sortedChapters = [...(mangaCustom.chapters || [])].sort((a, b) => {
+    // Ordenar por número de capítulo descendente
+    return (b.number || 0) - (a.number || 0);
+  });
+
   return (
-    <div className="max-w-full">
-      <MRT_TableContainer table={table} />
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-32">{_("thumbnail")}</TableHead>
+            <TableHead className="w-24">{_("number")}</TableHead>
+            <TableHead>{_("title")}</TableHead>
+            <TableHead className="w-24">{_("views")}</TableHead>
+            <TableHead className="w-48">{_("release_date")}</TableHead>
+            <TableHead className="w-48">{_("actions")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedChapters.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-8 text-zinc-400">
+                {_("no_chapters") || "No hay capítulos"}
+              </TableCell>
+            </TableRow>
+          ) : (
+            sortedChapters.map((chapter) => (
+              <TableRow key={chapter.id}>
+                <TableCell>
+                  {chapter.imageUrl ? (
+                    <img
+                      src={chapter.imageUrl}
+                      alt={chapter.title || chapter.number || _("no_thumbnail")}
+                      decoding="async"
+                      loading="lazy"
+                      className="max-w-24 max-h-36 object-cover rounded-lg mx-auto"
+                    />
+                  ) : (
+                    <div className="w-24 h-36 bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-600 text-xs text-center px-2">
+                      {_("no_thumbnail")}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <span className="font-bold text-white">{chapter.number}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-white">{chapter.title || "-"}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-zinc-400">{chapter.views || 0}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-zinc-400">
+                    {chapter.subscribersOnly
+                      ? _("subscribers_only")
+                      : new Date(chapter.releasedAt).toLocaleString()}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onChapterClick(chapter)}
+                    >
+                      <Edit size={16} />
+                      {_("edit")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onChapterDownload(chapter)}
+                    >
+                      <Download size={16} />
+                      {_("download")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteChapter(chapter)}
+                      className="hover:text-red-500"
+                    >
+                      <Trash2 size={16} />
+                      {_("delete")}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

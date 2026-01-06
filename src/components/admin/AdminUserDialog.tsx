@@ -132,10 +132,12 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   useEffect(() => {
     if (!user) return;
     const userPermissions = user.permissions || {};
+    // Solo leer los valores para mostrar, no para editar
     setRole(userPermissions.role || 'user');
     setDescription(user.description || '');
     setHierarchyLevel(userPermissions.hierarchyLevel || 0);
     
+    // Solo cargar permisos relacionados con la organización
     const newPermissions: Record<string, boolean> = {};
     Object.keys(permissions).forEach((key) => {
       newPermissions[key] = (userPermissions as any)[key] || false;
@@ -144,15 +146,11 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   }, [user]);
 
   const handleSubmit = async () => {
-    if (!role) {
-      return toast.error(_('role_mandatory'));
-    }
+    // Los admins solo pueden editar permisos, no información personal
     const formData = new FormData();
-    formData.append('role', role);
     formData.append('hierarchyLevel', hierarchyLevel.toString());
-    if (description) formData.append('description', description);
-    if (imageFile) formData.append('image', imageFile);
     
+    // Solo enviar permisos relacionados con la organización
     Object.keys(permissions).forEach((key) => {
       formData.append(key, permissions[key].toString());
     });
@@ -189,26 +187,12 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       body: formData,
     })
       .then(() => {
-        toast.success(_('subscription_deactivated'));
+        toast.success(_('subscription_deactivated') || 'Suscripción pausada');
         setOpen(false);
       })
       .catch((error: any) => toast.error(error?.message));
   };
 
-  const handleActivateSubscription = async (subscriptionId: number, userId: number) => {
-    const formData = new FormData();
-    formData.append('active', 'true');
-    formData.append('userId', userId.toString());
-    callAPI(`/api/subscription/${subscriptionId}`, {
-      method: 'PATCH',
-      body: formData,
-    })
-      .then(() => {
-        toast.success(_('subscription_activated'));
-        setOpen(false);
-      })
-      .catch((error: any) => toast.error(error?.message));
-  };
 
   const permissionSections = [
     {
@@ -271,13 +255,13 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       size="lg"
     >
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-6 border-b border-gray-700">
+      <div className="flex items-center gap-2 mb-6 border-b border-zinc-800">
         <button
           onClick={() => setCurrentTab('user')}
           className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 ${
             currentTab === 'user'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-zinc-400 hover:text-zinc-300'
           }`}
         >
           <User size={18} />
@@ -287,8 +271,8 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
           onClick={() => setCurrentTab('permissions')}
           className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 ${
             currentTab === 'permissions'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-zinc-400 hover:text-zinc-300'
           }`}
         >
           <Shield size={18} />
@@ -298,8 +282,8 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
           onClick={() => setCurrentTab('subscriptions')}
           className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 ${
             currentTab === 'subscriptions'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-zinc-400 hover:text-zinc-300'
           }`}
         >
           <CreditCard size={18} />
@@ -310,35 +294,46 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       {/* User Tab */}
       {currentTab === 'user' && (
         <div className="space-y-4">
-          <Input
-            label={_('user_role')}
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            placeholder={_('role')}
-          />
-          <Input
-            label={_('description')}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={_('description')}
-          />
-          <Input
-            label={_('hierarchy_level')}
-            type="number"
-            value={hierarchyLevel.toString()}
-            onChange={(e) => setHierarchyLevel(Number(e.target.value))}
-            placeholder="0"
-          />
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {_('profile_image')} ({_('optional')})
-            </label>
-            <ImageDropzone
-              value={imageFile}
-              label={_('drop_profile_image')}
-              onChange={(files: File[]) => (files[0] ? setImageFile(files[0]) : null)}
-              onDelete={() => setImageFile(null)}
-            />
+          <Card className="bg-zinc-800/30">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  {_('username') || 'Nombre de usuario'}
+                </label>
+                <div className="px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-zinc-400">
+                  {user?.username || '-'}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  {_('email') || 'Correo electrónico'}
+                </label>
+                <div className="px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-zinc-400">
+                  {user?.email || '-'}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  {_('user_role') || 'Rol'}
+                </label>
+                <div className="px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-zinc-400">
+                  {role || '-'}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  {_('description') || 'Descripción'}
+                </label>
+                <div className="px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-zinc-400 min-h-[60px]">
+                  {description || '-'}
+                </div>
+              </div>
+            </div>
+          </Card>
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <p className="text-amber-400 text-sm font-medium">
+              ⚠️ Los administradores no pueden editar la información personal del usuario (nombre, email, rol, descripción, foto de perfil). Solo pueden gestionar permisos y suscripciones de la organización.
+            </p>
           </div>
         </div>
       )}
@@ -348,7 +343,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
         <div className="space-y-6">
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => {
                 const permissionsSetToTrue: Record<string, boolean> = {};
@@ -361,7 +356,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
               Marcar todos
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => {
                 const permissionsSetToFalse: Record<string, boolean> = {};
@@ -376,13 +371,13 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
           </div>
 
           {permissionSections.map((section) => (
-            <Card key={section.title} className="bg-gray-800/50">
-              <h3 className="text-lg font-semibold text-white mb-3">{section.title}</h3>
+            <Card key={section.title} className="bg-zinc-800/50">
+              <h3 className="text-lg font-black text-white uppercase tracking-tight mb-3">{section.title}</h3>
               <div className="space-y-2">
                 {section.permissions.map((perm) => (
                   <label
                     key={perm.key}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-700/50 cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
@@ -390,9 +385,9 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
                       onChange={(e) =>
                         setPermissions({ ...permissions, [perm.key]: e.target.checked })
                       }
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                      className="w-5 h-5 rounded border-zinc-600 bg-zinc-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
                     />
-                    <span className="text-gray-300 text-sm">{perm.label}</span>
+                    <span className="text-zinc-300 text-sm">{perm.label}</span>
                   </label>
                 ))}
               </div>
@@ -402,20 +397,31 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       )}
 
       {/* Subscriptions Tab */}
-      {currentTab === 'subscriptions' && (
-        <div className="space-y-4">
-          {user && user.subscriptions.length > 0 ? (
-            <>
-              <p className="text-white font-semibold">Suscripciones activas</p>
-              <div className="space-y-4">
-                {user.subscriptions.map((subscription) => (
-                  <Card key={subscription.id} className="bg-gray-800/50">
+      {currentTab === 'subscriptions' && (() => {
+        // Filtrar suscripciones para mostrar solo las de esta organización
+        const organizationSubscriptionPlanIds = subscriptionPlans.map(plan => plan.id);
+        const organizationSubscriptions = user && user.subscriptions 
+          ? user.subscriptions.filter(sub => {
+              // Verificar si la suscripción pertenece a un plan de esta organización
+              const planId = subscriptionPlans.find(p => p.name === sub.subscriptionPlan?.name)?.id;
+              return planId && organizationSubscriptionPlanIds.includes(planId);
+            })
+          : [];
+        
+        return (
+          <div className="space-y-4">
+            {organizationSubscriptions.length > 0 ? (
+              <>
+                <p className="text-white font-black uppercase tracking-tight">Suscripciones de la organización</p>
+                <div className="space-y-4">
+                  {organizationSubscriptions.map((subscription) => (
+                  <Card key={subscription.id} className="bg-zinc-800/50">
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-bold text-white">
+                      <h3 className="text-lg font-black text-white uppercase tracking-tight">
                         {subscription.subscriptionPlan.name}
                       </h3>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                           subscription.active
                             ? 'bg-green-500/20 text-green-400'
                             : 'bg-red-500/20 text-red-400'
@@ -424,7 +430,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
                         {subscription.active ? _('active') : _('inactive')}
                       </span>
                     </div>
-                    <div className="space-y-2 text-sm text-gray-400 mb-4">
+                    <div className="space-y-2 text-sm text-zinc-400 mb-4">
                       <p>
                         <span className="font-medium">Fecha de inicio:</span>{' '}
                         {new Date(subscription.startDate).toLocaleDateString()}
@@ -460,44 +466,46 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
                     </div>
                     {subscription.active ? (
                       <Button
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
-                        onClick={() => handleDeactivateSubscription(subscription.id, user.id)}
-                        icon={<X size={16} />}
+                        onClick={() => user && handleDeactivateSubscription(subscription.id, user.id)}
                       >
-                        Desactivar suscripción
+                        <X size={16} />
+                        Pausar suscripción
                       </Button>
                     ) : (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleActivateSubscription(subscription.id, user.id)}
-                        icon={<Check size={16} />}
-                      >
-                        Activar suscripción
-                      </Button>
+                      <div className="p-3 bg-zinc-800/50 border border-zinc-700 rounded-xl">
+                        <p className="text-zinc-400 text-sm font-medium">
+                          ⚠️ Solo el usuario puede reactivar su propia suscripción
+                        </p>
+                      </div>
                     )}
                   </Card>
-                ))}
-              </div>
-            </>
-          ) : (
-            <Card>
-              <div className="text-center py-8">
-                <CreditCard className="mx-auto text-gray-600 mb-3" size={48} />
-                <p className="text-gray-400">No hay suscripciones activas</p>
-              </div>
-            </Card>
-          )}
-        </div>
-      )}
+                  ))}
+                </div>
+              </>
+            ) : (
+              <Card>
+                <div className="text-center py-8">
+                  <CreditCard className="mx-auto text-zinc-600 mb-3" size={48} />
+                  <p className="text-zinc-400">
+                    {user && user.subscriptions.length > 0 
+                      ? 'No hay suscripciones de esta organización' 
+                      : 'No hay suscripciones activas'}
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-700">
-        <Button variant="outline" onClick={() => setOpen(false)}>
+      <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-zinc-800">
+        <Button variant="secondary" onClick={() => setOpen(false)}>
           Cancelar
         </Button>
-        <Button onClick={handleSubmit} disabled={loading} icon={<Check size={18} />}>
+        <Button onClick={handleSubmit} disabled={loading} loading={loading}>
           {loading ? 'Guardando...' : _('save')}
         </Button>
       </div>

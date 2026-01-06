@@ -3,10 +3,11 @@ import React from 'react';
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
-  options: { value: string | number; label: string }[];
+  options?: { value: string | number; label: string }[];
+  children?: React.ReactNode;
 }
 
-const Select: React.FC<SelectProps> = ({ label, error, options, className = '', ...props }) => {
+const Select: React.FC<SelectProps> = ({ label, error, options, children, className = '', ...props }) => {
   return (
     <div className="flex flex-col gap-2">
       {label && (
@@ -27,11 +28,11 @@ const Select: React.FC<SelectProps> = ({ label, error, options, className = '', 
         `}
         {...props}
       >
-        {options.map((option) => (
+        {children || (options && options.length > 0 ? options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
-        ))}
+        )) : null)}
       </select>
       {error && (
         <span className="text-xs text-red-400 font-medium">{error}</span>

@@ -140,7 +140,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   return (
-    <div className="flex gap-6 items-start group min-w-0">
+    <div className="flex gap-6 items-start group min-w-0 w-full">
       {/* Avatar */}
       <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 font-black text-xl shadow-lg overflow-hidden flex-shrink-0">
         {comment?.user?.imageUrl ? (
@@ -151,7 +151,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       </div>
 
       {/* Comment Content */}
-      <div className="flex-1 space-y-3 min-w-0">
+      <div className="flex-1 space-y-3 min-w-0 max-w-full">
         {/* User Info */}
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-white font-black text-sm uppercase tracking-tight">
@@ -169,11 +169,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
         {/* Comment Box */}
         {!isEditing ? (
-          <div className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-3xl relative">
+          <div className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-3xl relative w-full">
             <span className="absolute -top-3 right-6 text-zinc-700 font-black italic text-xs">
               #{comment.id}
             </span>
-            <p className="text-zinc-300 text-base leading-relaxed break-words overflow-wrap-anywhere">{comment?.comment}</p>
+            <p className="text-zinc-300 text-base leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap">{comment?.comment}</p>
           </div>
         ) : (
           <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-3">
@@ -205,13 +205,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
         {/* Comment Image */}
         {comment.imageUrl && (
           <div
-            className="cursor-pointer max-w-full"
+            className="cursor-pointer w-full"
             onClick={() => onImageClick(comment.imageUrl!)}
           >
             <img
               src={comment.imageUrl}
               alt="Comment attachment"
-              className="max-w-full h-auto rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200"
+              className="max-w-full w-auto h-auto rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200"
             />
           </div>
         )}
@@ -500,7 +500,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   };
 
   return (
-    <div className="mt-24 pt-16 border-t border-zinc-900 space-y-10 mb-20">
+    <div className="mt-24 pt-16 border-t border-zinc-900 space-y-10 mb-20 relative z-10">
       <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Comentarios</h2>
 
       {/* Comments List */}
@@ -514,9 +514,9 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
           <p className="text-zinc-500 text-sm font-medium mt-2">¡Sé el primero en comentar!</p>
         </div>
       ) : (
-        <div className="space-y-8 overflow-x-hidden">
+        <div className="space-y-8 w-full">
           {comments.map((comment) => (
-            <div key={comment.id} className="space-y-6 min-w-0">
+            <div key={comment.id} className="space-y-6 min-w-0 w-full">
               <CommentItem
                 comment={comment}
                 user={user}
@@ -531,21 +531,22 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 
               {/* Replies */}
               {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-8 md:ml-20 space-y-6 min-w-0">
+                <div className="ml-8 md:ml-20 space-y-6 min-w-0 w-full">
                   {comment.replies.map((reply) => (
-                    <CommentItem
-                      key={reply.id}
-                      comment={reply}
-                      user={user}
-                      logged={logged}
-                      isReply={true}
-                      onReply={handleReply}
-                      onDelete={handleDeleteComment}
-                      onEdit={handleEditComment}
-                      onLike={handleLikeComment}
-                      onHide={handleShowHideDialog}
-                      onImageClick={setZoomImageUrl}
-                    />
+                    <div key={reply.id} className="min-w-0 w-full">
+                      <CommentItem
+                        comment={reply}
+                        user={user}
+                        logged={logged}
+                        isReply={true}
+                        onReply={handleReply}
+                        onDelete={handleDeleteComment}
+                        onEdit={handleEditComment}
+                        onLike={handleLikeComment}
+                        onHide={handleShowHideDialog}
+                        onImageClick={setZoomImageUrl}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -725,4 +726,3 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 };
 
 export default CommentsSection;
-

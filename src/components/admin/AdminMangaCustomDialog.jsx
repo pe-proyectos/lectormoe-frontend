@@ -1,18 +1,5 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import {
-  Textarea,
-  Button,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  Typography,
-  Input,
-  Checkbox,
-  Select,
-  Option,
-} from "@material-tailwind/react";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -53,6 +40,7 @@ export function AdminMangaCustomDialog({
   );
   const [releasedDate, setReleasedDate] = useState(null);
   const [nextChapterDate, setNextChapterDate] = useState(null);
+  const [nextChapterAtMessage, setNextChapterAtMessage] = useState("");
   const [requireLogin, setRequireLogin] = useState(false);
   const [isSimulRelease, setIsSimulRelease] = useState(false);
   const [isNSFW, setIsNSFW] = useState(false);
@@ -68,6 +56,7 @@ export function AdminMangaCustomDialog({
     setDescription(mangaCustom?.description || "");
     setReleasedDate(mangaCustom?.releasedAt || null);
     setNextChapterDate(mangaCustom?.nextChapterAt || null);
+    setNextChapterAtMessage(mangaCustom?.nextChapterAtMessage || "");
     setRequireLogin(mangaCustom?.requireLogin || false);
     setIsSimulRelease(mangaCustom?.isSimulRelease || false);
     setIsNSFW(mangaCustom?.isNSFW || false);
@@ -87,6 +76,7 @@ export function AdminMangaCustomDialog({
       setDescription("");
       setReleasedDate(null);
       setNextChapterDate(null);
+      setNextChapterAtMessage("");
       setRequireLogin(false);
       setIsSimulRelease(false);
       setIsNSFW(false);
@@ -213,6 +203,7 @@ export function AdminMangaCustomDialog({
             description,
             releasedAt: releasedDate,
             nextChapterAt: nextChapterDate,
+            nextChapterAtMessage,
             requireLogin,
             isSimulRelease,
             isNSFW,
@@ -232,6 +223,7 @@ export function AdminMangaCustomDialog({
       setDescription("");
       setReleasedDate(null);
       setNextChapterDate(null);
+      setNextChapterAtMessage("");
       setRequireLogin(false);
       setIsSimulRelease(false);
       setIsNSFW(false);
@@ -247,24 +239,39 @@ export function AdminMangaCustomDialog({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog
-      size="md"
-      open={open}
-      handler={() => setOpen((previousState) => !previousState)}
-      className="max-h-[95vh]"
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setOpen(false);
+        }
+      }}
     >
-      <DialogHeader>
-        <Typography variant="h4" color="blue-gray">
-          {mangaCustom?.title || _("create_manga")}
-        </Typography>
-      </DialogHeader>
-      <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
+      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col">
+        <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-white">
+            {mangaCustom?.title || _("create_manga")}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-zinc-400 hover:text-white transition-colors p-1"
+            aria-label="Cerrar"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-6 py-4 max-h-[65vh] overflow-y-auto flex flex-col gap-4">
         {!mangaCustom && (
           <>
-            <Typography className="-mb-2" variant="h6" color="gray">
+            <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
               {_("manga_profile")}
-            </Typography>
+            </label>
             <div className="flex">
               <div className="grow">
                 <Autocomplete
@@ -306,9 +313,9 @@ export function AdminMangaCustomDialog({
                 />
               </div>
               <div className="flex-none">
-                <Button
-                  variant="text"
-                  className="flex items-center gap-3 h-full ml-2"
+                <button
+                  type="button"
+                  className="flex items-center justify-center gap-2 h-full ml-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
                   onClick={() => setIsCreateMangaProfileDialogOpen(true)}
                 >
                   <svg
@@ -325,7 +332,7 @@ export function AdminMangaCustomDialog({
                       d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                     />
                   </svg>
-                </Button>
+                </button>
                 <AdminMangaProfileDialog
                   organization={organization}
                   language={language}
@@ -337,43 +344,44 @@ export function AdminMangaCustomDialog({
             </div>
           </>
         )}
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("title")}
-        </Typography>
-        <Input
-          size="lg"
-          label={_("manga_title")}
+        </label>
+        <input
+          type="text"
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          placeholder={_("manga_title")}
           autoComplete="off"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={!mangaProfile}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("short_description")} (
           {shortDescription.length.toString().padStart(3, "0")}/300{" "}
           {_("characters")}) ({_("optional")})
-        </Typography>
-        <Textarea
-          size="md"
-          label={_("short_description_less_than_300")}
+        </label>
+        <textarea
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-y min-h-[100px]"
+          placeholder={_("short_description_less_than_300")}
           maxLength={300}
           value={shortDescription}
           onChange={(e) => setShortDescription(e.target.value)}
           disabled={!mangaProfile}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("synopsis")} ({_("optional")})
-        </Typography>
-        <Textarea
-          size="lg"
-          label={_("manga_synopsis")}
+        </label>
+        <textarea
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-y min-h-[120px]"
+          placeholder={_("manga_synopsis")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           disabled={!mangaProfile}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("genres")}
-        </Typography>
+        </label>
         <div className="flex">
           <div className="grow">
             <Autocomplete
@@ -400,9 +408,9 @@ export function AdminMangaCustomDialog({
             />
           </div>
         </div>
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("subscription_plans")}
-        </Typography>
+        </label>
         <div className="flex">
           <div className="grow">
             <Autocomplete
@@ -426,29 +434,21 @@ export function AdminMangaCustomDialog({
             />
           </div>
         </div>
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("manga_status")}
-        </Typography>
-        <div>
-          <Select
-            label={_("status")}
-            value={status}
-            onChange={(val) => setStatus(val)}
-          >
-            <Option value="ongoing" selected={status === "ongoing"}>
-              {_("ongoing")}
-            </Option>
-            <Option value="hiatus" selected={status === "hiatus"}>
-              {_("hiatus")}
-            </Option>
-            <Option value="finished" selected={status === "finished"}>
-              {_("finished")}
-            </Option>
-          </Select>
-        </div>
-        <Typography className="-mb-2" variant="h6" color="gray">
+        </label>
+        <select
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="ongoing">{_("ongoing")}</option>
+          <option value="hiatus">{_("hiatus")}</option>
+          <option value="finished">{_("finished")}</option>
+        </select>
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("release_date")} ({_("optional")})
-        </Typography>
+        </label>
         <DialogDatePicker
           organization={organization}
           language={language}
@@ -456,9 +456,9 @@ export function AdminMangaCustomDialog({
           onChange={setReleasedDate}
           disabled={!mangaProfile}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("next_chapter_date")} ({_("optional")})
-        </Typography>
+        </label>
         <DialogDatePicker
           organization={organization}
           language={language}
@@ -466,36 +466,58 @@ export function AdminMangaCustomDialog({
           onChange={setNextChapterDate}
           disabled={!mangaProfile}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
+          {_("next_chapter_message")} ({_("optional")})
+        </label>
+        <textarea
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-y min-h-[100px]"
+          placeholder={_("next_chapter_message")}
+          value={nextChapterAtMessage}
+          onChange={(e) => setNextChapterAtMessage(e.target.value)}
+          disabled={!mangaProfile}
+        />
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("Manga con simul release")}
-        </Typography>
-        <Checkbox
-          label={_("SimulRelease")}
-          checked={isSimulRelease}
-          onChange={(e) => setIsSimulRelease(e.target.checked)}
-        />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        </label>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
+            checked={isSimulRelease}
+            onChange={(e) => setIsSimulRelease(e.target.checked)}
+          />
+          <span className="text-white">{_("SimulRelease")}</span>
+        </label>
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("Manga +18")}
-        </Typography>
-        <Checkbox
-          label={_("NSFW")}
-          checked={isNSFW}
-          onChange={(e) => setIsNSFW(e.target.checked)}
-        />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        </label>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
+            checked={isNSFW}
+            onChange={(e) => setIsNSFW(e.target.checked)}
+          />
+          <span className="text-white">{_("NSFW")}</span>
+        </label>
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("require_login")} ({_("optional")})
-        </Typography>
-        <Checkbox
-          label={_("require_login")}
-          checked={requireLogin}
-          onChange={(e) => setRequireLogin(e.target.checked)}
-        />
-        <Typography className="" variant="small" color="gray">
+        </label>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
+            checked={requireLogin}
+            onChange={(e) => setRequireLogin(e.target.checked)}
+          />
+          <span className="text-white">{_("require_login")}</span>
+        </label>
+        <p className="text-xs text-zinc-500">
           {_("require_login_description")}
-        </Typography>
-        <Typography className="-mb-2" variant="h6" color="gray">
+        </p>
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("manga_cover")} ({_("optional")})
-        </Typography>
+        </label>
         <ImageDropzone
           value={coverImageFile}
           label={_("drop_manga_cover")}
@@ -503,9 +525,9 @@ export function AdminMangaCustomDialog({
           onChange={(files) => (files[0] ? setCoverImageFile(files[0]) : null)}
           onDelete={(file) => setCoverImageFile(null)}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
+        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {_("manga_banner")} ({_("optional")})
-        </Typography>
+        </label>
         <ImageDropzone
           value={bannerImageFile}
           label={_("drop_manga_banner")}
@@ -513,13 +535,32 @@ export function AdminMangaCustomDialog({
           onChange={(files) => (files[0] ? setBannerImageFile(files[0]) : null)}
           onDelete={(file) => setBannerImageFile(null)}
         />
-      </DialogBody>
-      <DialogFooter className="space-x-2">
-        <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-          {_("save_manga")}
-        </Button>
-      </DialogFooter>
+        </div>
+        <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors font-semibold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {loading && (
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {_("save_manga")}
+          </button>
+        </div>
+      </div>
       <ToastContainer theme="dark" />
-    </Dialog>
+    </div>
   );
 }

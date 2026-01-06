@@ -65,11 +65,16 @@ const userHasAccessToChapter = (chapter: any) => {
 // We still validate access, but we pass the information to the Reader
 // so it can display appropriate error messages
 const hasAccess = userHasAccessToChapter(chapter);
+
+// Use chapter thumbnail if available, otherwise fallback to manga image
+// chapter comes from callAPI which returns result.data, so it's the chapter object directly
+// Ensure the URL is absolute for Discord embeds
+const ogImageUrl = chapter?.imageUrl || manga.imageUrl || manga.bannerUrl;
 ---
 
 <LandingLayout
   title={`${chapter.title} - ${manga.title} #${chapter.number}`}
-  imageUrl={manga.imageUrl || manga.bannerUrl}
+  imageUrl={ogImageUrl}
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
 >
   <ReaderPageContainer

@@ -71,6 +71,12 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
   const [imageImageFile, setImageImageFile] = useState<any>(null);
   const [bannerImageFile, setBannerImageFile] = useState<any>(null);
   const [faviconImageFile, setFaviconImageFile] = useState<any>(null);
+  
+  // Estado original de las imágenes para detectar si fueron eliminadas
+  const [originalLogoUrl, setOriginalLogoUrl] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  const [originalBannerUrl, setOriginalBannerUrl] = useState<string | null>(null);
+  const [originalFaviconUrl, setOriginalFaviconUrl] = useState<string | null>(null);
 
   // Redes sociales
   const [facebookUrl, setFacebookUrl] = useState('');
@@ -123,6 +129,11 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
         setImageImageFile(organization.imageUrl);
         setBannerImageFile(organization.bannerUrl);
         setFaviconImageFile(organization.faviconUrl);
+        // Guardar URLs originales para detectar eliminaciones
+        setOriginalLogoUrl(organization.logoUrl || null);
+        setOriginalImageUrl(organization.imageUrl || null);
+        setOriginalBannerUrl(organization.bannerUrl || null);
+        setOriginalFaviconUrl(organization.faviconUrl || null);
         setCountryCode('');
         setCountryLanguage('');
         setCountryName('');
@@ -211,43 +222,77 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
         throw error;
       }
 
+      const requestBody: any = {
+        name,
+        title,
+        description,
+        language,
+        enableMangaSection,
+        enableManhuaSection,
+        enableManhwaSection,
+        enableSubscriptionSection,
+        enableMainSlider,
+        enableMainBanner,
+        enableDiscordWebhookNewChapter,
+        enableDiscordWebhookNewSubscription,
+        discordWebhookUrlNewChapter,
+        discordWebhookUrlNewSubscription,
+        discordWebhookMessageTemplateNewChapter,
+        discordWebhookMessageTemplateNewSubscription,
+        useBlockedCountries,
+        useAllowedCountries,
+        enableGoogleAds,
+        enableAdsterraAds,
+        facebookUrl,
+        twitterUrl,
+        instagramUrl,
+        youtubeUrl,
+        patreonUrl,
+        tiktokUrl,
+        discordUrl,
+        twitchUrl,
+        countryOptions,
+      };
+
+      // Incluir imágenes si:
+      // 1. Es un nuevo archivo (File) -> se subió y logoKey es un string
+      // 2. Es una URL existente (string) -> se mantiene la imagen actual
+      // 3. Era null originalmente y sigue siendo null -> no enviar (no cambiar)
+      // 4. Tenía una URL y ahora es null -> usuario eliminó, enviar null explícitamente
+      
+      // Logo
+      if (logoKey !== null && logoKey !== undefined) {
+        // Nueva imagen o imagen existente
+        requestBody.logo = logoKey;
+      } else if (originalLogoUrl !== null && logoImageFile === null) {
+        // Usuario eliminó una imagen que existía
+        requestBody.logo = null;
+      }
+      
+      // Image
+      if (imageKey !== null && imageKey !== undefined) {
+        requestBody.image = imageKey;
+      } else if (originalImageUrl !== null && imageImageFile === null) {
+        requestBody.image = null;
+      }
+      
+      // Banner
+      if (bannerKey !== null && bannerKey !== undefined) {
+        requestBody.banner = bannerKey;
+      } else if (originalBannerUrl !== null && bannerImageFile === null) {
+        requestBody.banner = null;
+      }
+      
+      // Favicon
+      if (faviconKey !== null && faviconKey !== undefined) {
+        requestBody.favicon = faviconKey;
+      } else if (originalFaviconUrl !== null && faviconImageFile === null) {
+        requestBody.favicon = null;
+      }
+
       await callAPI('/api/organization', {
         method: 'PATCH',
-        body: JSON.stringify({
-          name,
-          title,
-          description,
-          language,
-          enableMangaSection,
-          enableManhuaSection,
-          enableManhwaSection,
-          enableSubscriptionSection,
-          enableMainSlider,
-          enableMainBanner,
-          enableDiscordWebhookNewChapter,
-          enableDiscordWebhookNewSubscription,
-          discordWebhookUrlNewChapter,
-          discordWebhookUrlNewSubscription,
-          discordWebhookMessageTemplateNewChapter,
-          discordWebhookMessageTemplateNewSubscription,
-          useBlockedCountries,
-          useAllowedCountries,
-          enableGoogleAds,
-          enableAdsterraAds,
-          facebookUrl,
-          twitterUrl,
-          instagramUrl,
-          youtubeUrl,
-          patreonUrl,
-          tiktokUrl,
-          discordUrl,
-          twitchUrl,
-          logo: logoKey,
-          image: imageKey,
-          banner: bannerKey,
-          favicon: faviconKey,
-          countryOptions,
-        }),
+        body: JSON.stringify(requestBody),
       });
       toast.success('Configuración guardada exitosamente');
       refreshOrganization();

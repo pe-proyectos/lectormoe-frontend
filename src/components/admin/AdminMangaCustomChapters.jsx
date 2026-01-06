@@ -2,7 +2,8 @@ import "cookie-store";
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import JSZip from "jszip";
-import { Card, Button, Typography } from "@material-tailwind/react";
+import Card from "./ui/Card";
+import Button from "./ui/Button";
 import { callAPI } from "../../util/callApi";
 import { AdminChaptersTable } from "./AdminChaptersTable";
 import { AdminChapterDialog } from "./AdminChapterDialog";
@@ -73,50 +74,56 @@ export function AdminMangaCustomChapters({
   };
 
   return (
-    <Card color="transparent" shadow={false}>
-      <div className="flex gap-4 my-2">
-        <img
-          src={mangaCustom.imageUrl}
-          decoding="async"
-          loading="lazy"
-          className="w-56 max-h-96 object-cover"
-          alt={_("cover")}
-        />
-        <div>
-          <Typography variant="h2" color="blue-gray">
-            {mangaCustom.title}
-          </Typography>
-          <Typography variant="paragraph" color="blue-gray">
-            {mangaCustom.description ||
-              mangaCustom.shortDescription ||
-              _("no_description")}
-          </Typography>
+    <div className="space-y-6">
+      <Card>
+        <div className="flex gap-4 my-2">
+          <img
+            src={mangaCustom.imageUrl}
+            decoding="async"
+            loading="lazy"
+            className="w-56 max-h-96 object-cover rounded-xl"
+            alt={_("cover")}
+          />
+          <div>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
+              {mangaCustom.title}
+            </h2>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              {mangaCustom.description ||
+                mangaCustom.shortDescription ||
+                _("no_description")}
+            </p>
+          </div>
         </div>
-      </div>
-      <Typography variant="h4" className="my-2" color="blue-gray">
-        {_("chapters")}
-      </Typography>
-      <Button
-        variant="outlined"
-        className="w-56 my-2"
-        onClick={() => setIsAdminChapterDialogOpen(true)}
-      >
-        {_("publish_chapter")}
-      </Button>
-      <AdminChapterDialog
-        language={language}
-        open={isAdminChapterDialogOpen}
-        setOpen={setIsAdminChapterDialogOpen}
-        mangaCustom={mangaCustom}
-        chapter={chapter}
-      />
-      <AdminChaptersTable
-        language={language}
-        mangaCustom={mangaCustom}
-        onChapterClick={(chapter) => setChapter(chapter)}
-        onChapterDownload={(chapter) => downloadChapterPages(chapter)}
-        onChapterDelete={() => refreshMangaCustom()}
-      />
-    </Card>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-black text-white uppercase tracking-tight">
+            {_("chapters")}
+          </h3>
+          <Button
+            variant="primary"
+            onClick={() => setIsAdminChapterDialogOpen(true)}
+          >
+            {_("publish_chapter")}
+          </Button>
+        </div>
+        <AdminChapterDialog
+          language={language}
+          open={isAdminChapterDialogOpen}
+          setOpen={setIsAdminChapterDialogOpen}
+          mangaCustom={mangaCustom}
+          chapter={chapter}
+        />
+        <AdminChaptersTable
+          language={language}
+          mangaCustom={mangaCustom}
+          onChapterClick={(chapter) => setChapter(chapter)}
+          onChapterDownload={(chapter) => downloadChapterPages(chapter)}
+          onChapterDelete={() => refreshMangaCustom()}
+        />
+      </Card>
+    </div>
   );
 }

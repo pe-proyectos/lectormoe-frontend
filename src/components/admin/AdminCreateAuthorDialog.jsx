@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { ToastContainer, toast } from 'react-toastify';
-import {
-    Textarea,
-    Button,
-    Dialog,
-    DialogHeader,
-    DialogBody,
-    DialogFooter,
-    Typography,
-    Input,
-} from "@material-tailwind/react";
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Textarea from './ui/Textarea';
 import { ImageDropzone } from '../ImageDropzone';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
@@ -75,64 +69,54 @@ export function AdminCreateAuthorDialog({ language, open, setOpen }) {
     };
 
     return (
-        <Dialog
-            size="sm"
-            open={open}
-            handler={() => setOpen(previousState => !previousState)}
-            className="max-h-[95vh]"
-        >
-            <DialogHeader>
-                <Typography variant="h4" color="blue-gray">
-                    {_('create_author')}
-                </Typography>
-            </DialogHeader>
-            <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('name')}
-                </Typography>
-                <Input
-                    size="lg"
-                    label={_('author_name')}
-                    autoComplete='off'
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('author_role_optional')}
-                </Typography>
-                <Input
-                    size="md"
-                    label={_('author_role_example')}
-                    autoComplete='off'
-                    value={shortDescription}
-                    onChange={(e) => setShortDescription(e.target.value)}
-                />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('description_optional')}
-                </Typography>
-                <Textarea
-                    size="lg"
-                    label={_('author_description')}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                />
-                <Typography className="-mb-2" variant="h6" color="gray">
-                    {_('author_image_optional')}
-                </Typography>
-                <ImageDropzone
-                    value={coverImageFile}
-                    label={_('drag_and_drop_author_image')}
-                    alt={_('author_image')}
-                    onChange={(files) => files[0] ? setCoverImageFile(files[0]) : null}
-                    onDelete={(file) => setCoverImageFile(null)}
-                />
-            </DialogBody>
-            <DialogFooter className="space-x-2">
-                <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-                    {_('save_author')}
-                </Button>
-            </DialogFooter>
+        <>
+            <Modal
+                isOpen={open}
+                onClose={() => setOpen(false)}
+                title={_('create_author')}
+                size="sm"
+            >
+                <div className="flex flex-col gap-6">
+                    <Input
+                        label={_('author_name')}
+                        autoComplete='off'
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                    <Input
+                        label={_('author_role_example')}
+                        autoComplete='off'
+                        value={shortDescription}
+                        onChange={(e) => setShortDescription(e.target.value)}
+                    />
+                    <Textarea
+                        label={_('author_description')}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+                            {_('author_image_optional')}
+                        </label>
+                        <ImageDropzone
+                            value={coverImageFile}
+                            label={_('drag_and_drop_author_image')}
+                            alt={_('author_image')}
+                            onChange={(files) => files[0] ? setCoverImageFile(files[0]) : null}
+                            onDelete={(file) => setCoverImageFile(null)}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+                        <Button variant="secondary" onClick={() => setOpen(false)}>
+                            {_('cancel') || 'Cancelar'}
+                        </Button>
+                        <Button variant="primary" onClick={handleSubmit} loading={loading}>
+                            {_('save_author')}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
             <ToastContainer theme="dark" />
-        </Dialog>
+        </>
     );
 }

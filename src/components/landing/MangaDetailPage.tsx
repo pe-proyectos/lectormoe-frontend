@@ -42,6 +42,9 @@ interface MangaDetailPageProps {
     subscriptionPlans?: Array<{ id: number; name: string }>;
     requireLogin?: boolean;
     isSimulRelease?: boolean;
+    nextChapterAt?: string | null;
+    nextChapterAtMessage?: string | null;
+    usersAlsoReadMangaCustomIds?: string | null;
   };
   organizationSlug?: string;
   user?: any;
@@ -61,6 +64,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [isDownloadingChapter, setIsDownloadingChapter] = useState<number | null>(null);
   const [favoriteFeedback, setFavoriteFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [readFeedback, setReadFeedback] = useState<{ chapterNumber: number; message: string } | null>(null);
+  const [recommendedMangas, setRecommendedMangas] = useState<any[]>([]);
 
   // Check if manga is favorite
   useEffect(() => {
@@ -99,6 +103,30 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       setUserChapterHistory([]);
     }
   }, [logged, manga.slug]);
+
+  // Fetch recommended mangas
+  useEffect(() => {
+    if (manga.usersAlsoReadMangaCustomIds) {
+      const ids = manga.usersAlsoReadMangaCustomIds.split(',').filter(id => id.trim()).slice(0, 3);
+      if (ids.length > 0) {
+        callAPI(`/api/manga-custom?ids=${ids.join(',')}&limit=3`)
+          .then((result) => {
+            if (result?.data?.data && Array.isArray(result.data.data)) {
+              setRecommendedMangas(result.data.data);
+            } else if (result?.data && Array.isArray(result.data)) {
+              setRecommendedMangas(result.data);
+            } else {
+              setRecommendedMangas([]);
+            }
+          })
+          .catch(() => {
+            setRecommendedMangas([]);
+          });
+      }
+    } else {
+      setRecommendedMangas([]);
+    }
+  }, [manga.usersAlsoReadMangaCustomIds]);
 
   // Group chapters
   useEffect(() => {
@@ -478,6 +506,26 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 }`}>
                   {translateStatus(manga.status)}
                 </div>
+                {manga.nextChapterAt && (() => {
+                  const nextChapterDate = new Date(manga.nextChapterAt);
+                  const now = new Date();
+                  if (nextChapterDate > now) {
+                    return (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest">Próximo capítulo:</p>
+                        <p className="text-white font-bold text-sm">
+                          {formatDate(manga.nextChapterAt).charAt(0).toUpperCase() + formatDate(manga.nextChapterAt).slice(1)}
+                        </p>
+                        {manga.nextChapterAtMessage && (
+                          <p className="text-zinc-400 text-xs font-medium italic">
+                            {manga.nextChapterAtMessage}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {manga.demography && (
@@ -521,6 +569,40 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   </button>
                 )}
               </div>
+
+              {/* Recommended Mangas */}
+              {recommendedMangas.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-3">Los usuarios que estan al día con este manga también leen:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {recommendedMangas.map((recommendedManga) => {
+                      const mangaUrl = organizationSlug 
+                        ? `/${organizationSlug}/manga/${recommendedManga.slug}`
+                        : `/manga/${recommendedManga.slug}`;
+                      
+                      return (
+                        <a
+                          key={recommendedManga.id}
+                          href={mangaUrl}
+                          className="group relative aspect-[2/3] rounded-xl overflow-hidden border border-zinc-800 hover:border-cyan-500/30 transition-all"
+                        >
+                          <img
+                            src={recommendedManga.imageUrl || ''}
+                            alt={recommendedManga.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-white text-[10px] font-bold uppercase tracking-tight line-clamp-2">
+                              {recommendedManga.title}
+                            </p>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,35 +1,25 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
-import { toast } from "react-toastify";
 import {
   Spinner,
   Button,
   ButtonGroup,
   Card,
   Accordion,
-  AccordionHeader,
   AccordionBody,
-  SpeedDial,
-  SpeedDialHandler,
-  IconButton,
   Tooltip,
   Dialog,
   CardBody,
-  Slider,
-  Drawer,
 } from "@material-tailwind/react";
 import {
-  ChevronUpIcon,
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { callAPI } from "../util/callApi";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import CommentsSection from "./landing/CommentsSection";
-import { XMarkIcon } from "@heroicons/react/24/solid";
 import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 /**
@@ -141,7 +131,6 @@ export function Reader({
   const [currentPage, setCurrentPage] = useState(0);
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
-  const [showSideComments, setShowSideComments] = useState(false);
   const [screenIsMobile, setScreenIsMobile] = useState(false);
 
   const [scrollInfo, setScrollInfo] = useState({
@@ -164,9 +153,6 @@ export function Reader({
       readTypes.CASCADE,
     limitPageHeight: localStorage.getItem("limitPageHeight") === "true",
     useDoublePages: localStorage.getItem("useDoublePages") === "true",
-    showFloatButtons: localStorage.getItem("showFloatButtons") !== "false",
-    showChapterComments:
-      localStorage.getItem("showChapterComments") !== "false",
     chapterSettings: localStorage.getItem("chapterSettings") === "true",
     pageGap: localStorage.getItem("pageGap") || "minimo",
   }));
@@ -266,22 +252,6 @@ export function Reader({
     });
   }, []);
 
-  const handleToggleComments = useCallback(() => {
-    setSettings((prev) => {
-      const newValue = !prev.showChapterComments;
-      localStorage.setItem("showChapterComments", newValue ? "true" : "false");
-      return { ...prev, showChapterComments: newValue };
-    });
-  }, []);
-
-  const handleToggleFloatButtons = useCallback(() => {
-    setSettings((prev) => {
-      const newValue = !prev.showFloatButtons;
-      localStorage.setItem("showFloatButtons", newValue ? "true" : "false");
-      return { ...prev, showFloatButtons: newValue };
-    });
-  }, []);
-
   const handleLimitPageHeight = useCallback(() => {
     setSettings((prev) => {
       const newValue = !prev.limitPageHeight;
@@ -376,9 +346,6 @@ export function Reader({
 
   const getImageClassName = useCallback(
     (isSideBySide) => {
-      const isPage = settings.readType === readTypes.PAGINATED;
-      const isCascade = settings.readType === readTypes.CASCADE;
-
       let className = "pointer-events-none object-contain";
 
       if (isSideBySide) {
@@ -936,22 +903,6 @@ export function Reader({
                     </label>
                   </div>
 
-                  {/* Mostrar botones flotantes */}
-                  <div className="flex items-center gap-3 mx-4">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={settings.showFloatButtons}
-                        onChange={handleToggleFloatButtons}
-                      />
-                      <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                      <span className="ms-3 text-sm font-medium text-gray-100">
-                        {_("show_float_buttons")}
-                      </span>
-                    </label>
-                  </div>
-
                   {/* Espacio entre páginas (solo en modo cascada) */}
                   {settings.readType === readTypes.CASCADE && (
                     <div className="mx-4">
@@ -1121,22 +1072,7 @@ export function Reader({
             </div>
           )}
 
-          <div className="flex min-h-[100vh] w-full h-full flex-row-reverse gap-2">
-            {showSideComments && chapterData.pages.length > 0 && !loading && (
-              <div className="sticky top-0 h-full min-w-96 max-h-[100vh] p-4 rounded-lg overflow-hidden hidden md:block">
-                <CommentsSection
-                  logged={logged}
-                  user={user}
-                  identifier={`${manga.slug}_${chapterNumber}_sidebar`}
-                  onLogin={() => {
-                    window.location.href = getOrgPath(
-                      `/login?redirect=${window.location.pathname}`,
-                      orgSlug
-                    );
-                  }}
-                />
-              </div>
-            )}
+          <div className="flex min-h-[100vh] w-full h-full gap-2">
             <div
               className={`relative flex items-center justify-center flex-grow w-full ${
                 settings.readType === readTypes.CASCADE ? "h-full flex-col" : ""
@@ -1152,43 +1088,6 @@ export function Reader({
             </div>
           </div>
         </div>
-
-        {/* Comments Drawer */}
-        <Drawer
-          placement="right"
-          open={
-            showSideComments &&
-            chapterData.pages.length > 0 &&
-            !loading &&
-            screenIsMobile
-          }
-          onClose={() => setShowSideComments(false)}
-          className="p-4 bg-opacity-0 w-full"
-          size={500}
-          overlayProps={{
-            className: "fixed inset-0 bg-black/50",
-          }}
-        >
-          <div className="absolute top-6 right-8 z-10">
-            <button
-              onClick={() => setShowSideComments(false)}
-              className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
-          <CommentsSection
-            logged={logged}
-            user={user}
-            identifier={`${manga.slug}_${chapterNumber}_drawer`}
-            onLogin={() => {
-              window.location.href = getOrgPath(
-                `/login?redirect=${window.location.pathname}`,
-                orgSlug
-              );
-            }}
-          />
-        </Drawer>
 
         {/* Progress Bar */}
         {chapterData.pages.length > 0 && (
@@ -1274,7 +1173,7 @@ export function Reader({
           </div>
         </div>
 
-        <div className="flex w-full justify-center mt-2 mb-8">
+        <div className="flex w-full justify-center mt-2 mb-4">
           {settings.readType === readTypes.CASCADE &&
             chapterData.pages.length > 0 && (
               <a href="#manga-pages-top" className="text-white text-xl">
@@ -1283,128 +1182,23 @@ export function Reader({
             )}
         </div>
 
-        <div className="w-full text-center">
-          <div className="max-w-[97vw] m-0 2xl:max-w-[95vw] mx-auto shadow-sm my-4 rounded-md">
-            <Accordion open={settings.showChapterComments}>
-              <AccordionHeader onClick={handleToggleComments}>
-                <h3 className="text-xl font-bold text-gray-300">
-                  {settings.showChapterComments ? _("hide") : _("show")}{" "}
-                  {_("comments")}
-                </h3>
-              </AccordionHeader>
-              <AccordionBody className="bg-gray-800 my-2 p-4 rounded-md">
-                <CommentsSection
-                  logged={logged}
-                  user={user}
-                  identifier={`${manga.slug}_${chapterNumber}_accordion`}
-                  onLogin={() => {
-                    window.location.href = getOrgPath(
-                      `/login?redirect=${window.location.pathname}`,
-                      orgSlug
-                    );
-                  }}
-                />
-              </AccordionBody>
-            </Accordion>
-          </div>
+        <div className="flex p-0 md:p-4 w-full justify-center mt-2 mb-8">
+          {/* Comments Section - Below Reader */}
+          {chapterData.pages.length > 0 && !loading && (
+            <CommentsSection
+              identifier={manga.slug}
+              logged={logged || false}
+              user={user}
+              onLogin={() => {
+                window.location.href = getOrgPath(
+                  `/login?redirect=${window.location.pathname}`,
+                  orgSlug
+                );
+              }}
+            />
+          )}
         </div>
       </div>
-
-      {/* Speed Dial */}
-      {settings.showFloatButtons && (
-        <>
-          <div className="fixed flex flex-col gap-2 bottom-5 right-5">
-            <SpeedDial>
-              <Tooltip content={_("back_to_start")} placement="left">
-                <SpeedDialHandler>
-                  <a href="#main-navbar">
-                    <IconButton
-                      size="lg"
-                      className="rounded-full bg-opacity-90"
-                    >
-                      <ChevronUpIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
-                    </IconButton>
-                  </a>
-                </SpeedDialHandler>
-              </Tooltip>
-            </SpeedDial>
-            <SpeedDial>
-              <Tooltip
-                content={
-                  showSideComments && chapterData.pages.length > 0 && !loading
-                    ? "Ocultar comentarios"
-                    : "Mostrar comentarios"
-                }
-                placement="left"
-              >
-                <SpeedDialHandler>
-                  <IconButton
-                    size="lg"
-                    className="rounded-full bg-opacity-90"
-                    onClick={() => setShowSideComments(!showSideComments)}
-                  >
-                    {showSideComments &&
-                    chapterData.pages.length > 0 &&
-                    !loading ? (
-                      <svg
-                        className="w-6 h-6 text-gray-400 dark:text-white"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h1v2a1 1 0 0 0 1.707.707L9.414 13H15a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Z"
-                          clipRule="evenodd"
-                        />
-                        <path
-                          fillRule="evenodd"
-                          d="M8.023 17.215c.033-.03.066-.062.098-.094L10.243 15H15a3 3 0 0 0 3-3V8h2a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-1v2a1 1 0 0 1-1.707.707L14.586 18H9a1 1 0 0 1-.977-.785Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-6 h-6 text-gray-400 dark:text-white"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 17h6l3 3v-3h2V9h-2M4 4h11v8H9l-3 3v-3H4V4Z"
-                        />
-                      </svg>
-                    )}
-                  </IconButton>
-                </SpeedDialHandler>
-              </Tooltip>
-            </SpeedDial>
-            <SpeedDial>
-              <Tooltip content={_("pages_list")} placement="left">
-                <SpeedDialHandler
-                  className="cursor-pointer"
-                  onClick={handlePagesDialog}
-                >
-                  <IconButton size="lg" className="rounded-full bg-opacity-90">
-                    <ListBulletIcon className="h-5 w-5 transition-transform group-hover:transform group-hover:scale-150" />
-                  </IconButton>
-                </SpeedDialHandler>
-              </Tooltip>
-            </SpeedDial>
-          </div>
-        </>
-      )}
-
       {/* Pages Dialog */}
       <Dialog
         size="xs"

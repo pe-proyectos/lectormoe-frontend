@@ -20,12 +20,16 @@ if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'obj
 
 // Si llegamos aquí, mangaResult es directamente el objeto manga (data)
 const manga = mangaResult;
+
+// Asegurar que la URL de la imagen sea absoluta para Discord embeds
+// Priorizar bannerUrl sobre imageUrl
+const absoluteImageUrl =  manga.bannerUrl || manga.imageUrl;
 ---
 
 <LandingLayout 
   title={`${manga.title} | ${organization.name}`}
   description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
-  imageUrl={manga.imageUrl || manga.bannerUrl}
+  imageUrl={absoluteImageUrl}
   organization={organization}
 >
   <MangaDetailPageContainer

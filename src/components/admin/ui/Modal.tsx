@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Button from './Button';
 
@@ -31,19 +32,22 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
     xl: 'max-w-6xl',
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className={`relative w-full ${sizeStyles[size]} max-h-[90vh] overflow-hidden animate-in zoom-in-95 fade-in duration-200`}>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+      <div 
+        className={`relative z-[10000] w-full ${sizeStyles[size]} max-h-[90vh] pointer-events-auto`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 flex-shrink-0">
             <h2 className="text-xl font-black text-white uppercase tracking-tight">
               {title}
             </h2>
@@ -55,14 +59,17 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
             </button>
           </div>
           
-          {/* Content */}
-          <div className="px-6 py-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Content - Scrollable */}
+          <div className="px-6 py-6 overflow-y-auto flex-1 min-h-0 max-h-[calc(90vh-140px)]">
             {children}
           </div>
         </div>
       </div>
     </div>
   );
+
+  // Render modal using portal to body
+  return createPortal(modalContent, document.body);
 };
 
 export default Modal;
