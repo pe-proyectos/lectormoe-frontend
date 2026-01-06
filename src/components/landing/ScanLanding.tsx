@@ -45,7 +45,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({ organization, organizationSlu
         title: chapter.title,
         releasedAt: chapter.releasedAt,
         subscribersOnly: chapter.subscribersOnly,
-        chapterUrl: `/${organizationSlug}/manga/${m.slug}/chapter/${chapter.number}`,
+        chapterUrl: `/${organizationSlug}/manga/${m.slug}/chapters/${chapter.number}`,
         isRead,
       };
     });

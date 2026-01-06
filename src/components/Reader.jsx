@@ -5,13 +5,8 @@ import {
   Button,
   ButtonGroup,
   Card,
-  Tabs,
-  TabsHeader,
-  Tab,
-  Typography,
   Accordion,
   AccordionHeader,
-  Switch,
   AccordionBody,
   SpeedDial,
   SpeedDialHandler,
@@ -37,6 +32,31 @@ import CommentsSection from "./landing/CommentsSection";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
+/**
+ * Reader Component - Optimized and Simplified
+ * 
+ * Opciones de visualización:
+ * 
+ * 1. MODO DE LECTURA (readType):
+ *    - PAGINATED: Muestra una página a la vez (o dos si están side-by-side)
+ *    - CASCADE: Muestra todas las páginas en secuencia vertical
+ * 
+ * 2. LIMITAR ALTURA (limitPageHeight):
+ *    - true: Las imágenes no exceden la altura de la pantalla (max-h-[100vh])
+ *    - false: Las imágenes se muestran a tamaño completo
+ *    - Excepción: En CASCADE + páginas dobles, NO se limita para mejor visualización
+ * 
+ * 3. PÁGINAS DOBLES (useDoublePages):
+ *    - true: Agrupa páginas angostas automáticamente side-by-side
+ *    - false: Muestra cada página individualmente
+ *    - Usa ancho mediano para determinar qué páginas son "angostas"
+ * 
+ * Combinaciones recomendadas:
+ * - CASCADE + limitPageHeight:false + useDoublePages:false → Lectura fluida vertical
+ * - CASCADE + limitPageHeight:false + useDoublePages:true → Doble página vertical (mejor visualización)
+ * - PAGINATED + limitPageHeight:true + useDoublePages:false → Página por página clásico
+ * - PAGINATED + limitPageHeight:true + useDoublePages:true → Doble página tradicional
+ */
 export function Reader({
   language,
   manga,
@@ -228,44 +248,31 @@ export function Reader({
   };
 
   const handlePageClick = (evt) => {
-    // Get click position relative to window width
-    const x = evt.clientX;
-    const windowWidth = window.innerWidth;
-    const isRightHalf = x > windowWidth / 2;
-
+    // Click en modo paginado: izquierda = atrás, derecha = adelante
+    const isGoingForward = evt.clientX > window.innerWidth / 2;
     const currentPageIndex = chapterData.pages.findIndex(p => p.number === currentPage);
-    const medianWidth = getMedianWidth();
+    
+    if (currentPageIndex === -1) return;
 
-    if (isRightHalf) {
-      // Going forward: if current page is part of a side-by-side pair, jump 2 pages
+    const medianWidth = getMedianWidth();
+    let targetIndex;
+    
+    if (isGoingForward) {
+      // Avanzar: saltar 2 páginas si actual es side-by-side, sino 1
       const isSideBySide = shouldRenderSideBySide(currentPageIndex, chapterData.pages, medianWidth);
-      const pageJump = isSideBySide ? 2 : 1;
-      const page = chapterData.pages?.[currentPageIndex + pageJump];
-      if (page) {
-        setCurrentPage(page.number);
-        location.href =
-          settings.readType === readTypes.PAGINATED
-            ? "#manga-pages-top"
-            : `#page-${page.number}`;
-      }
+      targetIndex = currentPageIndex + (isSideBySide ? 2 : 1);
     } else {
-      // Going backward: check if previous page is part of a side-by-side pair
-      const prevPageIndex = currentPageIndex - 1;
-      const isPrevPageSideBySide = prevPageIndex >= 0 && 
-        shouldRenderSideBySide(prevPageIndex, chapterData.pages, medianWidth);
-      
-      // If previous page is part of a side-by-side pair, jump back 2 pages
-      // Otherwise, jump back 1 page
-      const pageJump = isPrevPageSideBySide ? 2 : 1;
-      const page = chapterData.pages?.[currentPageIndex - pageJump];
-      
-      if (page) {
-        setCurrentPage(page.number);
-        location.href =
-          settings.readType === readTypes.PAGINATED
-            ? "#manga-pages-top"
-            : `#page-${page.number}`;
-      }
+      // Retroceder: saltar 2 páginas si la anterior es side-by-side, sino 1
+      const prevIndex = currentPageIndex - 1;
+      const isPrevSideBySide = prevIndex >= 0 && shouldRenderSideBySide(prevIndex, chapterData.pages, medianWidth);
+      targetIndex = currentPageIndex - (isPrevSideBySide ? 2 : 1);
+    }
+    
+    // Navegar a la página objetivo si existe
+    const targetPage = chapterData.pages[targetIndex];
+    if (targetPage) {
+      setCurrentPage(targetPage.number);
+      location.href = "#manga-pages-top";
     }
   };
 
@@ -538,11 +545,45 @@ export function Reader({
 
   // Common class names for page containers
   const getPageContainerClassName = useCallback((isCascade, isDouble = false, shouldShow = true) => {
-    const baseClass = isCascade
-      ? "w-full flex justify-center select-none cursor-pointer"
-      : "w-full flex justify-center select-none cursor-pointer";
+    const baseClass = "w-full flex justify-center select-none cursor-pointer";
     return `${baseClass}${isDouble ? " flex-row" : ""}${shouldShow ? "" : " hidden"}`;
   }, []);
+
+  // Determina el estilo correcto de la imagen según el contexto
+  const getImageClassName = useCallback((isSideBySide) => {
+    const isPage = settings.readType === readTypes.PAGINATED;
+    const isCascade = settings.readType === readTypes.CASCADE;
+    
+    let className = "pointer-events-none object-contain";
+    
+    // Ancho
+    if (isSideBySide) {
+      // Páginas dobles: cada imagen ocupa 50%
+      className += " w-1/2";
+    } else {
+      // Página única: ocupar todo el ancho disponible
+      className += " w-auto max-w-full";
+    }
+    
+    // Altura - siempre establecer una altura adecuada
+    if (settings.limitPageHeight) {
+      if (isSideBySide && isCascade) {
+        // En cascada con páginas dobles, NO limitar altura para que se vean bien
+        className += " h-auto";
+      } else if (isPage) {
+        // En modo paginado, limitar a altura de pantalla
+        className += " max-h-[100vh] h-auto";
+      } else {
+        // En cascada sin páginas dobles, limitar altura
+        className += " max-h-[100vh] h-auto";
+      }
+    } else {
+      // Sin límite de altura, usar altura automática basada en aspecto ratio
+      className += " h-auto";
+    }
+    
+    return className;
+  }, [settings.limitPageHeight, settings.readType, readTypes.PAGINATED, readTypes.CASCADE]);
 
   // Common LazyImage component
   const PageImage = useCallback(
@@ -550,17 +591,15 @@ export function Reader({
       <LazyImage
         id={`page-${page.number}-img`}
         src={page.imageUrl}
-        className={`pointer-events-none object-contain ${
-          isSideBySide ? "w-1/2" : "max-w-full"
-        } ${settings.limitPageHeight ? "max-h-[100vh]" : ""} ${
+        className={`${getImageClassName(isSideBySide)} ${
           isSideBySide && (isLeft ? "object-left" : "object-right")
         }`}
-        width={`${page.imageWidth}px`}
-        height={`${page.imageHeight}px`}
         alt={`${_("page")} ${page.number}`}
+        loading="lazy"
+        decoding="async"
       />
     ),
-    [settings.limitPageHeight]
+    [getImageClassName, _]
   );
 
   return (
@@ -632,86 +671,98 @@ export function Reader({
           <Accordion open={settings.chapterSettings}>
             <AccordionBody className="py-6 px-4">
               <div className="flex flex-wrap w-full justify-between items-center gap-x-4">
-                <div>
-                  <div className="my-2 mx-4">
-                    <Switch
-                      color="red"
-                      label={
-                        <Typography className="text-gray-100">
-                          {_("limit_page_height")}
-                        </Typography>
-                      }
-                      checked={settings.limitPageHeight}
-                      onChange={() => handleLimitPageHeight()}
-                      crossOrigin={undefined}
-                    />
+                <div className="space-y-4">
+                  {/* Limitar altura de página */}
+                  <div className="flex items-center gap-3 mx-4">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={settings.limitPageHeight}
+                        onChange={() => handleLimitPageHeight()}
+                      />
+                      <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                      <span className="ms-3 text-sm font-medium text-gray-100">
+                        {_("limit_page_height")}
+                      </span>
+                    </label>
                   </div>
-                  <div className="my-2 mx-4">
-                    <Switch
-                      color="red"
-                      label={
-                        <Typography className="text-gray-100">
-                          {_("use_double_pages")}
-                        </Typography>
-                      }
-                      checked={settings.useDoublePages}
-                      onChange={() => handleToggleUseDoublePages()}
-                      crossOrigin={undefined}
-                    />
+
+                  {/* Usar páginas dobles */}
+                  <div className="flex items-center gap-3 mx-4">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={settings.useDoublePages}
+                        onChange={() => handleToggleUseDoublePages()}
+                      />
+                      <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                      <span className="ms-3 text-sm font-medium text-gray-100">
+                        {_("use_double_pages")}
+                      </span>
+                    </label>
                   </div>
-                  <div className="my-2 mx-4">
-                    <Switch
-                      color="green"
-                      label={
-                        <Typography className="text-gray-100">
-                          {_("show_float_buttons")}
-                        </Typography>
-                      }
-                      checked={settings.showFloatButtons}
-                      onChange={() => handleToggleFloatButtons()}
-                      crossOrigin={undefined}
-                    />
+
+                  {/* Mostrar botones flotantes */}
+                  <div className="flex items-center gap-3 mx-4">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={settings.showFloatButtons}
+                        onChange={() => handleToggleFloatButtons()}
+                      />
+                      <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                      <span className="ms-3 text-sm font-medium text-gray-100">
+                        {_("show_float_buttons")}
+                      </span>
+                    </label>
                   </div>
+
+                  {/* Espacio entre páginas (solo en modo cascada) */}
                   {settings.readType === readTypes.CASCADE && (
-                    <div className="my-2 mx-4">
-                      <Typography className="text-gray-100">
+                    <div className="mx-4">
+                      <label className="block text-sm font-medium text-gray-100 mb-2">
                         Espacio entre páginas
-                      </Typography>
-                      <div className="w-72 mt-2">
-                        <select
-                          value={settings.pageGap}
-                          onChange={(e) => handlePageGap(e.target.value)}
-                          className="w-full bg-gray-800 text-white rounded-lg p-2"
-                        >
-                          <option value="ninguno">Ninguno (0px)</option>
-                          <option value="minimo">Mínimo (2px)</option>
-                          <option value="medio">Medio (5px)</option>
-                          <option value="grande">Grande (10px)</option>
-                        </select>
-                      </div>
+                      </label>
+                      <select
+                        value={settings.pageGap}
+                        onChange={(e) => handlePageGap(e.target.value)}
+                        className="w-full sm:w-72 bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all cursor-pointer hover:bg-zinc-700"
+                      >
+                        <option value="ninguno" className="bg-zinc-800">Ninguno (0px)</option>
+                        <option value="minimo" className="bg-zinc-800">Mínimo (2px)</option>
+                        <option value="medio" className="bg-zinc-800">Medio (5px)</option>
+                        <option value="grande" className="bg-zinc-800">Grande (10px)</option>
+                      </select>
                     </div>
                   )}
                 </div>
                 <div className="mx-auto sm:mx-0">
-                  <p className="text-gray-400 ml-1">{_("read_type")}</p>
-                  <Tabs value={settings.readType}>
-                    <TabsHeader>
-                      <Tab
-                        value={readTypes.PAGINATED}
-                        onClick={() => handleSetReadType(readTypes.PAGINATED)}
-                        className="text-sm"
-                      >
-                        {_("paginated")}
-                      </Tab>
-                      <Tab
-                        value={readTypes.CASCADE}
-                        onClick={() => handleSetReadType(readTypes.CASCADE)}
-                        className="text-sm"
-                      >
-                        {_("cascade")}
-                      </Tab>
-                    </TabsHeader>
-                  </Tabs>
+                  <p className="text-gray-400 text-sm font-medium mb-3">{_("read_type")}</p>
+                  <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+                    <button
+                      onClick={() => handleSetReadType(readTypes.PAGINATED)}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                        settings.readType === readTypes.PAGINATED
+                          ? 'bg-red-500 text-white shadow-lg'
+                          : 'text-gray-400 hover:text-white hover:bg-zinc-800'
+                      }`}
+                    >
+                      {_("paginated")}
+                    </button>
+                    <button
+                      onClick={() => handleSetReadType(readTypes.CASCADE)}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                        settings.readType === readTypes.CASCADE
+                          ? 'bg-red-500 text-white shadow-lg'
+                          : 'text-gray-400 hover:text-white hover:bg-zinc-800'
+                      }`}
+                    >
+                      {_("cascade")}
+                    </button>
+                  </div>
                 </div>
               </div>
             </AccordionBody>
@@ -826,54 +877,62 @@ export function Reader({
                   />
                 )}
                 {(() => {
+                  const isCascade = settings.readType === readTypes.CASCADE;
+                  
+                  // Modo sin páginas dobles: renderizar cada página individualmente
                   if (!settings.useDoublePages) {
-                    // Default: render one page per row
-                    return chapterData.pages.map((page, pageIndex) => (
+                    return chapterData.pages.map((page) => (
                       <div
                         key={page.number}
                         id={`page-${page.number}`}
-                        className={getPageContainerClassName(settings.readType === readTypes.CASCADE, false, shouldShowPage(page.number))}
-                        style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
+                        className={getPageContainerClassName(isCascade, false, shouldShowPage(page.number))}
+                        style={getPageContainerStyle(isCascade)}
                       >
                         <PageImage page={page} isSideBySide={false} />
                       </div>
                     ));
                   }
-                  // Double pages logic
+                  
+                  // Modo con páginas dobles
                   const medianWidth = getMedianWidth();
                   const rendered = [];
-                  for (let i = 0; i < chapterData.pages.length; ) {
+                  
+                  for (let i = 0; i < chapterData.pages.length; i++) {
                     const page = chapterData.pages[i];
                     const nextPage = chapterData.pages[i + 1];
+                    
+                    // Verificar si esta página ya fue procesada en un par
+                    if (i > 0 && shouldRenderSideBySide(i - 1, chapterData.pages, medianWidth)) {
+                      continue; // Ya fue renderizada con la página anterior
+                    }
 
-                    if (shouldRenderSideBySide(i, chapterData.pages, medianWidth)) {
-                      // Render side by side
+                    // Intentar renderizar páginas side by side
+                    if (nextPage && shouldRenderSideBySide(i, chapterData.pages, medianWidth)) {
                       rendered.push(
                         <div
                           key={`double-${page.number}-${nextPage.number}`}
-                          className={`flex w-full cursor-pointer flex-row justify-center select-none mb-0 ${shouldShowPage(page.number) ? "" : " hidden"}`}
-                          style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
+                          className={getPageContainerClassName(isCascade, true, shouldShowPage(page.number))}
+                          style={getPageContainerStyle(isCascade)}
                         >
                           <PageImage page={nextPage} isSideBySide={true} isLeft={false} />
                           <PageImage page={page} isSideBySide={true} isLeft={true} />
                         </div>
                       );
-                      i += 2;
                     } else {
-                      // Render single (either double page or last single)
+                      // Renderizar página única
                       rendered.push(
                         <div
                           key={page.number}
                           id={`page-${page.number}`}
-                          className={getPageContainerClassName(settings.readType === readTypes.CASCADE, false, shouldShowPage(page.number))}
-                          style={getPageContainerStyle(settings.readType === readTypes.CASCADE)}
+                          className={getPageContainerClassName(isCascade, false, shouldShowPage(page.number))}
+                          style={getPageContainerStyle(isCascade)}
                         >
                           <PageImage page={page} isSideBySide={false} />
                         </div>
                       );
-                      i += 1;
                     }
                   }
+                  
                   return rendered;
                 })()}
               {/* </div> */}
