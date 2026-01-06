@@ -75,15 +75,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // Preservar el pathname completo y los query params
       const pathname = context.url.pathname;
       const search = context.url.search;
-      const newPath = `/${targetSlug}${pathname === '/' ? '' : pathname}${search}`;
+      const hash = context.url.hash || '';
+      
+      // Asegurar que el pathname siempre empiece con / y construir el path completo
+      const cleanPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+      const newPath = `/${targetSlug}${cleanPathname === '/' ? '' : cleanPathname}${search}${hash}`;
       const newUrl = `${protocol}//${mainDomain}${newPath}`;
       
-      console.log(`[Middleware] REDIRECTING: ${hostname}${pathname}${search} -> ${newUrl}`);
+      console.log(`[Middleware] REDIRECTING: ${hostname}${pathname}${search}${hash} -> ${newUrl}`);
+      console.log(`[Middleware] Details - pathname: "${pathname}", cleanPathname: "${cleanPathname}", newPath: "${newPath}"`);
       
       // Redirigir permanentemente (301) a la nueva URL
       // Esto debe ocurrir antes de cualquier otro procesamiento
-      // Usar Response.redirect directamente para asegurar que funcione
-      return Response.redirect(newUrl, 301);
+      // Usar context.redirect de Astro para asegurar que funcione correctamente
+      return context.redirect(newUrl, 301);
     } else {
       console.log(`[Middleware] No targetSlug found for hostname: ${hostname}`);
     }
