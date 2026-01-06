@@ -19,26 +19,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
   
   // Obtener hostname de diferentes fuentes (por si el proxy no lo pasa correctamente)
   let hostname = context.url.hostname;
+  console.log(`\n\nHostname: ${hostname}\nURL: ${context.url.toString()}\n\n`);
+  
   const hostHeader = context.request.headers.get('host');
   const xForwardedHost = context.request.headers.get('x-forwarded-host');
   const xForwardedProto = context.request.headers.get('x-forwarded-proto');
   
-  // Log para debugging
-  console.log(`[Middleware] Request URL: ${context.url.toString()}`);
-  console.log(`[Middleware] Hostname from URL: ${context.url.hostname}`);
-  console.log(`[Middleware] Host header: ${hostHeader}`);
-  console.log(`[Middleware] X-Forwarded-Host: ${xForwardedHost}`);
-  console.log(`[Middleware] Pathname: ${context.url.pathname}`);
-  
   // Usar x-forwarded-host o host header si están disponibles (común en proxies)
   if (xForwardedHost) {
     hostname = xForwardedHost.split(':')[0]; // Remover puerto si existe
-    console.log(`[Middleware] Using X-Forwarded-Host: ${hostname}`);
   } else if (hostHeader) {
     hostname = hostHeader.split(':')[0]; // Remover puerto si existe
-    console.log(`[Middleware] Using Host header: ${hostname}`);
-  } else {
-    console.log(`[Middleware] Using URL hostname: ${hostname}`);
   }
   
   const mainDomain = "capibaratraductor.com";
@@ -56,8 +47,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     protocol = 'https:'; // Por defecto usar https en producción
   }
   
-  console.log(`[Middleware] Final hostname: ${hostname}, protocol: ${protocol}, isLocalhost: ${localhostPattern.test(hostname)}, isMainDomain: ${hostname === mainDomain}`);
-  
   // Solo hacer redirección si no es localhost y si está en el mapeo O si es un subdominio
   // Esta redirección debe ocurrir ANTES de cualquier otro procesamiento para asegurar que todas las rutas se redirijan correctamente
   if (!localhostPattern.test(hostname) && hostname !== mainDomain) {
@@ -67,7 +56,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (!targetSlug && hostname.endsWith(`.${mainDomain}`)) {
       // Extraer el subdominio (ejemplo: senshimanga.capibaratraductor.com -> senshimanga)
       targetSlug = hostname.replace(`.${mainDomain}`, '');
-      console.log(`[Middleware] Auto-detect subdomain: ${hostname} -> slug: ${targetSlug}`);
     }
     
     if (targetSlug) {
@@ -82,18 +70,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const newPath = `/${targetSlug}${cleanPathname === '/' ? '' : cleanPathname}${search}${hash}`;
       const newUrl = `${protocol}//${mainDomain}${newPath}`;
       
-      console.log(`[Middleware] REDIRECTING: ${hostname}${pathname}${search}${hash} -> ${newUrl}`);
-      console.log(`[Middleware] Details - pathname: "${pathname}", cleanPathname: "${cleanPathname}", newPath: "${newPath}"`);
-      
       // Redirigir permanentemente (301) a la nueva URL
       // Esto debe ocurrir antes de cualquier otro procesamiento
       // Usar context.redirect de Astro para asegurar que funcione correctamente
       return context.redirect(newUrl, 301);
-    } else {
-      console.log(`[Middleware] No targetSlug found for hostname: ${hostname}`);
     }
-  } else {
-    console.log(`[Middleware] Skipping redirect - localhost: ${localhostPattern.test(hostname)}, mainDomain: ${hostname === mainDomain}`);
   }
 
   // ============================================

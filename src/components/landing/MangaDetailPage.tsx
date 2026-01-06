@@ -570,13 +570,14 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                         return (
                           <div 
                             key={chapter.id} 
-                            className={`group bg-zinc-900/40 border rounded-3xl p-6 flex items-center justify-between transition-all ${
+                            onClick={() => goToReadChapter(chapter)}
+                            className={`group border rounded-3xl p-6 flex items-center justify-between transition-all cursor-pointer sticky top-20 backdrop-blur-md bg-zinc-900/95 ${
                               hasAccess
                                 ? isRead
-                                  ? 'border-zinc-800 hover:border-cyan-500/30 hover:bg-zinc-900'
+                                  ? 'border-zinc-800 hover:border-cyan-500/30 hover:bg-zinc-900/80'
                                   : chapterHistory
-                                  ? 'border-orange-500/30 hover:border-cyan-500/30 hover:bg-zinc-900'
-                                  : 'border-zinc-800 hover:border-cyan-500/30 hover:bg-zinc-900'
+                                  ? 'border-orange-500/30 hover:border-cyan-500/30 hover:bg-zinc-900/80'
+                                  : 'border-zinc-800 hover:border-cyan-500/30 hover:bg-zinc-900/80'
                                 : 'border-zinc-800/50 opacity-60'
                             }`}
                           >
@@ -634,7 +635,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                               </div>
                             </div>
                             
-                              <div className="flex flex-col items-end gap-3">
+                              <div className="flex flex-col items-end gap-3" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center gap-4 text-zinc-500 relative">
                                 <div className="relative group/tooltip">
                                   <button 
@@ -699,8 +700,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                   </>
                                 )}
                               </div>
-                              <button 
-                                onClick={() => goToReadChapter(chapter)}
+                              <div 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  goToReadChapter(chapter);
+                                }}
                                 className={`text-xs font-bold uppercase tracking-widest transition-colors ${
                                   hasAccess
                                     ? 'text-cyan-400 hover:text-cyan-300'
@@ -708,7 +712,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                 }`}
                               >
                                 {getChapterLabel(chapter)}
-                              </button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -717,7 +721,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
                   {/* Range Picker */}
                   {Object.keys(chapterGroups).length > 0 && (
-                    <div className="w-24 space-y-2 hidden md:block">
+                    <div className="w-24 space-y-2">
                       {Object.values(chapterGroups)
                         .sort((a, b) => b.from - a.from)
                         .map((group) => (

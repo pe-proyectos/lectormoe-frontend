@@ -140,7 +140,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   return (
-    <div className="flex gap-6 items-start group">
+    <div className="flex gap-6 items-start group min-w-0">
       {/* Avatar */}
       <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 font-black text-xl shadow-lg overflow-hidden flex-shrink-0">
         {comment?.user?.imageUrl ? (
@@ -151,7 +151,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       </div>
 
       {/* Comment Content */}
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-3 min-w-0">
         {/* User Info */}
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-white font-black text-sm uppercase tracking-tight">
@@ -173,7 +173,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             <span className="absolute -top-3 right-6 text-zinc-700 font-black italic text-xs">
               #{comment.id}
             </span>
-            <p className="text-zinc-300 text-base leading-relaxed">{comment?.comment}</p>
+            <p className="text-zinc-300 text-base leading-relaxed break-words overflow-wrap-anywhere">{comment?.comment}</p>
           </div>
         ) : (
           <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-3xl space-y-3">
@@ -205,7 +205,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         {/* Comment Image */}
         {comment.imageUrl && (
           <div
-            className="cursor-pointer max-w-xs"
+            className="cursor-pointer max-w-full"
             onClick={() => onImageClick(comment.imageUrl!)}
           >
             <img
@@ -514,9 +514,9 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
           <p className="text-zinc-500 text-sm font-medium mt-2">¡Sé el primero en comentar!</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-8 overflow-x-hidden">
           {comments.map((comment) => (
-            <div key={comment.id} className="space-y-6">
+            <div key={comment.id} className="space-y-6 min-w-0">
               <CommentItem
                 comment={comment}
                 user={user}
@@ -531,7 +531,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 
               {/* Replies */}
               {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-20 space-y-6">
+                <div className="ml-8 md:ml-20 space-y-6 min-w-0">
                   {comment.replies.map((reply) => (
                     <CommentItem
                       key={reply.id}
