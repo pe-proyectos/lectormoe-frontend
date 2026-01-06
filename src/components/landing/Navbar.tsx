@@ -118,11 +118,15 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
     try {
       await callAPI("/api/auth/logout", { method: "POST" });
       
-      // Limpiar cookies manualmente
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'userSlug=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      // Limpiar cookies manualmente con diferentes paths para asegurar que se eliminen todas
+      const cookieNames = ['token', 'username', 'userSlug', 'user', 'x-organization', 'auth-check-time'];
+      const paths = ['/', window.location.pathname];
+      
+      cookieNames.forEach(name => {
+        paths.forEach(path => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+        });
+      });
       
       // Limpiar localStorage también por si acaso
       try {
@@ -141,10 +145,14 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenRegister, onOpenLogin, onGoHome, 
       window.location.href = "/";
     } catch (error) {
       // Limpiar cookies manualmente incluso si hay error
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'userSlug=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      const cookieNames = ['token', 'username', 'userSlug', 'user', 'x-organization', 'auth-check-time'];
+      const paths = ['/', window.location.pathname];
+      
+      cookieNames.forEach(name => {
+        paths.forEach(path => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+        });
+      });
       
       setUser(null);
       setLogged(false);

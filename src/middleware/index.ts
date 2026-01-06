@@ -18,10 +18,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (context.url.pathname === "/logout") {
     const redirectTo = context.url.searchParams.get("redirect") || "/";
-    context.cookies.delete("token");
-    context.cookies.delete("username");
-    context.cookies.delete("userSlug");
-    context.cookies.delete("user");
+    context.cookies.delete("token", { path: '/' });
+    context.cookies.delete("username", { path: '/' });
+    context.cookies.delete("userSlug", { path: '/' });
+    context.cookies.delete("user", { path: '/' });
+    context.cookies.delete("x-organization", { path: '/' });
+    context.cookies.delete("auth-check-time", { path: '/' });
     context.locals.token = undefined;
     context.locals.username = undefined;
     context.locals.userSlug = undefined;
@@ -223,10 +225,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
           context.locals.user = null;
           context.locals.username = null;
           context.locals.userSlug = null;
-          context.cookies.delete("token");
-          context.cookies.delete("username");
-          context.cookies.delete("userSlug");
-          context.cookies.delete("user");
+          context.cookies.delete("token", { path: '/' });
+          context.cookies.delete("username", { path: '/' });
+          context.cookies.delete("userSlug", { path: '/' });
+          context.cookies.delete("user", { path: '/' });
         }
       } catch (error) {
         // Si el check falla (error de red, etc.), mantener la sesión activa
@@ -282,11 +284,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
           context.locals.user = null;
           context.locals.username = null;
           context.locals.userSlug = null;
-          context.cookies.delete("token");
-          context.cookies.delete("username");
-          context.cookies.delete("userSlug");
-          context.cookies.delete("user");
-          context.cookies.delete("auth-check-time");
+          context.cookies.delete("token", { path: '/' });
+          context.cookies.delete("username", { path: '/' });
+          context.cookies.delete("userSlug", { path: '/' });
+          context.cookies.delete("user", { path: '/' });
+          context.cookies.delete("auth-check-time", { path: '/' });
         }
       } catch (error) {
         // Si callAPI lanza un error, NO borrar las cookies inmediatamente
@@ -370,16 +372,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
       }
       context.cookies.set("token", authCheck.token, {
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+        sameSite: 'lax',
       });
       context.cookies.set("username", authCheck.user.username, {
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+        sameSite: 'lax',
       });
       context.cookies.set("userSlug", authCheck.user.slug, {
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+        sameSite: 'lax',
       });
       if (authCheck.user) {
         context.cookies.set("user", JSON.stringify(authCheck.user), {
           maxAge: 60 * 60 * 24 * 7,
+          path: '/',
+          sameSite: 'lax',
         });
       }
       context.locals.logged = true;
@@ -389,10 +399,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.locals.userSlug = undefined;
       context.locals.user = undefined;
       context.locals.permissions = undefined;
-      context.cookies.set("token", "", { maxAge: 0 });
-      context.cookies.set("username", "", { maxAge: 0 });
-      context.cookies.set("userSlug", "", { maxAge: 0 });
-      context.cookies.set("user", "", { maxAge: 0 });
+      context.cookies.set("token", "", { maxAge: 0, path: '/' });
+      context.cookies.set("username", "", { maxAge: 0, path: '/' });
+      context.cookies.set("userSlug", "", { maxAge: 0, path: '/' });
+      context.cookies.set("user", "", { maxAge: 0, path: '/' });
       context.locals.logged = false;
     }
 
