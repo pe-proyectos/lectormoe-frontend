@@ -429,11 +429,21 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                                 <Typography variant="small" color="blue-gray">
                                                     Pagina sola
                                                 </Typography>
-                                                <Switch
-                                                    checked={singlePageIndexes.includes(index)}
-                                                    onChange={() => togglePageType(index)}
-                                                    crossOrigin={undefined}
-                                                />
+                                                <label 
+                                                    className="relative inline-flex items-center cursor-pointer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className="sr-only peer"
+                                                        checked={singlePageIndexes.includes(index)}
+                                                        onChange={(e) => {
+                                                            e.stopPropagation();
+                                                            togglePageType(index);
+                                                        }}
+                                                    />
+                                                    <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                                </label>
                                             </div>
                                         </div>
                                     </CardFooter>

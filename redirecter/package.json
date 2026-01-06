@@ -1,0 +1,17 @@
+{
+  "name": "redirecter",
+  "version": "1.0.0",
+  "description": "Simple redirect service for subdomains",
+  "main": "index.ts",
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun --watch index.ts"
+  },
+  "dependencies": {
+    "elysia": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
+

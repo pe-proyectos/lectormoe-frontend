@@ -19,7 +19,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   
   // Obtener hostname de diferentes fuentes (por si el proxy no lo pasa correctamente)
   let hostname = context.url.hostname;
-  console.log(`\n\nHostname: ${hostname}\nURL: ${context.url.toString()}\n\n`);
+  console.log(`\n\nHostname: ${hostname}\nURL: ${context.url.toString()} Pathname: ${context.url.pathname}\n\n`);
   
   const hostHeader = context.request.headers.get('host');
   const xForwardedHost = context.request.headers.get('x-forwarded-host');
