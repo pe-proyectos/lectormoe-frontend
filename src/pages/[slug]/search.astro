@@ -14,10 +14,6 @@ if (!organization) {
 // Por defecto true
 let showAds = true;
 
-// Determinar si se deben mostrar ads
-// Por defecto true
-let showAds = true;
-
 // Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
 if (logged && user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && organization?.id) {
   const activeSubscription = user.subscriptions.find((sub: any) => 
