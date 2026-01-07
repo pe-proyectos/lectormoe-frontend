@@ -9,38 +9,33 @@ interface Props {
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { organization, user } = Astro.locals;
-const { title: propTitle, description: propDescription, imageUrl: propImageUrl, showAds: propShowAds } = Astro.props;
-
-// Determinar si se deben mostrar ads
-let showAds = propShowAds ?? true;
-
-// Rutas globales donde NO se deben mostrar ads
-const pathname = Astro.url.pathname;
-const globalRoutesWithoutAds = ['/', '/search', '/login', '/register', '/forgot-password'];
-const isGlobalRouteWithoutAds = globalRoutesWithoutAds.includes(pathname);
-const isAdminRoute = pathname.includes('/admin');
-
-// No mostrar ads en rutas globales específicas o rutas admin
-if (isGlobalRouteWithoutAds || isAdminRoute) {
-  showAds = false;
-}
-
-// No mostrar ads si el usuario tiene suscripción que oculta ads
-if (user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan?.hideAds === true) {
-  showAds = false;
-}
-// No mostrar ads si el usuario tiene hideAds activado
-if (user && user?.hideAds === true) {
-  showAds = false;
-}
+const {
+  title: propTitle,
+  description: propDescription,
+  imageUrl: propImageUrl,
+  showAds = false,
+} = Astro.props;
 
 // Determinar título y descripción basados en la organización o props
-const title = propTitle || (organization?.title ? `${organization.title} - ${organization.name || 'Mangas'}` : "CapibaraTraductor - El Hub de tus Scans Favoritos");
-const description = propDescription || organization?.description || organization?.shortDescription || "Infraestructura independiente para comunidades de scanlation. Tu scan merece su propio espacio.";
+const title =
+  propTitle ||
+  (organization?.title
+    ? `${organization.title} - ${organization.name || "Mangas"}`
+    : "CapibaraTraductor - El Hub de tus Scans Favoritos");
+const description =
+  propDescription ||
+  organization?.description ||
+  organization?.shortDescription ||
+  "Infraestructura independiente para comunidades de scanlation. Tu scan merece su propio espacio.";
 const faviconUrl = organization?.faviconUrl || "/images/faviconcaptrad.png";
 // Usar la imagen específica si se proporciona, si no usar el banner de la organización
-const imageUrl = propImageUrl || organization?.bannerUrl || organization?.logoUrl || "/images/logocaptrad.png";
-const siteName = organization?.title || organization?.name || "CapibaraTraductor";
+const imageUrl =
+  propImageUrl ||
+  organization?.bannerUrl ||
+  organization?.logoUrl ||
+  "/images/logocaptrad.png";
+const siteName =
+  organization?.title || organization?.name || "CapibaraTraductor";
 ---
 
 <html lang="es" class="scroll-smooth">
@@ -50,12 +45,9 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
     <link rel="icon" type="image/png" href={faviconUrl} />
     <title>{title}</title>
     <meta name="description" content={description} />
-    
+
     {/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
     {
-      organization && 
-      (showAds ?? true) && 
-      organization.enableGoogleAds && 
       organization.googleAdsMetaContent && (
         <meta
           name="google-adsense-account"
@@ -63,56 +55,69 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
         />
       )
     }
-    {/* Google Ads Script - Solo en vistas de organización, no en admin ni globales */}
     {
-      organization && 
-      (showAds ?? true) && 
-      organization.enableGoogleAds && 
-      organization.googleAdsMetaContent && (
-        <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${organization.googleAdsMetaContent}`}
-          crossorigin="anonymous"></script>
+      /* Google Ads Script - Solo en vistas de organización, no en admin ni globales */
+    }
+    {
+      showAds && (
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${organization.googleAdsMetaContent}`}
+          crossorigin="anonymous"
+        />
       )
     }
-    {/* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */}
     {
-      organization && 
-      (showAds ?? true) && 
-      organization.enableAdsterraAds && 
-      organization.adsterraAdSource && (
-        <script type='text/javascript' src={organization.adsterraAdSource}></script>
-      )
+      /* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */
     }
-    
+    {
+      organization &&
+        (showAds ?? true) &&
+        organization.enableAdsterraAds &&
+        organization.adsterraAdSource && (
+          <script type="text/javascript" src={organization.adsterraAdSource} />
+        )
+    }
+
     {/* Open Graph / Facebook */}
     <meta property="og:type" content="website" />
     <meta property="og:url" content={Astro.url} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content={siteName} />
-    {imageUrl && (
-      <>
-        <meta property="og:image" content={imageUrl} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content={title} />
-      </>
-    )}
+    {
+      imageUrl && (
+        <>
+          <meta property="og:image" content={imageUrl} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:image:alt" content={title} />
+        </>
+      )
+    }
     <meta property="og:locale" content="es_ES" />
-    
+
     {/* Twitter */}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     {imageUrl && <meta name="twitter:image:src" content={imageUrl} />}
-    {organization?.domain && <meta name="twitter:domain" content={organization.domain} />}
-    
+    {
+      organization?.domain && (
+        <meta name="twitter:domain" content={organization.domain} />
+      )
+    }
+
     {/* Theme */}
     <meta name="theme-color" content="#050505" />
-    
+
     {/* Fonts */}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <slot />
@@ -123,92 +128,91 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
   @tailwind base;
   @tailwind components;
   @tailwind utilities;
-  
+
   body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: "Plus Jakarta Sans", sans-serif;
     background-color: #050505;
     color: #f4f4f5;
     overflow-x: hidden;
     margin: 0;
     padding: 0;
   }
-  
+
   .text-outline-white {
     -webkit-text-stroke: 1.5px white;
   }
-  
+
   ::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: #050505;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: #27272a;
     border-radius: 10px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: #3f3f46;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: #18181b;
     border-radius: 10px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #3f3f46;
     border-radius: 10px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #52525b;
   }
-  
+
   /* Ocultar scrollbar en mobile */
   @media (max-width: 768px) {
     ::-webkit-scrollbar {
       width: 0;
       display: none;
     }
-    
+
     ::-webkit-scrollbar-track {
       display: none;
     }
-    
+
     ::-webkit-scrollbar-thumb {
       display: none;
     }
-    
+
     .custom-scrollbar::-webkit-scrollbar {
       width: 0;
       display: none;
     }
-    
+
     .custom-scrollbar::-webkit-scrollbar-track {
       display: none;
     }
-    
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
       display: none;
     }
-    
+
     /* Para Firefox */
     * {
       scrollbar-width: none;
     }
-    
+
     /* Para IE y Edge */
     * {
       -ms-overflow-style: none;
     }
   }
 </style>
-

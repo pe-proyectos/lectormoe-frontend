@@ -24,6 +24,27 @@ const manga = mangaResult;
 // Asegurar que la URL de la imagen sea absoluta para Discord embeds
 // Priorizar bannerUrl sobre imageUrl
 const absoluteImageUrl =  manga.bannerUrl || manga.imageUrl;
+
+
+// Determinar si se deben mostrar ads
+// Por defecto true
+let showAds = true;
+
+// Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
+if (logged && user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && organization?.id) {
+  const activeSubscription = user.subscriptions.find((sub: any) => 
+    sub.subscriptionPlan?.hideAds === true && 
+    sub.subscriptionPlan?.organizationId === organization.id
+  );
+  if (activeSubscription) {
+    showAds = false;
+  }
+}
+
+// Si el usuario tiene permisos en esta organización y tiene el permiso hideAds, ocultar ads
+if (logged && user && permissions && typeof permissions === 'object' && permissions.hideAds === true) {
+  showAds = false;
+}
 ---
 
 <LandingLayout 
@@ -31,6 +52,7 @@ const absoluteImageUrl =  manga.bannerUrl || manga.imageUrl;
   description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
   imageUrl={absoluteImageUrl}
   organization={organization}
+  showAds={showAds}
 >
   <MangaDetailPageContainer
     manga={manga}

@@ -13,30 +13,10 @@ interface Props {
 	staticNavbar?: boolean;
 }
 
-const { title, isAdmin, imageUrl, description, staticNavbar } = Astro.props;
-let { showAds } = Astro.props;
+const { title, isAdmin, imageUrl, description, staticNavbar, showAds = false } = Astro.props;
 // @ts-ignore - organizationSlug se define dinámicamente en el middleware
 const { theme, organization, userSlug, username, user, language, organizationSlug } = Astro.locals
 const isDecember = new Date().getMonth() === 11;
-
-// Rutas globales donde NO se deben mostrar ads
-const pathname = Astro.url.pathname;
-const globalRoutesWithoutAds = ['/', '/search', '/login', '/register', '/forgot-password'];
-const isGlobalRouteWithoutAds = globalRoutesWithoutAds.includes(pathname);
-
-// No mostrar ads en rutas globales específicas o rutas admin
-if (isGlobalRouteWithoutAds || isAdmin) {
-	showAds = false;
-}
-
-// No mostrar ads si el usuario tiene suscripción que oculta ads
-if (user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan?.hideAds === true) {
-	showAds = false;
-}
-// No mostrar ads si el usuario tiene hideAds activado
-if (user && user?.hideAds === true) {
-	showAds = false;
-}
 ---
 
 <!doctype html>
@@ -50,10 +30,6 @@ if (user && user?.hideAds === true) {
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
 		{
-			!isAdmin && 
-			organization && 
-			(showAds ?? true) && 
-			organization.enableGoogleAds && 
 			organization.googleAdsMetaContent && (
 				<meta
 					name="google-adsense-account"
@@ -63,11 +39,7 @@ if (user && user?.hideAds === true) {
 		}
 		{/* Google Ads Script - Solo en vistas de organización, no en admin ni globales */}
 		{
-			!isAdmin && 
-			organization && 
-			(showAds ?? true) && 
-			organization.enableGoogleAds && 
-			organization.googleAdsMetaContent && (
+			showAds && (
 				<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${organization.googleAdsMetaContent}`}
 					crossorigin="anonymous"></script>
 			)
