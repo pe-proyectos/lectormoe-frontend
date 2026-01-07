@@ -4,11 +4,35 @@ interface Props {
   description?: string;
   organization?: any;
   imageUrl?: string;
+  showAds?: boolean;
 }
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization } = Astro.locals;
-const { title: propTitle, description: propDescription, imageUrl: propImageUrl } = Astro.props;
+const { organization, user } = Astro.locals;
+const { title: propTitle, description: propDescription, imageUrl: propImageUrl, showAds: propShowAds } = Astro.props;
+
+// Determinar si se deben mostrar ads
+let showAds = propShowAds ?? true;
+
+// Rutas globales donde NO se deben mostrar ads
+const pathname = Astro.url.pathname;
+const globalRoutesWithoutAds = ['/', '/search', '/login', '/register', '/forgot-password'];
+const isGlobalRouteWithoutAds = globalRoutesWithoutAds.includes(pathname);
+const isAdminRoute = pathname.includes('/admin');
+
+// No mostrar ads en rutas globales específicas o rutas admin
+if (isGlobalRouteWithoutAds || isAdminRoute) {
+  showAds = false;
+}
+
+// No mostrar ads si el usuario tiene suscripción que oculta ads
+if (user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && user.subscriptions[0].subscriptionPlan?.hideAds === true) {
+  showAds = false;
+}
+// No mostrar ads si el usuario tiene hideAds activado
+if (user && user?.hideAds === true) {
+  showAds = false;
+}
 
 // Determinar título y descripción basados en la organización o props
 const title = propTitle || (organization?.title ? `${organization.title} - ${organization.name || 'Mangas'}` : "CapibaraTraductor - El Hub de tus Scans Favoritos");
@@ -26,6 +50,38 @@ const siteName = organization?.title || organization?.name || "CapibaraTraductor
     <link rel="icon" type="image/png" href={faviconUrl} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    
+    {/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
+    {
+      organization && 
+      (showAds ?? true) && 
+      organization.enableGoogleAds && 
+      organization.googleAdsMetaContent && (
+        <meta
+          name="google-adsense-account"
+          content={organization.googleAdsMetaContent}
+        />
+      )
+    }
+    {/* Google Ads Script - Solo en vistas de organización, no en admin ni globales */}
+    {
+      organization && 
+      (showAds ?? true) && 
+      organization.enableGoogleAds && 
+      organization.googleAdsMetaContent && (
+        <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${organization.googleAdsMetaContent}`}
+          crossorigin="anonymous"></script>
+      )
+    }
+    {/* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */}
+    {
+      organization && 
+      (showAds ?? true) && 
+      organization.enableAdsterraAds && 
+      organization.adsterraAdSource && (
+        <script type='text/javascript' src={organization.adsterraAdSource}></script>
+      )
+    }
     
     {/* Open Graph / Facebook */}
     <meta property="og:type" content="website" />
