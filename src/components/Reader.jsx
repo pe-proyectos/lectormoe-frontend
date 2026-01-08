@@ -67,7 +67,6 @@ const SinglePageContainer = memo((props) => {
 SinglePageContainer.displayName = "SinglePageContainer";
 
 // Componente memoizado para páginas dobles
-// @ts-ignore
 const DoublePageContainer = memo((props) => {
   const {
     page,

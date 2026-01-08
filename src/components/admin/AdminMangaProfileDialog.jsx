@@ -79,7 +79,7 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
         description,
       }),
     })
-      .then((response) => {
+      .then(() => {
         toast.success(_("manga_profile_created"));
         setTitle("");
         setDemography(null);
@@ -102,138 +102,151 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
         size="md"
       >
         <div className="flex flex-col gap-6">
+          {/* Authors Section */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
               {selectedAuthors.length > 1 ? _("authors") : _("author")} (
               {selectedAuthors.length}/4)
             </label>
-        <div className="flex">
-          <div className="grow">
+            <div className="flex">
+              <div className="grow">
+                <Autocomplete
+                  multiple
+                  disablePortal
+                  options={authors}
+                  isOptionEqualToValue={(option, value) =>
+                    option.slug === value.slug
+                  }
+                  getOptionLabel={(option) => option.name}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="standard"
+                      label={
+                        selectedAuthors.length > 1 ? _("authors") : _("author")
+                      }
+                      placeholder={
+                        selectedAuthors.length > 1
+                          ? _("authors") + "..."
+                          : _("author") + "..."
+                      }
+                    />
+                  )}
+                  value={selectedAuthors}
+                  getOptionDisabled={() =>
+                    selectedAuthors.length >= 4
+                  }
+                  onChange={(_event, newValue) => setSelectedAuthors(newValue)}
+                />
+              </div>
+              <div className="flex-none">
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-3 h-full ml-2"
+                  onClick={() => setIsCreateAuthorDialogOpen(true)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                </Button>
+                <AdminCreateAuthorDialog
+                  language={language}
+                  open={isCreateAuthorDialogOpen}
+                  setOpen={setIsCreateAuthorDialogOpen}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Demography Section */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+              {_("demography")}
+            </label>
             <Autocomplete
-              multiple
               disablePortal
-              options={authors}
-              isOptionEqualToValue={(option, value) =>
-                option.slug === value.slug
-              }
+              options={demographies}
+              getOptionLabel={(option) => `${option.name} (${option.description})`}
+              renderInput={(params) => (
+                <TextField {...params} label={_("demography")} />
+              )}
+              value={demography}
+              onChange={(_event, newValue) => setDemography(newValue)}
+            />
+          </div>
+
+          {/* Book Type Section */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+              {_("book_type")}
+            </label>
+            <Autocomplete
+              disablePortal
+              options={bookTypes}
               getOptionLabel={(option) => option.name}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  variant="standard"
-                  label={
-                    selectedAuthors.length > 1 ? _("authors") : _("author")
-                  }
-                  placeholder={
-                    selectedAuthors.length > 1
-                      ? _("authors") + "..."
-                      : _("author") + "..."
-                  }
-                />
+                <TextField {...params} label={_("book_type")} />
               )}
-              value={selectedAuthors}
-              getOptionDisabled={(options) =>
-                selectedAuthors.length >= 4 ? true : false
-              }
-              onChange={(event, newValue) => setSelectedAuthors(newValue)}
+              value={bookType}
+              onChange={(_event, newValue) => setBookType(newValue)}
             />
           </div>
-          <div className="flex-none">
-            <Button
-              variant="ghost"
-              className="flex items-center gap-3 h-full ml-2"
-              onClick={() => setIsCreateAuthorDialogOpen(true)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                />
-              </svg>
+
+          {/* Title Input */}
+          <Input
+            label={_("manga_title")}
+            autoComplete="off"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+
+          {/* Short Description Section */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+              {_("short_description")} (
+              {shortDescription.length.toString().padStart(3, "0")}/300{" "}
+              {_("characters")}) ({_("optional")})
+            </label>
+            <Textarea
+              label={_("short_description_less_than_300")}
+              maxLength={300}
+              value={shortDescription}
+              onChange={(e) => setShortDescription(e.target.value)}
+            />
+          </div>
+
+          {/* Synopsis Section */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+              {_("synopsis")} ({_("optional")})
+            </label>
+            <Textarea
+              label={_("manga_synopsis")}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              {_("cancel") || "Cancelar"}
             </Button>
-            <AdminCreateAuthorDialog
-              language={language}
-              open={isCreateAuthorDialogOpen}
-              setOpen={setIsCreateAuthorDialogOpen}
-            />
+            <Button variant="primary" onClick={handleSubmit} loading={loading}>
+              {_("save_manga_profile")}
+            </Button>
           </div>
-        </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-            {_("demography")}
-          </label>
-        <Autocomplete
-          disablePortal
-          options={demographies}
-          getOptionLabel={(option) => `${option.name} (${option.description})`}
-          renderInput={(params) => (
-            <TextField {...params} label={_("demography")} />
-          )}
-          value={demography}
-          onChange={(event, newValue) => setDemography(newValue)}
-        />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-            {_("book_type")}
-          </label>
-        <Autocomplete
-          disablePortal
-          options={bookTypes}
-          getOptionLabel={(option) => option.name}
-          renderInput={(params) => (
-            <TextField {...params} label={_("book_type")} />
-          )}
-          value={bookType}
-          onChange={(event, newValue) => setBookType(newValue)}
-        />
-        </div>
-        <Input
-          label={_("manga_title")}
-          autoComplete="off"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-            {_("short_description")} (
-            {shortDescription.length.toString().padStart(3, "0")}/300{" "}
-            {_("characters")}) ({_("optional")})
-          </label>
-          <Textarea
-            label={_("short_description_less_than_300")}
-            maxLength={300}
-            value={shortDescription}
-            onChange={(e) => setShortDescription(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-            {_("synopsis")} ({_("optional")})
-          </label>
-          <Textarea
-            label={_("manga_synopsis")}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
-          <Button variant="secondary" onClick={() => setOpen(false)}>
-            {_("cancel") || "Cancelar"}
-          </Button>
-          <Button variant="primary" onClick={handleSubmit} loading={loading}>
-            {_("save_manga_profile")}
-          </Button>
-        </div>
         </div>
       </Modal>
       <ToastContainer theme="dark" />
