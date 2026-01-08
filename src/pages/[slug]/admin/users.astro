@@ -24,6 +24,7 @@ const subscriptionPlansData = await callAPI(`/api/subscription-plan`);
     language={language}
     subscriptionPlans={subscriptionPlansData?.data || []}
     organizationSlug={organizationSlug}
+    organizationId={organization.id}
     client:only="react"
   />
 </AdminLayout>

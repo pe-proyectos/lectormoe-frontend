@@ -68,7 +68,7 @@ interface UserData {
   email: string;
   description?: string;
   subscriptions: Subscription[];
-  permissions?: UserPermissions;
+  permissions?: Array<UserPermissions & { organizationId: number }>;
 }
 
 interface AdminUserDialogProps {
@@ -78,6 +78,7 @@ interface AdminUserDialogProps {
   user: UserData | null;
   setUser: (user: UserData | null) => void;
   subscriptionPlans: SubscriptionPlan[];
+  organizationId: number;
 }
 
 const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
@@ -87,6 +88,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   user,
   setUser,
   subscriptionPlans,
+  organizationId,
 }) => {
   const _ = getTranslator(language);
 
@@ -128,11 +130,12 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
 
   useEffect(() => {
     if (!user) return;
-    const userPermissions = user.permissions || {};
+    // Buscar permisos de la organización específica
+    const userPermissions = user.permissions?.find((p: any) => p.organizationId === organizationId) as UserPermissions | undefined;
     // Solo leer los valores para mostrar, no para editar
-    setRole(userPermissions.role || 'user');
+    setRole(userPermissions?.role || 'user');
     setDescription(user.description || '');
-    setHierarchyLevel(userPermissions.hierarchyLevel || 0);
+    setHierarchyLevel(userPermissions?.hierarchyLevel || 0);
     
     // Solo cargar permisos relacionados con la organización
     const newPermissions: Record<string, boolean> = {};
@@ -140,7 +143,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       newPermissions[key] = (userPermissions as any)[key] || false;
     });
     setPermissions(newPermissions);
-  }, [user]);
+  }, [user, organizationId]);
 
   const handleSubmit = async () => {
     // Los admins solo pueden editar permisos, no información personal
