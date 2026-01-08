@@ -166,6 +166,7 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
             />
           </div>
         </div>
+        </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
             {_("demography")}
