@@ -146,13 +146,13 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
   return (
     <div className="w-full my-4">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
-          <Users className="text-white" size={28} />
+      <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 sm:p-3 rounded-lg sm:rounded-xl flex-shrink-0">
+          <Users className="text-white" size={24} />
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-white">{_('user_list')}</h2>
-          <p className="text-gray-400 text-sm">{total || '-'} usuarios en total</p>
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold text-white truncate">{_('user_list')}</h2>
+          <p className="text-gray-400 text-xs sm:text-sm">{total || '-'} usuarios en total</p>
         </div>
       </div>
 
@@ -266,19 +266,19 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       )}
 
       {/* User Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {userList.map((user) => (
           <Card
             key={user.id}
             className="cursor-pointer hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1"
             onClick={() => handleCardClick(user)}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-white mb-1">{user.username}</h3>
-                <p className="text-gray-400 text-sm break-all">{user.email}</p>
+            <div className="flex items-start justify-between mb-4 gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{user.username}</h3>
+                <p className="text-gray-400 text-xs sm:text-sm break-all">{user.email}</p>
               </div>
-              <div className="bg-blue-500/20 p-2 rounded-lg">
+              <div className="bg-blue-500/20 p-2 rounded-lg flex-shrink-0">
                 <User className="text-blue-400" size={20} />
               </div>
             </div>

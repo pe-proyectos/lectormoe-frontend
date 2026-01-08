@@ -1,4 +1,3 @@
-import { Typography, Tooltip, Chip } from "@material-tailwind/react";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
@@ -44,9 +43,19 @@ export function FeaturedMangaCard({ organization, language, manga, organizationS
               {manga?.lastChapterAt &&
                 new Date(manga.lastChapterAt) >
                   new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
-                  <Tooltip
-                    content={
-                      new Date(manga.lastChapterAt).getTime() >
+                  <div className="relative group/tooltip">
+                    <span
+                      className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer px-2 py-1 rounded border border-white/20 text-xs"
+                      onClick={() =>
+                        (location.href = manga?.lastChapters?.[0]
+                          ? getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
+                          : getOrgPath(`/manga/${manga.slug}`, orgSlug))
+                      }
+                    >
+                      {_("new_chapter")}
+                    </span>
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                      {new Date(manga.lastChapterAt).getTime() >
                       new Date().setHours(0, 0, 0, 0)
                         ? `${_("chapter")} ${
                             manga?.lastChapters?.[0]?.number || _("latest")
@@ -55,39 +64,24 @@ export function FeaturedMangaCard({ organization, language, manga, organizationS
                             manga?.lastChapters?.[0]?.number || _("latest")
                           } ${_("was_released_on")} ${new Date(
                             manga.lastChapterAt
-                          ).toLocaleDateString()}`
-                    }
-                  >
-                    <Chip
-                      variant="outlined"
-                      value={_("new_chapter")}
-                      className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer"
-                      onClick={() =>
-                        (location.href = manga?.lastChapters?.[0]
-                          ? getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
-                          : getOrgPath(`/manga/${manga.slug}`, orgSlug))
-                      }
-                    />
-                  </Tooltip>
+                          ).toLocaleDateString()}`}
+                    </div>
+                  </div>
                 )}
-              <Chip
-                variant="filled"
-                value={`${manga?.views || 0} ${
+              <span className="backdrop-blur-sm bg-blue-600 bg-opacity-80 text-white px-2 py-1 rounded text-xs">
+                {`${manga?.views || 0} ${
                   manga?.views === 1 ? _("reader") : _("total_views")
                 }`}
-              />
+              </span>
             </div>
           </div>
           <div className="absolute bottom-4 left-4 right-4">
-            <Typography color="white" className="font-semibold text-4xl">
+            <h3 className="text-white font-semibold text-4xl">
               {manga?.title || ""}
-            </Typography>
-            <Typography
-              color="white"
-              className="font-normal text-sm hidden lg:block"
-            >
+            </h3>
+            <p className="text-white font-normal text-sm hidden lg:block">
               {manga?.shortDescription || ""}
-            </Typography>
+            </p>
           </div>
         </div>
       </a>

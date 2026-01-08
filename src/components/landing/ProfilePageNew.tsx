@@ -102,22 +102,36 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   useEffect(() => {
     const fetchFollowedScans = async () => {
       if (!logged || !user) {
+        console.log('Not logged in or no user, skipping followed scans fetch');
         setLoadingScans(false);
         return;
       }
 
       try {
         setLoadingScans(true);
+        console.log('Fetching followed scans for user:', user.id);
         const result = await callAPI('/api/organization/followed');
         
-        // callAPI already returns result.data, so result is the array directly
+        console.log('Followed scans API response:', result);
+        console.log('Result type:', typeof result);
+        console.log('Is array:', Array.isArray(result));
+        
+        // callAPI returns result.data, so result should be the array directly
         if (result && Array.isArray(result)) {
+          console.log('Setting followed scans:', result.length, 'scans');
           setFollowedScans(result);
+        } else if (result && result.data && Array.isArray(result.data)) {
+          // Fallback: if somehow result.data exists
+          console.log('Setting followed scans from result.data:', result.data.length, 'scans');
+          setFollowedScans(result.data);
         } else {
+          console.warn('Unexpected response structure for followed scans:', result);
           setFollowedScans([]);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching followed scans:', error);
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack);
         setFollowedScans([]);
       } finally {
         setLoadingScans(false);
@@ -567,9 +581,9 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                       const mangaCustom = favorite.mangaCustom || favorite;
                       const orgSlug = mangaCustom.organization?.slug || '';
                       
-                      // Check if user has subscription to this organization
+                      // Check if user has subscription to this organization with canReadUnreleased
                       const userHasSubscription = logged && user?.subscriptions?.some(
-                        (sub: any) => sub?.organizationId === mangaCustom.organization?.id && sub.active === true
+                        (sub: any) => sub?.organizationId === mangaCustom.organization?.id && sub.active === true && sub?.subscriptionPlan?.canReadUnreleased === true
                       ) || false;
 
                       // Map chapters with read status
@@ -593,7 +607,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                         <MangaCard3D 
                           key={mangaCustom.id || favorite.id} 
                           user={user}
-                          organization={organization}
+                          organization={mangaCustom.organization || organization}
                           manga={{
                             id: mangaCustom.id?.toString() || '',
                             title: mangaCustom.title,

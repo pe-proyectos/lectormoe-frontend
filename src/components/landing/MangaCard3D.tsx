@@ -47,16 +47,55 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
   const cardRef = useRef<HTMLDivElement>(null);
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
 
-  const userPermissions = user?.permissions.find((permission: any) => permission.organizationId === organization?.id) || {};
+  // Find user permissions for this specific organization
+  const userPermissions = user?.permissions?.find((permission: any) => {
+    // Match by organization ID if available
+    if (organization?.id && permission.organizationId === organization.id) {
+      return true;
+    }
+    // Fallback: if organization ID doesn't match, try to find any permission
+    // This handles cases where organization object might not have ID
+    return false;
+  }) || {};
 
   // Helper function to check if user has access (considering both subscription and permissions)
   const userHasAccess = (chapter: Chapter): boolean => {
-    // If user has permission to read unreleased, they can read subscriber-only content
-    if (userPermissions?.canReadUnreleased || userPermissions?.canEditChapter || userPermissions?.canEditPage) {
+    // If chapter is not subscriber-only, everyone can access
+    if (!chapter.subscribersOnly) {
       return true;
     }
-    // Otherwise, check subscription status
-    return !chapter.subscribersOnly || !!manga.userHasSubscription;
+
+    // Check user permissions first (highest priority)
+    if (userPermissions?.canReadUnreleased === true) {
+      return true;
+    }
+    if (userPermissions?.canEditChapter === true) {
+      return true;
+    }
+    if (userPermissions?.canEditPage === true) {
+      return true;
+    }
+
+    // Check if user has subscription with canReadUnreleased for this organization
+    if (user?.subscriptions && organization?.id) {
+      for (const subscription of user.subscriptions) {
+        if (
+          subscription?.subscriptionPlan?.canReadUnreleased === true && 
+          subscription.active === true &&
+          subscription?.organizationId === organization.id
+        ) {
+          return true;
+        }
+      }
+    }
+
+    // Fallback: check manga.userHasSubscription (for backward compatibility)
+    if (manga.userHasSubscription) {
+      return true;
+    }
+
+    // No access
+    return false;
   };
 
   // Helper function to get access reason message

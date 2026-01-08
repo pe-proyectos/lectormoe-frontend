@@ -1,16 +1,5 @@
 import React from "react";
-import {
-  Navbar,
-  Collapse,
-  Typography,
-  Button,
-  IconButton,
-  Menu,
-  MenuHandler,
-  MenuList,
-  Input,
-  MenuItem,
-} from "@material-tailwind/react";
+import "cookie-store";
 import { BellIcon, UserIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
@@ -33,6 +22,8 @@ export function StickyNavbar({
 
   const [openNav, setOpenNav] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [openLanguageMenu, setOpenLanguageMenu] = React.useState(false);
+  const [openUserMenu, setOpenUserMenu] = React.useState(false);
   const [snowActive, setSnowActive] = React.useState(
     () => localStorage.getItem("snowActive") !== "false"
   );
@@ -94,20 +85,15 @@ export function StickyNavbar({
           key={option.name}
           className="flex items-center"
         >
-          <Typography
-            as="li"
-            variant="small"
-            color="white"
-            className="p-1 font-normal"
-          >
+          <li className="p-1 font-normal text-white text-sm">
             {option.name}
-          </Typography>
+          </li>
         </a>
       ))}
     </ul>
   );
   return (
-    <Navbar
+    <nav
       id="main-navbar"
       className={
         "top-0 z-10 h-max max-w-full bg-black border-none rounded-none px-4 py-2 lg:px-8 lg:py-4 " +
@@ -127,13 +113,12 @@ export function StickyNavbar({
           </a>
         )}
         {!organization?.logoUrl && (
-          <Typography
-            as="a"
+          <a
             href="/"
-            className="mr-4 cursor-pointer py-1.5 font-medium"
+            className="mr-4 cursor-pointer py-1.5 font-medium text-white"
           >
             {organization?.title || ""}
-          </Typography>
+          </a>
         )}
         <div className="flex items-center gap-4">
           <div className="mr-4 hidden lg:block">{navList}</div>
@@ -141,14 +126,13 @@ export function StickyNavbar({
             className={
               location.pathname === "/search"
                 ? "relative w-full gap-2 md:w-max hidden"
-                : "relative w-full gap-2 md:w-max hidden md:flex"
+                : "relative w-full gap-2 md:w-max hidden md:flex min-w-[288px]"
             }
           >
-            <Input
+            <input
               type="search"
-              color="white"
-              label={_("search_manga")}
-              className="pr-20"
+              placeholder={_("search_manga")}
+              className="pr-20 bg-transparent border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[288px]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
@@ -156,26 +140,20 @@ export function StickyNavbar({
                   location.href = getOrgPath(`/search?q=${search}`, orgSlug);
                 }
               }}
-              containerProps={{
-                className: "min-w-[288px]",
-              }}
             />
-            <Button
-              size="sm"
-              variant="gradient"
-              className="!absolute right-1 top-1 rounded"
+            <button
+              className="absolute right-1 top-1 rounded bg-gradient-to-r from-blue-500 to-pink-500 text-white px-4 py-1.5 text-sm font-medium hover:opacity-90 transition-opacity"
               onClick={() => {
                 location.href = `/search?q=${search}`;
               }}
             >
               {_("search")}
-            </Button>
+            </button>
           </div>
           <div className="flex items-center gap-x-1">
             {isDecember && (
-              <IconButton
-                variant="text"
-                color="white"
+              <button
+                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
                 onClick={() => {
                   setSnowActive(!snowActive);
                   localStorage.setItem("snowActive", String(!snowActive));
@@ -205,106 +183,107 @@ export function StickyNavbar({
                   }
                 }}
               >
-                <SparklesIcon className="h-4 w-4" /> {/* Added SnowflakeIcon */}
-              </IconButton>
+                <SparklesIcon className="h-4 w-4" />
+              </button>
             )}
-            <IconButton variant="text" color="white">
+            <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
               <BellIcon className="h-4 w-4" />
-            </IconButton>
-            <Menu>
-              <MenuHandler>
-                <IconButton variant="text" color="white">
-                  <Typography variant="small" className="font-normal">
-                    {language?.toUpperCase()}
-                  </Typography>
-                </IconButton>
-              </MenuHandler>
-              <MenuList>
-                <MenuItem
-                  className={language === "en" ? "bg-gray-500 text-white" : ""}
-                  onClick={() => {
-                    cookieStore.set("language", "en").finally(() => {
-                      window.location.href = `?lang=en`;
-                    });
-                  }}
-                >
-                  {_("english")}
-                </MenuItem>
-                <MenuItem
-                  className={language === "es" ? "bg-gray-500 text-white" : ""}
-                  onClick={() => {
-                    cookieStore.set("language", "es").finally(() => {
-                      window.location.href = `?lang=es`;
-                    });
-                  }}
-                >
-                  {_("spanish")}
-                </MenuItem>
-              </MenuList>
-            </Menu>
+            </button>
+            <div className="relative">
+              <button 
+                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => setOpenLanguageMenu(!openLanguageMenu)}
+                onBlur={() => setTimeout(() => setOpenLanguageMenu(false), 200)}
+              >
+                <span className="font-normal text-sm">
+                  {language?.toUpperCase()}
+                </span>
+              </button>
+              {openLanguageMenu && (
+                <div className="absolute right-0 mt-2 w-32 bg-gray-800 rounded-lg shadow-lg z-50">
+                  <button
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 rounded-t-lg ${language === "en" ? "bg-gray-500 text-white" : "text-white"}`}
+                    onClick={() => {
+                      cookieStore.set("language", "en").finally(() => {
+                        window.location.href = `?lang=en`;
+                      });
+                    }}
+                  >
+                    {_("english")}
+                  </button>
+                  <button
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-700 rounded-b-lg ${language === "es" ? "bg-gray-500 text-white" : "text-white"}`}
+                    onClick={() => {
+                      cookieStore.set("language", "es").finally(() => {
+                        window.location.href = `?lang=es`;
+                      });
+                    }}
+                  >
+                    {_("spanish")}
+                  </button>
+                </div>
+              )}
+            </div>
             <div>
               {username ? (
-                <Menu>
-                  <MenuHandler>
-                    <IconButton variant="text" color="white">
-                      <UserIcon className="h-4 w-4" />
-                    </IconButton>
-                  </MenuHandler>
-                  <MenuList>
-                    <MenuItem disabled>{username}</MenuItem>
-                    {user?.subscriptions.length > 0 && (
-                      <a href={getOrgPath("/subscriptions", orgSlug)}>
-                        <MenuItem disabled>
-                          {user.subscriptions[0].subscriptionPlan.name}
-                        </MenuItem>
+                <div className="relative">
+                  <button 
+                    className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={() => setOpenUserMenu(!openUserMenu)}
+                    onBlur={() => setTimeout(() => setOpenUserMenu(false), 200)}
+                  >
+                    <UserIcon className="h-4 w-4" />
+                  </button>
+                  {openUserMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg z-50">
+                      <div className="px-4 py-2 text-white text-sm border-b border-gray-700 cursor-default">{username}</div>
+                      {user?.subscriptions.length > 0 && (
+                        <a href={getOrgPath("/subscriptions", orgSlug)} className="block">
+                          <div className="px-4 py-2 text-white text-sm border-b border-gray-700 cursor-default">
+                            {user.subscriptions[0].subscriptionPlan.name}
+                          </div>
+                        </a>
+                      )}
+                      <a href={`/profile/${userSlug}`} className="block">
+                        <div className="px-4 py-2 text-white text-sm hover:bg-gray-700 cursor-pointer">
+                          {_("my_profile")}
+                        </div>
                       </a>
-                    )}
-                    {
-                      <a href={`/profile/${userSlug}`}>
-                        <MenuItem>{_("my_profile")}</MenuItem>
-                      </a>
-                    }
-                    {user?.permissions?.find(
-                      (permission) => permission.organizationId === organization?.id
-                    )?.canSeeAdminPanel === true && (
-                      <a href={getOrgPath("/admin/mangas", orgSlug)}>
-                        <MenuItem>{_("admin")}</MenuItem>
-                      </a>
-                    )}
-                    <div onClick={doLogout}>
-                      <MenuItem>{_("logout")}</MenuItem>
+                      {user?.permissions?.find(
+                        (permission) => permission.organizationId === organization?.id
+                      )?.canSeeAdminPanel === true && (
+                        <a href={getOrgPath("/admin/mangas", orgSlug)} className="block">
+                          <div className="px-4 py-2 text-white text-sm hover:bg-gray-700 cursor-pointer">
+                            {_("admin")}
+                          </div>
+                        </a>
+                      )}
+                      <div onClick={doLogout} className="cursor-pointer">
+                        <div className="px-4 py-2 text-white text-sm hover:bg-gray-700 rounded-b-lg">
+                          {_("logout")}
+                        </div>
+                      </div>
                     </div>
-                  </MenuList>
-                </Menu>
+                  )}
+                </div>
               ) : (
                 <>
-                  <a href={getOrgPath(`/login?redirect=${location.pathname}`, orgSlug)}>
-                    <Button
-                      variant="text"
-                      color="white"
-                      size="sm"
-                      className="hidden lg:inline-block mx-1"
-                    >
-                      <span>{_("login")}</span>
-                    </Button>
+                  <a href={getOrgPath(`/login?redirect=${location.pathname}`, orgSlug)} className="hidden lg:inline-block mx-1">
+                    <button className="px-4 py-2 text-white text-sm font-medium hover:bg-white/10 rounded-lg transition-colors">
+                      {_("login")}
+                    </button>
                   </a>
-                  <a href={getOrgPath(`/register?redirect=${location.pathname}`, orgSlug)}>
-                    <Button
-                      variant="gradient"
-                      size="sm"
-                      className="hidden lg:inline-block mx-1"
-                    >
-                      <span>{_("register")}</span>
-                    </Button>
+                  <a href={getOrgPath(`/register?redirect=${location.pathname}`, orgSlug)} className="hidden lg:inline-block mx-1">
+                    <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                      {_("register")}
+                    </button>
                   </a>
                 </>
               )}
             </div>
           </div>
-          <IconButton
-            variant="text"
-            className="ml-auto h-6 w-6 text-inherit hover:bg-transparent focus:bg-transparent active:bg-transparent lg:hidden"
-            ripple={false}
+          <button
+            className="ml-auto h-6 w-6 text-white hover:bg-transparent focus:bg-transparent active:bg-transparent lg:hidden"
             onClick={() => setOpenNav(!openNav)}
           >
             {openNav ? (
@@ -337,57 +316,53 @@ export function StickyNavbar({
                 />
               </svg>
             )}
-          </IconButton>
+          </button>
         </div>
       </div>
-      <Collapse open={openNav}>
+      {openNav && (
+        <div className="lg:hidden">
         {navList}
         <div className="flex items-center gap-x-1 pb-4 justify-center">
           <div
             className={
               location.pathname === "/search"
                 ? "relative w-full gap-2 md:w-max hidden"
-                : "relative w-full gap-2 md:w-max"
+                : "relative w-full gap-2 md:w-max min-w-[288px]"
             }
           >
-            <Input
+            <input
               type="search"
-              color="white"
-              label={_("search_manga")}
-              className="pr-20"
+              placeholder={_("search_manga")}
+              className="pr-20 bg-transparent border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              containerProps={{
-                className: "min-w-[288px]",
-              }}
             />
-            <Button
-              size="sm"
-              variant="gradient"
-              className="!absolute right-1 top-1 rounded"
+            <button
+              className="absolute right-1 top-1 rounded bg-gradient-to-r from-blue-500 to-pink-500 text-white px-4 py-1.5 text-sm font-medium hover:opacity-90 transition-opacity"
               onClick={() => {
                 location.href = getOrgPath(`/search?q=${search}`, orgSlug);
               }}
             >
               {_("search")}
-            </Button>
+            </button>
           </div>
         </div>
         {!username && (
           <div className="flex items-center justify-center gap-x-1">
-            <a href={getOrgPath("/login", orgSlug)}>
-              <Button fullWidth variant="text" color="white" size="sm">
-                <span>{_("login")}</span>
-              </Button>
+            <a href={getOrgPath("/login", orgSlug)} className="w-full">
+              <button className="w-full px-4 py-2 text-white text-sm font-medium hover:bg-white/10 rounded-lg transition-colors">
+                {_("login")}
+              </button>
             </a>
-            <a href={getOrgPath("/register", orgSlug)}>
-              <Button fullWidth variant="gradient" size="sm" className="">
-                <span>{_("register")}</span>
-              </Button>
+            <a href={getOrgPath("/register", orgSlug)} className="w-full">
+              <button className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                {_("register")}
+              </button>
             </a>
           </div>
         )}
-      </Collapse>
-    </Navbar>
+        </div>
+      )}
+    </nav>
   );
 }

@@ -1,16 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import {
-  Spinner,
-  Button,
-  ButtonGroup,
-  Card,
-  Accordion,
-  AccordionBody,
-  Tooltip,
-  Dialog,
-  CardBody,
-} from "@material-tailwind/react";
-import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -613,14 +602,7 @@ export function Reader({
             }}
             {...props}
           >
-            <Tooltip
-              content={
-                chapter?.previousChapter
-                  ? _("click_to_previous_chapter")
-                  : _("you_are_in_first_chapter")
-              }
-              placement="bottom"
-            >
+            <div className="relative group/tooltip">
               <ChevronLeftIcon
                 className={
                   chapter?.previousChapter
@@ -628,7 +610,12 @@ export function Reader({
                     : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
                 }
               />
-            </Tooltip>
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {chapter?.previousChapter
+                  ? _("click_to_previous_chapter")
+                  : _("you_are_in_first_chapter")}
+              </div>
+            </div>
           </div>
         ),
     [chapter?.previousChapter, manga.slug, orgSlug, _]
@@ -649,14 +636,7 @@ export function Reader({
             }}
             {...props}
           >
-            <Tooltip
-              content={
-                chapter?.nextChapter
-                  ? _("click_to_next_chapter")
-                  : _("you_are_in_last_chapter")
-              }
-              placement="bottom"
-            >
+            <div className="relative group/tooltip">
               <ChevronRightIcon
                 className={
                   chapter?.nextChapter
@@ -664,7 +644,12 @@ export function Reader({
                     : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
                 }
               />
-            </Tooltip>
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {chapter?.nextChapter
+                  ? _("click_to_next_chapter")
+                  : _("you_are_in_last_chapter")}
+              </div>
+            </div>
           </div>
         ),
     [chapter?.nextChapter, manga.slug, orgSlug, _]
@@ -819,32 +804,28 @@ export function Reader({
               <PreviousChapterArrow />
               <a
                 href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
-                className="flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors"
+                className="flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors relative group/tooltip"
               >
-                <Tooltip
-                  content={_("click_here_chapter_list")}
-                  placement="bottom"
-                >
-                  <span className="text-3xl sm:text-6xl">
-                    {chapter?.number}
-                  </span>
-                </Tooltip>
+                <span className="text-3xl sm:text-6xl">
+                  {chapter?.number}
+                </span>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  {_("click_here_chapter_list")}
+                </div>
               </a>
               <NextChapterArrow />
             </div>
             <div className="flex w-full items-center gap-x-4">
               <a
                 href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
-                className="hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors"
+                className="hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors relative group/tooltip"
               >
-                <Tooltip
-                  content={_("click_here_chapter_list")}
-                  placement="bottom"
-                >
-                  <span className="text-2xl md:text-6xl">
-                    {chapter?.number}
-                  </span>
-                </Tooltip>
+                <span className="text-2xl md:text-6xl">
+                  {chapter?.number}
+                </span>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  {_("click_here_chapter_list")}
+                </div>
               </a>
               <div className="flex flex-grow flex-wrap items-center justify-start">
                 <span className="w-full text-xl md:text-3xl">
@@ -868,8 +849,8 @@ export function Reader({
           <NextChapterArrow className="hidden md:flex flex-grow items-center h-full justify-center group/nav" />
         </div>
         <div className="flex w-full max-w-5xl mx-auto items-center">
-          <Accordion open={settings.chapterSettings}>
-            <AccordionBody className="py-6 px-4">
+          {settings.chapterSettings && (
+            <div className="py-6 px-4">
               <div className="flex flex-wrap w-full justify-between items-center gap-x-4">
                 <div className="space-y-4">
                   {/* Limitar altura de página */}
@@ -959,8 +940,8 @@ export function Reader({
                   </div>
                 </div>
               </div>
-            </AccordionBody>
-          </Accordion>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-wrap w-full min-h-[100vh] justify-center">
@@ -973,7 +954,7 @@ export function Reader({
         >
           {chapterData.pages.length === 0 && loading && !accessError && (
             <div className="flex min-h-full w-full justify-center py-4">
-              <Spinner color="red" />
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
             </div>
           )}
 
@@ -1122,55 +1103,62 @@ export function Reader({
         )}
 
         <div className="flex w-full justify-center mt-2">
-          <div className=" m-2">
-            <ButtonGroup>
-              {chapter?.previousChapter &&
-                (new Date(chapter.previousChapter?.releasedAt).getTime() <
-                new Date().getTime() ? (
-                  <Button
-                    onClick={() =>
-                      (location.href = getOrgPath(
-                        `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`,
-                        orgSlug
-                      ))
-                    }
-                  >
-                    {_("previous_chapter")}#{chapter?.previousChapter?.number}{" "}
-                    {chapter?.previousChapter?.title}
-                  </Button>
-                ) : (
-                  <Button disabled>
-                    {_("previous_chapter_will_be_released_in")}{" "}
-                    {formatDate(chapter.previousChapter?.releasedAt, language)}
-                  </Button>
-                ))}
-              <Button
-                onClick={() =>
-                  (location.href = getOrgPath(`/manga/${manga.slug}`, orgSlug))
-                }
-              >
-                {_("back_to_chapter_list")}
-              </Button>
-              {chapter?.nextChapter &&
-                (new Date(chapter.nextChapter?.releasedAt).getTime() <
-                new Date().getTime() ? (
-                  <Button
-                    onClick={() =>
-                      (location.href = getOrgPath(
-                        `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`,
-                        orgSlug
-                      ))
-                    }
-                  >
-                    {_("next_chapter")}
-                  </Button>
-                ) : (
-                  <Button disabled>
-                    {_("next_chapter_will_be_released_in")}{" "}
-                    {formatDate(chapter.nextChapter?.releasedAt, language)}
-                  </Button>
-                ))}
-            </ButtonGroup>
+          <div className="m-2 flex flex-wrap gap-2 justify-center">
+            {chapter?.previousChapter &&
+              (new Date(chapter.previousChapter?.releasedAt).getTime() <
+              new Date().getTime() ? (
+                <button
+                  onClick={() =>
+                    (location.href = getOrgPath(
+                      `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`,
+                      orgSlug
+                    ))
+                  }
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  {_("previous_chapter")}#{chapter?.previousChapter?.number}{" "}
+                  {chapter?.previousChapter?.title}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg cursor-not-allowed opacity-50"
+                >
+                  {_("previous_chapter_will_be_released_in")}{" "}
+                  {formatDate(chapter.previousChapter?.releasedAt, language)}
+                </button>
+              ))}
+            <button
+              onClick={() =>
+                (location.href = getOrgPath(`/manga/${manga.slug}`, orgSlug))
+              }
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              {_("back_to_chapter_list")}
+            </button>
+            {chapter?.nextChapter &&
+              (new Date(chapter.nextChapter?.releasedAt).getTime() <
+              new Date().getTime() ? (
+                <button
+                  onClick={() =>
+                    (location.href = getOrgPath(
+                      `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`,
+                      orgSlug
+                    ))
+                  }
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  {_("next_chapter")}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg cursor-not-allowed opacity-50"
+                >
+                  {_("next_chapter_will_be_released_in")}{" "}
+                  {formatDate(chapter.nextChapter?.releasedAt, language)}
+                </button>
+              ))}
           </div>
         </div>
 
@@ -1178,7 +1166,9 @@ export function Reader({
           {settings.readType === readTypes.CASCADE &&
             chapterData.pages.length > 0 && (
               <a href="#manga-pages-top" className="text-white text-xl">
-                <Button>{_("back_to_start")}</Button>
+                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  {_("back_to_start")}
+                </button>
               </a>
             )}
         </div>
@@ -1202,46 +1192,49 @@ export function Reader({
         </div>
       </div>
       {/* Pages Dialog */}
-      <Dialog
-        size="xs"
-        open={openPagesDialog}
-        handler={handlePagesDialog}
-        className="bg-transparent shadow-none"
-      >
-        <Card className="bg-gray-900 bg-opacity-90 mx-auto w-full max-w-[24rem]">
-          <CardBody className="flex flex-col gap-2">
-            <div className="flex flex-wrap justify-between items-center">
-              <span className="text-2xl text-white">{_("pages_list")}</span>
-              <span className="text-base text-white">{manga?.title}</span>
-            </div>
-            <span className="text-lg text-white">
-              {_("chapter")} {chapter?.number}
-            </span>
-            <span className="text-base text-white">{chapter?.title}</span>
-            <div className="flex flex-wrap gap-2 my-2">
-              {chapterData.pages.map((page) => (
-                <span
-                  key={page.number}
-                  onClick={() => {
-                    if (settings.readType === readTypes.PAGINATED) {
-                      setCurrentPage(page.number);
-                    }
-                    location.href =
-                      settings.readType === readTypes.PAGINATED
-                        ? "#manga-pages-top"
-                        : `#page-${page.number}`;
+      {openPagesDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handlePagesDialog}>
+          <div className="bg-gray-900 bg-opacity-90 mx-auto w-full max-w-[24rem] rounded-lg p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap justify-between items-center">
+                <span className="text-2xl text-white">{_("pages_list")}</span>
+                <span className="text-base text-white">{manga?.title}</span>
+              </div>
+              <span className="text-lg text-white">
+                {_("chapter")} {chapter?.number}
+              </span>
+              <span className="text-base text-white">{chapter?.title}</span>
+              <div className="flex flex-wrap gap-2 my-2">
+                {chapterData.pages.map((page) => (
+                  <span
+                    key={page.number}
+                    onClick={() => {
+                      if (settings.readType === readTypes.PAGINATED) {
+                        setCurrentPage(page.number);
+                      }
+                      location.href =
+                        settings.readType === readTypes.PAGINATED
+                          ? "#manga-pages-top"
+                          : `#page-${page.number}`;
 
-                    handlePagesDialog();
-                  }}
-                  className="px-4 text-white bg-gray-800 odd:bg-gray-700 hover:bg-orange-900 hover:cursor-pointer shadow-sm rounded-md"
-                >
-                  {`${_("page")} ${page.number}`}
-                </span>
-              ))}
+                      handlePagesDialog();
+                    }}
+                    className="px-4 text-white bg-gray-800 odd:bg-gray-700 hover:bg-orange-900 hover:cursor-pointer shadow-sm rounded-md"
+                  >
+                    {`${_("page")} ${page.number}`}
+                  </span>
+                ))}
+              </div>
+              <button
+                onClick={handlePagesDialog}
+                className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cerrar
+              </button>
             </div>
-          </CardBody>
-        </Card>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

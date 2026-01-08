@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Typography,
-  Avatar,
-  Button,
-  Chip,
-  Alert,
-  Carousel,
-} from "@material-tailwind/react";
 import { callAPI } from "../util/callApi";
 import { MangaCardsScroller } from "./MangaCardsScroller";
 import { FeaturedMangaCard } from "./FeaturedMangaCard";

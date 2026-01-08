@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Input,
-  Button,
-  Typography,
-} from "@material-tailwind/react";
 import { callAPI } from "../util/callApi";
 import { getTranslator } from "../util/translate";
 
@@ -83,81 +75,64 @@ export function ForgotPasswordCard({ language, email: initialEmail, token }) {
 
   return (
     <div className="flex justify-center py-12">
-      <Card className="w-96">
-        <CardHeader
-          variant="gradient"
-          className="mb-4 grid h-28 p-2 place-items-center bg-gradient-to-r from-blue-900 to-pink-900 text-white"
-        >
-          <Typography className="text-2xl sm:text-3xl font-extrabold">
+      <div className="w-96 bg-white rounded-lg shadow-lg">
+        <div className="mb-4 grid h-28 p-2 place-items-center bg-gradient-to-r from-blue-900 to-pink-900 text-white rounded-t-lg">
+          <h2 className="text-2xl sm:text-3xl font-extrabold">
             {_("forgot_password_title")}
-          </Typography>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-4">
+          </h2>
+        </div>
+        <div className="flex flex-col gap-4 p-6">
           <form onSubmit={handleSubmit} className="mt-8 mb-2 w-full">
-            <Typography color="gray" className="mb-2 text-center font-normal">
+            <p className="mb-2 text-center font-normal text-gray-600">
               {_("forgot_password_description")}
-            </Typography>
+            </p>
             <div className="mb-1 flex flex-col gap-6">
               {!token && (
                 <>
-                  <Typography variant="h6" color="blue-gray" className="-mb-3">
+                  <label className="text-sm font-semibold text-blue-gray-700 -mb-3">
                     {_("email")}
-                  </Typography>
-                  <Input
-                    size="lg"
+                  </label>
+                  <input
+                    type="email"
                     placeholder="name@mail.com"
-                    className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
+                    className="px-4 py-3 border border-blue-gray-200 rounded-lg focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                     autoComplete="email"
-                    labelProps={{
-                      className: "before:content-none after:content-none",
-                    }}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    crossOrigin={undefined}
                   />
                 </>
               )}
               {token && (
                 <>
-                  <Typography variant="h6" color="blue-gray" className="-mb-3">
+                  <label className="text-sm font-semibold text-blue-gray-700 -mb-3">
                     {_("new_password")}
-                  </Typography>
-                  <Input
+                  </label>
+                  <input
                     type="password"
-                    size="lg"
                     placeholder="********"
-                    className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-                    labelProps={{
-                      className: "before:content-none after:content-none",
-                    }}
+                    className="px-4 py-3 border border-blue-gray-200 rounded-lg focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    crossOrigin={undefined}
                   />
-                  <Typography variant="h6" color="blue-gray" className="-mb-3">
+                  <label className="text-sm font-semibold text-blue-gray-700 -mb-3">
                     {_("confirm_password")}
-                  </Typography>
-                  <Input
+                  </label>
+                  <input
                     type="password"
-                    size="lg"
                     placeholder="********"
-                    className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-                    labelProps={{
-                      className: "before:content-none after:content-none",
-                    }}
+                    className="px-4 py-3 border border-blue-gray-200 rounded-lg focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    crossOrigin={undefined}
                   />
                 </>
               )}
             </div>
-            <Button type="submit" className="mt-6" fullWidth>
+            <button type="submit" className="mt-6 w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
               {token ? _("reset_password") : _("send_reset_email")}
-            </Button>
+            </button>
           </form>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

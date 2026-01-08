@@ -57,9 +57,93 @@ const Navbar: React.FC<NavbarProps> = ({
   const [logged, setLogged] = useState(initialLogged);
   
   // Get user permissions for the current organization
-  const userPermissions = user?.permissions?.find(
-    (permission: any) => permission.organizationId === organization?.id
-  ) || {};
+  // Try to get permissions from user object, or fetch them if not available
+  const [userPermissions, setUserPermissions] = useState<any>({});
+  
+  useEffect(() => {
+    const fetchUserPermissions = async () => {
+      if (!logged || !user || !organization) {
+        setUserPermissions({});
+        return;
+      }
+
+      // If user already has permissions, use them
+      if (user.permissions && Array.isArray(user.permissions)) {
+        const found = user.permissions.find(
+          (permission: any) => permission.organizationId === organization.id
+        );
+        if (found) {
+          setUserPermissions(found);
+          return;
+        }
+      }
+
+      // If permissions are not available, try to fetch them from API
+      try {
+        const API_URL = import.meta.env['PUBLIC_API_URL'];
+        const cookies = document.cookie.split(";").reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split("=");
+          if (key && value) {
+            acc[key] = decodeURIComponent(value);
+          }
+          return acc;
+        }, {} as Record<string, string>);
+
+        const token = cookies["token"];
+        if (!token) {
+          setUserPermissions({});
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/api/auth/check`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-organization': organization.slug,
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result?.status === true && result?.data?.user?.permissions) {
+            const found = result.data.user.permissions.find(
+              (permission: any) => permission.organizationId === organization.id
+            );
+            if (found) {
+              setUserPermissions(found);
+              // Update user state with fresh permissions
+              setUser({
+                ...user,
+                permissions: result.data.user.permissions,
+              });
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user permissions:', error);
+      }
+
+      setUserPermissions({});
+    };
+
+    fetchUserPermissions();
+  }, [logged, user, organization]);
+  
+  // Debug: Log permissions check
+  useEffect(() => {
+    if (logged && user && organization) {
+      console.log('Navbar - User permissions check:', {
+        userId: user.id,
+        organizationId: organization.id,
+        organizationSlug: organization.slug,
+        allPermissions: user.permissions,
+        foundPermission: userPermissions,
+        canSeeAdminPanel: userPermissions?.canSeeAdminPanel,
+        activeScan: activeScan?.slug,
+      });
+    }
+  }, [logged, user, organization, userPermissions, activeScan]);
 
   // Sincronizar con props cuando cambien
   useEffect(() => {
@@ -71,6 +155,13 @@ const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Si tenemos user y logged de props, usarlos directamente
+        if (initialUser && initialLogged) {
+          setUser(initialUser);
+          setLogged(initialLogged);
+          return;
+        }
+
         // Fallback: leer cookies manualmente usando document.cookie (más confiable)
         const cookies = document.cookie.split(";").reduce((acc, cookie) => {
           const [key, value] = cookie.trim().split("=");
@@ -117,7 +208,7 @@ const Navbar: React.FC<NavbarProps> = ({
       window.removeEventListener("focus", checkAuth);
       clearInterval(interval);
     };
-  }, []);
+  }, [initialUser, initialLogged]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -365,11 +456,12 @@ const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Settings size={16} className="text-zinc-500" /> Ajustes
                   </button>
-                  {activeScan &&
+                  {(activeScan || organization) &&
                     userPermissions?.canSeeAdminPanel && (
                       <button
                         onClick={() => {
-                          navigateTo(`/${activeScan.slug}/admin`);
+                          const orgSlug = activeScan?.slug || organization?.slug;
+                          navigateTo(`/${orgSlug}/admin`);
                           setProfileDropdownOpen(false);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
@@ -523,11 +615,12 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <Settings size={20} /> Ajustes
               </button>
-              {activeScan &&
+              {(activeScan || organization) &&
                 userPermissions?.canSeeAdminPanel && (
                   <button
                     onClick={() => {
-                      navigateTo(`/${activeScan.slug}/admin`);
+                      const orgSlug = activeScan?.slug || organization?.slug;
+                      navigateTo(`/${orgSlug}/admin`);
                       setMobileMenuOpen(false);
                     }}
                     className="w-full flex items-center gap-4 text-purple-400 font-bold text-lg"

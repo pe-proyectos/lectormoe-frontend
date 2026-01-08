@@ -15,10 +15,10 @@ const { organization } = Astro.locals;
         client:load
     />
     <div class="flex pt-16 md:pt-[72px]">
-        <div class="hidden md:block min-w-[320px] bg-zinc-950">
+        <div class="w-full md:w-[280px] md:min-w-[280px] bg-zinc-950">
             <AdminSidebar language={organization.language} page={page} organizationSlug={organizationSlug} client:only="react"/>
         </div>
-        <div class="w-full h-full p-4 bg-zinc-950">
+        <div class="w-full h-full p-3 md:p-4 md:pl-0 bg-zinc-950">
             <slot />
         </div>
     </div>

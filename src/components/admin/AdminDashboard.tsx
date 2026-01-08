@@ -59,7 +59,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
     // Validar que existan datos
     if (!data || !labels || data.length === 0 || labels.length === 0) {
       return (
-        <Card className="flex-1 min-w-[300px]">
+        <Card className="flex-1 min-w-0 w-full">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-cyan-500/10 rounded-lg">
               <Icon size={20} className="text-cyan-500" />
@@ -154,7 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
     // Validar que existan datos
     if (!data || !labels || data.length === 0 || labels.length === 0) {
       return (
-        <Card className="flex-1 min-w-[300px]">
+        <Card className="flex-1 min-w-0 w-full">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-cyan-500/10 rounded-lg">
               <Icon size={20} className="text-cyan-500" />
@@ -245,15 +245,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 md:space-y-8">
       {/* Date Filters */}
       <Card>
-        <div className="flex items-center gap-3 mb-6">
-          <Calendar size={24} className="text-cyan-500" />
-          <h2 className="text-xl font-black text-white uppercase tracking-tight">Filtros de Fecha</h2>
+        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <Calendar size={20} className="text-cyan-500 flex-shrink-0" />
+          <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-tight">Filtros de Fecha</h2>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 w-full sm:min-w-[200px]">
             <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2 block">
               Desde
             </label>
@@ -264,7 +264,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
               disabled={loading}
             />
           </div>
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 w-full sm:min-w-[200px]">
             <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2 block">
               Hasta
             </label>
@@ -279,7 +279,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
       </Card>
 
       {/* Main Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         <Card>
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-cyan-500/10 rounded-lg">

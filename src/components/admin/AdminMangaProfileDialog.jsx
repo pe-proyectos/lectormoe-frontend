@@ -1,20 +1,14 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import {
-  Textarea,
-  Button,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  Typography,
-  Input,
-} from "@material-tailwind/react";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { callAPI } from "../../util/callApi";
 import { AdminCreateAuthorDialog } from "./AdminCreateAuthorDialog";
 import { getTranslator } from "../../util/translate";
+import Modal from "./ui/Modal";
+import Input from "./ui/Input";
+import Textarea from "./ui/Textarea";
+import Button from "./ui/Button";
 
 export function AdminMangaProfileDialog({ language, open, setOpen }) {
   const _ = getTranslator(language);
@@ -100,22 +94,19 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
   };
 
   return (
-    <Dialog
-      size="md"
-      open={open}
-      handler={() => setOpen((previousState) => !previousState)}
-      className="max-h-[95vh]"
-    >
-      <DialogHeader>
-        <Typography variant="h4" color="blue-gray">
-          {_("create_manga_profile")}
-        </Typography>
-      </DialogHeader>
-      <DialogBody className="max-h-[65vh] overflow-y-auto flex flex-col gap-4">
-        <Typography className="-mb-2" variant="h6" color="gray">
-          {selectedAuthors.length > 1 ? _("authors") : _("author")} (
-          {selectedAuthors.length}/4)
-        </Typography>
+    <>
+      <Modal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={_("create_manga_profile")}
+        size="md"
+      >
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+              {selectedAuthors.length > 1 ? _("authors") : _("author")} (
+              {selectedAuthors.length}/4)
+            </label>
         <div className="flex">
           <div className="grow">
             <Autocomplete
@@ -149,7 +140,7 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
           </div>
           <div className="flex-none">
             <Button
-              variant="text"
+              variant="ghost"
               className="flex items-center gap-3 h-full ml-2"
               onClick={() => setIsCreateAuthorDialogOpen(true)}
             >
@@ -175,9 +166,10 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
             />
           </div>
         </div>
-        <Typography className="-mb-2" variant="h6" color="gray">
-          {_("demography")}
-        </Typography>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+            {_("demography")}
+          </label>
         <Autocomplete
           disablePortal
           options={demographies}
@@ -188,9 +180,11 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
           value={demography}
           onChange={(event, newValue) => setDemography(newValue)}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
-          {_("book_type")}
-        </Typography>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+            {_("book_type")}
+          </label>
         <Autocomplete
           disablePortal
           options={bookTypes}
@@ -201,44 +195,47 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
           value={bookType}
           onChange={(event, newValue) => setBookType(newValue)}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
-          {_("title")}
-        </Typography>
+        </div>
         <Input
-          size="lg"
           label={_("manga_title")}
           autoComplete="off"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <Typography className="-mb-2" variant="h6" color="gray">
-          {_("short_description")} (
-          {shortDescription.length.toString().padStart(3, "0")}/300{" "}
-          {_("characters")}) ({_("optional")})
-        </Typography>
-        <Textarea
-          size="md"
-          label={_("short_description_less_than_300")}
-          maxLength={300}
-          value={shortDescription}
-          onChange={(e) => setShortDescription(e.target.value)}
-        />
-        <Typography className="-mb-2" variant="h6" color="gray">
-          {_("synopsis")} ({_("optional")})
-        </Typography>
-        <Textarea
-          size="lg"
-          label={_("manga_synopsis")}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </DialogBody>
-      <DialogFooter className="space-x-2">
-        <Button variant="outlined" onClick={handleSubmit} loading={loading}>
-          {_("save_manga_profile")}
-        </Button>
-      </DialogFooter>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+            {_("short_description")} (
+            {shortDescription.length.toString().padStart(3, "0")}/300{" "}
+            {_("characters")}) ({_("optional")})
+          </label>
+          <Textarea
+            label={_("short_description_less_than_300")}
+            maxLength={300}
+            value={shortDescription}
+            onChange={(e) => setShortDescription(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
+            {_("synopsis")} ({_("optional")})
+          </label>
+          <Textarea
+            label={_("manga_synopsis")}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+          <Button variant="secondary" onClick={() => setOpen(false)}>
+            {_("cancel") || "Cancelar"}
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} loading={loading}>
+            {_("save_manga_profile")}
+          </Button>
+        </div>
+        </div>
+      </Modal>
       <ToastContainer theme="dark" />
-    </Dialog>
+    </>
   );
 }

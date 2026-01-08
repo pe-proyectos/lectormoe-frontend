@@ -115,7 +115,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
+    <div className="p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6">
       {/* Dialog */}
       <AdminMangaCustomDialog
         organization={organization}
@@ -141,7 +141,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
             Agregar Manga
           </Button>
 
-          <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-80">
+          <form onSubmit={handleSearchSubmit} className="relative w-full sm:max-w-md">
             <Input
               type="text"
               placeholder="Buscar manga..."
@@ -210,7 +210,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
       {/* Grid */}
       {!loading && mangaList.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
             {mangaList.map((manga) => (
               <AdminMangaCustomCard
                 key={manga.id || manga.slug}
@@ -225,18 +225,19 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
           {/* Pagination */}
           {maxPage > 1 && (
             <Card>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handlePrevPage}
                   disabled={page === 1}
+                  className="w-full sm:w-auto"
                 >
                   <ChevronLeft size={16} />
-                  Anterior
+                  <span className="hidden sm:inline">Anterior</span>
                 </Button>
 
-                <span className="text-sm font-bold text-zinc-400">
+                <span className="text-xs sm:text-sm font-bold text-zinc-400 text-center">
                   Página <span className="text-white">{page}</span> de{' '}
                   <span className="text-white">{maxPage}</span>
                 </span>
@@ -246,8 +247,9 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
                   size="sm"
                   onClick={handleNextPage}
                   disabled={page === maxPage}
+                  className="w-full sm:w-auto"
                 >
-                  Siguiente
+                  <span className="hidden sm:inline">Siguiente</span>
                   <ChevronRight size={16} />
                 </Button>
               </div>

@@ -1,9 +1,3 @@
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Typography,
-} from "@material-tailwind/react";
 import { getTranslator } from "../util/translate";
 
 export function MangaAdCard({
@@ -28,49 +22,39 @@ export function MangaAdCard({
   };
 
   return (
-    <Card className="w-full max-w-[48rem] flex-row">
-      <CardHeader
-        shadow={false}
-        floated={false}
-        className="m-0 w-2/5 shrink-0 rounded-r-none"
-      >
+    <div className="w-full max-w-[48rem] flex-row flex bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="m-0 w-2/5 shrink-0 rounded-r-none">
         <img
           src={chapter?.imageUrl || manga.imageUrl}
           alt="card-image"
           className="h-full w-full object-cover"
         />
-      </CardHeader>
-      <CardBody>
+      </div>
+      <div className="p-6 flex-1">
         <div className="flex flex-col h-full">
-          <Typography variant="h6" color="gray" className="mb-4 uppercase">
+          <h6 className="text-lg text-gray-600 mb-4 uppercase">
             {manga.title} #{chapter.number}
-          </Typography>
-          <Typography variant="h4" color="blue-gray" className="mb-2">
+          </h6>
+          <h4 className="text-2xl text-blue-gray-800 mb-2">
             {chapter.title}
-          </Typography>
-          <Typography color="gray" className="mb-8 font-normal">
+          </h4>
+          <p className="text-gray-600 mb-8 font-normal">
             {manga.description}
-          </Typography>
+          </p>
           <hr className="my-auto" />
           <div className="my-auto">
             {manga?.requireLogin && !logged && (
-              <Typography
-                variant="lead"
-                className="font-bold text-black text-center"
-              >
+              <p className="text-xl font-bold text-black text-center">
                 {_("login_to_read_published_chapter")}
-              </Typography>
+              </p>
             )}
             {getValidMangaSubscriptionPlans().length > 0 && logged && (
               <>
-                <Typography
-                  variant="lead"
-                  className="font-bold text-black text-center"
-                >
+                <p className="text-xl font-bold text-black text-center">
                   {_(
                     "subscribe_now_to_one_of_these_plans_to_read_chapter_early"
                   )}
-                </Typography>
+                </p>
 
                 <div className="flex flex-wrap gap-2 justify-center">
                   {getValidMangaSubscriptionPlans().map((plan) => (
@@ -87,7 +71,7 @@ export function MangaAdCard({
           </div>
           <hr className="my-auto" />
         </div>
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   );
 }

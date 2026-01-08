@@ -1,11 +1,4 @@
 import React, { useEffect } from "react";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Typography,
-} from "@material-tailwind/react";
 import { callAPI } from "../util/callApi";
 import { getTranslator } from "../util/translate";
 import { ToastContainer, toast } from "react-toastify";
@@ -89,25 +82,12 @@ export function SubscriptionPlanCard({
   };
 
   return (
-    <Card color="gray" variant="gradient" className="w-full max-w-[20rem] p-8 transition-all duration-300 hover:scale-[1.01]">
-      <CardHeader
-        floated={false}
-        shadow={false}
-        color="transparent"
-        className="m-0 mb-8 rounded-none border-b border-white/10 pb-8 text-center"
-      >
-        <Typography
-          variant="h4"
-          color="white"
-          className="font-normal underline underline-offset-4"
-        >
+    <div className="w-full max-w-[20rem] p-8 transition-all duration-300 hover:scale-[1.01] bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg">
+      <div className="m-0 mb-8 rounded-none border-b border-white/10 pb-8 text-center">
+        <h4 className="text-2xl text-white font-normal underline underline-offset-4">
           {subscriptionPlan.name}
-        </Typography>
-        <Typography
-          variant="h1"
-          color="white"
-          className="mt-6 flex justify-center gap-1 text-7xl font-normal"
-        >
+        </h4>
+        <h1 className="mt-6 flex justify-center gap-1 text-7xl font-normal text-white">
           <span className="mt-2 text-4xl">$</span>
           {subscriptionPlan.price}{" "}
           <span className="self-end text-4xl">
@@ -116,9 +96,9 @@ export function SubscriptionPlanCard({
               `interval_${subscriptionPlan.interval.toLowerCase()}`
             ).toUpperCase()}
           </span>
-        </Typography>
-      </CardHeader>
-      <CardBody className="p-0 mb-auto">
+        </h1>
+      </div>
+      <div className="p-0 mb-auto">
         <ul className="flex flex-col gap-4">
           {subscriptionPlan.description
             .split("\n")
@@ -127,33 +107,33 @@ export function SubscriptionPlanCard({
                 <span className="rounded-full border border-white/20 bg-white/20 p-1">
                   <CheckIcon />
                 </span>
-                <Typography className="font-normal">{description}</Typography>
+                <p className="font-normal text-white">{description}</p>
               </li>
             ))}
         </ul>
-      </CardBody>
-      <CardFooter className="mt-12 p-0">
+      </div>
+      <div className="mt-12 p-0">
         {logged ? (
           <div
             id={`paypal-button-container-${subscriptionPlan.planId}`}
             className="paypal-button-container"
           ></div>
         ) : (
-          <Typography variant="small" color="white" className="font-normal">
+          <p className="text-sm text-white font-normal">
             {_(
               "please_log_in_to_subscribe"
             )}
-          </Typography>
+          </p>
         )}
         {user?.subscriptions.find(subscription => subscription.subscriptionPlan.id === subscriptionPlan.id) && (
           <div className="flex justify-center">
-            <Typography variant="small" color="red" className="font-normal">
+            <p className="text-sm text-red-400 font-normal">
               {_("already_subscribed")}
-            </Typography>
+            </p>
           </div>
         )}
-      </CardFooter>
+      </div>
       <ToastContainer theme="dark" />
-    </Card>
+    </div>
   );
 }
