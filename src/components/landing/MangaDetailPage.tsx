@@ -978,6 +978,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
           identifier={manga.slug}
           logged={logged || false}
           user={user}
+          organization={organization}
           onLogin={() => {
             window.location.href = `/${organization?.slug || ""}/login`.replace(
               "//",

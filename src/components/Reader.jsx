@@ -112,6 +112,7 @@ export function Reader({
   logged,
   user,
   organizationSlug,
+  organization,
   hasAccess = true,
 }) {
   const _ = getTranslator(language);
@@ -1189,6 +1190,7 @@ export function Reader({
               identifier={`${manga.slug}_${chapterNumber}`}
               logged={logged || false}
               user={user}
+              organization={organization}
               onLogin={() => {
                 window.location.href = getOrgPath(
                   `/login?redirect=${window.location.pathname}`,

@@ -76,6 +76,7 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
             logged={logged}
             user={user}
             organizationSlug={organizationSlug}
+            organization={organization}
             hasAccess={hasAccess}
           />
         ) : (

@@ -48,16 +48,18 @@ interface User {
   id: number;
   username: string;
   imageUrl: string | null;
-  permissions?: {
+  permissions?: Array<{
+    organizationId?: number;
     canDeleteComment?: boolean;
     canHideComment?: boolean;
-  };
+  }>;
 }
 
 interface CommentItemProps {
   comment: CommentType;
   user: User | null;
   logged: boolean;
+  userPermissions?: any;
   isReply?: boolean;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => void;
@@ -71,6 +73,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   comment: initialComment,
   user,
   logged,
+  userPermissions,
   isReply = false,
   onReply,
   onDelete,
@@ -280,7 +283,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           )}
 
           {/* Hide (Admin) */}
-          {user?.permissions?.canHideComment && user?.id !== comment?.userId && (
+          {userPermissions?.canHideComment && user?.id !== comment?.userId && (
             <button
               onClick={() => onHide(comment)}
               className="text-zinc-500 hover:text-orange-500 transition-colors"
@@ -299,6 +302,7 @@ interface CommentsSectionProps {
   identifier: string;
   logged: boolean;
   user: User | null;
+  organization?: any;
   onLogin?: () => void;
 }
 
@@ -306,8 +310,11 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   identifier,
   logged,
   user,
+  organization,
   onLogin,
 }) => {
+  // Get user permissions for the current organization
+  const userPermissions = user?.permissions?.find((permission: any) => permission.organizationId === organization?.id) || {};
   const [comments, setComments] = useState<CommentType[]>([]);
   const [commentText, setCommentText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -432,8 +439,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 
   const handleDeleteComment = async (commentId: number) => {
     try {
-      const permissions = user?.permissions || {};
-      if (user?.id !== comments.find((c) => c.id === commentId)?.userId && !permissions.canDeleteComment) {
+      if (user?.id !== comments.find((c) => c.id === commentId)?.userId && !userPermissions?.canDeleteComment) {
         alert('No tienes permisos para eliminar este comentario');
         return;
       }
@@ -521,6 +527,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                 comment={comment}
                 user={user}
                 logged={logged}
+                userPermissions={userPermissions}
                 onReply={handleReply}
                 onDelete={handleDeleteComment}
                 onEdit={handleEditComment}
@@ -538,6 +545,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                         comment={reply}
                         user={user}
                         logged={logged}
+                        userPermissions={userPermissions}
                         isReply={true}
                         onReply={handleReply}
                         onDelete={handleDeleteComment}
