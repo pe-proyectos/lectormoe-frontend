@@ -57,7 +57,6 @@ interface MangaDetailPageProps {
   organization?: any;
   user?: any;
   logged?: boolean;
-  userPermissions?: any;
 }
 
 const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
@@ -675,7 +674,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-3">
                     Los usuarios que estan al día con este manga también leen:
                   </p>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-3 lg:grid-cols-1 gap-2">
                     {recommendedMangas.map((recommendedManga) => {
                       const mangaUrl = organization?.slug
                         ? `/${organization?.slug}/manga/${recommendedManga.slug}`

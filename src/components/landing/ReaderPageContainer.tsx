@@ -3,16 +3,17 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 
 interface ReaderPageContainerProps {
+  // Required props
   language: string;
   manga: any;
   chapter: any;
   chapterNumber: string | number;
   logged: boolean;
   user: any;
-  organizationSlug: string;
-  organization?: any;
+  organization: any;
+  
+  // Optional props
   hasAccess?: boolean;
-  userPermissions?: any;
 }
 
 const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
@@ -22,10 +23,8 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
   chapterNumber,
   logged,
   user,
-  organizationSlug,
   organization,
   hasAccess = true,
-  userPermissions,
 }) => {
   const [Reader, setReader] = useState<any>(null);
 
@@ -42,28 +41,28 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
         user={user}
         logged={logged || false}
         activeScan={organization}
-        userPermissions={userPermissions}
+        organization={organization}
         isSticky={false}
         activeView="reader"
         onGoHome={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}` : '/';
+          window.location.href = organization?.slug ? `/${organization.slug}` : '/';
         }}
         onGoSearch={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/search` : '/search';
+          window.location.href = organization?.slug ? `/${organization.slug}/search` : '/search';
         }}
         onGoExplore={() => {
           window.location.href = '/scans';
         }}
         onGoSubscriptions={() => {
-          if (organizationSlug) {
-            window.location.href = `/${organizationSlug}/subscriptions`;
+          if (organization?.slug) {
+            window.location.href = `/${organization.slug}/subscriptions`;
           }
         }}
         onOpenLogin={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/login` : '/login';
+          window.location.href = organization?.slug ? `/${organization.slug}/login` : '/login';
         }}
         onOpenRegister={() => {
-          window.location.href = organizationSlug ? `/${organizationSlug}/register` : '/register';
+          window.location.href = organization?.slug ? `/${organization.slug}/register` : '/register';
         }}
       />
       <div className="flex-1">
@@ -75,7 +74,6 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
             chapterNumber={chapterNumber}
             logged={logged}
             user={user}
-            organizationSlug={organizationSlug}
             organization={organization}
             hasAccess={hasAccess}
           />
@@ -87,7 +85,6 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
       </div>
       <Footer 
         organization={organization}
-        organizationSlug={organizationSlug}
       />
     </div>
   );

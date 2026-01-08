@@ -78,7 +78,7 @@ interface AdminUserDialogProps {
   user: UserData | null;
   setUser: (user: UserData | null) => void;
   subscriptionPlans: SubscriptionPlan[];
-  organizationId: number;
+  organization: any;
 }
 
 const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
@@ -88,7 +88,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   user,
   setUser,
   subscriptionPlans,
-  organizationId,
+  organization,
 }) => {
   const _ = getTranslator(language);
 
@@ -131,7 +131,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   useEffect(() => {
     if (!user) return;
     // Buscar permisos de la organización específica
-    const userPermissions = user.permissions?.find((p: any) => p.organizationId === organizationId) as UserPermissions | undefined;
+    const userPermissions = user.permissions?.find((p: any) => p.organizationId === organization?.id) as UserPermissions | undefined;
     // Solo leer los valores para mostrar, no para editar
     setRole(userPermissions?.role || 'user');
     setDescription(user.description || '');
@@ -143,7 +143,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       newPermissions[key] = (userPermissions as any)[key] || false;
     });
     setPermissions(newPermissions);
-  }, [user, organizationId]);
+  }, [user, organization]);
 
   const handleSubmit = async () => {
     // Los admins solo pueden editar permisos, no información personal

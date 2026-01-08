@@ -14,31 +14,40 @@ import {
 import { callAPI } from "../../util/callApi";
 
 interface NavbarProps {
+  // Required props
+  activeView: string;
   onOpenRegister: () => void;
   onOpenLogin: () => void;
   onGoHome: () => void;
   onGoExplore: () => void;
   onGoSearch: () => void;
-  onGoSubscriptions?: () => void; // Optional callback for subscriptions navigation
-  activeView: string;
+  
+  // Optional props
   user?: any;
   logged?: boolean;
   activeScan?: any; // Organization/Scan object for contextual branding
-  isSticky?: boolean; // Whether the navbar should be sticky (default true)
   organization?: any;
+  onGoSubscriptions?: () => void; // Optional callback for subscriptions navigation
+  isSticky?: boolean; // Whether the navbar should be sticky (default true)
 }
 
 const Navbar: React.FC<NavbarProps> = ({
+  // Required props
+  activeView,
   onOpenLogin,
   onGoHome,
   onGoSearch,
-  onGoSubscriptions,
-  activeView,
+  
+  // Optional props
   user: initialUser,
   logged: initialLogged,
   activeScan,
-  isSticky = true,
   organization,
+  onGoSubscriptions,
+  isSticky = true,
+  // Note: onOpenRegister and onGoExplore are in interface for API compatibility but not currently used
+  onOpenRegister: _onOpenRegister,
+  onGoExplore: _onGoExplore,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -46,6 +55,11 @@ const Navbar: React.FC<NavbarProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState(initialUser);
   const [logged, setLogged] = useState(initialLogged);
+  
+  // Get user permissions for the current organization
+  const userPermissions = user?.permissions?.find(
+    (permission: any) => permission.organizationId === organization?.id
+  ) || {};
 
   // Sincronizar con props cuando cambien
   useEffect(() => {
@@ -352,10 +366,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <Settings size={16} className="text-zinc-500" /> Ajustes
                   </button>
                   {activeScan &&
-                    user.permissions.find(
-                      (permission: any) =>
-                        permission.organizationId === organization?.id
-                    )?.canSeeAdminPanel && (
+                    userPermissions?.canSeeAdminPanel && (
                       <button
                         onClick={() => {
                           navigateTo(`/${activeScan.slug}/admin`);
@@ -513,10 +524,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Settings size={20} /> Ajustes
               </button>
               {activeScan &&
-                user.permissions.find(
-                  (permission: any) =>
-                    permission.organizationId === organization?.id
-                )?.canSeeAdminPanel && (
+                userPermissions?.canSeeAdminPanel && (
                   <button
                     onClick={() => {
                       navigateTo(`/${activeScan.slug}/admin`);

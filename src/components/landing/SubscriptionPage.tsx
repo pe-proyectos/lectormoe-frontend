@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Check, Shield, Crown, Trophy, MessageSquare, Heart, ExternalLink } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
@@ -21,20 +21,19 @@ interface TopDonor {
   imageUrl: string | null;
   days: number;
   subscriptionPlan: {
+    id: number;
     name: string;
+    price: number;
   };
   subscriptionId: number;
 }
 
-type DonorRank = 'SS+' | 'S' | 'A' | 'B';
-
 interface GroupedDonor extends TopDonor {
-  rank: DonorRank;
+  planIndex: number;
 }
 
 interface SubscriptionPageProps {
   organization: any;
-  organizationSlug: string;
   user?: any;
   logged?: boolean;
   paypalClientId?: string;
@@ -46,7 +45,7 @@ declare global {
   }
 }
 
-const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organizationSlug, user, logged, paypalClientId }) => {
+const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user, logged, paypalClientId }) => {
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -91,14 +90,14 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
         const API_URL = import.meta.env['PUBLIC_API_URL'];
         const response = await fetch(`${API_URL}/api/subscription-plan`, {
           headers: {
-            'x-organization': organizationSlug,
+            'x-organization': organization?.slug,
           },
           credentials: 'include',
         });
         const result = await response.json();
         
         if (result?.status === true && result?.data?.data) {
-          // Ordenar por precio de menor a mayor
+          // Ordenar por precio de menor a mayor (más barato primero)
           const sortedPlans = [...result.data.data].sort((a, b) => a.price - b.price);
           setSubscriptionPlans(sortedPlans);
         }
@@ -109,10 +108,10 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
       }
     };
 
-    if (organizationSlug) {
+    if (organization?.slug) {
       fetchPlans();
     }
-  }, [organizationSlug]);
+  }, [organization]);
 
   // Fetch top donors
   useEffect(() => {
@@ -120,7 +119,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
       try {
         setLoadingDonors(true);
         const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/organization/${organizationSlug}/top-donors`, {
+        const response = await fetch(`${API_URL}/api/organization/${organization?.slug}/top-donors`, {
           credentials: 'include',
         });
         const result = await response.json();
@@ -135,85 +134,192 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
       }
     };
 
-    if (organizationSlug) {
+    if (organization?.slug) {
       fetchTopDonors();
     }
-  }, [organizationSlug]);
+  }, [organization]);
 
-  // Assign ranks to donors
-  const assignRank = (days: number, allDays: number[]): DonorRank => {
-    if (allDays.length === 0) return 'B';
-    const sortedDays = [...allDays].sort((a, b) => b - a);
-    const maxDays = sortedDays[0] || 0;
-    const minDays = sortedDays[sortedDays.length - 1] || 0;
-    const range = maxDays - minDays;
+  // Get rank config for donors based on plan price
+  const getRankConfigByPlanIndex = (planIndex: number) => {
+    // Validar que planIndex esté en rango
+    if (planIndex < 0 || planIndex >= subscriptionPlans.length) {
+      console.warn(`Invalid planIndex: ${planIndex}, total plans: ${subscriptionPlans.length}`);
+      // Usar el último plan como fallback
+      planIndex = subscriptionPlans.length - 1;
+    }
     
-    if (range === 0) return 'B';
-    const percentile = (days - minDays) / range;
-    if (percentile >= 0.8) return 'SS+';
-    if (percentile >= 0.6) return 'S';
-    if (percentile >= 0.4) return 'A';
-    return 'B';
-  };
-
-  // Get plan color config based on price (sorted ascending)
-  const getPlanColorConfig = (index: number, total: number) => {
-    // Los colores van del más bajo al más alto: zinc (Ex) -> cyan (A) -> purple (S) -> yellow (SS+)
-    if (total === 1) {
-      return { color: 'text-zinc-400', border: 'border-zinc-500' };
-    } else if (total === 2) {
-      return index === 0 
-        ? { color: 'text-zinc-400', border: 'border-zinc-500' }
-        : { color: 'text-yellow-400', border: 'border-yellow-500' };
-    } else if (total === 3) {
-      const colors = [
-        { color: 'text-zinc-400', border: 'border-zinc-500' },
-        { color: 'text-cyan-400', border: 'border-cyan-500' },
-        { color: 'text-yellow-400', border: 'border-yellow-500' }
-      ];
-      return colors[index];
+    const config = getPlanColorConfig(planIndex, subscriptionPlans.length);
+    // Convert plan color config to rank config format
+    // Ahora el orden es de más barato a más caro, así que invertimos los iconos
+    const totalPlans = subscriptionPlans.length;
+    const reversedIndex = totalPlans - 1 - planIndex; // Invertir el índice para asignar iconos
+    
+    const icons = [
+      <Shield size={12} fill="currentColor" />, // B - Más barato (índice 0 en la lista)
+      <Shield size={12} fill="currentColor" />, // A
+      <Shield size={12} fill="currentColor" />, // S
+      <Crown size={12} fill="currentColor" />, // SS+ - Más caro (último índice)
+    ];
+    
+    // Get plan name
+    const planName = subscriptionPlans[planIndex]?.name || '';
+    
+    // Convert color classes properly
+    let bg = '';
+    let borderColor = '';
+    if (config.color.includes('yellow')) {
+      bg = 'bg-yellow-500/10';
+      borderColor = 'border-yellow-500/20';
+    } else if (config.color.includes('purple')) {
+      bg = 'bg-purple-400/10';
+      borderColor = 'border-purple-400/20';
+    } else if (config.color.includes('cyan')) {
+      bg = 'bg-cyan-400/10';
+      borderColor = 'border-cyan-400/20';
     } else {
-      // 4 o más planes
-      const colors = [
-        { color: 'text-zinc-400', border: 'border-zinc-500' },
-        { color: 'text-cyan-400', border: 'border-cyan-500' },
-        { color: 'text-purple-400', border: 'border-purple-500' },
-        { color: 'text-yellow-400', border: 'border-yellow-500' }
-      ];
-      // Si hay más de 4, los primeros son zinc, y los últimos siguen el patrón
-      if (index < total - 3) {
-        return { color: 'text-zinc-400', border: 'border-zinc-500' };
+      bg = 'bg-zinc-400/10';
+      borderColor = 'border-zinc-400/20';
+    }
+    
+    return {
+      color: config.color,
+      bg,
+      border: borderColor,
+      icon: icons[Math.min(reversedIndex, 3)],
+      planName,
+    };
+  };
+
+  // Get plan color config based on price order (sorted ascending - cheapest first)
+  // Los colores van del más barato al más caro: zinc (B) -> cyan (A) -> purple (S) -> yellow (SS+)
+  const getPlanColorConfig = (index: number, total: number) => {
+    // Validar índice
+    if (index < 0 || index >= total) {
+      console.warn(`Invalid index in getPlanColorConfig: ${index}, total: ${total}`);
+      index = Math.max(0, Math.min(index, total - 1));
+    }
+    
+    // Definir los 4 colores base según el orden (más barato primero)
+    const colors = [
+      { color: 'text-zinc-400', border: 'border-zinc-500' },     // B - Más barato (índice 0)
+      { color: 'text-cyan-400', border: 'border-cyan-500' },    // A
+      { color: 'text-purple-400', border: 'border-purple-500' }, // S
+      { color: 'text-yellow-400', border: 'border-yellow-500' }, // SS+ - Más caro (último índice)
+    ];
+
+    if (total === 1) {
+      return colors[3]; // Si solo hay uno, usar el color más alto (yellow)
+    } else if (total === 2) {
+      // Si hay 2: el primero (más barato) = zinc, el último (más caro) = yellow
+      return index === 0 ? colors[0] : colors[3];
+    } else if (total === 3) {
+      // Si hay 3: zinc, cyan, yellow
+      return index === 0 ? colors[0] : index === 1 ? colors[1] : colors[3];
+    } else {
+      // 4 o más planes: mapear directamente a los 4 colores
+      // Dividir el rango total en 4 segmentos iguales
+      const lastIndex = total - 1;
+      const segmentSize = lastIndex / 3; // Dividir en 3 segmentos (4 colores)
+      
+      if (index === 0) {
+        return colors[0]; // Primer índice siempre = zinc
+      } else if (index === lastIndex) {
+        return colors[3]; // Último índice siempre = yellow
+      } else if (index <= segmentSize) {
+        return colors[1]; // Primer segmento = cyan
+      } else if (index <= segmentSize * 2) {
+        return colors[2]; // Segundo segmento = purple
+      } else {
+        return colors[3]; // Tercer segmento = yellow (cerca del final)
       }
-      return colors[3 - (total - 1 - index)];
     }
   };
 
-  // Get rank config for donors
-  const getRankConfig = (rank: string) => {
-    switch (rank) {
-      case 'SS+': return { color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: <Crown size={12} fill="currentColor" /> };
-      case 'S': return { color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', icon: <Shield size={12} fill="currentColor" /> };
-      case 'A': return { color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', icon: <Shield size={12} fill="currentColor" /> };
-      default: return { color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', icon: <Shield size={12} fill="currentColor" /> };
-    }
-  };
+  // Process top donors for podium - group by plan price
+  const donorsWithPlanIndex: GroupedDonor[] = useMemo(() => {
+    if (topDonors.length === 0 || subscriptionPlans.length === 0) return [];
 
-  // Process top donors for podium
-  const allDays = topDonors.map(d => d.days);
-  const donorsWithRank: GroupedDonor[] = topDonors.map(donor => ({
-    ...donor,
-    rank: assignRank(donor.days, allDays),
-  })).sort((a, b) => b.days - a.days);
+    // Crear un mapa de planId -> índice en la lista ordenada (más barato a más caro)
+    const planIndexMap = new Map<number, number>();
+    subscriptionPlans.forEach((plan, index) => {
+      planIndexMap.set(plan.id, index);
+    });
+
+    // Debug: verificar el mapa y los donadores
+    console.log('=== DEBUG TOP DONORS ===');
+    console.log('Subscription Plans:', subscriptionPlans.map((p, i) => ({ index: i, id: p.id, name: p.name, price: p.price })));
+    console.log('Plan Index Map:', Array.from(planIndexMap.entries()));
+    console.log('Top Donors (before mapping):', topDonors.map(d => ({ 
+      username: d.username, 
+      planId: d.subscriptionPlan.id, 
+      planName: d.subscriptionPlan.name,
+      planPrice: d.subscriptionPlan.price
+    })));
+
+    // Asignar índice del plan a cada donador y ordenar
+    const mapped = topDonors
+      .map(donor => {
+        // Buscar el índice del plan del donador en la lista ordenada
+        const planIndex = planIndexMap.get(donor.subscriptionPlan.id);
+        
+        // Si no se encuentra el plan, buscar por nombre como fallback
+        if (planIndex === undefined) {
+          // Fallback: buscar por nombre del plan
+          const planByName = subscriptionPlans.findIndex(p => p.name === donor.subscriptionPlan.name);
+          if (planByName !== -1) {
+            console.log(`Found plan by name for ${donor.username}: planIndex=${planByName}`);
+            return {
+              ...donor,
+              planIndex: planByName,
+            };
+          }
+          
+          // Si tampoco se encuentra por nombre, usar el índice del plan más caro como último recurso
+          console.warn(`Plan ID ${donor.subscriptionPlan.id} and name "${donor.subscriptionPlan.name}" not found in subscriptionPlans`, {
+            donorPlan: donor.subscriptionPlan,
+            availablePlans: subscriptionPlans.map(p => ({ id: p.id, name: p.name }))
+          });
+          return {
+            ...donor,
+            planIndex: subscriptionPlans.length - 1, // Fallback al más caro
+          };
+        }
+        
+        console.log(`Donor ${donor.username}: planId=${donor.subscriptionPlan.id}, planIndex=${planIndex}, planName=${donor.subscriptionPlan.name}`);
+        
+        return {
+          ...donor,
+          planIndex,
+        };
+      });
+    
+    console.log('Mapped donors:', mapped.map(d => ({ 
+      username: d.username, 
+      planIndex: d.planIndex,
+      planName: subscriptionPlans[d.planIndex]?.name 
+    })));
+    
+    return mapped
+      .sort((a, b) => {
+        // Primero ordenar por índice del plan (más barato primero, pero en el ranking queremos más caro primero)
+        // Invertir el orden para que los planes más caros aparezcan primero en el ranking
+        if (a.planIndex !== b.planIndex) {
+          return b.planIndex - a.planIndex; // Invertido: más caro primero
+        }
+        // Si tienen el mismo plan, ordenar por días (más días primero)
+        return b.days - a.days;
+      });
+  }, [topDonors, subscriptionPlans]);
 
   // Organizar para la pirámide (Podio: 1ro al centro, 2do izquierda, 3ro derecha)
-  const topThree = donorsWithRank.slice(0, 3);
+  const topThree = donorsWithPlanIndex.slice(0, 3);
   const podium = topThree.length >= 3 ? [
     topThree[1], // #2
     topThree[0], // #1
     topThree[2], // #3
   ] : topThree;
   
-  const others = donorsWithRank.slice(3);
+  const others = donorsWithPlanIndex.slice(3);
 
   // Render PayPal button for a plan
   const renderPayPalButton = (plan: SubscriptionPlan, containerId: string) => {
@@ -376,7 +482,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
 
                     {!logged ? (
                       <a
-                        href={`/${organizationSlug}/login`}
+                        href={`/${organization?.slug}/login`}
                         className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl text-zinc-400 font-black uppercase text-[10px] tracking-widest hover:bg-white hover:text-black transition-all text-center block"
                       >
                         Por favor, inicia sesión para suscribirte
@@ -477,7 +583,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
                 ))}
               </div>
             </div>
-          ) : donorsWithRank.length > 0 ? (
+          ) : donorsWithPlanIndex.length > 0 ? (
             <div className="space-y-12">
               <div className="text-center space-y-2">
                 <div className="flex items-center justify-center gap-3">
@@ -508,9 +614,14 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
                         <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-zinc-700 rounded-full flex items-center justify-center text-white font-black italic shadow-lg border-2 border-zinc-900 text-lg">2</div>
                       </div>
                       <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{podium[0].username}</h4>
-                      <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-2 border border-zinc-700 ${getRankConfig(podium[0].rank).bg} ${getRankConfig(podium[0].rank).border}`}>
-                        {podium[0].rank}
-                      </div>
+                      {(() => {
+                        const rankConfig = getRankConfigByPlanIndex(podium[0].planIndex);
+                        return (
+                          <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
+                            {rankConfig.planName}
+                          </div>
+                        );
+                      })()}
                       <p className="text-zinc-500 font-bold text-[10px] uppercase">{podium[0].days} días</p>
                     </div>
 
@@ -532,7 +643,14 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
                         <div className="absolute -bottom-3 -right-3 w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-zinc-950 font-black italic text-2xl shadow-xl border-4 border-zinc-950">1</div>
                       </div>
                       <h4 className="text-white font-black italic text-3xl mb-1 tracking-tighter truncate w-full text-center">{podium[1].username}</h4>
-                      <div className="px-5 py-1.5 bg-yellow-500/10 rounded-lg text-xs font-black uppercase text-yellow-500 tracking-widest mb-2 border border-yellow-500/20">{podium[1].rank}</div>
+                      {(() => {
+                        const rankConfig = getRankConfigByPlanIndex(podium[1].planIndex);
+                        return (
+                          <div className={`px-5 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
+                            {rankConfig.planName}
+                          </div>
+                        );
+                      })()}
                       <p className="text-zinc-300 font-bold text-xs uppercase flex items-center gap-2">
                         <Heart size={14} fill="currentColor" className="text-red-500 animate-pulse" /> {podium[1].days} días de apoyo
                       </p>
@@ -553,9 +671,14 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
                         <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-orange-700 rounded-full flex items-center justify-center text-white font-black italic shadow-lg border-2 border-zinc-900 text-lg">3</div>
                       </div>
                       <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{podium[2].username}</h4>
-                      <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 ${getRankConfig(podium[2].rank).bg} ${getRankConfig(podium[2].rank).color} ${getRankConfig(podium[2].rank).border}`}>
-                        {podium[2].rank}
-                      </div>
+                      {(() => {
+                        const rankConfig = getRankConfigByPlanIndex(podium[2].planIndex);
+                        return (
+                          <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
+                            {rankConfig.planName}
+                          </div>
+                        );
+                      })()}
                       <p className="text-zinc-500 font-bold text-[10px] uppercase">{podium[2].days} días</p>
                     </div>
                   </div>
@@ -565,7 +688,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
                 {others.length > 0 && (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-12 border-t border-zinc-800/50">
                     {others.map((user) => {
-                      const rankConfig = getRankConfig(user.rank);
+                      const rankConfig = getRankConfigByPlanIndex(user.planIndex);
                       return (
                         <div key={user.id} className="flex items-center justify-between p-6 bg-zinc-950/40 border border-zinc-800 rounded-[32px] hover:bg-zinc-800/80 hover:border-cyan-500/50 transition-all group shadow-sm">
                           <div className="flex items-center gap-4">
@@ -584,7 +707,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, organ
                             </div>
                           </div>
                           <div className={`px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
-                            {user.rank}
+                            {rankConfig.planName}
                           </div>
                         </div>
                       );

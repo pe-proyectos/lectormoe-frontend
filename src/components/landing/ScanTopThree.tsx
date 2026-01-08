@@ -14,10 +14,10 @@ interface Manga {
 
 interface ScanTopThreeProps {
   mangas: Manga[];
-  organizationSlug: string;
+  organization: any;
 }
 
-const ScanTopThree: React.FC<ScanTopThreeProps> = ({ mangas, organizationSlug }) => {
+const ScanTopThree: React.FC<ScanTopThreeProps> = ({ mangas, organization }) => {
   if (mangas.length === 0) return null;
 
   const RankingBadge = ({ rank }: { rank: number }) => {
@@ -42,7 +42,7 @@ const ScanTopThree: React.FC<ScanTopThreeProps> = ({ mangas, organizationSlug })
 
   const handleMangaClick = (mangaId: string) => {
     // mangaId is the slug
-    window.location.href = `/${organizationSlug}/manga/${mangaId}`;
+    window.location.href = `/${organization?.slug}/manga/${mangaId}`;
   };
 
   return (

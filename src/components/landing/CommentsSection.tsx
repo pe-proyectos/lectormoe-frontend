@@ -59,7 +59,7 @@ interface CommentItemProps {
   comment: CommentType;
   user: User | null;
   logged: boolean;
-  userPermissions?: any;
+  organization?: any;
   isReply?: boolean;
   onReply: (commentId: number) => void;
   onDelete: (commentId: number) => void;
@@ -73,7 +73,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   comment: initialComment,
   user,
   logged,
-  userPermissions,
+  organization,
   isReply = false,
   onReply,
   onDelete,
@@ -82,6 +82,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onHide,
   onImageClick,
 }) => {
+  // Get user permissions for the current organization
+  const userPermissions = user?.permissions?.find(
+    (permission: any) => permission.organizationId === organization?.id
+  ) || {};
   const [comment, setComment] = useState(initialComment);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState('');
@@ -527,7 +531,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                 comment={comment}
                 user={user}
                 logged={logged}
-                userPermissions={userPermissions}
+                organization={organization}
                 onReply={handleReply}
                 onDelete={handleDeleteComment}
                 onEdit={handleEditComment}
@@ -545,7 +549,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                         comment={reply}
                         user={user}
                         logged={logged}
-                        userPermissions={userPermissions}
+                        organization={organization}
                         isReply={true}
                         onReply={handleReply}
                         onDelete={handleDeleteComment}

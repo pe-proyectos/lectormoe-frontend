@@ -5,7 +5,7 @@ interface ScanSidebarProps {
   onSubscribeClick: () => void;
   user?: any;
   logged?: boolean;
-  organizationSlug: string;
+  organization: any;
   discordUrl?: string | null;
 }
 
@@ -25,63 +25,164 @@ interface TopDonor {
   imageUrl: string | null;
   days: number;
   subscriptionPlan: {
+    id: number;
     name: string;
+    price: number;
   };
   subscriptionId: number;
 }
 
-type DonorRank = 'SS+' | 'S' | 'A' | 'B';
-
-interface GroupedDonor extends TopDonor {
-  rank: DonorRank;
+interface SubscriptionPlan {
+  id: number;
+  name: string;
+  price: number;
 }
 
-const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logged, organizationSlug, discordUrl }) => {
+interface GroupedDonor extends TopDonor {
+  planIndex: number;
+}
+
+const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logged, organization, discordUrl }) => {
   const [userHistory, setUserHistory] = useState<HistoryItem[]>([]);
   const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loadingDonors, setLoadingDonors] = useState(true);
 
-  // Agrupar donadores por rango basado en el precio
-  const groupedDonors = useMemo(() => {
-    if (topDonors.length === 0) return [];
-
-    // Determinar rangos basados en percentiles de días
-    const days = topDonors.map(d => d.days).sort((a, b) => b - a);
-    const maxDays = days[0] || 0;
-    const minDays = days[days.length - 1] || 0;
-    const range = maxDays - minDays;
-
-    const assignRank = (days: number): DonorRank => {
-      if (range === 0) return 'B';
-      const percentile = (days - minDays) / range;
-      if (percentile >= 0.8) return 'SS+';
-      if (percentile >= 0.6) return 'S';
-      if (percentile >= 0.4) return 'A';
-      return 'B';
+  // Obtener planes de suscripción
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const API_URL = import.meta.env['PUBLIC_API_URL'];
+        const response = await fetch(`${API_URL}/api/subscription-plan`, {
+          headers: {
+            'x-organization': organization?.slug,
+          },
+          credentials: 'include',
+        });
+        const result = await response.json();
+        
+        if (result?.status === true && result?.data?.data) {
+          // Ordenar por precio de mayor a menor (más caro primero)
+          const sortedPlans = [...result.data.data].sort((a, b) => b.price - a.price);
+          setSubscriptionPlans(sortedPlans);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription plans:', error);
+      }
     };
 
-    const donorsWithRank: GroupedDonor[] = topDonors.map(donor => ({
-      ...donor,
-      rank: assignRank(donor.days),
-    }));
+    if (organization?.slug) {
+      fetchPlans();
+    }
+  }, [organization]);
 
-      const order: DonorRank[] = ['SS+', 'S', 'A', 'B'];
-      const groups = order.map(rank => ({
-        rank,
-        members: donorsWithRank
-          .filter(d => d.rank === rank)
-          .sort((a, b) => b.days - a.days)
-      }));
+  // Agrupar donadores por plan de suscripción (ordenado por precio)
+  const groupedDonors = useMemo(() => {
+    if (topDonors.length === 0 || subscriptionPlans.length === 0) return [];
+
+    // Crear un mapa de planId -> índice en la lista ordenada (más caro a más barato)
+    const planIndexMap = new Map<number, number>();
+    subscriptionPlans.forEach((plan, index) => {
+      planIndexMap.set(plan.id, index);
+    });
+
+    // Asignar índice del plan a cada donador
+    const donorsWithPlanIndex: GroupedDonor[] = topDonors
+      .map(donor => {
+        // Buscar el índice del plan del donador en la lista ordenada
+        const planIndex = planIndexMap.get(donor.subscriptionPlan.id);
+        
+        // Si no se encuentra el plan, buscar por nombre como fallback
+        if (planIndex === undefined) {
+          // Fallback: buscar por nombre del plan
+          const planByName = subscriptionPlans.findIndex(p => p.name === donor.subscriptionPlan.name);
+          if (planByName !== -1) {
+            return {
+              ...donor,
+              planIndex: planByName,
+            };
+          }
+          
+          // Si tampoco se encuentra por nombre, usar el índice 0 (más caro) como último recurso
+          console.warn(`Plan ID ${donor.subscriptionPlan.id} and name "${donor.subscriptionPlan.name}" not found in subscriptionPlans`, {
+            donorPlan: donor.subscriptionPlan,
+            availablePlans: subscriptionPlans.map(p => ({ id: p.id, name: p.name }))
+          });
+          return {
+            ...donor,
+            planIndex: 0, // Fallback al más caro (índice 0)
+          };
+        }
+        
+        return {
+          ...donor,
+          planIndex,
+        };
+      })
+      .sort((a, b) => {
+        // Primero ordenar por índice del plan (más caro primero, índice 0 es el más caro)
+        if (a.planIndex !== b.planIndex) {
+          return a.planIndex - b.planIndex;
+        }
+        // Si tienen el mismo plan, ordenar por días (más días primero)
+        return b.days - a.days;
+      });
+
+    // Agrupar por plan
+    const groups = subscriptionPlans.map((plan, index) => {
+      const members = donorsWithPlanIndex.filter(d => d.planIndex === index);
+      return {
+        planName: plan.name,
+        planIndex: index,
+        members: members.sort((a, b) => b.days - a.days),
+      };
+    });
 
     return groups.filter(g => g.members.length > 0);
-  }, [topDonors]);
+  }, [topDonors, subscriptionPlans]);
 
-  const getRankConfig = (rank: string) => {
-    switch (rank) {
-      case 'SS+': return { color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: <Crown size={12} fill="currentColor" /> };
-      case 'S': return { color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', icon: <Star size={12} fill="currentColor" /> };
-      case 'A': return { color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', icon: <ShieldCheck size={12} fill="currentColor" /> };
-      default: return { color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', icon: <Heart size={12} fill="currentColor" /> };
+  // Get color config based on plan index (sorted by price, most expensive first)
+  // Los planes están ordenados de más caro (índice 0) a más barato (último índice)
+  const getPlanColorConfig = (index: number, total: number) => {
+    // Validar índice
+    if (index < 0 || index >= total) {
+      console.warn(`Invalid index in getPlanColorConfig: ${index}, total: ${total}`);
+      index = Math.max(0, Math.min(index, total - 1));
+    }
+    
+    // Definir los 4 colores base según el orden (más caro primero, índice 0)
+    const colors = [
+      { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: <Crown size={12} fill="currentColor" /> }, // SS+ - Más caro (índice 0)
+      { color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', icon: <Star size={12} fill="currentColor" /> }, // S
+      { color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', icon: <ShieldCheck size={12} fill="currentColor" /> },    // A
+      { color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', icon: <Heart size={12} fill="currentColor" /> }     // B - Más barato (último índice)
+    ];
+
+    if (total === 1) {
+      return colors[0]; // Si solo hay uno, usar el color más alto (yellow)
+    } else if (total === 2) {
+      // Si hay 2: el primero (más caro) = yellow, el segundo = zinc
+      return index === 0 ? colors[0] : colors[3];
+    } else if (total === 3) {
+      // Si hay 3: yellow, cyan, zinc
+      return index === 0 ? colors[0] : index === 1 ? colors[2] : colors[3];
+    } else {
+      // 4 o más planes: mapear directamente a los 4 colores
+      // Dividir el rango total en 4 segmentos
+      const lastIndex = total - 1;
+      const segmentSize = lastIndex / 3; // Dividir en 3 segmentos (4 colores)
+      
+      if (index === 0) {
+        return colors[0]; // Primer índice siempre = yellow (SS+)
+      } else if (index === lastIndex) {
+        return colors[3]; // Último índice siempre = zinc (B)
+      } else if (index <= segmentSize) {
+        return colors[1]; // Primer segmento = purple (S)
+      } else if (index <= segmentSize * 2) {
+        return colors[2]; // Segundo segmento = cyan (A)
+      } else {
+        return colors[3]; // Tercer segmento = zinc (B)
+      }
     }
   };
 
@@ -98,7 +199,7 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logge
       try {
         setLoadingDonors(true);
         const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/organization/${organizationSlug}/top-donors`, {
+        const response = await fetch(`${API_URL}/api/organization/${organization?.slug}/top-donors`, {
           credentials: 'include',
         });
         const result = await response.json();
@@ -113,13 +214,13 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logge
       }
     };
 
-    if (organizationSlug) {
+    if (organization?.slug) {
       fetchTopDonors();
     }
-  }, [organizationSlug]);
+  }, [organization]);
 
   const handleLogin = () => {
-    window.location.href = `/${organizationSlug}/login`;
+    window.location.href = `/${organization?.slug}/login`;
   };
 
   const handleMangaClick = (mangaUrl: string) => {
@@ -212,12 +313,12 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logge
           ) : groupedDonors.length > 0 ? (
             <div className="pr-3 space-y-8 relative z-10">
               {groupedDonors.map((group) => {
-                const config = getRankConfig(group.rank);
+                const config = getPlanColorConfig(group.planIndex, subscriptionPlans.length);
                 return (
-                  <div key={group.rank} className="space-y-4">
+                  <div key={group.planName} className="space-y-4">
                     <div className="flex items-center gap-3 sticky top-0 bg-[#0c0c0e]/80 backdrop-blur-md py-1 z-10">
                       <div className={`px-3 py-1 rounded-lg border font-black text-[10px] tracking-[0.2em] uppercase flex items-center gap-2 ${config.bg} ${config.color} ${config.border}`}>
-                        {config.icon} {group.rank}
+                        {config.icon} {group.planName}
                       </div>
                       <div className="h-px flex-1 bg-zinc-800/50" />
                     </div>

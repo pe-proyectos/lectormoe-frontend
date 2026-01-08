@@ -4,42 +4,42 @@ import Footer from './Footer';
 import SubscriptionPage from './SubscriptionPage';
 
 interface SubscriptionPageContainerProps {
+  // Required props
   organization: any;
-  organizationSlug: string;
+  
+  // Optional props
   user?: any;
   logged?: boolean;
   paypalClientId?: string;
-  userPermissions?: any;
 }
 
-const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ organization, organizationSlug, user, logged, paypalClientId, userPermissions }) => {
+const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ organization, user, logged, paypalClientId }) => {
   const navigateTo = (path: string) => {
     window.location.href = path;
   };
 
   const handleGoToSub = () => {
-    window.location.href = `/${organizationSlug}/subscriptions`;
+    window.location.href = `/${organization?.slug}/subscriptions`;
   };
 
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar 
-        onOpenRegister={() => navigateTo(`/${organizationSlug}/register`)}
-        onOpenLogin={() => navigateTo(`/${organizationSlug}/login`)}
-        onGoHome={() => navigateTo(`/${organizationSlug}`)} 
+        onOpenRegister={() => navigateTo(`/${organization?.slug}/register`)}
+        onOpenLogin={() => navigateTo(`/${organization?.slug}/login`)}
+        onGoHome={() => navigateTo(`/${organization?.slug}`)} 
         onGoExplore={() => navigateTo('/scans')}
-        onGoSearch={() => navigateTo(`/${organizationSlug}/search`)}
+        onGoSearch={() => navigateTo(`/${organization?.slug}/search`)}
         onGoSubscriptions={handleGoToSub}
         activeView="scan"
         user={user}
         logged={logged}
         activeScan={organization}
-        userPermissions={userPermissions}
+        organization={organization}
       />
 
       <SubscriptionPage 
         organization={organization}
-        organizationSlug={organizationSlug}
         user={user}
         logged={logged}
         paypalClientId={paypalClientId}
@@ -47,7 +47,6 @@ const SubscriptionPageContainer: React.FC<SubscriptionPageContainerProps> = ({ o
 
       <Footer 
         organization={organization}
-        organizationSlug={organizationSlug}
         onNavigate={(page) => {
           if (page === 'explore') navigateTo('/scans');
           else if (page === 'home') navigateTo('/');

@@ -38,11 +38,10 @@ interface SubscriptionPlan {
 interface AdminUserGridProps {
   language: string;
   subscriptionPlans: SubscriptionPlan[];
-  organizationSlug: string;
-  organizationId: number;
+  organization: any;
 }
 
-const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPlans, organizationSlug, organizationId }) => {
+const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPlans, organization }) => {
   const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);
@@ -247,7 +246,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
         user={selectedUser}
         setUser={setSelectedUser}
         subscriptionPlans={subscriptionPlans}
-        organizationId={organizationId}
+        organization={organization}
       />
 
       {/* Loading & Empty States */}

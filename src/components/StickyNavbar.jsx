@@ -264,7 +264,9 @@ export function StickyNavbar({
                         <MenuItem>{_("my_profile")}</MenuItem>
                       </a>
                     }
-                    {user?.permissions?.canSeeAdminPanel === true && (
+                    {user?.permissions?.find(
+                      (permission) => permission.organizationId === organization?.id
+                    )?.canSeeAdminPanel === true && (
                       <a href={getOrgPath("/admin/mangas", orgSlug)}>
                         <MenuItem>{_("admin")}</MenuItem>
                       </a>

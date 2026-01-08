@@ -4,12 +4,11 @@ import { callAPI } from '../../util/callApi';
 
 interface ScanStatsBarProps {
   organization: any;
-  organizationSlug: string;
   user?: any;
   logged?: boolean;
 }
 
-const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, organizationSlug, user, logged }) => {
+const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, user, logged }) => {
   const [isFollowed, setIsFollowed] = useState(false);
   const [followerCount, setFollowerCount] = useState(organization?.followerCount || 0);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +26,7 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, organizationS
           const API_URL = import.meta.env.PUBLIC_API_URL;
           const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
           
-          const response = await fetch(`${API_URL}/api/organization/${organizationSlug}/follow/status`, {
+          const response = await fetch(`${API_URL}/api/organization/${organization?.slug}/follow/status`, {
             headers: {
               'Authorization': token ? `Bearer ${token}` : '',
               'Content-Type': 'application/json',
@@ -48,12 +47,12 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, organizationS
     };
 
     checkFollowStatus();
-  }, [organizationSlug, logged, user, organization]);
+  }, [organization, logged, user]);
 
   const handleFollow = async () => {
     if (!logged) {
       // Redirect to login
-      window.location.href = `/${organizationSlug}/login`;
+      window.location.href = `/${organization?.slug}/login`;
       return;
     }
 
@@ -68,7 +67,7 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, organizationS
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const method = isFollowed ? 'DELETE' : 'POST';
       
-      const response = await fetch(`${API_URL}/api/organization/${organizationSlug}/follow`, {
+      const response = await fetch(`${API_URL}/api/organization/${organization?.slug}/follow`, {
         method,
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',

@@ -13,10 +13,10 @@ interface Manga {
 
 interface ScanHeroProps {
   mangas: Manga[];
-  organizationSlug: string;
+  organization: any;
 }
 
-const ScanHero: React.FC<ScanHeroProps> = ({ mangas, organizationSlug }) => {
+const ScanHero: React.FC<ScanHeroProps> = ({ mangas, organization }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -34,7 +34,7 @@ const ScanHero: React.FC<ScanHeroProps> = ({ mangas, organizationSlug }) => {
 
   const handleReadNow = () => {
     if (currentFeatured.id) {
-      window.location.href = `/${organizationSlug}/manga/${currentFeatured.id}`;
+      window.location.href = `/${organization?.slug}/manga/${currentFeatured.id}`;
     }
   };
 
