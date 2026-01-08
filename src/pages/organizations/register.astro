@@ -5,7 +5,7 @@ import RegisterScanPageContainer from "../../components/landing/RegisterScanPage
 const { user, logged, language, organization, organizationSlug } = Astro.locals as any;
 ---
 
-<LandingLayout title="Registra tu Scan">
+<LandingLayout title="Registra tu Scan" showAds={false}>
   <RegisterScanPageContainer 
     user={user}
     logged={logged}

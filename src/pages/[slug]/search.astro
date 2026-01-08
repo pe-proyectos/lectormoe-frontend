@@ -3,7 +3,7 @@ import LandingLayout from "../../layouts/LandingLayout.astro";
 import ExplorePageContainer from "../../components/landing/ExplorePageContainer";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, callAPI, user, organizationSlug, permissions } = Astro.locals;
+const { organization, language, logged, callAPI, user, organizationSlug } = Astro.locals;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -15,19 +15,21 @@ if (!organization) {
 let showAds = true;
 
 // Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
-if (logged && user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0 && organization?.id) {
+if (logged && user) {
   const activeSubscription = user.subscriptions.find((sub: any) => 
     sub.subscriptionPlan?.hideAds === true && 
-    sub.subscriptionPlan?.organizationId === organization.id
+    sub.subscriptionPlan?.organizationId === organization?.id
   );
   if (activeSubscription) {
     showAds = false;
   }
-}
-
-// Si el usuario tiene permisos en esta organización y tiene el permiso hideAds, ocultar ads
-if (logged && user && permissions && typeof permissions === 'object' && permissions.hideAds === true) {
-  showAds = false;
+  const hasHideAds = user.permissions.some((perm: any) => 
+    perm.hideAds === true &&
+    perm.organizationId === organization?.id
+  );
+  if (hasHideAds) {
+    showAds = false;
+  }
 }
 ---
 
@@ -37,7 +39,6 @@ if (logged && user && permissions && typeof permissions === 'object' && permissi
     organizationSlug={organizationSlug}
     user={user}
     logged={logged}
-    userPermissions={permissions}
     client:only="react"
   />
 </LandingLayout>

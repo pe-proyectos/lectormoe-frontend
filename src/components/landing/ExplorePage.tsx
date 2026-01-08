@@ -140,10 +140,9 @@ interface ExplorePageProps {
   user?: any;
   logged?: boolean;
   initialScan?: string;
-  userPermissions?: any;
 }
 
-const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged, userPermissions }) => {
+const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged }) => {
   const [search, setSearch] = useState('');
   const [selectedScan, setSelectedScan] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -476,6 +475,8 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
               {filteredMangas.map((manga) => (
                 <MangaCard3D 
+                  user={user}
+                  organization={organization}
                   key={manga.id} 
                   manga={{
                     ...manga,
@@ -483,7 +484,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                       ? manga.status 
                       : 'Ongoing' as 'Ongoing' | 'Completed' | 'Hiatus'
                   }}
-                  userPermissions={userPermissions}
                 />
               ))}
             </div>

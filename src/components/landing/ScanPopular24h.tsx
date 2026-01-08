@@ -4,10 +4,11 @@ import MangaCard3D from './MangaCard3D';
 
 interface ScanPopular24hProps {
   mangas: any[];
-  userPermissions?: any;
+  user: any;
+  organization: any;
 }
 
-const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions }) => {
+const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, user, organization }) => {
   const [showAll, setShowAll] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -46,9 +47,10 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, userPermissions
         {visibleMangas.map((manga, i) => (
           <MangaCard3D 
             key={`pop24h-${i}`} 
+            user={user}
+            organization={organization}
             manga={manga} 
             hideScan={true}
-            userPermissions={userPermissions}
           />
         ))}
       </div>

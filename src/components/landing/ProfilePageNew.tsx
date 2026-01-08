@@ -7,8 +7,7 @@ import MangaCard3D from './MangaCard3D';
 interface ProfilePageProps {
   user?: any;
   logged?: boolean;
-  organizationSlug?: string;
-  userPermissions?: any;
+  organization: any;
 }
 
 interface FollowedScan {
@@ -32,6 +31,9 @@ interface ReadingHistory {
     number: number;
     title: string;
     mangaCustom: {
+      organization: {
+        slug: string;
+      };
       id: number;
       title: string;
       slug: string;
@@ -45,7 +47,7 @@ interface ReadingHistory {
   lastReadAt: string;
 }
 
-const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organizationSlug, userPermissions }) => {
+const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followedScans, setFollowedScans] = useState<FollowedScan[]>([]);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
@@ -563,7 +565,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                     {(showAllFavorites ? favorites : favorites.slice(0, 6)).map((favorite: any) => {
                       const mangaCustom = favorite.mangaCustom || favorite;
-                      const orgSlug = mangaCustom.organization?.slug || organizationSlug || '';
+                      const orgSlug = mangaCustom.organization?.slug || '';
                       
                       // Check if user has subscription to this organization
                       const userHasSubscription = logged && user?.subscriptions?.some(
@@ -590,6 +592,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                       return (
                         <MangaCard3D 
                           key={mangaCustom.id || favorite.id} 
+                          user={user}
+                          organization={organization}
                           manga={{
                             id: mangaCustom.id?.toString() || '',
                             title: mangaCustom.title,
@@ -602,7 +606,6 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                             chapters: chaptersWithReadStatus,
                             userHasSubscription: userHasSubscription,
                           }}
-                          userPermissions={userPermissions}
                         />
                       );
                     })}
@@ -645,6 +648,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 <>
                   <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {(showAllHistory ? readingHistory : readingHistory.slice(0, 5)).map((item) => {
+                      console.log(item)
                       const orgSlug = item.chapter.mangaCustom.organization.slug;
                       const chapterUrl = `/${orgSlug}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
                       return (

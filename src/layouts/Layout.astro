@@ -29,18 +29,14 @@ const isDecember = new Date().getMonth() === 11;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
-		{
-			organization.googleAdsMetaContent && (
-				<meta
-					name="google-adsense-account"
-					content={organization.googleAdsMetaContent}
-				/>
-			)
-		}
+		<meta
+			name="google-adsense-account"
+			content="ca-pub-2799839819522052"
+		/>
 		{/* Google Ads Script - Solo en vistas de organización, no en admin ni globales */}
 		{
 			showAds && (
-				<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${organization.googleAdsMetaContent}`}
+				<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052`}
 					crossorigin="anonymous"></script>
 			)
 		}
@@ -112,7 +108,7 @@ const isDecember = new Date().getMonth() === 11;
 		</div>
 		{
 			!isAdmin && (
-				<Footer organization={organization} client:only="react"/>
+				<Footer organization={organization} language={language} client:only="react"/>
 			)
 		}
 		{

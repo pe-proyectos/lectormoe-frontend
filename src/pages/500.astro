@@ -5,7 +5,7 @@ import Error500Page from "../components/landing/Error500Page";
 const { organizationSlug } = Astro.locals as any;
 ---
 
-<LandingLayout title="500 - Error del servidor">
+<LandingLayout title="500 - Error del servidor" showAds={false}>
   <Error500Page 
     onNavigateHome={() => {
       window.location.href = organizationSlug ? `/${organizationSlug}` : '/';

@@ -5,11 +5,11 @@ import MangaCard3D from './MangaCard3D';
 interface ScanRecentUpdatesProps {
   mangas: any[];
   onExploreClick: () => void;
-  organizationSlug: string;
-  userPermissions?: any;
+  user: any;
+  organization: any;
 }
 
-const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExploreClick, organizationSlug, userPermissions }) => {
+const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExploreClick, user, organization }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -25,10 +25,11 @@ const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExplore
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           {mangas.map((manga, i) => (
             <MangaCard3D 
+              user={user}
+              organization={organization}
               key={`recent-${i}`} 
               manga={manga} 
               hideScan={true}
-              userPermissions={userPermissions}
             />
           ))}
         </div>

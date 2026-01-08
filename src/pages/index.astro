@@ -3,10 +3,27 @@ import LandingLayout from "../layouts/LandingLayout.astro";
 import LandingApp from "../components/landing/LandingApp.tsx";
 
 // @ts-ignore - isLandingPage se define dinámicamente en el middleware
-const { organization, language, logged, callAPI, user, isLandingPage } = Astro.locals;
+const { language, logged, callAPI, user, isLandingPage } = Astro.locals;
 
+// Determinar si se deben mostrar ads
+// Por defecto true
+let showAds = true;
+
+// Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
+if (logged && user) {
+  const activeSubscription = user.subscriptions.find((sub: any) => 
+    sub.subscriptionPlan?.hideAds === true
+  );
+  if (activeSubscription) {
+    showAds = false;
+  }
+  const hasHideAds = user.permissions.some((perm: any) => perm.hideAds === true);
+  if (hasHideAds) {
+    showAds = false;
+  }
+}
 ---
 
-<LandingLayout>
+<LandingLayout showAds={showAds}>
   <LandingApp client:only="react" user={user} logged={logged} />
 </LandingLayout>

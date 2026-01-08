@@ -1,3 +1,43 @@
-<script>
-	window.location.href = "/";
-</script>
+---
+// @ts-ignore - callAPI se define dinámicamente en el middleware
+const { callAPI, token } = Astro.locals;
+
+// Llamar al API de logout para invalidar la sesión en el servidor
+// Solo si hay un token válido
+if (token) {
+  try {
+    await callAPI("/api/auth/logout", { method: "POST" });
+  } catch (error) {
+    // Continuar con el logout incluso si el API falla
+    // Puede ser que el token ya esté inválido o haya un error de red
+    console.warn("Error al cerrar sesión en el servidor (continuando con logout local):", error);
+  }
+}
+
+// El middleware ya maneja la limpieza de cookies y el redirect cuando detecta /logout
+// Pero también limpiamos aquí explícitamente para asegurar que se eliminen todas las cookies
+const redirectTo = Astro.url.searchParams.get("redirect") || "/";
+
+// Limpiar todas las cookies relacionadas con la sesión
+Astro.cookies.delete("token", { path: '/', domain: undefined });
+Astro.cookies.delete("username", { path: '/', domain: undefined });
+Astro.cookies.delete("userSlug", { path: '/', domain: undefined });
+Astro.cookies.delete("user", { path: '/', domain: undefined });
+Astro.cookies.delete("x-organization", { path: '/', domain: undefined });
+Astro.cookies.delete("auth-check-time", { path: '/', domain: undefined });
+
+// Limpiar también con diferentes dominios por si acaso
+const hostname = Astro.url.hostname;
+if (hostname) {
+  // Limpiar cookies con el dominio actual
+  Astro.cookies.delete("token", { path: '/', domain: hostname });
+  Astro.cookies.delete("username", { path: '/', domain: hostname });
+  Astro.cookies.delete("userSlug", { path: '/', domain: hostname });
+  Astro.cookies.delete("user", { path: '/', domain: hostname });
+  Astro.cookies.delete("x-organization", { path: '/', domain: hostname });
+  Astro.cookies.delete("auth-check-time", { path: '/', domain: hostname });
+}
+
+// Redirigir - el middleware también redirigirá, pero esto asegura que funcione
+return Astro.redirect(redirectTo);
+---

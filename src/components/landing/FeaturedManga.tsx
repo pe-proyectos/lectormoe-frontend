@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import type { Manga } from '../../util/landing/types';
 import { FEATURED_MANGA } from '../../util/landing/constants';
-import { callAPI } from '../../util/callApi';
 import MangaCard3D from './MangaCard3D';
 
 interface FeaturedMangaProps {
   user?: any;
   logged?: boolean;
-  userPermissions?: any;
+  organization?: any;
 }
 
-const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, userPermissions }) => {
+const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organization }) => {
   const [featuredManga, setFeaturedManga] = useState<Manga[]>(FEATURED_MANGA);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +17,7 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, userPermiss
     const fetchFeaturedManga = async () => {
       try {
         setLoading(true);
-        const API_URL = import.meta.env.PUBLIC_API_URL;
+        const API_URL = import.meta.env['PUBLIC_API_URL'];
         const response = await fetch(`${API_URL}/api/landing/featured-manga?limit=5`, {
           method: 'GET',
           headers: {
@@ -82,6 +81,8 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, userPermiss
 
         return (
           <MangaCard3D
+            user={user}
+            organization={organization}
             key={manga.id}
             manga={{
               id: manga.id,
@@ -95,7 +96,6 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, userPermiss
               chapters: chaptersWithReadStatus,
               userHasSubscription: userHasSubscription || false,
             }}
-            userPermissions={userPermissions}
             onClick={() => {
               // Prefer mangaUrl (direct link to manga page), fallback to scanUrl
               const url = manga.mangaUrl || (manga.scanSlug && manga.mangaSlug ? `/${manga.scanSlug}/manga/${manga.mangaSlug}` : manga.scanUrl);

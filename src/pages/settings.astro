@@ -2,7 +2,7 @@
 import LandingLayout from '../layouts/LandingLayout.astro';
 import SettingsPageContainer from '../components/landing/SettingsPageContainer';
 
-const { user, logged, language, organization, organizationSlug } = Astro.locals;
+const { user, logged, language } = Astro.locals;
 
 // Redirect if not logged in
 if (!logged || !user) {
@@ -13,7 +13,7 @@ if (!logged || !user) {
 <LandingLayout 
   title="Ajustes | Capibara Traductor"
   description="Configura tu cuenta y preferencias"
-  organization={organization}
+  showAds={false}
 >
   <SettingsPageContainer
     user={user}

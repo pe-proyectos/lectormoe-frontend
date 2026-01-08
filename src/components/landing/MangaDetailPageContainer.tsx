@@ -14,21 +14,16 @@ interface Organization {
 interface MangaDetailPageContainerProps {
   manga: any;
   organization?: Organization;
-  organizationSlug?: string;
   user?: any;
   logged?: boolean;
   language?: string;
-  userPermissions?: any;
 }
 
 const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({ 
   manga,
   organization,
-  organizationSlug,
   user,
   logged,
-  language,
-  userPermissions
 }) => {
   const navigateTo = (path: string) => {
     if (typeof window !== 'undefined') {
@@ -42,26 +37,25 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
         activeScan={organization}
         user={user}
         logged={logged}
-        userPermissions={userPermissions}
-        onGoHome={() => navigateTo(organizationSlug ? `/${organizationSlug}` : '/')}
-        onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
-        onGoSubscriptions={() => navigateTo(organizationSlug ? `/${organizationSlug}/subscriptions` : '/')}
-        onOpenLogin={() => navigateTo(organizationSlug ? `/${organizationSlug}/login` : '/login')}
-        onOpenRegister={() => navigateTo(organizationSlug ? `/${organizationSlug}/register` : '/register')}
+        organization={organization}
+        onGoHome={() => navigateTo(organization?.slug ? `/${organization.slug}` : '/')}
+        onGoSearch={() => navigateTo(organization?.slug ? `/${organization.slug}/search` : '/search')}
+        onGoSubscriptions={() => navigateTo(organization?.slug ? `/${organization.slug}/subscriptions` : '/')}
+        onOpenLogin={() => navigateTo(organization?.slug ? `/${organization.slug}/login` : '/login')}
+        onOpenRegister={() => navigateTo(organization?.slug ? `/${organization.slug}/register` : '/register')}
         onGoExplore={() => navigateTo('/scans')}
         activeView="manga"
       />
       
       <MangaDetailPage 
         manga={manga} 
-        organizationSlug={organizationSlug}
+        organization={organization}
         user={user}
         logged={logged}
       />
       
       <Footer 
         organization={organization}
-        organizationSlug={organizationSlug}
       />
     </div>
   );

@@ -5,6 +5,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // ============================================
   // CONFIGURACIONES BÁSICAS
   // ============================================
+  
+  if (context.url.pathname === "/ads.txt") {
+    const adstxt = "google.com, pub-2799839819522052, DIRECT, f08c47fec0942fa0";
+    return new Response(adstxt, {
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+
   context.locals.theme =
     context.cookies.get("theme")?.value === "light" ? "light" : "black";
 
@@ -20,32 +28,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   if (context.url.pathname === "/logout") {
+    context.locals.logged = false;
+    context.locals.token = null;
+    context.locals.user = null;
+    context.cookies.delete("token", { path: "/" });
+    context.cookies.delete("user", { path: "/" });
     const redirectTo = context.url.searchParams.get("redirect") || "/";
-    context.cookies.delete("token", { path: '/' });
-    context.cookies.delete("username", { path: '/' });
-    context.cookies.delete("userSlug", { path: '/' });
-    context.cookies.delete("user", { path: '/' });
-    context.cookies.delete("x-organization", { path: '/' });
-    context.cookies.delete("auth-check-time", { path: '/' });
-    context.locals.token = undefined;
-    context.locals.username = undefined;
-    context.locals.userSlug = undefined;
-    context.locals.user = undefined;
     return context.redirect(redirectTo);
   }
 
   context.locals.token = context.cookies.get("token")?.value;
-  context.locals.username = context.cookies.get("username")?.value;
-  context.locals.userSlug = context.cookies.get("userSlug")?.value;
-
-  try {
-    context.locals.user = context.cookies.get("user")?.value
-      ? JSON.parse(context.cookies.get("user")?.value!)
-      : undefined;
-  } catch (error) {}
-
-  // Establecer logged basado en si existe token y user
-  context.locals.logged = !!(context.locals.token && context.locals.user);
 
   // Variable para almacenar el identifier de la organización (slug o domain)
   let organizationIdentifier: string | null = null;
@@ -68,7 +60,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         ...(fetchOptions?.headers || {}),
       },
     });
-    
+
     // Si la respuesta no es OK, retornar un objeto con status: false
     if (!response.ok) {
       try {
@@ -78,7 +70,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         return { status: false, message: `HTTP ${response.status}` };
       }
     }
-    
+
     const result = await response.json();
     // Si el resultado tiene status: false, retornar el objeto completo para que el código pueda manejarlo
     if (result?.status === false) {
@@ -97,195 +89,92 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Rutas reservadas que no deben ser tratadas como slugs de organización
   // Nota: login, register, forgot-password están aquí para rutas globales, pero también pueden estar dentro de un slug (ej: /senshimanga/login)
   const reservedRoutes = [
-    'logout',
-    '404',
-    '500',
-    'forgot',
-    'forgot-password',
-    'login',
-    'register',
-    'search',
-    'scans',
-    'subscriptions',
-    'organizations',
-    'profile',
-    'settings',
-    '.well-known', // Rutas de certificados SSL y otros estándares web
+    "logout",
+    "404",
+    "500",
+    "forgot",
+    "forgot-password",
+    "login",
+    "register",
+    "search",
+    "scans",
+    "subscriptions",
+    "organizations",
+    "profile",
+    "settings",
+    ".well-known", // Rutas de certificados SSL y otros estándares web
   ];
 
   // Extraer el primer segmento de la ruta
-  const pathSegments = context.url.pathname.split('/').filter(Boolean);
-  const firstSegment = pathSegments[0] || '';
-  
+  const pathSegments = context.url.pathname.split("/").filter(Boolean);
+  const firstSegment = pathSegments[0] || "";
+
   // Determinar si es landing page
   // Es landing si la ruta es "/" o si el primer segmento es una ruta reservada
-  const isLandingPage = context.url.pathname === '/' || 
+  const isLandingPage =
+    context.url.pathname === "/" ||
     (firstSegment && reservedRoutes.includes(firstSegment));
-  
+
   context.locals.isLandingPage = isLandingPage;
-  
+
   // Si es landing page, verificar autenticación pero sin requerir organización
   if (isLandingPage) {
     context.locals.organization = null;
     context.locals.organizationSlug = null;
-    
+
     // Verificar autenticación si hay token (pero sin requerir organización específica)
-    if (context.locals.token && context.locals.user) {
+    if (context.locals.token) {
       try {
         organizationIdentifier = context.url.hostname;
-        
+
         const authCheck = await callAPI("/api/auth/check");
-        
+
         if (authCheck?.token && authCheck?.user) {
           // Token válido, actualizar cookies con datos frescos
           context.locals.token = authCheck.token;
-          context.locals.username = authCheck.user.username;
-          context.locals.userSlug = authCheck.user.slug;
-          if (authCheck.user) {
-            // Agregar permisos al objeto user si están disponibles
-            const userWithPermissions = {
-              ...authCheck.user,
-              permissions: authCheck.permissions || authCheck.user.permissions || null,
-            };
-            context.locals.user = userWithPermissions;
-          }
+          context.locals.user = authCheck.user;
+
+          // Set Cookies
           context.cookies.set("token", authCheck.token, {
             maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
+            path: "/",
+            sameSite: "lax",
           });
-          context.cookies.set("username", authCheck.user.username, {
+          context.cookies.set("user", JSON.stringify(authCheck.user), {
             maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
+            path: "/",
+            sameSite: "lax",
           });
-          context.cookies.set("userSlug", authCheck.user.slug, {
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
-          });
-          if (authCheck.user) {
-            // Guardar user con permisos incluidos en las cookies
-            const userWithPermissions = {
-              ...authCheck.user,
-              permissions: authCheck.permissions || authCheck.user.permissions || null,
-            };
-            context.cookies.set("user", JSON.stringify(userWithPermissions), {
-              maxAge: 60 * 60 * 24 * 7,
-              path: '/',
-              sameSite: 'lax',
-            });
-          }
           context.locals.logged = true;
-        } else {
-          // Token inválido en el servidor, cerrar sesión
-          context.locals.logged = false;
-          context.locals.token = null;
-          context.locals.user = null;
-          context.locals.username = null;
-          context.locals.userSlug = null;
-          context.cookies.delete("token", { path: '/' });
-          context.cookies.delete("username", { path: '/' });
-          context.cookies.delete("userSlug", { path: '/' });
-          context.cookies.delete("user", { path: '/' });
+
+          return await next();
         }
       } catch (error) {
-        // Si el check falla (error de red, etc.), mantener la sesión activa
-        context.locals.logged = true; // Mantener sesión activa
+        // Si el check falla matar sesion
       }
-    } else if (context.locals.token) {
-      // Solo hacer check si hay token pero no user (para refrescar datos)
-      try {
-        organizationIdentifier = context.url.hostname;
-        
-        const authCheck = await callAPI("/api/auth/check");
-        
-        // callAPI retorna result.data directamente, así que authCheck ya es { token, user, permissions }
-        if (authCheck?.token && authCheck?.user) {
-          context.locals.token = authCheck.token;
-          context.locals.username = authCheck.user.username;
-          context.locals.userSlug = authCheck.user.slug;
-          if (authCheck.user) {
-            // Agregar permisos al objeto user si están disponibles
-            const userWithPermissions = {
-              ...authCheck.user,
-              permissions: authCheck.permissions || authCheck.user.permissions || null,
-            };
-            context.locals.user = userWithPermissions;
-          }
-          context.cookies.set("token", authCheck.token, {
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
-          });
-          context.cookies.set("username", authCheck.user.username, {
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
-          });
-          context.cookies.set("userSlug", authCheck.user.slug, {
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
-          });
-          if (authCheck.user) {
-            // Guardar user con permisos incluidos en las cookies
-            const userWithPermissions = {
-              ...authCheck.user,
-              permissions: authCheck.permissions || authCheck.user.permissions || null,
-            };
-            context.cookies.set("user", JSON.stringify(userWithPermissions), {
-              maxAge: 60 * 60 * 24 * 7,
-              path: '/',
-              sameSite: 'lax',
-            });
-          }
-          context.cookies.set("auth-check-time", Date.now().toString(), {
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            sameSite: 'lax',
-          });
-          context.locals.logged = true;
-        } else {
-          // Si no hay token o user, la sesión no es válida
-          context.locals.logged = false;
-          context.locals.token = null;
-          context.locals.user = null;
-          context.locals.username = null;
-          context.locals.userSlug = null;
-          context.cookies.delete("token", { path: '/' });
-          context.cookies.delete("username", { path: '/' });
-          context.cookies.delete("userSlug", { path: '/' });
-          context.cookies.delete("user", { path: '/' });
-          context.cookies.delete("auth-check-time", { path: '/' });
-        }
-      } catch (error) {
-        // Si callAPI lanza un error, NO borrar las cookies inmediatamente
-        // Puede ser un error temporal de red, mantener las cookies existentes
-        console.warn('Auth check failed, but keeping existing cookies:', error);
-        // Solo marcar como no logueado si no hay user en cookies
-        if (!context.locals.user) {
-          context.locals.logged = false;
-        } else {
-          context.locals.logged = true;
-        }
-      }
-    } else {
-      context.locals.logged = false;
     }
-    
+
+    context.locals.logged = false;
+    context.locals.token = null;
+    context.locals.user = null;
+    context.cookies.delete("token", { path: "/" });
+    context.cookies.delete("user", { path: "/" });
+
     return await next();
   }
 
   // Extraer el slug de la organización del primer segmento de la ruta
   const organizationSlug = firstSegment;
   context.locals.organizationSlug = organizationSlug;
-  
+
   // Si es una ruta reservada o especial, no buscar organización
-  if (reservedRoutes.includes(organizationSlug) || organizationSlug.startsWith('.')) {
+  if (
+    reservedRoutes.includes(organizationSlug) ||
+    organizationSlug.startsWith(".")
+  ) {
     return await next();
   }
-  
+
   // Establecer el identifier para las llamadas al API (usar slug en lugar de domain)
   organizationIdentifier = organizationSlug;
 
@@ -293,25 +182,31 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Para la verificación de organización, hacer la llamada sin el header x-organization
     // porque aún no sabemos qué organización es y el endpoint debe usar solo el query param
     const API_URL = process.env["PUBLIC_API_URL"] || "";
-    const organizationCheckResponse = await fetch(API_URL + `/api/organization/check?slug=${organizationSlug}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: context.locals.token
-          ? `Bearer ${context.locals.token}`
-          : "",
-        ip: getIP(context.request.headers) || "0.0.0.0",
-        "Accept-Language": context.locals.language,
-        // NO incluir x-organization aquí para que el endpoint use solo el query param
-      },
-    });
-    
+    const organizationCheckResponse = await fetch(
+      API_URL + `/api/organization/check?slug=${organizationSlug}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: context.locals.token
+            ? `Bearer ${context.locals.token}`
+            : "",
+          ip: getIP(context.request.headers) || "0.0.0.0",
+          "Accept-Language": context.locals.language,
+          // NO incluir x-organization aquí para que el endpoint use solo el query param
+        },
+      }
+    );
+
     let organizationCheck;
     if (!organizationCheckResponse.ok) {
       try {
         const errorResult = await organizationCheckResponse.json();
         organizationCheck = errorResult;
       } catch {
-        organizationCheck = { status: false, message: `HTTP ${organizationCheckResponse.status}` };
+        organizationCheck = {
+          status: false,
+          message: `HTTP ${organizationCheckResponse.status}`,
+        };
       }
     } else {
       const result = await organizationCheckResponse.json();
@@ -322,67 +217,33 @@ export const onRequest = defineMiddleware(async (context, next) => {
         organizationCheck = result;
       }
     }
-    
-    const [authCheck] = await Promise.all([
-      callAPI("/api/auth/check"),
-    ]);
+
+    const authCheck = await callAPI("/api/auth/check");
 
     // El callAPI del middleware retorna data directamente, así que authCheck ya es { token, user, permissions } o { status: false, message: '...' }
     if (authCheck?.token && authCheck?.user) {
+      // Token válido, actualizar cookies con datos frescos
       context.locals.token = authCheck.token;
-      context.locals.username = authCheck.user.username;
-      context.locals.userSlug = authCheck.user.slug;
-      if (authCheck.user) {
-        // Agregar permisos al objeto user si están disponibles
-        const userWithPermissions = {
-          ...authCheck.user,
-          permissions: authCheck.permissions || authCheck.user.permissions || null,
-        };
-        context.locals.user = userWithPermissions;
-      }
-      // Guardar permisos si están disponibles
-      if (authCheck.permissions) {
-        context.locals.permissions = authCheck.permissions;
-      }
+      context.locals.user = authCheck.user;
+
+      // Set Cookies
       context.cookies.set("token", authCheck.token, {
         maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-        sameSite: 'lax',
+        path: "/",
+        sameSite: "lax",
       });
-      context.cookies.set("username", authCheck.user.username, {
+      context.cookies.set("user", JSON.stringify(authCheck.user), {
         maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-        sameSite: 'lax',
+        path: "/",
+        sameSite: "lax",
       });
-      context.cookies.set("userSlug", authCheck.user.slug, {
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-        sameSite: 'lax',
-      });
-      if (authCheck.user) {
-        // Guardar user con permisos incluidos en las cookies
-        const userWithPermissions = {
-          ...authCheck.user,
-          permissions: authCheck.permissions || authCheck.user.permissions || null,
-        };
-        context.cookies.set("user", JSON.stringify(userWithPermissions), {
-          maxAge: 60 * 60 * 24 * 7,
-          path: '/',
-          sameSite: 'lax',
-        });
-      }
       context.locals.logged = true;
     } else {
-      context.locals.token = undefined;
-      context.locals.username = undefined;
-      context.locals.userSlug = undefined;
-      context.locals.user = undefined;
-      context.locals.permissions = undefined;
-      context.cookies.set("token", "", { maxAge: 0, path: '/' });
-      context.cookies.set("username", "", { maxAge: 0, path: '/' });
-      context.cookies.set("userSlug", "", { maxAge: 0, path: '/' });
-      context.cookies.set("user", "", { maxAge: 0, path: '/' });
       context.locals.logged = false;
+      context.locals.token = null;
+      context.locals.user = null;
+      context.cookies.delete("token", { path: "/" });
+      context.cookies.delete("user", { path: "/" });
     }
 
     // callAPI retorna result.data cuando status === true, o el objeto completo cuando status === false
@@ -390,7 +251,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (!organizationCheck) {
       return context.redirect("/404");
     }
-    
+
     // Si organizationCheck tiene la propiedad status y es false, redirigir a 404
     if (organizationCheck.status === false) {
       return context.redirect("/404");
@@ -408,13 +269,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
       path: "/",
     });
 
-    if (context.url.pathname === "/ads.txt") {
-      const adstxt = organization?.googleAdsAdsTxtContent || "";
-      return new Response(adstxt, {
-        headers: { "Content-Type": "text/plain" },
-      });
-    }
-
     if (
       organization?.useBlockedCountries ||
       organization?.useAllowedCountries
@@ -426,19 +280,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
             option.countryCode === userCountry.trim().toUpperCase().slice(0, 2)
         );
         if (countryOption) {
-          if (
-            organization?.useBlockedCountries &&
-            countryOption.blocked
-          ) {
+          if (organization?.useBlockedCountries && countryOption.blocked) {
             return new Response("Country blocked", {
               status: 403,
               headers: { "Content-Type": "text/plain" },
             });
           }
-          if (
-            organization?.useAllowedCountries &&
-            !countryOption.allowed
-          ) {
+          if (organization?.useAllowedCountries && !countryOption.allowed) {
             return new Response("Country not allowed", {
               status: 403,
               headers: { "Content-Type": "text/plain" },

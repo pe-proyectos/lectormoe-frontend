@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { User, Shield, CreditCard, Check, X, Settings } from 'lucide-react';
+import { User, Shield, CreditCard, X } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
-import { ImageDropzone } from '../ImageDropzone';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
-import Input from './ui/Input';
 import Card from './ui/Card';
 
 interface SubscriptionPlan {
@@ -97,7 +95,6 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   const [role, setRole] = useState('');
   const [description, setDescription] = useState('');
   const [hierarchyLevel, setHierarchyLevel] = useState(0);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({
     canSeeAdminPanel: false,
     canEditOrganization: false,
@@ -171,7 +168,6 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
           permissionsSetToFalse[key] = false;
         });
         setPermissions(permissionsSetToFalse);
-        setImageFile(null);
         setOpen(false);
       })
       .catch((error: any) => toast.error(error?.message))

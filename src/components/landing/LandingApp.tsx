@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Hero from './Hero';
 import FeaturedManga from './FeaturedManga';
-import MangaCard3D from './MangaCard3D';
 import ScansSection from './ScansSection';
 import ScansButtonsSection from './ScansButtonsSection';
 import Footer from './Footer';
@@ -42,7 +41,6 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
     }
   };
 
-  const openRegistration = () => navigateTo('/register'); // Para scans
   const openUserRegistration = () => navigateTo('/register'); // Para usuarios
   const openLogin = () => navigateTo('/login');
 
@@ -86,7 +84,7 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
-                <FeaturedManga user={user} logged={logged} userPermissions={user?.permissions} />
+                <FeaturedManga user={user} logged={logged} />
               </div>
             </section>
             
@@ -95,8 +93,6 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
         )}
         
         {isSearch && <SearchView />}
-        
-        {/* ExplorarView se renderiza en la página /scans.astro */}
       </main>
 
       <Footer 

@@ -3,7 +3,7 @@ import LandingLayout from "../layouts/LandingLayout.astro";
 import RegisterPage from "../components/landing/RegisterPage";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, user } = Astro.locals;
+const { language, logged, user } = Astro.locals;
 
 // Si ya está logueado, redirigir al inicio
 if (logged) {
@@ -11,7 +11,7 @@ if (logged) {
 }
 ---
 
-<LandingLayout>
+<LandingLayout showAds={false}>
   <RegisterPage 
     isScanContext={false}
     client:only="react"

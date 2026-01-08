@@ -8,11 +8,11 @@ interface FooterProps {
   organizationSlug?: string;
 }
 
-const Footer: React.FC<FooterProps> = ({ onNavigate, organization, organizationSlug }) => {
+const Footer: React.FC<FooterProps> = ({ organization }) => {
   const handleScansClick = () => {
     // Si hay organization, ir a la home de la organización
-    if (organization || organizationSlug) {
-      window.location.href = organizationSlug ? `/${organizationSlug}` : '/';
+    if (organization) {
+      window.location.href = organization.slug ? `/${organization.slug}` : '/';
       return;
     }
     
@@ -61,7 +61,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, organization, organizationS
               <li>
                 <button 
                   onClick={() => {
-                    window.location.href = organizationSlug ? `/${organizationSlug}/search` : '/search';
+                    window.location.href = organization.slug ? `/${organization.slug}/search` : '/search';
                   }} 
                   className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors text-left"
                 >

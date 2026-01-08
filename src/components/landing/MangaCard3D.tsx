@@ -34,23 +34,20 @@ interface Manga {
   userHasSubscription?: boolean; // Whether user has access to subscriber-only content
 }
 
-interface UserPermissions {
-  canReadUnreleased?: boolean;
-  canEditChapter?: boolean;
-  canEditPage?: boolean;
-}
-
 interface Props {
+  user?: any;
+  organization?: any;
   manga: Manga;
   hideScan?: boolean;
   onSubscribe?: () => void;
   onClick?: () => void;
-  userPermissions?: UserPermissions;
 }
 
-const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, onClick, userPermissions }) => {
+const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = false, onSubscribe, onClick }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
+
+  const userPermissions = user?.permissions.find((permission: any) => permission.organizationId === organization?.id) || {};
 
   // Helper function to check if user has access (considering both subscription and permissions)
   const userHasAccess = (chapter: Chapter): boolean => {
@@ -99,11 +96,6 @@ const MangaCard3D: React.FC<Props> = ({ manga, hideScan = false, onSubscribe, on
   };
 
   const handleMouseLeave = () => setRotate({ x: 0, y: 0 });
-
-  const handleSubscribeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onSubscribe) onSubscribe();
-  };
 
   const handleCardClick = () => {
     if (onClick) {

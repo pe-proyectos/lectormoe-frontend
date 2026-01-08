@@ -6,11 +6,10 @@ import ProfilePageNew from './ProfilePageNew';
 interface ProfilePageContainerProps {
   user?: any;
   logged?: boolean;
-  organizationSlug?: string;
-  userPermissions?: any;
+  organization?: any;
 }
 
-const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logged, organizationSlug, userPermissions }) => {
+const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logged, organization }) => {
   const navigateTo = (path: string) => {
     window.location.href = path;
   };
@@ -22,24 +21,21 @@ const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logge
         onOpenLogin={() => navigateTo('/login')}
         onGoHome={() => navigateTo('/')} 
         onGoExplore={() => navigateTo('/scans')}
-        onGoSearch={() => navigateTo(organizationSlug ? `/${organizationSlug}/search` : '/search')}
+        onGoSearch={() => navigateTo(organization?.slug ? `/${organization.slug}/search` : '/search')}
         activeView="profile"
         user={user}
         logged={logged}
-        initialUser={user}
-        initialLogged={logged}
-        userPermissions={userPermissions}
+        organization={organization}
       />
       
       <ProfilePageNew 
         user={user}
         logged={logged}
-        organizationSlug={organizationSlug}
-        userPermissions={userPermissions || user?.permissions}
+        organization={organization}
       />
 
       <Footer 
-        organizationSlug={organizationSlug}
+        organization={organization}
         onNavigate={(page) => {
           if (page === 'explore') navigateTo('/scans');
           else if (page === 'home') navigateTo('/');

@@ -40,7 +40,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
     });
     const [pages, setPages] = useState([]);
     const [singlePageIndexes, setSinglePageIndexes] = useState([]);
-    const [dragId, setDragId] = useState();
+    const [dragId, setDragId] = useState(null);
 
     const handleDrag = (ev) => {
         // Obtener el índice desde el id de la imagen
@@ -219,7 +219,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                 throw error;
             }
 
-            const response = await callAPI(
+            await callAPI(
                 chapter
                     ? `/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}`
                     : `/api/manga-custom/${mangaCustom.slug}/chapter`,
