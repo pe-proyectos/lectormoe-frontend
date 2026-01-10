@@ -14,7 +14,8 @@ if (!organization) {
 const mangaResult = await callAPI(`/api/manga-custom/${mangaSlug}`);
 
 // Si el resultado tiene status: false, significa que hubo un error
-if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'object' || !mangaResult.slug) {
+// El mangaCustom tiene el slug en manga.manga.slug
+if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'object' || !mangaResult.manga?.slug) {
     return Astro.redirect('/404');
 }
 

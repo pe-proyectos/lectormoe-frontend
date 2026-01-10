@@ -7,6 +7,9 @@ import {
   EyeOff,
   Lock,
   LockOpen,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
@@ -65,6 +68,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   user,
   logged,
 }) => {
+  // El slug está en manga.manga.slug (relación anidada del mangaCustom)
+  const mangaSlug = (manga as any)?.manga?.slug || manga.slug;
+  
   const [isFavorite, setIsFavorite] = useState(false);
   const [userChapterHistory, setUserChapterHistory] = useState<any[]>([]);
   const [selectedChapterGroup, setSelectedChapterGroup] = useState("");
@@ -86,11 +92,22 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     message: string;
   } | null>(null);
   const [recommendedMangas, setRecommendedMangas] = useState<any[]>([]);
+  const [shareModal, setShareModal] = useState<{
+    isOpen: boolean;
+    chapterNumber: number | null;
+    shareUrl: string;
+  }>({
+    isOpen: false,
+    chapterNumber: null,
+    shareUrl: "",
+  });
+  const [copied, setCopied] = useState(false);
+  const [chaptersUpdating, setChaptersUpdating] = useState<Set<number>>(new Set());
 
   // Check if manga is favorite
   useEffect(() => {
     if (logged) {
-      callAPI(`/api/favorites/manga-custom/${manga.slug}`)
+      callAPI(`/api/favorites/manga-custom/${mangaSlug}`)
         .then((value) => {
           setIsFavorite(value);
         })
@@ -98,34 +115,30 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
           // Not favorite or error
         });
     }
-  }, [logged, manga.slug]);
+  }, [logged, mangaSlug]);
 
   // Fetch user chapter history
   useEffect(() => {
     if (logged) {
-      callAPI(
-        `/api/user-chapter-history?limit=1000&include_finished=true&manga_slug=${manga.slug}`
-      )
+      callAPI(`/api/user-chapter-history?limit=1000&include_finished=true&manga_slug=${mangaSlug}`)
         .then((result) => {
-          // callAPI returns { data: [...], maxPage, total }
-          // We need to extract the data array
-          if (result?.data && Array.isArray(result.data)) {
-            setUserChapterHistory(result.data);
+          // El API retorna { items: [...], maxPage: X, total: Y }
+          if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+            setUserChapterHistory(result.items);
           } else if (Array.isArray(result)) {
-            // Fallback: if result is directly an array
+            // Fallback si el API retorna directamente el array
             setUserChapterHistory(result);
           } else {
             setUserChapterHistory([]);
           }
         })
         .catch(() => {
-          // Error fetching history
           setUserChapterHistory([]);
         });
     } else {
       setUserChapterHistory([]);
     }
-  }, [logged, manga.slug]);
+  }, [logged, mangaSlug]);
 
   // Fetch recommended mangas
   useEffect(() => {
@@ -137,10 +150,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       if (ids.length > 0) {
         callAPI(`/api/manga-custom?ids=${ids.join(",")}&limit=3`)
           .then((result) => {
-            if (result?.data?.data && Array.isArray(result.data.data)) {
-              setRecommendedMangas(result.data.data);
-            } else if (result?.data && Array.isArray(result.data)) {
-              setRecommendedMangas(result.data);
+            // El API retorna { items: [...], maxPage: X, total: Y }
+            if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+              setRecommendedMangas(result.items);
             } else {
               setRecommendedMangas([]);
             }
@@ -253,9 +265,12 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     return userChapterHistory.find((c) => c?.chapter?.number === chapterNumber);
   };
 
-  // Check if chapter is read
+  // Check if chapter is read (considering updating state)
   const isChapterRead = (chapterNumber: number): boolean => {
     const history = getChapterHistory(chapterNumber);
+    const isUpdating = chaptersUpdating.has(chapterNumber);
+    // If updating, return the optimistic state (will be read if we're marking as read)
+    // For simplicity, we'll use the current history state even while updating
     return !!history?.finishedAt;
   };
 
@@ -281,41 +296,78 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     return "Ya leído";
   };
 
-  // Navigate to chapter
-  const goToReadChapter = (chapter: Chapter) => {
+  // Helper function to get chapter URL
+  const getChapterUrl = (chapter: Chapter): string => {
     if (!logged && manga.requireLogin) {
-      window.location.href = `/${organization?.slug || ""}/login?mangaSlug=${
-        manga.slug
+      return `/${organization?.slug || ""}/login?mangaSlug=${
+        mangaSlug
       }&chapterNumber=${chapter.number}&redirect=${
         window.location.pathname
       }`.replace("//", "/");
-      return;
     }
 
     if (!userHasAccessToChapter(chapter)) {
-      window.location.href = `/${
+      return `/${
         organization?.slug || ""
-      }/subscriptions?mangaSlug=${manga.slug}&chapterNumber=${
+      }/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${
         chapter.number
       }`.replace("//", "/");
-      return;
     }
 
     if (logged) {
       const history = getChapterHistory(chapter.number);
       if (history && !history.finishedAt && history.pageNumber) {
-        const chapterUrl = organization?.slug
-          ? `/${organization?.slug}/manga/${manga.slug}/chapters/${chapter.number}?page=${history.pageNumber}`
-          : `/manga/${manga.slug}/chapters/${chapter.number}?page=${history.pageNumber}`;
-        window.location.href = chapterUrl;
-        return;
+        return organization?.slug
+          ? `/${organization.slug}/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`
+          : `/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`;
       }
     }
 
+    return organization?.slug
+      ? `/${organization.slug}/manga/${mangaSlug}/chapters/${chapter.number}`
+      : `/manga/${mangaSlug}/chapters/${chapter.number}`;
+  };
+
+  // Generate share URL with user slug
+  const generateShareUrl = (chapterNumber: number): string => {
+    const baseUrl = window.location.origin;
     const chapterUrl = organization?.slug
-      ? `/${organization?.slug}/manga/${manga.slug}/chapters/${chapter.number}`
-      : `/manga/${manga.slug}/chapters/${chapter.number}`;
-    window.location.href = chapterUrl;
+      ? `/${organization.slug}/manga/${mangaSlug}/chapters/${chapterNumber}`
+      : `/manga/${mangaSlug}/chapters/${chapterNumber}`;
+    
+    if (user?.slug) {
+      return `${baseUrl}${chapterUrl}?shared_by=${user.slug}`;
+    }
+    return `${baseUrl}${chapterUrl}`;
+  };
+
+  // Handle share button click
+  const handleShareClick = (e: React.MouseEvent, chapterNumber: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const shareUrl = generateShareUrl(chapterNumber);
+    setShareModal({
+      isOpen: true,
+      chapterNumber,
+      shareUrl,
+    });
+    setCopied(false);
+  };
+
+  // Copy share URL to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareModal.shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // Navigate to chapter (kept for backward compatibility with onClick handlers)
+  const goToReadChapter = (chapter: Chapter) => {
+    window.location.href = getChapterUrl(chapter);
   };
 
   // Toggle favorite
@@ -339,17 +391,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
     try {
       if (wasFavorite) {
-        await callAPI(`/api/favorites/manga-custom/${manga.slug}`, {
-          method: "DELETE",
-        });
+        await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, { method: 'DELETE' });
         setFavoriteFeedback({
           message: "Eliminado de favoritos",
           type: "success",
         });
       } else {
-        await callAPI(`/api/favorites/manga-custom/${manga.slug}`, {
-          method: "POST",
-        });
+        await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, { method: 'POST' });
         setFavoriteFeedback({
           message: "Agregado a favoritos",
           type: "success",
@@ -377,7 +425,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   };
 
   // Mark chapter as read/unread
-  const markChapterAsRead = async (
+  // Unified function to toggle chapter read status
+  const toggleChapterReadStatus = async (
     e: React.MouseEvent,
     chapterNumber: number
   ) => {
@@ -389,62 +438,110 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     const chapter = manga.chapters?.find((c) => c.number === chapterNumber);
     if (!chapter || !userHasAccessToChapter(chapter)) return;
 
-    setUserChapterHistory((prev) => [
-      ...prev,
-      {
-        chapter,
-        chapterId: chapter.id,
-        finishedAt: new Date(),
-        pageNumber: 0,
-      },
-    ]);
+    const currentHistory = getChapterHistory(chapterNumber);
+    const isCurrentlyRead = !!currentHistory?.finishedAt;
+    const willBeRead = !isCurrentlyRead;
 
-    // Show feedback
-    setReadFeedback({ chapterNumber, message: "Marcado como leído" });
-    setTimeout(() => {
-      setReadFeedback(null);
-    }, 2000);
+    // Mark as updating (shows gray state)
+    setChaptersUpdating((prev) => new Set(prev).add(chapterNumber));
 
+    // Optimistic update: update state immediately
+    if (willBeRead) {
+      // Mark as read
+      setUserChapterHistory((prev) => {
+        // Remove existing entry if any (in case of "continuar leyendo")
+        const filtered = prev.filter((h) => h?.chapter?.number !== chapterNumber);
+        // Add new entry with finishedAt
+        return [
+          ...filtered,
+          {
+            chapter,
+            chapterId: chapter.id,
+            finishedAt: new Date(),
+            pageNumber: currentHistory?.pageNumber || 0,
+          },
+        ];
+      });
+      setReadFeedback({ chapterNumber, message: "Marcado como leído" });
+    } else {
+      // Mark as unread - remove finishedAt but keep history if exists
+      setUserChapterHistory((prev) => {
+        const filtered = prev.filter((h) => h?.chapter?.number !== chapterNumber);
+        // If there was a history entry, keep it but without finishedAt
+        if (currentHistory && !currentHistory.finishedAt) {
+          return [...filtered, currentHistory];
+        }
+        return filtered;
+      });
+      setReadFeedback({ chapterNumber, message: "Marcado como no leído" });
+    }
+
+    // Call API
     try {
-      await callAPI(
-        `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}`
-      );
-    } catch (error) {
-      console.error("Failed to mark chapter as read", error);
-      // Revert on error
-      setUserChapterHistory((prev) =>
-        prev.filter((h) => h.chapter.number !== chapterNumber)
-      );
-      setReadFeedback({ chapterNumber, message: "Error al marcar como leído" });
+      if (willBeRead) {
+        await callAPI(`/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}`, { method: 'GET' });
+      } else {
+        await callAPI(`/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}`, { method: 'DELETE' });
+      }
+      
+      // Success: remove updating state
+      setChaptersUpdating((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(chapterNumber);
+        return newSet;
+      });
+      
+      // Clear feedback after delay
       setTimeout(() => {
         setReadFeedback(null);
       }, 2000);
-    }
-  };
-
-  const markChapterAsUnread = async (
-    e: React.MouseEvent,
-    chapterNumber: number
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!logged) return;
-
-    const chapter = manga.chapters?.find((c) => c.number === chapterNumber);
-    if (!chapter || !userHasAccessToChapter(chapter)) return;
-
-    setUserChapterHistory((prev) =>
-      prev.filter((h) => h.chapter.number !== chapterNumber)
-    );
-
-    try {
-      await callAPI(
-        `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}`,
-        { method: "DELETE" }
-      );
     } catch (error) {
-      console.error("Failed to mark chapter as unread", error);
+      console.error(`Failed to ${willBeRead ? 'mark' : 'unmark'} chapter as read`, error);
+      
+      // Revert optimistic update on error
+      if (willBeRead) {
+        // Revert: remove the read status we just added
+        setUserChapterHistory((prev) => {
+          const filtered = prev.filter((h) => h?.chapter?.number !== chapterNumber);
+          // Restore previous state if it existed (could be "continuar leyendo" without finishedAt)
+          if (currentHistory) {
+            return [...filtered, currentHistory];
+          }
+          return filtered;
+        });
+        setReadFeedback({ chapterNumber, message: "Error al marcar como leído" });
+      } else {
+        // Revert: restore read status (was read, we tried to unread, failed)
+        setUserChapterHistory((prev) => {
+          const filtered = prev.filter((h) => h?.chapter?.number !== chapterNumber);
+          // Restore the read state (with finishedAt)
+          if (currentHistory) {
+            return [...filtered, currentHistory];
+          }
+          // If no history existed, create one with finishedAt
+          return [
+            ...filtered,
+            {
+              chapter,
+              chapterId: chapter.id,
+              finishedAt: new Date(),
+              pageNumber: 0,
+            },
+          ];
+        });
+        setReadFeedback({ chapterNumber, message: "Error al marcar como no leído" });
+      }
+      
+      // Remove updating state even on error
+      setChaptersUpdating((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(chapterNumber);
+        return newSet;
+      });
+      
+      setTimeout(() => {
+        setReadFeedback(null);
+      }, 2000);
     }
   };
 
@@ -474,9 +571,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     setIsDownloadingChapter(chapterNumber);
 
     try {
-      const chapterPages = await callAPI(
-        `/api/manga-custom/${manga.slug}/chapter/${chapter.number}/pages`
-      );
+      const chapterPages = await callAPI(`/manga-custom/${manga.slug}/chapter/${chapter.number}/pages`);
 
       // Import JSZip dynamically
       const JSZip = (await import("jszip")).default;
@@ -651,20 +746,20 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 {firstChapter && (
-                  <button
-                    onClick={() => goToReadChapter(firstChapter)}
-                    className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white p-3 rounded-xl text-[9px] font-black uppercase tracking-tight transition-colors"
+                  <a
+                    href={getChapterUrl(firstChapter)}
+                    className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white p-3 rounded-xl text-[9px] font-black uppercase tracking-tight transition-colors text-center"
                   >
                     IR AL PRIMER CAPÍTULO
-                  </button>
+                  </a>
                 )}
                 {lastChapter && (
-                  <button
-                    onClick={() => goToReadChapter(lastChapter)}
-                    className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white p-3 rounded-xl text-[9px] font-black uppercase tracking-tight transition-colors"
+                  <a
+                    href={getChapterUrl(lastChapter)}
+                    className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white p-3 rounded-xl text-[9px] font-black uppercase tracking-tight transition-colors text-center"
                   >
                     IR AL ÚLTIMO CAPÍTULO
-                  </button>
+                  </a>
                 )}
               </div>
 
@@ -676,9 +771,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   </p>
                   <div className="grid grid-cols-3 lg:grid-cols-1 gap-2">
                     {recommendedMangas.map((recommendedManga) => {
-                      const mangaUrl = organization?.slug
-                        ? `/${organization?.slug}/manga/${recommendedManga.slug}`
-                        : `/manga/${recommendedManga.slug}`;
+                      // El slug está en recommendedManga.manga.slug (relación anidada del mangaCustom)
+                      const recommendedMangaSlug = recommendedManga.manga?.slug || recommendedManga.slug;
+                      const mangaUrl = recommendedMangaSlug && recommendedMangaSlug !== 'undefined' && organization?.slug
+                        ? `/${organization.slug}/manga/${recommendedMangaSlug}`
+                        : (recommendedMangaSlug && recommendedMangaSlug !== 'undefined' 
+                          ? `/manga/${recommendedMangaSlug}` 
+                          : '#');
 
                       return (
                         <a
@@ -761,13 +860,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                         const chapterHistory = getChapterHistory(
                           chapter.number
                         );
+                        const isUpdating = chaptersUpdating.has(chapter.number);
 
+                        const chapterUrl = getChapterUrl(chapter);
+                        
                         return (
-                          <div
+                          <a
                             key={chapter.id}
-                            onClick={() => goToReadChapter(chapter)}
-                            className={`group border rounded-3xl p-6 flex items-center justify-between transition-all cursor-pointer sticky top-20 backdrop-blur-md bg-zinc-900/95 ${
-                              hasAccess
+                            href={chapterUrl}
+                            className={`group border rounded-3xl p-6 flex items-center justify-between transition-all cursor-pointer sticky top-20 backdrop-blur-md bg-zinc-900/95 block ${
+                              isUpdating
+                                ? "border-zinc-700 opacity-60"
+                                : hasAccess
                                 ? isRead
                                   ? "border-zinc-800 hover:border-cyan-500/30 hover:bg-zinc-900/80"
                                   : chapterHistory
@@ -813,18 +917,6 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                             </div>
                                           </>
                                         )}
-
-                                      {!chapter.subscribersOnly && (
-                                        <>
-                                          <LockOpen
-                                            size={16}
-                                            className="text-cyan-400"
-                                          />
-                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10">
-                                            Gratis - Disponible para todos
-                                          </div>
-                                        </>
-                                      )}
                                     </div>
 
                                     <h4 className="text-white font-bold text-lg">
@@ -849,12 +941,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                               <div className="flex items-center gap-4 text-zinc-500 relative">
                                 <div className="relative group/tooltip">
                                   <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      // Share functionality
-                                    }}
-                                    className="hover:text-cyan-400 transition-colors"
+                                    onClick={(e) => handleShareClick(e, chapter.number)}
+                                    className="hover:text-cyan-400 transition-colors cursor-pointer"
                                   >
                                     <Share2 size={18} />
                                   </button>
@@ -865,30 +953,31 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                 {logged && hasAccess && (
                                   <>
                                     <div className="relative group/tooltip">
-                                      {!isRead ? (
-                                        <button
-                                          onClick={(e) =>
-                                            markChapterAsRead(e, chapter.number)
-                                          }
-                                          className="hover:text-cyan-400 transition-colors"
-                                        >
-                                          <Eye size={18} />
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={(e) =>
-                                            markChapterAsUnread(
-                                              e,
-                                              chapter.number
-                                            )
-                                          }
-                                          className="hover:text-cyan-400 transition-colors"
-                                        >
+                                      <button
+                                        onClick={(e) =>
+                                          toggleChapterReadStatus(e, chapter.number)
+                                        }
+                                        disabled={chaptersUpdating.has(chapter.number)}
+                                        className={`transition-colors cursor-pointer ${
+                                          chaptersUpdating.has(chapter.number)
+                                            ? "text-zinc-600 cursor-wait"
+                                            : isRead
+                                            ? "hover:text-cyan-400"
+                                            : "hover:text-cyan-400"
+                                        }`}
+                                      >
+                                        {chaptersUpdating.has(chapter.number) ? (
+                                          <div className="w-[18px] h-[18px] border-2 border-zinc-600 border-t-zinc-400 rounded-full animate-spin" />
+                                        ) : isRead ? (
                                           <EyeOff size={18} />
-                                        </button>
-                                      )}
+                                        ) : (
+                                          <Eye size={18} />
+                                        )}
+                                      </button>
                                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
-                                        {!isRead
+                                        {chaptersUpdating.has(chapter.number)
+                                          ? "Actualizando..."
+                                          : !isRead
                                           ? "Marcar como leído"
                                           : "Marcar como no leído"}
                                       </div>
@@ -910,7 +999,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                             isDownloadingChapter ===
                                             chapter.number
                                           }
-                                          className="hover:text-cyan-400 transition-colors disabled:opacity-50"
+                                          className="hover:text-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                         >
                                           {isDownloadingChapter ===
                                           chapter.number ? (
@@ -927,21 +1016,17 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                   </>
                                 )}
                               </div>
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  goToReadChapter(chapter);
-                                }}
+                              <span
                                 className={`text-xs font-bold uppercase tracking-widest transition-colors ${
                                   hasAccess
-                                    ? "text-cyan-400 hover:text-cyan-300"
-                                    : "text-yellow-400 hover:text-yellow-300"
+                                    ? "text-cyan-400"
+                                    : "text-yellow-400"
                                 }`}
                               >
                                 {getChapterLabel(chapter)}
-                              </div>
+                              </span>
                             </div>
-                          </div>
+                          </a>
                         );
                       })}
                   </div>
@@ -974,7 +1059,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
         {/* COMMENTS SECTION (FULL WIDTH) */}
         <CommentsSection
-          identifier={manga.slug}
+          identifier={mangaSlug}
           logged={logged || false}
           user={user}
           organization={organization}
@@ -986,6 +1071,66 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
           }}
         />
       </div>
+
+      {/* Share Modal */}
+      {shareModal.isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShareModal({ isOpen: false, chapterNumber: null, shareUrl: "" })}
+        >
+          <div 
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-black text-lg uppercase tracking-widest flex items-center gap-2">
+                <Share2 size={20} className="text-cyan-400" />
+                Compartir Capítulo
+              </h3>
+              <button
+                onClick={() => setShareModal({ isOpen: false, chapterNumber: null, shareUrl: "" })}
+                className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  URL de Compartir
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={shareModal.shareUrl}
+                    readOnly
+                    className="flex-1 bg-transparent text-white text-sm font-mono p-2 border border-zinc-700 rounded-lg focus:outline-none focus:border-cyan-500"
+                  />
+                  <button
+                    onClick={copyToClipboard}
+                    className={`p-2 rounded-lg border transition-all cursor-pointer ${
+                      copied
+                        ? "bg-green-500 border-green-500 text-white"
+                        : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-cyan-500 hover:text-cyan-400"
+                    }`}
+                    title={copied ? "¡Copiado!" : "Copiar URL"}
+                  >
+                    {copied ? <Check size={18} /> : <Copy size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                <p className="text-cyan-400 text-xs font-bold leading-relaxed">
+                  💡 Por cada persona que acceda a este enlace, se agregará{" "}
+                  <span className="text-white">1 punto compartido por IP</span> a tu cuenta.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

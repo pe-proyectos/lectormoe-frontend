@@ -46,11 +46,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     url: string,
     fetchOptions?: Partial<RequestInit> & { includeIp?: any }
   ) => {
-    const API_URL = process.env["PUBLIC_API_URL"] || "";
-    const response = await fetch(API_URL + url, {
+    const API_URL = import.meta.env.PUBLIC_API_URL || "";
+    const fullUrl = API_URL ? API_URL + url : new URL(url, context.request.url).toString();
+    const response = await fetch(fullUrl, {
       ...(fetchOptions || {}),
       headers: {
-        "x-organization": organizationIdentifier,
+        // IMPORTANTE: Solo enviar x-organization si tiene un valor válido
+        ...(organizationIdentifier ? { "x-organization": organizationIdentifier } : {}),
         "Content-Type": "application/json",
         Authorization: context.locals.token
           ? `Bearer ${context.locals.token}`
@@ -125,7 +127,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Verificar autenticación si hay token (pero sin requerir organización específica)
     if (context.locals.token) {
       try {
-        organizationIdentifier = context.url.hostname;
+        // IMPORTANTE: NO asignar organizationIdentifier en landing page
+        // Debe permanecer null para que callAPI no envíe x-organization header
+        // organizationIdentifier = null; // Ya es null por defecto
 
         const authCheck = await callAPI("/api/auth/check");
 
@@ -181,9 +185,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   try {
     // Para la verificación de organización, hacer la llamada sin el header x-organization
     // porque aún no sabemos qué organización es y el endpoint debe usar solo el query param
-    const API_URL = process.env["PUBLIC_API_URL"] || "";
+    const API_URL = import.meta.env.PUBLIC_API_URL || "";
+    const checkUrl = API_URL 
+      ? `${API_URL}/api/organization/check?slug=${organizationSlug}`
+      : new URL(`/api/organization/check?slug=${organizationSlug}`, context.request.url).toString();
     const organizationCheckResponse = await fetch(
-      API_URL + `/api/organization/check?slug=${organizationSlug}`,
+      checkUrl,
       {
         headers: {
           "Content-Type": "application/json",
@@ -263,11 +270,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.organization = organization;
     // Actualizar el identifier con el slug de la organización para las siguientes llamadas al API
     organizationIdentifier = organization.slug;
-    // También guardar el slug en una cookie para que el cliente pueda usarlo
-    context.cookies.set("x-organization", organization.slug, {
-      maxAge: 60 * 60 * 24, // 24 horas
-      path: "/",
-    });
+    // NO usamos cookies para x-organization, solo el path actual determina la organización
 
     if (
       organization?.useBlockedCountries ||
@@ -307,8 +310,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
         }
         return context.redirect("/login");
       }
-      // Las páginas de admin ya validan permisos individualmente mediante el API
-      // No necesitamos validar aquí porque cada endpoint del API valida canSeeAdminPanel
+
+      // SECURITY: Verificar permiso canSeeAdminPanel
+      if (context.locals.user && context.locals.organization) {
+        const permissions = context.locals.user.permissions?.find(
+          (p: any) => p.organizationId === context.locals.organization.id
+        );
+
+        if (!permissions?.canSeeAdminPanel) {
+          console.warn(
+            `User ${context.locals.user.id} attempted to access admin panel without canSeeAdminPanel permission`
+          );
+          return context.redirect(
+            context.locals.organizationSlug
+              ? `/${context.locals.organizationSlug}`
+              : "/"
+          );
+        }
+      }
     }
 
     return await next();

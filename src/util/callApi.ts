@@ -11,25 +11,22 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
             throw new Error('callAPI can only be called on the client side');
         }
 
-        const API_URL = import.meta.env.PUBLIC_API_URL;
+        const API_URL = import.meta.env["PUBLIC_API_URL"];
         
-        // Usar cookieStore si está disponible, sino usar document.cookie como fallback
+        // Obtener token de cookies
         let token: any = null;
-        let organizationDomain: any = null;
-        
+
         if (typeof window !== 'undefined' && (window as any).cookieStore) {
             try {
                 // @ts-ignore
                 token = await window.cookieStore.get('token');
-                // @ts-ignore
-                organizationDomain = await window.cookieStore.get('x-organization');
             } catch (e) {
                 // Si cookieStore falla, usar document.cookie
             }
         }
-        
+
         // Fallback a document.cookie si cookieStore no está disponible o falló
-        if (!token || !organizationDomain) {
+        if (!token) {
             const cookies = document.cookie.split(';').reduce((acc, cookie) => {
                 const [key, value] = cookie.trim().split('=');
                 if (key && value) {
@@ -37,12 +34,9 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
                 }
                 return acc;
             }, {} as Record<string, string>);
-            
-            if (!token && cookies['token']) {
+
+            if (cookies['token']) {
                 token = { value: cookies['token'] };
-            }
-            if (!organizationDomain && cookies['x-organization']) {
-                organizationDomain = { value: cookies['x-organization'] };
             }
         }
         
@@ -53,43 +47,26 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
         // Si el segundo segmento es 'login' o 'register', entonces el primero es un slug de organización
         const isOrgLoginPage = pathSegments.length === 2 && (pathSegments[1] === 'login' || pathSegments[1] === 'register');
         const isLandingPage = window.location.pathname === '/' || (firstSegment && reservedRoutes.includes(firstSegment) && !isOrgLoginPage);
-        
-        // Determinar el x-organization a usar
+
+        // Determinar el x-organization SOLO desde el path actual (NO cookies)
         let orgDomain: string | null = null;
-        
-        if (!isLandingPage || isOrgLoginPage) {
-            // Si estamos en una página de login/register de organización, usar el slug
-            if (isOrgLoginPage) {
+
+        if (!isLandingPage) {
+            // Si estamos en una página de organización, extraer slug del path
+            if (firstSegment && !reservedRoutes.includes(firstSegment)) {
                 orgDomain = firstSegment;
-            } else {
-                // Solo buscar x-organization si NO estamos en la landing page
-                // Ignorar cookie si estamos en landing page
-                if (organizationDomain?.value) {
-                    orgDomain = organizationDomain.value;
-                }
-                if (!orgDomain) {
-                    // Si el primer segmento no es una ruta reservada, usarlo como slug
-                    if (firstSegment && !reservedRoutes.includes(firstSegment)) {
-                        orgDomain = firstSegment; // Usar slug
-                    }
-                }
             }
         }
-        // Si estamos en landing page global, forzar orgDomain a null (ignorar cookie y override)
+        // Si estamos en landing page, orgDomain permanece null
         
         // Construir headers
         const headers: Record<string, string> = {
             ...((!fetchOptions?.body) || (fetchOptions?.body instanceof FormData) ? {} : { 'Content-Type': 'application/json' }),
-            'Authorization': token?.value ? `Bearer ${token?.value}` : '',
+            ...(token?.value ? { 'Authorization': `Bearer ${token.value}` } : {}),
+            ...(orgDomain ? { 'x-organization': orgDomain } : {}),
             ...(fetchOptions?.headers || {}),
             ...(fetchOptions?.includeIp ? { 'ip': await getIpFromCloudflare() } : {}),
         };
-        
-        // Solo agregar x-organization si no estamos en la landing page global y tenemos un dominio
-        // O si estamos en una página de login/register de organización
-        if ((!isLandingPage || isOrgLoginPage) && orgDomain) {
-            headers['x-organization'] = orgDomain;
-        }
         
         const response = await fetch(API_URL + url, {
             ...(fetchOptions || {}),

@@ -5,11 +5,14 @@ import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 export function FeaturedMangaCard({ organization, language, manga, organizationSlug, ...props }) {
   const _ = getTranslator(language);
   const orgSlug = organizationSlug || getOrgSlugFromPath();
+  
+  // El slug puede estar en manga.slug, manga.mangaSlug, o manga.manga.slug
+  const mangaSlug = manga?.manga?.slug || manga?.slug || manga?.mangaSlug;
 
   if (!manga) {
     return (
       <div {...props}>
-        <a href={manga?.slug ? getOrgPath(`/manga/${manga?.slug}`, orgSlug) : "#"}>
+        <a href={mangaSlug ? getOrgPath(`/manga/${mangaSlug}`, orgSlug) : "#"}>
           <div className="relative w-full h-full bg-gray-900 group overflow-hidden rounded-md shadow-md hover:scale-[101%] transition-transform duration-300"></div>
         </a>
       </div>
@@ -44,16 +47,14 @@ export function FeaturedMangaCard({ organization, language, manga, organizationS
                 new Date(manga.lastChapterAt) >
                   new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
                   <div className="relative group/tooltip">
-                    <span
-                      className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer px-2 py-1 rounded border border-white/20 text-xs"
-                      onClick={() =>
-                        (location.href = manga?.lastChapters?.[0]
-                          ? getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
-                          : getOrgPath(`/manga/${manga.slug}`, orgSlug))
-                      }
+                    <a
+                      href={manga?.lastChapters?.[0]
+                        ? getOrgPath(`/manga/${mangaSlug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
+                        : getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
+                      className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer px-2 py-1 rounded border border-white/20 text-xs inline-block"
                     >
                       {_("new_chapter")}
-                    </span>
+                    </a>
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                       {new Date(manga.lastChapterAt).getTime() >
                       new Date().setHours(0, 0, 0, 0)

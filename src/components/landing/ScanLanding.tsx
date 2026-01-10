@@ -7,6 +7,7 @@ import ScanPopular24h from "./ScanPopular24h";
 import ScanRecentUpdates from "./ScanRecentUpdates";
 import ScanSidebar from "./ScanSidebar";
 import Footer from "./Footer";
+import { callAPI } from "../../util/callApi";
 
 interface ScanLandingProps {
   // Required props
@@ -47,7 +48,8 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       false;
 
     // Check if user has read each chapter
-    const chaptersWithReadStatus = (m.lastChapters || []).map(
+    // El API devuelve 'chapters' (no 'lastChapters'), así que usamos 'chapters' con fallback a 'lastChapters' para compatibilidad
+    const chaptersWithReadStatus = (m.chapters || m.lastChapters || []).map(
       (chapter: any) => {
         const isRead =
           (logged &&
@@ -57,26 +59,37 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
             )) ||
           false;
 
+        // El slug está en m.manga.slug (relación anidada del mangaCustom)
+        const mangaSlug = m.manga?.slug || m.slug || m.id;
+        
         return {
           id: chapter.id,
           number: chapter.number,
           title: chapter.title,
           releasedAt: chapter.releasedAt,
           subscribersOnly: chapter.subscribersOnly,
-          chapterUrl: `/${organization?.slug}/manga/${m.slug}/chapters/${chapter.number}`,
+          chapterUrl: mangaSlug && mangaSlug !== 'undefined' 
+            ? `/${organization?.slug}/manga/${mangaSlug}/chapters/${chapter.number}`
+            : '#',
           isRead,
         };
       }
     );
 
+    // El slug está en m.manga.slug (relación anidada del mangaCustom)
+    const mangaSlug = m.manga?.slug || m.slug || m.id;
+    const mangaUrl = mangaSlug && mangaSlug !== 'undefined' 
+      ? `/${organization?.slug}/manga/${mangaSlug}`
+      : undefined;
+
     return {
-      id: m.slug || m.id,
+      id: mangaSlug,
       title: m.title,
       cover: m.imageUrl || m.cover || "",
       scan: organization?.name || "",
       scanName: organization?.name || "",
       scanUrl: `/${organization?.slug}`,
-      mangaUrl: `/${organization?.slug}/manga/${m.slug}`,
+      mangaUrl: mangaUrl,
       status: m.status || "Ongoing",
       chapters: chaptersWithReadStatus,
       userHasSubscription: userHasSubscription || false,
@@ -95,79 +108,50 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       setLoadingRecent(true);
 
       try {
-        const API_URL = import.meta.env["PUBLIC_API_URL"];
-        const token = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("token="))
-          ?.split("=")[1];
-
-        const headers = {
-          "x-organization": organization?.slug,
-          Authorization: token ? `Bearer ${token}` : "",
-          "Content-Type": "application/json",
-        };
-
         // Fetch all data in parallel
         const [heroResult, topThreeResult, popularResult, recentResult] =
           await Promise.allSettled([
-            fetch(`${API_URL}/api/manga-custom?order=latest&limit=5`, {
-              headers,
-              credentials: "include",
-            }).then((res) => res.json()),
-
-            fetch(`${API_URL}/api/manga-custom?order=featured&limit=3`, {
-              headers,
-              credentials: "include",
-            }).then((res) => res.json()),
-
-            fetch(`${API_URL}/api/manga-custom?order=popular&limit=9`, {
-              headers,
-              credentials: "include",
-            }).then((res) => res.json()),
-
-            fetch(`${API_URL}/api/manga-custom?order=latest&limit=18`, {
-              headers,
-              credentials: "include",
-            }).then((res) => res.json()),
+            callAPI('/api/manga-custom?order=latest&limit=5'),
+            callAPI('/api/manga-custom?order=featured&limit=3'),
+            callAPI('/api/manga-custom?order=popular&limit=9'),
+            callAPI('/api/manga-custom?order=latest&limit=18'),
           ]);
 
         // Process hero mangas
-        if (
-          heroResult.status === "fulfilled" &&
-          heroResult.value?.status === true &&
-          heroResult.value?.data?.data
-        ) {
+        if (heroResult.status === "fulfilled" && heroResult.value && typeof heroResult.value === 'object' && !Array.isArray(heroResult.value) && Array.isArray(heroResult.value.items)) {
           setFeaturedMangas(
-            heroResult.value.data.data.map((m: any) => ({
-              id: m.slug || m.id,
-              title: m.title,
-              cover: m.bannerUrl || m.imageUrl || "",
-              description: m.shortDescription || m.description || "",
-              chapter: "Cap. 01",
-              status: m.status || "Ongoing",
-              demography: m.demography?.name || null,
-            }))
+            heroResult.value.items.map((m: any) => {
+              const mangaSlug = m.manga?.slug || m.slug || m.id;
+              return {
+                id: mangaSlug,
+                title: m.title,
+                cover: m.bannerUrl || m.imageUrl || "",
+                description: m.shortDescription || m.description || "",
+                chapter: "Cap. 01",
+                status: m.status || "Ongoing",
+                demography: m.demography?.name || null,
+              };
+            })
           );
         } else if (heroResult.status === "rejected") {
           console.error("Error fetching hero mangas:", heroResult.reason);
         }
 
         // Process top three mangas
-        if (
-          topThreeResult.status === "fulfilled" &&
-          topThreeResult.value?.status === true &&
-          topThreeResult.value?.data?.data
-        ) {
+        if (topThreeResult.status === "fulfilled" && topThreeResult.value && typeof topThreeResult.value === 'object' && !Array.isArray(topThreeResult.value) && Array.isArray(topThreeResult.value.items)) {
           setTopThreeMangas(
-            topThreeResult.value.data.data.map((m: any) => ({
-              id: m.slug || m.id,
-              title: m.title,
-              cover: m.bannerUrl || m.imageUrl || "",
-              description: m.shortDescription || "",
-              chapter: "Cap. 01",
-              status: m.status || "Ongoing",
-              views: m.views || 0,
-            }))
+            topThreeResult.value.items.map((m: any) => {
+              const mangaSlug = m.manga?.slug || m.slug || m.id;
+              return {
+                id: mangaSlug,
+                title: m.title,
+                cover: m.bannerUrl || m.imageUrl || "",
+                description: m.shortDescription || "",
+                chapter: "Cap. 01",
+                status: m.status || "Ongoing",
+                views: m.views || 0,
+              };
+            })
           );
         } else if (topThreeResult.status === "rejected") {
           console.error(
@@ -177,26 +161,18 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         }
 
         // Process popular mangas
-        if (
-          popularResult.status === "fulfilled" &&
-          popularResult.value?.status === true &&
-          popularResult.value?.data?.data
-        ) {
+        if (popularResult.status === "fulfilled" && popularResult.value && typeof popularResult.value === 'object' && !Array.isArray(popularResult.value) && Array.isArray(popularResult.value.items)) {
           setPopular24h(
-            popularResult.value.data.data.map((m: any) => mapMangaData(m))
+            popularResult.value.items.map((m: any) => mapMangaData(m))
           );
         } else if (popularResult.status === "rejected") {
           console.error("Error fetching popular mangas:", popularResult.reason);
         }
 
         // Process recent updates
-        if (
-          recentResult.status === "fulfilled" &&
-          recentResult.value?.status === true &&
-          recentResult.value?.data?.data
-        ) {
+        if (recentResult.status === "fulfilled" && recentResult.value && typeof recentResult.value === 'object' && !Array.isArray(recentResult.value) && Array.isArray(recentResult.value.items)) {
           setRecentUpdates(
-            recentResult.value.data.data.map((m: any) => mapMangaData(m))
+            recentResult.value.items.map((m: any) => mapMangaData(m))
           );
         } else if (recentResult.status === "rejected") {
           console.error("Error fetching recent mangas:", recentResult.reason);

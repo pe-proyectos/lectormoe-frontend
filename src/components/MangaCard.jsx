@@ -8,6 +8,9 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
   
   // Get organization slug from path if not provided
   const orgSlug = organizationSlug || getOrgSlugFromPath();
+  
+  // El slug puede estar en mangaSlug (objetos transformados) o manga.mangaSlug (mangaCustom directo)
+  const mangaSlug = manga?.manga?.slug || manga?.slug || manga?.mangaSlug;
 
   if (!manga) {
     return (
@@ -55,7 +58,7 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
 
   // Check if user can read unreleased chapters
   const canReadUnreleased = () => {
-    if (!user || !logged) return false;
+    if (!user) return false;
 
     // Check user permissions
     const permissions = user.permissions?.find(
@@ -98,37 +101,49 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
                 new Date(manga.lastChapterAt) >
                 new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) && (
                   <div className="relative group/tooltip">
-                    <span
-                      className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer px-2 py-1 rounded border border-white/20 text-xs"
-                      onClick={(e) => {
-                        const href = manga?.lastChapters?.[0]
-                          ? getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)
-                          : getOrgPath(`/manga/${manga.slug}`, orgSlug);
-
-                        if (manga.isNSFW === true) {
-                          HandleNSFWClick(e, href);
-                        } else {
-                          location.href = href;
-                        }
-                      }}
-                    >
-                      {_("new_chapter")}
-                    </span>
+                    {(() => {
+                      // El API devuelve 'chapters' (no 'lastChapters'), así que usamos 'chapters' con fallback a 'lastChapters' para compatibilidad
+                      const lastChapters = manga?.chapters || manga?.lastChapters || [];
+                      const href = lastChapters?.[0]
+                        ? getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)
+                        : getOrgPath(`/manga/${mangaSlug}`, orgSlug);
+                      const finalHref = manga.isNSFW === true 
+                        ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug))
+                        : href;
+                      
+                      return (
+                        <a
+                          href={finalHref}
+                          className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer px-2 py-1 rounded border border-white/20 text-xs inline-block"
+                          onClick={(e) => {
+                            if (manga.isNSFW === true) {
+                              e.preventDefault();
+                              HandleNSFWClick(e, href);
+                            }
+                          }}
+                        >
+                          {_("new_chapter")}
+                        </a>
+                      );
+                    })()}
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                      {new Date(manga.lastChapterAt).getTime() >
-                        new Date().setHours(0, 0, 0, 0)
-                        ? manga?.lastChapters?.[0]?.number
-                          ? `${_("the_chapter")} ${manga?.lastChapters?.[0]?.number
-                          } ${_("was_released_today")}`
-                          : _("most_recent_chapter_was_released_today")
-                        : manga?.lastChapters?.[0]?.number
-                          ? `${_("the_chapter")} ${manga?.lastChapters?.[0]?.number
-                          } ${_("was_released_at")} ${new Date(
-                            manga.lastChapterAt
-                          ).toLocaleDateString()}`
-                          : `${_("most_recent_chapter_was_released_at")} ${new Date(
-                            manga.lastChapterAt
-                          ).toLocaleDateString()}`}
+                      {(() => {
+                        // El API devuelve 'chapters' (no 'lastChapters'), así que usamos 'chapters' con fallback a 'lastChapters' para compatibilidad
+                        const lastChapters = manga?.chapters || manga?.lastChapters || [];
+                        const lastChapter = lastChapters[0];
+                        return new Date(manga.lastChapterAt).getTime() >
+                          new Date().setHours(0, 0, 0, 0)
+                          ? lastChapter?.number
+                            ? `${_("the_chapter")} ${lastChapter.number} ${_("was_released_today")}`
+                            : _("most_recent_chapter_was_released_today")
+                          : lastChapter?.number
+                            ? `${_("the_chapter")} ${lastChapter.number} ${_("was_released_at")} ${new Date(
+                                manga.lastChapterAt
+                              ).toLocaleDateString()}`
+                            : `${_("most_recent_chapter_was_released_at")} ${new Date(
+                                manga.lastChapterAt
+                              ).toLocaleDateString()}`;
+                      })()}
                     </div>
                   </div>
                 )}
@@ -154,12 +169,12 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
           <div>
             <div className="relative group/tooltip">
               <a
-                href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}`, orgSlug)}
+                href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
                 className="font-semibold hover:underline cursor-pointer text-blue-gray-800"
                 onClick={(e) => {
                   if (manga.isNSFW === true) {
                     e.preventDefault();
-                    HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}`, orgSlug));
+                    HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}`, orgSlug));
                   }
                 }}
               >
@@ -175,59 +190,67 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
             </div>
           </div>
           <div className="flex flex-wrap gap-2 justify-center">
-            {manga?.lastChapters?.[0] && (
-              <div>
-                <a
-                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)}
-                  className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer block"
-                >
-                  {_("chapter")} {manga?.lastChapters?.[0]?.number}
-                </a>
-                <a
-                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug)}
-                  className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer block"
-                  onClick={(e) => {
-                    if (manga.isNSFW === true) {
-                      e.preventDefault();
-                      HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[0]?.number}`, orgSlug));
-                    }
-                  }}
-                >
-                  {manga?.lastChapters?.[0]?.subscribersOnly && !canReadUnreleased()
-                    ? _("only_for_subscribers")
-                    : formatDate(manga?.lastChapters?.[0]?.releasedAt)}
-                </a>
-              </div>
-            )}
-            {manga?.lastChapters?.[1] && (
-              <div>
-                <a
-                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug)}
-                  className="font-normal text-xs hover:underline cursor-pointer block"
-                  onClick={(e) => {
-                    if (manga.isNSFW === true) {
-                      e.preventDefault();
-                      HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug));
-                    }
-                  }}
-                >
-                  {_("chapter")} {manga?.lastChapters?.[1]?.number}
-                </a>
-                <a
-                  href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug)}
-                  className="font-normal text-xs hover:underline cursor-pointer block"
-                  onClick={(e) => {
-                    if (manga.isNSFW === true) {
-                      HandleNSFWClick(e, getOrgPath(`/manga/${manga.slug}/chapters/${manga?.lastChapters?.[1]?.number}`, orgSlug));
-                    }
-                  }}
-                >
-                  {manga?.lastChapters?.[1]?.subscribersOnly && !canReadUnreleased()
-                    ? _("only_for_subscribers")
-                    : formatDate(manga?.lastChapters?.[1]?.releasedAt)}
-                </a>
-              </div>
-            )}
+            {(() => {
+              // El API devuelve 'chapters' (no 'lastChapters'), así que usamos 'chapters' con fallback a 'lastChapters' para compatibilidad
+              const lastChapters = manga?.chapters || manga?.lastChapters || [];
+              return (
+                <>
+                  {lastChapters[0] && (
+                    <div>
+                      <a
+                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)}
+                        className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer block"
+                      >
+                        {_("chapter")} {lastChapters[0]?.number}
+                      </a>
+                      <a
+                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)}
+                        className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer block"
+                        onClick={(e) => {
+                          if (manga.isNSFW === true) {
+                            e.preventDefault();
+                            HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug));
+                          }
+                        }}
+                      >
+                        {lastChapters[0]?.subscribersOnly && !canReadUnreleased()
+                          ? _("only_for_subscribers")
+                          : formatDate(lastChapters[0]?.releasedAt)}
+                      </a>
+                    </div>
+                  )}
+                  {lastChapters[1] && (
+                    <div>
+                      <a
+                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug)}
+                        className="font-normal text-xs hover:underline cursor-pointer block"
+                        onClick={(e) => {
+                          if (manga.isNSFW === true) {
+                            e.preventDefault();
+                            HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug));
+                          }
+                        }}
+                      >
+                        {_("chapter")} {lastChapters[1]?.number}
+                      </a>
+                      <a
+                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug)}
+                        className="font-normal text-xs hover:underline cursor-pointer block"
+                        onClick={(e) => {
+                          if (manga.isNSFW === true) {
+                            HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug));
+                          }
+                        }}
+                      >
+                        {lastChapters[1]?.subscribersOnly && !canReadUnreleased()
+                          ? _("only_for_subscribers")
+                          : formatDate(lastChapters[1]?.releasedAt)}
+                      </a>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </figcaption>
       </div>

@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import TextField from "@mui/material/TextField";
-import Box from "@mui/material/Box";
-import Autocomplete from "@mui/material/Autocomplete";
+import Autocomplete from "./ui/Autocomplete";
 import { DialogDatePicker } from "../DialogDatePicker";
 import { ImageDropzone } from "../ImageDropzone";
 import { AdminMangaProfileDialog } from "./AdminMangaProfileDialog";
@@ -275,39 +273,33 @@ export function AdminMangaCustomDialog({
             <div className="flex">
               <div className="grow">
                 <Autocomplete
-                  disablePortal
                   options={mangas}
                   isOptionEqualToValue={(option, value) =>
                     option.slug === value.slug
                   }
                   getOptionLabel={(option) => option.title}
                   renderOption={(props, option) => (
-                    <Box
-                      component="li"
-                      sx={{ "& > img": { mr: 2, flexShrink: 0 } }}
+                    <li
                       {...props}
+                      className={`
+                        px-4 py-2 cursor-pointer hover:bg-zinc-800 transition-colors flex items-center gap-2
+                        ${mangaProfile?.slug === option.slug ? 'bg-zinc-800' : ''}
+                      `}
                     >
                       <img
                         loading="lazy"
                         width="20"
+                        height="20"
                         decoding="async"
                         srcSet={option.imageUrl || ""}
                         src={option.imageUrl || ""}
                         alt=""
+                        className="flex-shrink-0"
                       />
                       {option.title}
-                    </Box>
+                    </li>
                   )}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label={_("choose_manga_profile")}
-                      inputProps={{
-                        ...params.inputProps,
-                        autoComplete: "new-password",
-                      }}
-                    />
-                  )}
+                  label={_("choose_manga_profile")}
                   value={mangaProfile}
                   onChange={(event, newValue) => setMangaProfile(newValue)}
                 />
@@ -334,9 +326,7 @@ export function AdminMangaCustomDialog({
                   </svg>
                 </button>
                 <AdminMangaProfileDialog
-                  organization={organization}
                   language={language}
-                  mangaProfile={mangaProfile}
                   open={isCreateMangaProfileDialogOpen}
                   setOpen={setIsCreateMangaProfileDialogOpen}
                 />
@@ -386,22 +376,15 @@ export function AdminMangaCustomDialog({
           <div className="grow">
             <Autocomplete
               multiple
-              disablePortal
               options={genres}
               isOptionEqualToValue={(option, value) =>
                 option.slug === value.slug
               }
               getOptionLabel={(option) => option.name}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  variant="standard"
-                  label={_("genres")}
-                  placeholder={_("genres") + "..."}
-                />
-              )}
+              label={_("genres")}
+              placeholder={_("genres") + "..."}
               value={selectedGenres}
-              getOptionDisabled={(options) =>
+              getOptionDisabled={(option) =>
                 selectedGenres.length >= 4 ? true : false
               }
               onChange={(event, newValue) => setSelectedGenres(newValue)}
@@ -415,18 +398,11 @@ export function AdminMangaCustomDialog({
           <div className="grow">
             <Autocomplete
               multiple
-              disablePortal
               options={subscriptionPlans}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               getOptionLabel={(option) => option.name}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  variant="standard"
-                  label={_("subscription_plans")}
-                  placeholder={_("subscription_plans") + "..."}
-                />
-              )}
+              label={_("subscription_plans")}
+              placeholder={_("subscription_plans") + "..."}
               value={selectedSubscriptionPlans}
               onChange={(event, newValue) =>
                 setSelectedSubscriptionPlans(newValue)

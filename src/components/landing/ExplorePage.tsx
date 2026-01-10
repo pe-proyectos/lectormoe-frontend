@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import MangaCard3D from './MangaCard3D';
 import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User, Eye, EyeOff, AlertTriangle, X } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
+import { callAPI } from '../../util/callApi';
 
 interface Manga {
   id: string;
@@ -171,23 +172,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   useEffect(() => {
     const fetchScans = async () => {
       try {
-        const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Solo agregar organization si hay un slug válido
-        if (organizationSlug) {
-          headers['x-organization'] = organizationSlug;
-        }
-        
-        const response = await fetch(`${API_URL}/api/landing/scans`, {
-          headers,
-          credentials: 'include',
-        });
-        const result = await response.json();
-        if (result?.status === true && result?.data) {
-          setScans(result.data);
+        const result = await callAPI('/api/landing/scans');
+        if (Array.isArray(result)) {
+          setScans(result);
         }
       } catch (error) {
         console.error('Error fetching scans:', error);
@@ -197,16 +184,14 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     if (!isScanBranded) {
       fetchScans();
     }
-  }, [isScanBranded, organizationSlug]);
+  }, [isScanBranded]);
 
   // Fetch mangas
   useEffect(() => {
     const fetchMangas = async () => {
       try {
         setLoading(true);
-        const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        
+
         const queryParams = new URLSearchParams({
           page: page.toString(),
           limit: '24',
@@ -225,43 +210,33 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           queryParams.set('genre', selectedGenre);
         }
 
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        // Solo agregar x-organization si hay un slug válido
-        if (organizationSlug) {
-          headers['x-organization'] = organizationSlug;
-        }
-        
-        // Solo agregar Authorization si hay token
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await fetch(`${API_URL}/api/manga-custom?${queryParams}`, {
-          headers,
-          credentials: 'include',
-        });
-        const result = await response.json();
-        
-        if (result?.status === true && result?.data?.data) {
-          const mappedMangas = result.data.data.map((m: any) => {
+        const result = await callAPI(`/api/manga-custom?${queryParams}`);
+
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+          const mappedMangas = result.items.map((m: any) => {
             const mangaOrg = m.organization || organization;
             const mangaOrgSlug = mangaOrg?.slug || organizationSlug;
+            // El slug está en m.manga.slug (relación anidada del mangaCustom)
+            const mangaSlug = m.manga?.slug || m.slug || m.id;
+            
+            // Solo construir mangaUrl si tenemos un slug válido
+            const mangaUrl = mangaSlug && mangaSlug !== 'undefined' 
+              ? (mangaOrgSlug ? `/${mangaOrgSlug}/manga/${mangaSlug}` : `/manga/${mangaSlug}`)
+              : undefined;
             
             return {
-              id: m.slug || m.id,
+              id: mangaSlug,
               title: m.title,
               cover: m.imageUrl || m.cover || '',
               scan: mangaOrg?.name || '',
               scanName: mangaOrg?.name || '',
               scanUrl: mangaOrgSlug ? `/${mangaOrgSlug}` : '',
-              mangaUrl: mangaOrgSlug ? `/${mangaOrgSlug}/manga/${m.slug}` : `/manga/${m.slug}`,
+              mangaUrl: mangaUrl,
               status: m.status || 'Ongoing',
               author: m.author?.name || m.author,
               genres: m.genres?.map((g: any) => g.name || g) || [],
-              chapters: m.lastChapters || [],
+              chapters: m.chapters || m.lastChapters || [],
               userHasSubscription: logged && user?.subscriptions?.some(
                 (sub: any) => sub?.subscriptionPlan?.organizationId === mangaOrg?.id
               ) || false,
@@ -269,7 +244,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
             };
           });
           setMangas(mappedMangas);
-          setMaxPage(result.data.maxPage || 1);
+          setMaxPage(result.maxPage || 1);
         }
       } catch (error) {
         console.error('Error fetching mangas:', error);

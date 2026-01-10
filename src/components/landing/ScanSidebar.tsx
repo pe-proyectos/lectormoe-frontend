@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles } from 'lucide-react';
+import { callAPI } from '../../util/callApi';
 
 interface ScanSidebarProps {
   onSubscribeClick: () => void;
@@ -52,18 +53,12 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logge
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/subscription-plan`, {
-          headers: {
-            'x-organization': organization?.slug,
-          },
-          credentials: 'include',
-        });
-        const result = await response.json();
-        
-        if (result?.status === true && result?.data?.data) {
+        const result = await callAPI('/api/subscription-plan');
+
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items) && result.items.length > 0) {
           // Ordenar por precio de mayor a menor (más caro primero)
-          const sortedPlans = [...result.data.data].sort((a, b) => b.price - a.price);
+          const sortedPlans = [...result.items].sort((a, b) => b.price - a.price);
           setSubscriptionPlans(sortedPlans);
         }
       } catch (error) {

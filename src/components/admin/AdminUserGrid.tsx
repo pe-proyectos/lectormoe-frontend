@@ -123,14 +123,11 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
     window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
     callAPI(`/api/user?${query}`)
       .then((result: any) => {
-        if (result && result.data) {
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
           setTotal(result.total || 0);
-          setUserList(result.data);
+          setUserList(result.items);
           setMaxPage(result.maxPage || 1);
-        } else if (Array.isArray(result)) {
-          setUserList(result);
-          setTotal(result.length);
-          setMaxPage(1);
         }
       })
       .catch((error: any) => toast.error(error?.message))

@@ -51,6 +51,24 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
     }
   }, [isDialogOpen]);
 
+  // Escuchar eventos para abrir el diálogo desde los pills
+  useEffect(() => {
+    const handleOpenMangaDialog = (event: CustomEvent) => {
+      const manga = event.detail?.manga;
+      if (manga) {
+        // Usar el manga directamente del evento (ya tiene toda la información)
+        setSelectedManga(manga);
+        setIsDialogOpen(true);
+      }
+    };
+
+    window.addEventListener('openMangaDialog', handleOpenMangaDialog as EventListener);
+
+    return () => {
+      window.removeEventListener('openMangaDialog', handleOpenMangaDialog as EventListener);
+    };
+  }, []);
+
   const refreshMangaProfile = useCallback(() => {
     setLoading(true);
     const query = new URLSearchParams({
@@ -65,14 +83,11 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
 
     callAPI(`/api/manga-custom?${query}`)
       .then((result) => {
-        if (result && Array.isArray(result.data)) {
-          setMangaList(result.data);
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+          setMangaList(result.items);
           setMaxPage(result.maxPage || 1);
           setTotal(result.total || 0);
-        } else if (Array.isArray(result)) {
-          setMangaList(result);
-          setMaxPage(1);
-          setTotal(result.length);
         }
       })
       .catch((error) => toast.error(error?.message || 'Error cargando mangas'))
@@ -82,10 +97,9 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   const refreshSubscriptionPlans = () => {
     return callAPI(`/api/subscription-plan`)
       .then((result) => {
-        if (result && Array.isArray(result.data)) {
-          setSubscriptionPlans(result.data);
-        } else if (Array.isArray(result)) {
-          setSubscriptionPlans(result);
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+          setSubscriptionPlans(result.items);
         }
       })
       .catch((error) => toast.error(error?.message || 'Error cargando planes de suscripción'));
@@ -115,7 +129,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   };
 
   return (
-    <div className="p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6">
+    <div className="p-2 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6">
       {/* Dialog */}
       <AdminMangaCustomDialog
         organization={organization}
@@ -129,16 +143,17 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
 
       {/* Header */}
       <Card>
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <Button
             variant="primary"
             onClick={() => {
               setSelectedManga(null);
               setIsDialogOpen(true);
             }}
+            className="w-full sm:w-auto"
           >
-            <Plus size={20} />
-            Agregar Manga
+            <Plus size={18} className="sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Agregar Manga</span>
           </Button>
 
           <form onSubmit={handleSearchSubmit} className="relative w-full sm:max-w-md">
@@ -147,20 +162,20 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
               placeholder="Buscar manga..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="pr-10"
+              className="pr-10 text-sm sm:text-base"
             />
             <button
               type="submit"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-cyan-500 transition-colors"
             >
-              <Search size={20} />
+              <Search size={18} className="sm:w-5 sm:h-5" />
             </button>
           </form>
         </div>
 
         {/* Results info */}
         {!loading && (
-          <div className="mt-4 text-sm text-zinc-400">
+          <div className="mt-3 sm:mt-4 text-xs sm:text-sm text-zinc-400">
             Mostrando{' '}
             <span className="font-bold text-white">
               {mangaList.length > 0 ? (page - 1) * 20 + 1 : 0}
@@ -178,26 +193,26 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
 
       {/* Loading State */}
       {loading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 size={48} className="text-cyan-500 animate-spin" />
-            <span className="text-zinc-400 font-medium">Cargando mangas...</span>
+        <div className="flex items-center justify-center py-12 sm:py-16 md:py-20">
+          <div className="flex flex-col items-center gap-3 sm:gap-4">
+            <Loader2 size={40} className="sm:w-12 sm:h-12 text-cyan-500 animate-spin" />
+            <span className="text-sm sm:text-base text-zinc-400 font-medium">Cargando mangas...</span>
           </div>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && mangaList.length === 0 && (
-        <Card className="text-center py-20">
-          <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-zinc-800 rounded-full">
-              <Search size={48} className="text-zinc-600" />
+        <Card className="text-center py-12 sm:py-16 md:py-20">
+          <div className="flex flex-col items-center gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-zinc-800 rounded-full">
+              <Search size={40} className="sm:w-12 sm:h-12 text-zinc-600" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-white mb-2">
+              <h3 className="text-lg sm:text-xl font-black text-white mb-1 sm:mb-2">
                 No se encontraron mangas
               </h3>
-              <p className="text-zinc-400">
+              <p className="text-sm sm:text-base text-zinc-400 px-4">
                 {searchTerm
                   ? 'Intenta con otros términos de búsqueda'
                   : 'Comienza agregando tu primer manga'}
@@ -210,7 +225,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
       {/* Grid */}
       {!loading && mangaList.length > 0 && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
+          <div className="grid grid-cols-1 min-[375px]:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
             {mangaList.map((manga) => (
               <AdminMangaCustomCard
                 key={manga.id || manga.slug}
@@ -225,19 +240,19 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
           {/* Pagination */}
           {maxPage > 1 && (
             <Card>
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handlePrevPage}
                   disabled={page === 1}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto order-2 sm:order-1"
                 >
                   <ChevronLeft size={16} />
                   <span className="hidden sm:inline">Anterior</span>
                 </Button>
 
-                <span className="text-xs sm:text-sm font-bold text-zinc-400 text-center">
+                <span className="text-xs sm:text-sm font-bold text-zinc-400 text-center order-1 sm:order-2">
                   Página <span className="text-white">{page}</span> de{' '}
                   <span className="text-white">{maxPage}</span>
                 </span>
@@ -247,7 +262,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
                   size="sm"
                   onClick={handleNextPage}
                   disabled={page === maxPage}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto order-3"
                 >
                   <span className="hidden sm:inline">Siguiente</span>
                   <ChevronRight size={16} />

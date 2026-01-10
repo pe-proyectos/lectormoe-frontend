@@ -46,10 +46,9 @@ const AdminSubscriptionPlanGrid: React.FC<AdminSubscriptionPlanGridProps> = ({ l
     setLoading(true);
     callAPI(`/api/subscription-plan`)
       .then((result) => {
-        if (result && Array.isArray(result.data)) {
-          setSubscriptionPlans(result.data);
-        } else if (Array.isArray(result)) {
-          setSubscriptionPlans(result);
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+          setSubscriptionPlans(result.items);
         }
       })
       .catch((error) => toast.error(error?.message || 'Error al cargar planes de suscripción'))

@@ -48,8 +48,8 @@ const UnifiedProfileView: React.FC<UnifiedProfileViewProps> = ({ user, language 
     try {
       // Obtener historial de todas las organizaciones (sin x-organization header)
       const response = await callAPI(`/api/user-chapter-history?limit=30`);
-      // callAPI devuelve result.data, que es { data, maxPage, total }
-      setUserChapterHistoryList(response?.data || []);
+      // callAPI devuelve { items: [...], maxPage: X, total: Y }
+      setUserChapterHistoryList(response?.items || []);
     } catch (error: any) {
       console.error("Error loading history:", error);
       toast.error(error?.message || "Error al cargar el historial");
@@ -63,8 +63,8 @@ const UnifiedProfileView: React.FC<UnifiedProfileViewProps> = ({ user, language 
     try {
       // Obtener favoritos de todas las organizaciones (sin x-organization header)
       const response = await callAPI(`/api/favorites?limit=30`);
-      // callAPI devuelve result.data, que es { data, maxPage, total }
-      setFavoritesList(response?.data || []);
+      // callAPI devuelve { items: [...], maxPage: X, total: Y }
+      setFavoritesList(response?.items || []);
     } catch (error: any) {
       console.error("Error loading favorites:", error);
       toast.error(error?.message || "Error al cargar los favoritos");

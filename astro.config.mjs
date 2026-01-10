@@ -1,6 +1,6 @@
 import { defineConfig } from 'astro/config';
 
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 import bun from "@nurodev/astro-bun";
 import react from "@astrojs/react";
 
@@ -15,5 +15,20 @@ export default defineConfig({
   devToolbar: {
     enabled: false
   },
-  integrations: [tailwind(), react()]
+  vite: {
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: [
+        '@nivo/line',
+        '@nivo/bar',
+        '@nivo/pie',
+        '@nivo/core',
+        '@nivo/treemap'
+      ]
+    },
+    ssr: {
+      noExternal: ['@nivo/line', '@nivo/bar', '@nivo/pie', '@nivo/core', '@nivo/treemap']
+    }
+  },
+  integrations: [react()]
 });

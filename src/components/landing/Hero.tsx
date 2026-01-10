@@ -35,18 +35,10 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
     const fetchFeaturedManga = async () => {
       try {
         setLoading(true);
-        const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/landing/featured-manga?limit=5`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        const result = await response.json();
-        
-        if (result?.status === true && Array.isArray(result.data)) {
-          setMangas(result.data);
+        const result = await callAPI('/api/landing/featured-manga?limit=5');
+
+        if (Array.isArray(result)) {
+          setMangas(result);
         }
       } catch (error) {
         console.error('Error fetching featured manga:', error);
@@ -67,8 +59,8 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
           const mangaSlug = manga.mangaSlug || manga.slug;
           if (mangaSlug) {
             try {
-              const isFav = await callAPI(`/api/favorites/manga-custom/${mangaSlug}`);
-              favStatus[mangaSlug] = isFav;
+              const result = await callAPI(`/api/favorites/manga-custom/${mangaSlug}`);
+              favStatus[mangaSlug] = result === true;
             } catch {
               favStatus[mangaSlug] = false;
             }

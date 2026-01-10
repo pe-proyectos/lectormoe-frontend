@@ -110,20 +110,11 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       try {
         setLoadingScans(true);
         console.log('Fetching followed scans for user:', user.id);
-        const result = await callAPI('/api/organization/followed');
+        const result = await callAPI("/api/organization/followed");
         
-        console.log('Followed scans API response:', result);
-        console.log('Result type:', typeof result);
-        console.log('Is array:', Array.isArray(result));
-        
-        // callAPI returns result.data, so result should be the array directly
-        if (result && Array.isArray(result)) {
-          console.log('Setting followed scans:', result.length, 'scans');
+        // callAPI retorna result.data directamente, que es el array de organizaciones
+        if (Array.isArray(result)) {
           setFollowedScans(result);
-        } else if (result && result.data && Array.isArray(result.data)) {
-          // Fallback: if somehow result.data exists
-          console.log('Setting followed scans from result.data:', result.data.length, 'scans');
-          setFollowedScans(result.data);
         } else {
           console.warn('Unexpected response structure for followed scans:', result);
           setFollowedScans([]);
@@ -153,10 +144,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         setLoadingHistory(true);
         const result = await callAPI('/api/user-chapter-history?limit=30');
         
-        // callAPI returns result.data, which contains { data, maxPage, total }
-        if (result?.data && Array.isArray(result.data)) {
-          setReadingHistory(result.data);
-          setHistoryTotal(result.total || result.data.length);
+        // El API retorna { items: [...], maxPage: X, total: Y }
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+          setReadingHistory(result.items);
+          setHistoryTotal(result.total || result.items.length);
         } else {
           setReadingHistory([]);
           setHistoryTotal(0);
@@ -185,11 +176,15 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         setLoadingFavorites(true);
         const result = await callAPI('/api/favorites?limit=6');
         
-        // callAPI returns result.data, which contains { data, maxPage, total }
-        if (result?.data && Array.isArray(result.data)) {
+        // El API retorna { items: [...], maxPage: X, total: Y } o directamente el array
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
           // The API returns favorites with mangaCustom nested
-          setFavorites(result.data);
-          setFavoritesTotal(result.total || result.data.length);
+          setFavorites(result.items);
+          setFavoritesTotal(result.total || result.items.length);
+        } else if (Array.isArray(result)) {
+          // Fallback si el API retorna directamente el array
+          setFavorites(result);
+          setFavoritesTotal(result.length);
         } else {
           setFavorites([]);
           setFavoritesTotal(0);
@@ -300,12 +295,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       // Call API to update user
       // Note: The API requires organizationId, but for profile updates we can use any organization
       // The endpoint will use the organization from the header or find a default one
-      const result = await callAPI(`/api/user/${user.id}`, {
-        method: 'PATCH',
-        body: formData,
-      });
+      const result = await callAPI(
+        `/user/${user.id}`, { method: "PATCH", body: formData }
+      );
       
-      // callAPI returns result.data, so result should be the user object
       if (result) {
         // Reload page to get updated user data
         window.location.reload();
@@ -546,9 +539,9 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                       if (favorites.length < favoritesTotal) {
                         setLoadingMoreFavorites(true);
                         try {
-                          const result = await callAPI(`/api/favorites?limit=${favoritesTotal}`);
-                          if (result?.data && Array.isArray(result.data)) {
-                            setFavorites(result.data);
+                          const result = await callAPI(`/favorites?limit=${favoritesTotal}`);
+                          if (Array.isArray(result)) {
+                            setFavorites(result);
                           }
                         } catch (error) {
                           console.error('Error loading all favorites:', error);
@@ -662,7 +655,6 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 <>
                   <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
                     {(showAllHistory ? readingHistory : readingHistory.slice(0, 5)).map((item) => {
-                      console.log(item)
                       const orgSlug = item.chapter.mangaCustom.organization.slug;
                       const chapterUrl = `/${orgSlug}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
                       return (
@@ -701,8 +693,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                             setLoadingMoreHistory(true);
                             try {
                               const result = await callAPI(`/api/user-chapter-history?limit=${historyTotal}`);
-                              if (result?.data && Array.isArray(result.data)) {
-                                setReadingHistory(result.data);
+                              if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+                                setReadingHistory(result.items);
+                              } else if (Array.isArray(result)) {
+                                setReadingHistory(result);
                               }
                             } catch (error) {
                               console.error('Error loading more history:', error);

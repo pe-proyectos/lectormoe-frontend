@@ -4,7 +4,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { callAPI } from "../util/callApi";
+import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
@@ -104,6 +104,9 @@ export function Reader({
   hasAccess = true,
 }) {
   const _ = getTranslator(language);
+  
+  // El slug está en manga.manga.slug (relación anidada)
+  const mangaSlug = manga?.manga?.slug || manga?.slug;
 
   // Get organization slug from path if not provided
   const orgSlug = organizationSlug || getOrgSlugFromPath();
@@ -362,9 +365,8 @@ export function Reader({
 
   // Analytics - solo una vez por cambio de settings
   useEffect(() => {
-    callAPI("/api/analytics", {
-      method: "POST",
-      includeIp: true,
+    callAPI('/api/analytics', {
+      method: 'POST',
       body: JSON.stringify({
         event: "view_manga_chapter",
         path: window.location.pathname,
@@ -372,37 +374,37 @@ export function Reader({
         screenWidth: screen.width,
         screenHeight: screen.height,
         payload: {
-          manga: manga.slug,
+          manga: mangaSlug,
           chapter: chapterNumber,
           ...settings,
         },
       }),
     }).catch(console.error);
-  }, [settings, manga.slug, chapterNumber]);
+  }, [settings, mangaSlug, chapterNumber]);
 
   // Save chapter history - con debounce
   useEffect(() => {
     if (!logged) return;
 
-    const url = `/api/user-chapter-history/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages/${currentPage}`;
+    const url = `/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages/${currentPage}`;
     if (lastSaveUrl === url) return;
 
     const timeoutId = setTimeout(() => {
       setLastSaveUrl(url);
-      callAPI(url).catch((error) => {
+      callAPI(url, { method: 'POST' }).catch((error) => {
         console.error("Failed to save chapter history", error);
       });
     }, 500); // Debounce de 500ms
 
     return () => clearTimeout(timeoutId);
-  }, [currentPage, logged, manga.slug, chapterNumber, lastSaveUrl]);
+  }, [currentPage, logged, mangaSlug, chapterNumber, lastSaveUrl]);
 
   // Track view - solo una vez
   useEffect(() => {
-    callAPI(`/api/views/manga-custom/${manga.slug}/chapter/${chapterNumber}`, {
-      includeIp: true,
+    callAPI(`/api/views/manga-custom/${mangaSlug}/chapter/${chapterNumber}`, {
+      method: 'POST'
     }).catch(() => {});
-  }, [manga.slug, chapterNumber]);
+  }, [mangaSlug, chapterNumber]);
 
   // Update URL - con debounce
   useEffect(() => {
@@ -544,12 +546,14 @@ export function Reader({
     }
 
     setLoading(true);
-    callAPI(`/api/manga-custom/${manga.slug}/chapter/${chapterNumber}/pages`)
+    callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages`)
       .then((result) => {
-        if (result && result.status === false) {
+        // callAPI ya extrae result.data, así que result es directamente el array de páginas
+        // Si hay un error, callAPI lanza una excepción, así que si llegamos aquí, result es válido
+        if (!Array.isArray(result)) {
           setAccessError({
-            message: result.message || "No tienes acceso a este capítulo.",
-            errorType: result.errorType || "unknown",
+            message: "Error al cargar las páginas del capítulo.",
+            errorType: "unknown",
           });
           setLoading(false);
           return;
@@ -560,9 +564,10 @@ export function Reader({
         if (pages.length > 0) {
           const urlParams = new URLSearchParams(window.location.search);
           const initialPageNumber = parseInt(urlParams.get("page") || "1");
-          const pageIndex =
-            pages.findIndex((page) => page.number === initialPageNumber) || 0;
-          setCurrentPage(pages[pageIndex].number);
+          const pageIndex = pages.findIndex((page) => page.number === initialPageNumber);
+          // Si no se encuentra la página, usar la primera (índice 0)
+          const validPageIndex = pageIndex >= 0 ? pageIndex : 0;
+          setCurrentPage(pages[validPageIndex].number);
         }
         setLoading(false);
       })
@@ -578,7 +583,7 @@ export function Reader({
       });
   }, [
     hasAccess,
-    manga.slug,
+    mangaSlug,
     chapterNumber,
     logged,
     manga?.requireLogin,
@@ -595,7 +600,7 @@ export function Reader({
             onClick={() => {
               if (chapter?.previousChapter?.number)
                 location.href = getOrgPath(
-                  `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`,
+                  `/manga/${mangaSlug}/chapters/${chapter?.previousChapter?.number}`,
                   orgSlug
                 );
             }}
@@ -617,7 +622,7 @@ export function Reader({
             </div>
           </div>
         ),
-    [chapter?.previousChapter, manga.slug, orgSlug, _]
+    [chapter?.previousChapter, mangaSlug, orgSlug, _]
   );
 
   const NextChapterArrow = useMemo(
@@ -629,7 +634,7 @@ export function Reader({
             onClick={() => {
               if (chapter?.nextChapter?.number)
                 location.href = getOrgPath(
-                  `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`,
+                  `/manga/${mangaSlug}/chapters/${chapter?.nextChapter?.number}`,
                   orgSlug
                 );
             }}
@@ -651,7 +656,7 @@ export function Reader({
             </div>
           </div>
         ),
-    [chapter?.nextChapter, manga.slug, orgSlug, _]
+    [chapter?.nextChapter, mangaSlug, orgSlug, _]
   );
 
   // Renderizar páginas - OPTIMIZADO para evitar re-renders innecesarios
@@ -802,7 +807,7 @@ export function Reader({
             <div className="flex md:hidden w-full">
               <PreviousChapterArrow />
               <a
-                href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
+                href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
                 className="flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors relative group/tooltip"
               >
                 <span className="text-3xl sm:text-6xl">
@@ -816,7 +821,7 @@ export function Reader({
             </div>
             <div className="flex w-full items-center gap-x-4">
               <a
-                href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
+                href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
                 className="hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors relative group/tooltip"
               >
                 <span className="text-2xl md:text-6xl">
@@ -829,7 +834,7 @@ export function Reader({
               <div className="flex flex-grow flex-wrap items-center justify-start">
                 <span className="w-full text-xl md:text-3xl">
                   <a
-                    href={getOrgPath(`/manga/${manga?.slug}`, orgSlug)}
+                    href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
                     className="transition-colors hover:text-red-100"
                   >
                     {manga?.title}
@@ -1003,7 +1008,7 @@ export function Reader({
                     {accessError.errorType === "subscription_required" && (
                       <a
                         href={getOrgPath(
-                          `/subscriptions?mangaSlug=${manga.slug}`,
+                          `/subscriptions?mangaSlug=${mangaSlug}`,
                           orgSlug
                         )}
                         className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider shadow-xl hover:shadow-yellow-500/20"
@@ -1013,7 +1018,7 @@ export function Reader({
                     )}
 
                     <a
-                      href={getOrgPath(`/manga/${manga.slug}`, orgSlug)}
+                      href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
                       className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider border-2 border-zinc-700"
                     >
                       Volver al Manga
@@ -1109,7 +1114,7 @@ export function Reader({
                 <button
                   onClick={() =>
                     (location.href = getOrgPath(
-                      `/manga/${manga.slug}/chapters/${chapter?.previousChapter?.number}`,
+                      `/manga/${mangaSlug}/chapters/${chapter?.previousChapter?.number}`,
                       orgSlug
                     ))
                   }
@@ -1129,7 +1134,7 @@ export function Reader({
               ))}
             <button
               onClick={() =>
-                (location.href = getOrgPath(`/manga/${manga.slug}`, orgSlug))
+                (location.href = getOrgPath(`/manga/${mangaSlug}`, orgSlug))
               }
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
@@ -1141,7 +1146,7 @@ export function Reader({
                 <button
                   onClick={() =>
                     (location.href = getOrgPath(
-                      `/manga/${manga.slug}/chapters/${chapter?.nextChapter?.number}`,
+                      `/manga/${mangaSlug}/chapters/${chapter?.nextChapter?.number}`,
                       orgSlug
                     ))
                   }
@@ -1176,7 +1181,7 @@ export function Reader({
           {/* Comments Section - Below Reader */}
           {chapterData.pages.length > 0 && !loading && (
             <CommentsSection
-              identifier={`${manga.slug}_${chapterNumber}`}
+              identifier={`${mangaSlug}_${chapterNumber}`}
               logged={logged || false}
               user={user}
               organization={organization}

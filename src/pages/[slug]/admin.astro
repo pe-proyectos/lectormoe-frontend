@@ -1,11 +1,6 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import AdminDashboard from "../../components/admin/AdminDashboard";
-import { getTranslator } from "../../util/translate";
-
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, organizationSlug } = Astro.locals;
-const _ = getTranslator(language);
+const { organization, logged, organizationSlug } = Astro.locals;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -15,14 +10,8 @@ if (!organization) {
 if (!logged) {
   return Astro.redirect(`/${organizationSlug}/login`);
 }
----
 
-<AdminLayout title={_("admin_panel_title")} page="dashboard" organizationSlug={organizationSlug} showAds={false}>
-  <AdminDashboard
-    organization={organization}
-    language={language}
-    organizationSlug={organizationSlug}
-    client:only="react"
-  />
-</AdminLayout>
+// Redirigir al panel de mangas
+return Astro.redirect(`/${organizationSlug}/admin/mangas`);
+---
 

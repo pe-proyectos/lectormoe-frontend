@@ -11,7 +11,7 @@ import {
   CreditCard,
   Shield,
 } from "lucide-react";
-import { callAPI } from "../../util/callApi";
+import { callAPI } from '../../util/callApi';
 
 interface NavbarProps {
   // Required props
@@ -95,29 +95,20 @@ const Navbar: React.FC<NavbarProps> = ({
           return;
         }
 
-        const response = await fetch(`${API_URL}/api/auth/check`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'x-organization': organization.slug,
-          },
-          credentials: 'include',
-        });
+        const result = await callAPI('/api/auth/check');
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result?.status === true && result?.data?.user?.permissions) {
-            const found = result.data.user.permissions.find(
-              (permission: any) => permission.organizationId === organization.id
-            );
-            if (found) {
-              setUserPermissions(found);
-              // Update user state with fresh permissions
-              setUser({
-                ...user,
-                permissions: result.data.user.permissions,
-              });
-              return;
-            }
+        if (result?.user?.permissions) {
+          const found = result.user.permissions.find(
+            (permission: any) => permission.organizationId === organization.id
+          );
+          if (found) {
+            setUserPermissions(found);
+            // Update user state with fresh permissions
+            setUser({
+              ...user,
+              permissions: result.user.permissions,
+            });
+            return;
           }
         }
       } catch (error) {
@@ -233,7 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
   const handleLogout = async () => {
     try {
-      await callAPI("/api/auth/logout", { method: "POST" });
+      await callAPI('/api/auth/logout', { method: 'POST' });
 
       // Limpiar cookies manualmente con diferentes paths para asegurar que se eliminen todas
       const cookieNames = [
@@ -461,7 +452,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       <button
                         onClick={() => {
                           const orgSlug = activeScan?.slug || organization?.slug;
-                          navigateTo(`/${orgSlug}/admin`);
+                          navigateTo(`/${orgSlug}/admin/mangas`);
                           setProfileDropdownOpen(false);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
@@ -620,7 +611,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => {
                       const orgSlug = activeScan?.slug || organization?.slug;
-                      navigateTo(`/${orgSlug}/admin`);
+                      navigateTo(`/${orgSlug}/admin/mangas`);
                       setMobileMenuOpen(false);
                     }}
                     className="w-full flex items-center gap-4 text-purple-400 font-bold text-lg"

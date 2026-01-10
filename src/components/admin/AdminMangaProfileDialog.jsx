@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
+import Autocomplete from "./ui/Autocomplete";
 import { callAPI } from "../../util/callApi";
 import { AdminCreateAuthorDialog } from "./AdminCreateAuthorDialog";
 import { getTranslator } from "../../util/translate";
@@ -112,26 +111,19 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
               <div className="grow">
                 <Autocomplete
                   multiple
-                  disablePortal
                   options={authors}
                   isOptionEqualToValue={(option, value) =>
                     option.slug === value.slug
                   }
                   getOptionLabel={(option) => option.name}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      variant="standard"
-                      label={
-                        selectedAuthors.length > 1 ? _("authors") : _("author")
-                      }
-                      placeholder={
-                        selectedAuthors.length > 1
-                          ? _("authors") + "..."
-                          : _("author") + "..."
-                      }
-                    />
-                  )}
+                  label={
+                    selectedAuthors.length > 1 ? _("authors") : _("author")
+                  }
+                  placeholder={
+                    selectedAuthors.length > 1
+                      ? _("authors") + "..."
+                      : _("author") + "..."
+                  }
                   value={selectedAuthors}
                   getOptionDisabled={() =>
                     selectedAuthors.length >= 4
@@ -171,16 +163,10 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
 
           {/* Demography Section */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-              {_("demography")}
-            </label>
             <Autocomplete
-              disablePortal
               options={demographies}
               getOptionLabel={(option) => `${option.name} (${option.description})`}
-              renderInput={(params) => (
-                <TextField {...params} label={_("demography")} />
-              )}
+              label={_("demography")}
               value={demography}
               onChange={(_event, newValue) => setDemography(newValue)}
             />
@@ -188,16 +174,10 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
 
           {/* Book Type Section */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-              {_("book_type")}
-            </label>
             <Autocomplete
-              disablePortal
               options={bookTypes}
               getOptionLabel={(option) => option.name}
-              renderInput={(params) => (
-                <TextField {...params} label={_("book_type")} />
-              )}
+              label={_("book_type")}
               value={bookType}
               onChange={(_event, newValue) => setBookType(newValue)}
             />

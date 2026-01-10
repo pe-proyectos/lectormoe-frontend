@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Manga } from '../../util/landing/types';
 import { FEATURED_MANGA } from '../../util/landing/constants';
 import MangaCard3D from './MangaCard3D';
+import { callAPI } from '../../util/callApi';
 
 interface FeaturedMangaProps {
   user?: any;
@@ -17,18 +18,10 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
     const fetchFeaturedManga = async () => {
       try {
         setLoading(true);
-        const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/landing/featured-manga?limit=5`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        const result = await response.json();
-        
-        if (result?.status === true && Array.isArray(result.data)) {
-          setFeaturedManga(result.data);
+        const result = await callAPI('/api/landing/featured-manga?limit=5');
+
+        if (Array.isArray(result)) {
+          setFeaturedManga(result);
         } else {
           console.warn('Featured manga response format unexpected:', result);
         }
@@ -91,7 +84,11 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
               scan: manga.scanName,
               scanName: manga.scanName,
               scanUrl: manga.scanUrl,
-              mangaUrl: manga.mangaUrl || (manga.scanSlug && manga.mangaSlug ? `/${manga.scanSlug}/manga/${manga.mangaSlug}` : undefined),
+              mangaUrl: manga.mangaUrl && !manga.mangaUrl.includes('undefined') 
+                ? manga.mangaUrl 
+                : (manga.scanSlug && manga.mangaSlug && manga.mangaSlug !== 'undefined' 
+                  ? `/${manga.scanSlug}/manga/${manga.mangaSlug}` 
+                  : undefined),
               status: 'Ongoing',
               chapters: chaptersWithReadStatus,
               userHasSubscription: userHasSubscription || false,

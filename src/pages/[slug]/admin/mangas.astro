@@ -1,6 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
-import AdminMangasBreadcrumb from "../../../components/admin/AdminMangasBreadcrumb";
+import AdminRecentMangasPills from "../../../components/admin/AdminRecentMangasPills";
 import AdminMangaCustomGrid from "../../../components/admin/AdminMangaCustomGrid";
 import { getTranslator } from "../../../util/translate";
 
@@ -19,7 +19,11 @@ if (!logged) {
 ---
 
 <AdminLayout title={_("admin_books_title")} page="mangas" organizationSlug={organizationSlug}>
-  <AdminMangasBreadcrumb language={language} organizationSlug={organizationSlug} client:only="react" />
+  <AdminRecentMangasPills 
+    organizationSlug={organizationSlug} 
+    language={language}
+    client:only="react" 
+  />
   <div class="py-2"></div>
   <AdminMangaCustomGrid
     organization={organization}
