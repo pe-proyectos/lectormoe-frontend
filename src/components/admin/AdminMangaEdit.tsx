@@ -1034,9 +1034,20 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             <h1 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">
               {formData.title || mangaCustom?.title || 'Sin título'}
             </h1>
-            <p className="text-cyan-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+            <div className="flex items-center gap-4 mt-3">
+            <p className="text-cyan-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-1.5">
               <Settings2 size={12} /> Editor de Capítulos
             </p>
+              <span className="text-zinc-700">•</span>
+              <a 
+                href={`/${organizationSlug}/manga/${mangaCustom?.manga?.slug || mangaCustom?.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-400 hover:text-cyan-500 text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5"
+              >
+                <BookOpen size={12} /> Ir al manga
+              </a>
+            </div>
           </div>
         </div>
       </div>
