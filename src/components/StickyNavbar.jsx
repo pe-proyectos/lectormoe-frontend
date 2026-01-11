@@ -141,14 +141,12 @@ export function StickyNavbar({
                 }
               }}
             />
-            <button
+            <a
+              href={getOrgPath(`/search?q=${search}`, orgSlug)}
               className="absolute right-1 top-1 rounded bg-gradient-to-r from-blue-500 to-pink-500 text-white px-4 py-1.5 text-sm font-medium hover:opacity-90 transition-opacity"
-              onClick={() => {
-                location.href = `/search?q=${search}`;
-              }}
             >
               {_("search")}
-            </button>
+            </a>
           </div>
           <div className="flex items-center gap-x-1">
             {isDecember && (
@@ -268,15 +266,11 @@ export function StickyNavbar({
                 </div>
               ) : (
                 <>
-                  <a href={getOrgPath(`/login?redirect=${location.pathname}`, orgSlug)} className="hidden lg:inline-block mx-1">
-                    <button className="px-4 py-2 text-white text-sm font-medium hover:bg-white/10 rounded-lg transition-colors">
-                      {_("login")}
-                    </button>
+                  <a href={getOrgPath(`/login?redirect=${location.pathname}`, orgSlug)} className="hidden lg:inline-block mx-1 px-4 py-2 text-white text-sm font-medium hover:bg-white/10 rounded-lg transition-colors">
+                    {_("login")}
                   </a>
-                  <a href={getOrgPath(`/register?redirect=${location.pathname}`, orgSlug)} className="hidden lg:inline-block mx-1">
-                    <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-                      {_("register")}
-                    </button>
+                  <a href={getOrgPath(`/register?redirect=${location.pathname}`, orgSlug)} className="hidden lg:inline-block mx-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+                    {_("register")}
                   </a>
                 </>
               )}
@@ -337,27 +331,21 @@ export function StickyNavbar({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <button
+            <a
+              href={getOrgPath(`/search?q=${search}`, orgSlug)}
               className="absolute right-1 top-1 rounded bg-gradient-to-r from-blue-500 to-pink-500 text-white px-4 py-1.5 text-sm font-medium hover:opacity-90 transition-opacity"
-              onClick={() => {
-                location.href = getOrgPath(`/search?q=${search}`, orgSlug);
-              }}
             >
               {_("search")}
-            </button>
+            </a>
           </div>
         </div>
         {!username && (
           <div className="flex items-center justify-center gap-x-1">
-            <a href={getOrgPath("/login", orgSlug)} className="w-full">
-              <button className="w-full px-4 py-2 text-white text-sm font-medium hover:bg-white/10 rounded-lg transition-colors">
-                {_("login")}
-              </button>
+            <a href={getOrgPath("/login", orgSlug)} className="w-full px-4 py-2 text-white text-sm font-medium hover:bg-white/10 rounded-lg transition-colors text-center">
+              {_("login")}
             </a>
-            <a href={getOrgPath("/register", orgSlug)} className="w-full">
-              <button className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-                {_("register")}
-              </button>
+            <a href={getOrgPath("/register", orgSlug)} className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity text-center">
+              {_("register")}
             </a>
           </div>
         )}

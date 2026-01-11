@@ -106,7 +106,19 @@ export function Reader({
   const _ = getTranslator(language);
   
   // El slug está en manga.manga.slug (relación anidada)
-  const mangaSlug = manga?.manga?.slug || manga?.slug;
+  // También puede estar directamente en manga.slug si viene del API
+  const mangaSlug = manga?.manga?.slug || manga?.slug || manga?.mangaSlug;
+  
+  // Validar que el slug esté disponible
+  useEffect(() => {
+    if (!mangaSlug && manga) {
+      console.error('Reader: mangaSlug no disponible', {
+        manga,
+        availableKeys: Object.keys(manga || {}),
+        mangaManga: manga?.manga,
+      });
+    }
+  }, [mangaSlug, manga]);
 
   // Get organization slug from path if not provided
   const orgSlug = organizationSlug || getOrgSlugFromPath();
@@ -384,7 +396,7 @@ export function Reader({
 
   // Save chapter history - con debounce
   useEffect(() => {
-    if (!logged) return;
+    if (!logged || !mangaSlug || !chapterNumber) return;
 
     const url = `/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages/${currentPage}`;
     if (lastSaveUrl === url) return;
@@ -392,7 +404,10 @@ export function Reader({
     const timeoutId = setTimeout(() => {
       setLastSaveUrl(url);
       callAPI(url, { method: 'POST' }).catch((error) => {
-        console.error("Failed to save chapter history", error);
+        // Solo loggear errores que no sean 404 (recurso no encontrado)
+        if (error?.message && !error.message.includes('No se encontró el recurso')) {
+          console.error("Failed to save chapter history", error);
+        }
       });
     }, 500); // Debounce de 500ms
 
@@ -401,9 +416,14 @@ export function Reader({
 
   // Track view - solo una vez
   useEffect(() => {
+    if (!mangaSlug || !chapterNumber) return;
+    
     callAPI(`/api/views/manga-custom/${mangaSlug}/chapter/${chapterNumber}`, {
       method: 'POST'
-    }).catch(() => {});
+    }).catch((error) => {
+      // Silenciar errores de tracking de vistas
+      console.debug('Failed to track view:', error);
+    });
   }, [mangaSlug, chapterNumber]);
 
   // Update URL - con debounce

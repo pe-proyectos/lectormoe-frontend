@@ -389,16 +389,14 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
                   </div>
                   {/* Botón Salir en megamenu */}
                   <div className="mt-4 pt-4 border-t border-zinc-800">
-                    <button
-                      onClick={() => {
-                        handleExit();
-                        setIsMegaMenuOpen(false);
-                      }}
+                    <a
+                      href={`/${organizationSlug}`}
+                      onClick={() => setIsMegaMenuOpen(false)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500/20 to-red-600/20 hover:from-red-500/30 hover:to-red-600/30 border-2 border-red-500/50 hover:border-red-500 rounded-xl text-red-400 hover:text-red-300 text-sm font-bold uppercase tracking-widest transition-all group"
                     >
                       <X size={18} className="group-hover:rotate-90 transition-transform" />
                       <span>Salir del Panel</span>
-                    </button>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -495,16 +493,14 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
               </div>
               {/* Botón Salir en menú móvil */}
               <div className="mt-4 pt-4 border-t border-zinc-800">
-                <button
-                  onClick={() => {
-                    handleExit();
-                    setIsMobileMenuOpen(false);
-                  }}
+                <a
+                  href={`/${organizationSlug}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/20 hover:bg-red-500/30 border-2 border-red-500/50 hover:border-red-500 rounded-xl text-red-400 hover:text-red-300 text-sm font-bold uppercase tracking-widest transition-all group"
                 >
                   <X size={18} className="group-hover:rotate-90 transition-transform" />
                   <span>Salir del Panel</span>
-                </button>
+                </a>
               </div>
             </nav>
           </aside>

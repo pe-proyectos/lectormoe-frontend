@@ -350,8 +350,8 @@ const Navbar: React.FC<NavbarProps> = ({
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {activeScan && (
-            <button
-              onClick={() => navigateTo("/")}
+            <a
+              href="/"
               className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-all mr-2 group/back"
             >
               <ChevronLeft
@@ -359,11 +359,11 @@ const Navbar: React.FC<NavbarProps> = ({
                 className="group-hover/back:-translate-x-1 transition-transform"
               />{" "}
               Inicio
-            </button>
+            </a>
           )}
 
-          <button
-            onClick={onGoSearch}
+          <a
+            href="/search"
             className={`text-sm font-bold transition-colors flex items-center gap-2 ${
               activeView === "search"
                 ? "text-cyan-500"
@@ -371,11 +371,11 @@ const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Search size={16} /> Catálogo
-          </button>
+          </a>
 
           {activeScan && onGoSubscriptions && (
-            <button
-              onClick={onGoSubscriptions}
+            <a
+              href="/subscriptions"
               className={`text-sm font-bold transition-colors flex items-center gap-2 ${
                 activeView === "subscriptions"
                   ? "text-yellow-500"
@@ -383,7 +383,7 @@ const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <CreditCard size={16} /> Suscripciones
-            </button>
+            </a>
           )}
 
           <div className="h-6 w-px bg-zinc-800 mx-2" />
@@ -429,37 +429,30 @@ const Navbar: React.FC<NavbarProps> = ({
                       {user.email || user.username}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      navigateToProfile();
-                      setProfileDropdownOpen(false);
-                    }}
+                  <a
+                    href={`/profile/${user?.slug}`}
+                    onClick={() => setProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                   >
                     <UserIcon size={16} className="text-cyan-500" /> Mi perfil
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigateTo("/settings");
-                      setProfileDropdownOpen(false);
-                    }}
+                  </a>
+                  <a
+                    href="/settings"
+                    onClick={() => setProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                   >
                     <Settings size={16} className="text-zinc-500" /> Ajustes
-                  </button>
+                  </a>
                   {(activeScan || organization) &&
                     userPermissions?.canSeeAdminPanel && (
-                      <button
-                        onClick={() => {
-                          const orgSlug = activeScan?.slug || organization?.slug;
-                          navigateTo(`/${orgSlug}/admin/mangas`);
-                          setProfileDropdownOpen(false);
-                        }}
+                      <a
+                        href={`/${activeScan?.slug || organization?.slug}/admin/mangas`}
+                        onClick={() => setProfileDropdownOpen(false)}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                       >
                         <Shield size={16} className="text-purple-500" /> Panel
                         Admin
-                      </button>
+                      </a>
                     )}
                   <div className="h-px bg-zinc-800 my-2" />
                   <button
@@ -475,16 +468,16 @@ const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
           ) : (
-            <button
-              onClick={onOpenLogin}
-              className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-white/5 ${
+            <a
+              href="/login"
+              className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-white/5 inline-block ${
                 activeView === "login"
                   ? "bg-cyan-500 text-zinc-950"
                   : "bg-white text-zinc-950 hover:bg-cyan-500"
               }`}
             >
               Ingresar
-            </button>
+            </a>
           )}
         </div>
 
@@ -518,33 +511,27 @@ const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl">
           {activeScan && (
-            <button
-              onClick={() => {
-                navigateTo("/");
-                setMobileMenuOpen(false);
-              }}
+            <a
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
               className="text-zinc-500 font-bold flex items-center gap-4 text-lg"
             >
               <ChevronLeft size={20} /> Inicio
-            </button>
+            </a>
           )}
-          <button
-            onClick={() => {
-              onGoSearch();
-              setMobileMenuOpen(false);
-            }}
+          <a
+            href="/search"
+            onClick={() => setMobileMenuOpen(false)}
             className={`text-xl font-bold flex items-center gap-4 ${
               activeView === "search" ? "text-cyan-500" : "text-zinc-100"
             }`}
           >
             <Search size={20} /> Catálogo
-          </button>
+          </a>
           {activeScan && onGoSubscriptions && (
-            <button
-              onClick={() => {
-                onGoSubscriptions();
-                setMobileMenuOpen(false);
-              }}
+            <a
+              href="/subscriptions"
+              onClick={() => setMobileMenuOpen(false)}
               className={`text-xl font-bold flex items-center gap-4 ${
                 activeView === "subscriptions"
                   ? "text-yellow-500"
@@ -552,7 +539,7 @@ const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <CreditCard size={20} /> Suscripciones
-            </button>
+            </a>
           )}
 
           {logged && user && (user.username || user.email) ? (
@@ -588,36 +575,29 @@ const Navbar: React.FC<NavbarProps> = ({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  navigateToProfile();
-                  setMobileMenuOpen(false);
-                }}
+              <a
+                href={`/profile/${user?.slug}`}
+                onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >
                 <UserIcon size={20} /> Mi Perfil
-              </button>
-              <button
-                onClick={() => {
-                  navigateTo("/settings");
-                  setMobileMenuOpen(false);
-                }}
+              </a>
+              <a
+                href="/settings"
+                onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >
                 <Settings size={20} /> Ajustes
-              </button>
+              </a>
               {(activeScan || organization) &&
                 userPermissions?.canSeeAdminPanel && (
-                  <button
-                    onClick={() => {
-                      const orgSlug = activeScan?.slug || organization?.slug;
-                      navigateTo(`/${orgSlug}/admin/mangas`);
-                      setMobileMenuOpen(false);
-                    }}
+                  <a
+                    href={`/${activeScan?.slug || organization?.slug}/admin/mangas`}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="w-full flex items-center gap-4 text-purple-400 font-bold text-lg"
                   >
                     <Shield size={20} /> Panel Admin
-                  </button>
+                  </a>
                 )}
               <button
                 onClick={() => {
@@ -630,15 +610,13 @@ const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => {
-                onOpenLogin();
-                setMobileMenuOpen(false);
-              }}
-              className="bg-cyan-500 text-zinc-950 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl"
+            <a
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="bg-cyan-500 text-zinc-950 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl inline-block text-center"
             >
               Ingresar
-            </button>
+            </a>
           )}
         </div>
       )}

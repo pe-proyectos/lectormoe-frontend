@@ -98,10 +98,10 @@ const AdminRecentMangasPills: React.FC<AdminRecentMangasPillsProps> = ({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-2">
-        <div className="h-8 w-20 bg-zinc-800 rounded-full animate-pulse"></div>
-        <div className="h-8 w-24 bg-zinc-800 rounded-full animate-pulse"></div>
-        <div className="h-8 w-16 bg-zinc-800 rounded-full animate-pulse"></div>
+      <div className="flex items-center justify-center gap-1.5 py-3">
+        <div className="h-6 w-16 bg-zinc-800 rounded-full animate-pulse"></div>
+        <div className="h-6 w-20 bg-zinc-800 rounded-full animate-pulse"></div>
+        <div className="h-6 w-14 bg-zinc-800 rounded-full animate-pulse"></div>
       </div>
     );
   }
@@ -111,28 +111,42 @@ const AdminRecentMangasPills: React.FC<AdminRecentMangasPillsProps> = ({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2">
+    <div className="flex flex-wrap items-center justify-center gap-1.5 py-3 px-2">
       {recentMangas.map((manga) => {
         const mangaSlug = getMangaSlug(manga);
         const mangaTitle = getMangaTitle(manga);
         const mangaId = manga?.id || manga?.manga?.id;
         
+        // Construir la URL del manga en el admin
+        const mangaUrl = mangaSlug 
+          ? `/${organizationSlug}/admin/mangas/${mangaSlug}`
+          : '#';
+        
         return (
-          <button
+          <a
             key={mangaId || mangaSlug || Math.random()}
-            onClick={() => handleMangaClick(manga)}
+            href={mangaUrl}
+            onClick={(e) => {
+              // Si no hay slug, usar el handler original como fallback
+              if (!mangaSlug) {
+                e.preventDefault();
+                handleMangaClick(manga);
+              }
+            }}
             className="
-              px-4 py-2 
-              bg-zinc-800 hover:bg-zinc-700 
-              text-white text-sm font-medium
+              px-2.5 py-1 
+              bg-zinc-800/60 hover:bg-zinc-700 
+              text-white text-xs font-medium
               rounded-full
-              transition-colors
-              border border-zinc-700 hover:border-cyan-500/50
+              transition-all duration-200
+              border border-zinc-700/50 hover:border-cyan-500/50
               whitespace-nowrap
+              hover:scale-105
+              inline-block
             "
           >
             {mangaTitle}
-          </button>
+          </a>
         );
       })}
     </div>
