@@ -138,9 +138,11 @@ export default function Autocomplete<T>({
   }, [highlightedIndex]);
 
   const defaultRenderOption = (props: React.HTMLAttributes<HTMLLIElement>, option: T, index: number) => {
+    const { key, ...restProps } = props as any;
     return (
       <li
-        {...props}
+        key={index}
+        {...restProps}
         className={`
           px-4 py-2 cursor-pointer hover:bg-zinc-800 transition-colors
           ${isOptionSelected(option) ? 'bg-zinc-800' : ''}
@@ -235,7 +237,6 @@ export default function Autocomplete<T>({
         >
           {filteredOptions.map((option, index) => {
             const optionProps = {
-              key: index,
               onClick: () => handleOptionClick(option),
             };
             return renderOption

@@ -3,7 +3,7 @@ import {
   Save, Plus, Calendar, BookOpen, UploadCloud, Trash2, 
   Settings2, Layers, GripVertical, ZoomIn, ZoomOut, 
   Map as MapIcon, CheckCircle2,
-  Camera, List, Info, Edit3, Download, X
+  Camera, List, Info, Edit3, Download, X, ImageIcon
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
@@ -76,6 +76,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     title: '',
     releaseDate: '',
     isSubscriberOnly: false,
+    thumbnail: null as File | string | null,
   });
   
   const [pages, setPages] = useState<(File | string)[]>([]);
@@ -111,6 +112,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         title: '',
         releaseDate: '',
         isSubscriberOnly: false,
+        thumbnail: null,
       });
       setPages([]);
       setSinglePageIndexes([]);
@@ -173,7 +175,11 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const loadSubscriptionPlans = async () => {
     try {
       const result = await callAPI('/api/subscription-plan');
-      if (Array.isArray(result)) {
+      // callAPI devuelve result.data, que es { items: [...], maxPage, total }
+      if (result?.items && Array.isArray(result.items)) {
+        setSubscriptionPlans(result.items);
+      } else if (Array.isArray(result)) {
+        // Fallback por si el API devuelve directamente un array
         setSubscriptionPlans(result);
       }
     } catch (error: any) {
@@ -274,6 +280,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         title: chapter.title || '',
         releaseDate: chapter.releasedAt ? new Date(chapter.releasedAt).toISOString().slice(0, 16) : '',
         isSubscriberOnly: chapter.subscribersOnly || false,
+        thumbnail: chapter.imageUrl || null,
       });
 
       // Cargar páginas del capítulo
@@ -461,12 +468,136 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     if (!file) return;
 
     setLoading(true);
+    let uploadToastId: any = null;
+    let progressInterval: NodeJS.Timeout | null = null;
+    let currentProgress = 0;
+    
     try {
-      const url = await uploadFile(file, undefined, 'mangas');
-      setFormData({ ...formData, banner: url });
-      toast.success('Banner actualizado');
+      // Función para renderizar el contenido del toast
+      const renderProgressToast = (progress: number, message: string) => (
+        <div className="space-y-2">
+          <div className="text-sm font-bold text-white">{message}</div>
+          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+            <div 
+              className="h-full bg-cyan-500 rounded-full transition-all duration-500 ease-out" 
+              style={{ width: `${progress}%` }} 
+            />
+          </div>
+        </div>
+      );
+
+      // Función para actualizar el progreso
+      const updateProgress = (progress: number, message: string) => {
+        if (uploadToastId) {
+          toast.update(uploadToastId, {
+            render: renderProgressToast(progress, message),
+            type: 'default',
+            isLoading: false,
+            position: "bottom-right",
+            autoClose: false,
+            closeOnClick: false,
+            draggable: false,
+          });
+        }
+      };
+
+      // Iniciar barra de progreso animada
+      uploadToastId = toast(
+        renderProgressToast(0, 'Subiendo banner...'),
+        {
+          type: 'info',
+          position: "bottom-right",
+          autoClose: false,
+          closeOnClick: false,
+          draggable: false,
+        }
+      );
+
+      // Animar progreso gradualmente hasta 40%
+      progressInterval = setInterval(() => {
+        if (currentProgress < 40) {
+          currentProgress += 2;
+          updateProgress(currentProgress, 'Subiendo banner...');
+        } else {
+          if (progressInterval) clearInterval(progressInterval);
+        }
+      }, 100);
+      
+      // Mostrar preview temporal mientras se sube
+      const tempPreviewUrl = URL.createObjectURL(file);
+      setFormData({ ...formData, banner: tempPreviewUrl });
+      
+      const fileKey = await uploadFile(file, undefined, 'mangas');
+      
+      // Limpiar preview temporal
+      URL.revokeObjectURL(tempPreviewUrl);
+      
+      // Limpiar intervalo anterior
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      
+      // Continuar animación hasta 90%
+      progressInterval = setInterval(() => {
+        if (currentProgress < 90) {
+          currentProgress += 2;
+          updateProgress(currentProgress, 'Guardando banner...');
+        } else {
+          if (progressInterval) clearInterval(progressInterval);
+        }
+      }, 100);
+      
+      // 3. Enviar al API para guardar permanentemente
+      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
+      const response = await callAPI(`/api/manga-custom/${mangaSlug}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          mangaCustomId: mangaCustom?.id,
+          banner: fileKey,
+        }),
+      });
+
+      // Completar la barra al 100%
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      updateProgress(100, 'Completado');
+      
+      // Esperar un momento antes de cerrar para que se vea el 100%
+      setTimeout(() => {
+        if (uploadToastId) {
+          toast.dismiss(uploadToastId);
+        }
+      }, 300);
+
+      if (response?.status) {
+        toast.success('Banner actualizado correctamente', {
+          position: "bottom-right"
+        });
+        // Actualizar mangaCustom con la respuesta del servidor
+        if (response.data) {
+          setMangaCustom(response.data);
+          // Usar la URL completa del servidor (bannerUrl) en lugar del fileKey
+          setFormData(prev => ({ ...prev, banner: response.data.bannerUrl || prev.banner }));
+        }
+      } else {
+        toast.error('Error al guardar el banner en el servidor', {
+          position: "bottom-right"
+        });
+      }
     } catch (error: any) {
-      toast.error(error?.message || 'Error al subir banner');
+      // Limpiar intervalo si hay error
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      // Cerrar toast de progreso si hay error
+      if (uploadToastId) {
+        toast.dismiss(uploadToastId);
+      }
+      toast.error(error?.message || 'Error al subir banner', {
+        position: "bottom-right"
+      });
     } finally {
       setLoading(false);
     }
@@ -477,12 +608,136 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     if (!file) return;
 
     setLoading(true);
+    let uploadToastId: any = null;
+    let progressInterval: NodeJS.Timeout | null = null;
+    let currentProgress = 0;
+    
     try {
-      const url = await uploadFile(file, undefined, 'mangas');
-      setFormData({ ...formData, cover: url });
-      toast.success('Portada actualizada');
+      // Función para renderizar el contenido del toast
+      const renderProgressToast = (progress: number, message: string) => (
+        <div className="space-y-2">
+          <div className="text-sm font-bold text-white">{message}</div>
+          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+            <div 
+              className="h-full bg-cyan-500 rounded-full transition-all duration-500 ease-out" 
+              style={{ width: `${progress}%` }} 
+            />
+          </div>
+        </div>
+      );
+
+      // Función para actualizar el progreso
+      const updateProgress = (progress: number, message: string) => {
+        if (uploadToastId) {
+          toast.update(uploadToastId, {
+            render: renderProgressToast(progress, message),
+            type: 'default',
+            isLoading: false,
+            position: "bottom-right",
+            autoClose: false,
+            closeOnClick: false,
+            draggable: false,
+          });
+        }
+      };
+
+      // Iniciar barra de progreso animada
+      uploadToastId = toast(
+        renderProgressToast(0, 'Subiendo portada...'),
+        {
+          type: 'info',
+          position: "bottom-right",
+          autoClose: false,
+          closeOnClick: false,
+          draggable: false,
+        }
+      );
+
+      // Animar progreso gradualmente hasta 40%
+      progressInterval = setInterval(() => {
+        if (currentProgress < 40) {
+          currentProgress += 2;
+          updateProgress(currentProgress, 'Subiendo portada...');
+        } else {
+          if (progressInterval) clearInterval(progressInterval);
+        }
+      }, 100);
+      
+      // Mostrar preview temporal mientras se sube
+      const tempPreviewUrl = URL.createObjectURL(file);
+      setFormData({ ...formData, cover: tempPreviewUrl });
+      
+      const fileKey = await uploadFile(file, undefined, 'mangas');
+      
+      // Limpiar preview temporal
+      URL.revokeObjectURL(tempPreviewUrl);
+      
+      // Limpiar intervalo anterior
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      
+      // Continuar animación hasta 90%
+      progressInterval = setInterval(() => {
+        if (currentProgress < 90) {
+          currentProgress += 2;
+          updateProgress(currentProgress, 'Guardando portada...');
+        } else {
+          if (progressInterval) clearInterval(progressInterval);
+        }
+      }, 100);
+      
+      // 3. Enviar al API para guardar permanentemente
+      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
+      const response = await callAPI(`/api/manga-custom/${mangaSlug}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          mangaCustomId: mangaCustom?.id,
+          image: fileKey,
+        }),
+      });
+
+      // Completar la barra al 100%
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      updateProgress(100, 'Completado');
+      
+      // Esperar un momento antes de cerrar para que se vea el 100%
+      setTimeout(() => {
+        if (uploadToastId) {
+          toast.dismiss(uploadToastId);
+        }
+      }, 300);
+
+      if (response?.status) {
+        toast.success('Portada actualizada correctamente', {
+          position: "bottom-right"
+        });
+        // Actualizar mangaCustom con la respuesta del servidor
+        if (response.data) {
+          setMangaCustom(response.data);
+          // Usar la URL completa del servidor (imageUrl) en lugar del fileKey
+          setFormData(prev => ({ ...prev, cover: response.data.imageUrl || prev.cover }));
+        }
+      } else {
+        toast.error('Error al guardar la portada en el servidor', {
+          position: "bottom-right"
+        });
+      }
     } catch (error: any) {
-      toast.error(error?.message || 'Error al subir portada');
+      // Limpiar intervalo si hay error
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      // Cerrar toast de progreso si hay error
+      if (uploadToastId) {
+        toast.dismiss(uploadToastId);
+      }
+      toast.error(error?.message || 'Error al subir portada', {
+        position: "bottom-right"
+      });
     } finally {
       setLoading(false);
     }
@@ -611,10 +866,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     
     // Declarar variables fuera del bloque try
     const pageKeys: string[] = [];
+    let imageKey: string | null = null;
     
     try {
-      // Contar archivos a subir
-      const filesToUpload = pages.filter(page => page instanceof File).length;
+      // Contar archivos a subir (páginas + miniatura si es File)
+      const pagesToUpload = pages.filter(page => page instanceof File).length;
+      const thumbnailToUpload = newChapter.thumbnail instanceof File ? 1 : 0;
+      const filesToUpload = pagesToUpload + thumbnailToUpload;
 
       let toastId = null;
       let uploadedCount = 0;
@@ -626,6 +884,19 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       }
 
       try {
+        // Upload thumbnail if it's a new file
+        if (newChapter.thumbnail instanceof File) {
+          uploadedCount++;
+          toast.update(toastId, { 
+            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+            position: "bottom-right"
+          });
+          imageKey = await uploadFile(newChapter.thumbnail, undefined, 'chapters');
+        } else if (typeof newChapter.thumbnail === 'string') {
+          // Si ya es un string (URL o fileKey), mantenerlo
+          imageKey = newChapter.thumbnail;
+        }
+
         // Upload pages that are new files (secuencialmente para actualizar contador)
         for (const page of pages) {
           if (page instanceof File) {
@@ -679,6 +950,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             subscribersOnly: newChapter.isSubscriberOnly,
             pages: pageKeys,
             singlePages: singlePageIndexes,
+            ...(imageKey ? { image: imageKey } : {}),
           }),
         }
       );
@@ -693,6 +965,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           title: '',
           releaseDate: '',
           isSubscriberOnly: false,
+          thumbnail: null,
         });
         setPages([]);
         setSinglePageIndexes([]);
@@ -1115,6 +1388,41 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                           placeholder="Capítulo 23"
                         />
                       </div>
+                      
+                      {/* Miniatura del capítulo */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Miniatura del capítulo (Opcional)</label>
+                        <div 
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (e: any) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setNewChapter({...newChapter, thumbnail: file});
+                              }
+                            };
+                            input.click();
+                          }}
+                          className="relative aspect-video bg-zinc-950 border-2 border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center transition-all hover:border-cyan-500/50 group cursor-pointer overflow-hidden"
+                        >
+                          {newChapter.thumbnail && !(newChapter.thumbnail instanceof File) ? (
+                            <img src={newChapter.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
+                          ) : newChapter.thumbnail instanceof File ? (
+                            <img src={URL.createObjectURL(newChapter.thumbnail)} className="w-full h-full object-cover" alt="Thumbnail preview" />
+                          ) : (
+                            <div className="flex flex-col items-center text-center px-4">
+                              <ImageIcon size={32} className="text-zinc-600 mb-2" />
+                              <span className="text-white font-black text-[10px] uppercase tracking-widest">Haz clic para subir miniatura</span>
+                              <span className="text-zinc-600 text-[9px] mt-1 font-bold">Máximo 25MB</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Camera size={24} className="text-white" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Subscriber Only Toggle */}
@@ -1168,6 +1476,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             title: '',
                             releaseDate: '',
                             isSubscriberOnly: false,
+                            thumbnail: null,
                           });
                           setPages([]);
                           setSinglePageIndexes([]);
@@ -1257,11 +1566,11 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Suscripciones</label>
                     <Autocomplete
                       multiple
-                      options={subscriptionPlans}
-                      value={formData.subscriptionPlans}
-                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlans: newValue as any[]})}
-                      getOptionLabel={(option: any) => option.name || option.title || String(option)}
-                      isOptionEqualToValue={(option: any, value: any) => option.id === value.id}
+                      options={subscriptionPlans || []}
+                      value={formData.subscriptionPlans || []}
+                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlans: (newValue as any[]) || []})}
+                      getOptionLabel={(option: any) => option?.name || option?.title || String(option || '')}
+                      isOptionEqualToValue={(option: any, value: any) => option?.id === value?.id}
                       placeholder="Suscripciones..."
                       label=""
                     />
