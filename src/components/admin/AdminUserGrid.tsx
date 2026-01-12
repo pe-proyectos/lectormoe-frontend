@@ -10,6 +10,7 @@ import Button from './ui/Button';
 import Input from './ui/Input';
 import Select from './ui/Select';
 import Badge from './ui/Badge';
+import Autocomplete from './ui/Autocomplete';
 
 interface Subscription {
   id: number;
@@ -24,6 +25,7 @@ interface User {
   id: number;
   username: string;
   email: string;
+  imageUrl?: string | null;
   createdAt: string;
   subscriptions: Subscription[];
 }
@@ -41,6 +43,37 @@ interface AdminUserGridProps {
   organizationSlug: string;
   organizationId: number;
 }
+
+const PERMISSION_OPTIONS = [
+  { key: 'canSeeAdminPanel', label: 'Ver panel de administración' },
+  { key: 'canEditOrganization', label: 'Editar organización' },
+  { key: 'canDeleteOrganization', label: 'Eliminar organización' },
+  { key: 'canEditUser', label: 'Editar usuarios' },
+  { key: 'canDeleteUser', label: 'Eliminar usuarios' },
+  { key: 'canCreateAuthor', label: 'Crear autores' },
+  { key: 'canCreateMangaProfile', label: 'Crear perfiles de manga' },
+  { key: 'canCreateMangaCustom', label: 'Crear mangas personalizados' },
+  { key: 'canEditMangaCustom', label: 'Editar mangas personalizados' },
+  { key: 'canDeleteMangaCustom', label: 'Eliminar mangas personalizados' },
+  { key: 'canCreateGenre', label: 'Crear géneros' },
+  { key: 'canEditGenre', label: 'Editar géneros' },
+  { key: 'canDeleteGenre', label: 'Eliminar géneros' },
+  { key: 'canCreateChapter', label: 'Crear capítulos' },
+  { key: 'canEditChapter', label: 'Editar capítulos' },
+  { key: 'canDeleteChapter', label: 'Eliminar capítulos' },
+  { key: 'canCreatePage', label: 'Crear páginas' },
+  { key: 'canEditPage', label: 'Editar páginas' },
+  { key: 'canDeletePage', label: 'Eliminar páginas' },
+  { key: 'canCreateSubscriptionPlan', label: 'Crear planes de suscripción' },
+  { key: 'canEditSubscriptionPlan', label: 'Editar planes de suscripción' },
+  { key: 'canDeleteSubscriptionPlan', label: 'Eliminar planes de suscripción' },
+  { key: 'canDeleteComment', label: 'Eliminar comentarios' },
+  { key: 'canEditComment', label: 'Editar comentarios' },
+  { key: 'canHideComment', label: 'Ocultar comentarios' },
+  { key: 'hideAds', label: 'Ocultar anuncios' },
+  { key: 'canDownload', label: 'Descargar' },
+  { key: 'canReadUnreleased', label: 'Leer no publicados' },
+];
 
 const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPlans, organizationSlug, organizationId }) => {
   const _ = getTranslator(language);
@@ -62,6 +95,11 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
     const urlParams = new URLSearchParams(window.location.search);
     const planIds = urlParams.get('selectedSubscriptionPlans');
     return planIds ? planIds.split(',').map(Number).filter(Boolean) : [];
+  });
+  const [selectedPermissionKeys, setSelectedPermissionKeys] = useState<string[]>(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const permissionKeys = urlParams.get('permissionKeys');
+    return permissionKeys ? permissionKeys.split(',').filter(Boolean) : [];
   });
   const [orderBy, setOrderBy] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -95,6 +133,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
     orderBy,
     limit,
     selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
+    selectedPermissionKeys: JSON.stringify([...selectedPermissionKeys].sort()),
     email,
     username,
     page
@@ -107,6 +146,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
         orderBy,
         limit,
         selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
+        selectedPermissionKeys: JSON.stringify([...selectedPermissionKeys].sort()),
         email,
         username,
         page
@@ -118,6 +158,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       orderBy,
       limit,
       selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
+      selectedPermissionKeys: JSON.stringify([...selectedPermissionKeys].sort()),
       email,
       username,
       page
@@ -128,6 +169,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       prevFiltersRef.current.orderBy !== currentFilters.orderBy ||
       prevFiltersRef.current.limit !== currentFilters.limit ||
       prevFiltersRef.current.selectedSubscriptionPlanIds !== currentFilters.selectedSubscriptionPlanIds ||
+      prevFiltersRef.current.selectedPermissionKeys !== currentFilters.selectedPermissionKeys ||
       prevFiltersRef.current.email !== currentFilters.email ||
       prevFiltersRef.current.username !== currentFilters.username;
     
@@ -144,7 +186,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       prevFiltersRef.current.page = page;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderBy, limit, selectedSubscriptionPlanIds, email, username, page]);
+  }, [orderBy, limit, selectedSubscriptionPlanIds, selectedPermissionKeys, email, username, page]);
 
   useEffect(() => {
     if (!isUserDialogOpen) refreshUserList();
@@ -180,6 +222,10 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       query.set('subscriptionPlanIds', selectedSubscriptionPlanIds.join(','));
       urlParams.set('selectedSubscriptionPlans', selectedSubscriptionPlanIds.join(','));
     }
+    if (selectedPermissionKeys.length > 0) {
+      query.set('permissionKeys', selectedPermissionKeys.join(','));
+      urlParams.set('permissionKeys', selectedPermissionKeys.join(','));
+    }
     window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
     callAPI(`/api/user?${query}`)
       .then((result: any) => {
@@ -192,7 +238,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       })
       .catch((error: any) => toast.error(error?.message))
       .finally(() => setLoading(false));
-  }, [page, limit, orderBy, email, username, selectedSubscriptionPlanIds]);
+  }, [page, limit, orderBy, email, username, selectedSubscriptionPlanIds, selectedPermissionKeys]);
 
   const handleSubscriptionPlanToggle = (planId: number) => {
     setSelectedSubscriptionPlanIds((prev) =>
@@ -273,6 +319,28 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
             </div>
           </div>
           
+          {/* Permissions Filter */}
+          <div className="col-span-full">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Filtros de permisos
+            </label>
+            <Autocomplete
+              multiple
+              options={PERMISSION_OPTIONS}
+              value={selectedPermissionKeys.map(key => {
+                const option = PERMISSION_OPTIONS.find(opt => opt.key === key);
+                return option || { key, label: key };
+              })}
+              onChange={(event, newValue) => {
+                const keys = Array.isArray(newValue) ? newValue.map(v => v.key) : [];
+                setSelectedPermissionKeys(keys);
+              }}
+              getOptionLabel={(option) => option.label}
+              isOptionEqualToValue={(option, value) => option.key === value.key}
+              placeholder="Seleccionar permisos..."
+            />
+          </div>
+          
           <div className="col-span-full">
             <Button onClick={refreshUserList} icon={<Search size={18} />}>
               {_('search')}
@@ -332,12 +400,22 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
             onClick={() => handleCardClick(user)}
           >
             <div className="flex items-start justify-between mb-4 gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{user.username}</h3>
-                <p className="text-gray-400 text-xs sm:text-sm break-all">{user.email}</p>
-              </div>
-              <div className="bg-blue-500/20 p-2 rounded-lg flex-shrink-0">
-                <User className="text-blue-400" size={20} />
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                {user.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt={user.username}
+                    className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-zinc-700"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0 border-2 border-zinc-700">
+                    <User className="text-zinc-400" size={24} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{user.username}</h3>
+                  <p className="text-gray-400 text-xs sm:text-sm break-all">{user.email}</p>
+                </div>
               </div>
             </div>
 

@@ -66,6 +66,7 @@ interface UserData {
   id: number;
   username: string;
   email: string;
+  imageUrl?: string | null;
   description?: string;
   subscriptions: Subscription[];
   permissions?: Array<UserPermissions & { organizationId: number }>;
@@ -134,7 +135,11 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   const [isCreatingPermissions, setIsCreatingPermissions] = useState(false);
 
   useEffect(() => {
-    if (!user || showCreatePermissionsModal) return;
+    if (!user) {
+      // Resetear estados cuando no hay usuario
+      setShowCreatePermissionsModal(false);
+      return;
+    }
     
     // Verificar que permissions sea un array
     const userPermissionsArray = Array.isArray(user.permissions) ? user.permissions : [];
@@ -143,9 +148,15 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
     const userPermissions = userPermissionsArray.find((p: any) => p.organizationId === organizationId) as UserPermissions | undefined;
     
     // Si no tiene permisos para esta organización, mostrar modal de confirmación
-    if (!userPermissions) {
+    // Solo mostrar el modal si el modal principal está abierto
+    if (!userPermissions && open) {
       setShowCreatePermissionsModal(true);
       return;
+    }
+    
+    // Si tiene permisos, ocultar el modal de crear permisos
+    if (userPermissions) {
+      setShowCreatePermissionsModal(false);
     }
     
     // Solo leer los valores para mostrar, no para editar
@@ -156,10 +167,10 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
     // Solo cargar permisos relacionados con la organización
     const newPermissions: Record<string, boolean> = {};
     Object.keys(permissions).forEach((key) => {
-      newPermissions[key] = (userPermissions as any)[key] || false;
+      newPermissions[key] = (userPermissions as any)?.[key] || false;
     });
     setPermissions(newPermissions);
-  }, [user, organizationId, showCreatePermissionsModal]);
+  }, [user, organizationId, open]);
 
   const handleSubmit = async () => {
     // Los admins solo pueden editar permisos, no información personal
@@ -298,9 +309,9 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
         { key: 'canCreateSubscriptionPlan', label: _('can_create_subscription_plan') },
         { key: 'canEditSubscriptionPlan', label: _('can_edit_subscription_plan') },
         { key: 'canDeleteSubscriptionPlan', label: _('can_delete_subscription_plan') },
-        { key: 'canDeleteComment', label: _('can_delete_comment') },
-        { key: 'canEditComment', label: _('can_edit_comment') },
-        { key: 'canHideComment', label: _('can_hide_comment') },
+        { key: 'canDeleteComment', label: 'Eliminar comentarios' },
+        { key: 'canEditComment', label: 'Editar comentarios' },
+        { key: 'canHideComment', label: 'Ocultar comentarios' },
       ],
     },
     {
@@ -313,11 +324,21 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
     },
   ];
 
+  // Resetear el modal de crear permisos cuando se cierra el modal principal
+  useEffect(() => {
+    if (!open) {
+      setShowCreatePermissionsModal(false);
+    }
+  }, [open]);
+
   return (
     <>
     <Modal
       isOpen={open && !showCreatePermissionsModal}
-      onClose={() => setOpen(false)}
+      onClose={() => {
+        setOpen(false);
+        setShowCreatePermissionsModal(false);
+      }}
       title={user ? _('edit_user') : _('create_user')}
       size="lg"
     >
@@ -363,6 +384,20 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
         <div className="space-y-4">
           <Card className="bg-zinc-800/30">
             <div className="space-y-4">
+              {/* Profile Picture */}
+              <div className="flex items-center justify-center mb-4">
+                {user?.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt={user.username}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-zinc-700"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-zinc-800 flex items-center justify-center border-4 border-zinc-700">
+                    <User className="text-zinc-400" size={48} />
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
                   {_('username') || 'Nombre de usuario'}
@@ -580,7 +615,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
     
     {/* Modal de confirmación para crear permisos */}
     <Modal
-      isOpen={showCreatePermissionsModal}
+      isOpen={showCreatePermissionsModal && open}
       onClose={() => {
         setShowCreatePermissionsModal(false);
         setOpen(false);
