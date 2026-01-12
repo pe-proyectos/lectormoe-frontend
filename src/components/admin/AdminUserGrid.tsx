@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { Search, Users, Mail, User, Filter, ChevronDown } from 'lucide-react';
 import AdminUserDialog from './AdminUserDialog';
@@ -38,10 +38,11 @@ interface SubscriptionPlan {
 interface AdminUserGridProps {
   language: string;
   subscriptionPlans: SubscriptionPlan[];
-  organization: any;
+  organizationSlug: string;
+  organizationId: number;
 }
 
-const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPlans, organization }) => {
+const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPlans, organizationSlug, organizationId }) => {
   const _ = getTranslator(language);
 
   const [loading, setLoading] = useState(true);
@@ -76,20 +77,78 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
     return Number(urlParams.get('limit')) || 24;
   });
 
+  // Cargar lista inicial
   useEffect(() => {
     refreshUserList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Refrescar cuando cambie la página
   useEffect(() => {
     refreshUserList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
+  // Refrescar cuando cambien los filtros (excepto en el montaje inicial)
+  const isInitialMount = useRef(true);
+  const prevFiltersRef = useRef({
+    orderBy,
+    limit,
+    selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
+    email,
+    username,
+    page
+  });
+  
   useEffect(() => {
-    setPage(1);
-  }, [orderBy, limit]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevFiltersRef.current = {
+        orderBy,
+        limit,
+        selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
+        email,
+        username,
+        page
+      };
+      return;
+    }
+    
+    const currentFilters = {
+      orderBy,
+      limit,
+      selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
+      email,
+      username,
+      page
+    };
+    
+    // Verificar si realmente cambiaron los filtros (no la página)
+    const filtersChanged = 
+      prevFiltersRef.current.orderBy !== currentFilters.orderBy ||
+      prevFiltersRef.current.limit !== currentFilters.limit ||
+      prevFiltersRef.current.selectedSubscriptionPlanIds !== currentFilters.selectedSubscriptionPlanIds ||
+      prevFiltersRef.current.email !== currentFilters.email ||
+      prevFiltersRef.current.username !== currentFilters.username;
+    
+    if (filtersChanged) {
+      prevFiltersRef.current = currentFilters;
+      // Si la página ya es 1, refrescar directamente
+      if (page === 1) {
+        refreshUserList(1);
+      } else {
+        setPage(1);
+      }
+    } else {
+      // Si solo cambió la página, actualizar la referencia
+      prevFiltersRef.current.page = page;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderBy, limit, selectedSubscriptionPlanIds, email, username, page]);
 
   useEffect(() => {
     if (!isUserDialogOpen) refreshUserList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUserDialogOpen]);
 
   const handleCardClick = (user: User) => {
@@ -97,14 +156,15 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
     setIsUserDialogOpen(true);
   };
 
-  const refreshUserList = () => {
+  const refreshUserList = React.useCallback((currentPage?: number) => {
     setLoading(true);
+    const pageToUse = currentPage !== undefined ? currentPage : page;
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('page', page.toString());
+    urlParams.set('page', pageToUse.toString());
     urlParams.set('limit', limit.toString());
     urlParams.set('order', orderBy);
     const query = new URLSearchParams({
-      page: page.toString(),
+      page: pageToUse.toString(),
       limit: limit.toString(),
       order: orderBy,
     });
@@ -132,7 +192,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       })
       .catch((error: any) => toast.error(error?.message))
       .finally(() => setLoading(false));
-  };
+  }, [page, limit, orderBy, email, username, selectedSubscriptionPlanIds]);
 
   const handleSubscriptionPlanToggle = (planId: number) => {
     setSelectedSubscriptionPlanIds((prev) =>
@@ -243,7 +303,8 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
         user={selectedUser}
         setUser={setSelectedUser}
         subscriptionPlans={subscriptionPlans}
-        organization={organization}
+        organizationSlug={organizationSlug}
+        organizationId={organizationId}
       />
 
       {/* Loading & Empty States */}

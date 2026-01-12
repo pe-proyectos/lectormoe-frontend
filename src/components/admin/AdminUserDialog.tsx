@@ -78,7 +78,8 @@ interface AdminUserDialogProps {
   user: UserData | null;
   setUser: (user: UserData | null) => void;
   subscriptionPlans: SubscriptionPlan[];
-  organization: any;
+  organizationSlug: string;
+  organizationId: number;
 }
 
 const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
@@ -88,7 +89,8 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   user,
   setUser,
   subscriptionPlans,
-  organization,
+  organizationSlug,
+  organizationId,
 }) => {
   const _ = getTranslator(language);
 
@@ -128,10 +130,24 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
     canReadUnreleased: false,
   });
 
+  const [showCreatePermissionsModal, setShowCreatePermissionsModal] = useState(false);
+  const [isCreatingPermissions, setIsCreatingPermissions] = useState(false);
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || showCreatePermissionsModal) return;
+    
+    // Verificar que permissions sea un array
+    const userPermissionsArray = Array.isArray(user.permissions) ? user.permissions : [];
+    
     // Buscar permisos de la organización específica
-    const userPermissions = user.permissions?.find((p: any) => p.organizationId === organization?.id) as UserPermissions | undefined;
+    const userPermissions = userPermissionsArray.find((p: any) => p.organizationId === organizationId) as UserPermissions | undefined;
+    
+    // Si no tiene permisos para esta organización, mostrar modal de confirmación
+    if (!userPermissions) {
+      setShowCreatePermissionsModal(true);
+      return;
+    }
+    
     // Solo leer los valores para mostrar, no para editar
     setRole(userPermissions?.role || 'user');
     setDescription(user.description || '');
@@ -143,7 +159,7 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       newPermissions[key] = (userPermissions as any)[key] || false;
     });
     setPermissions(newPermissions);
-  }, [user, organization]);
+  }, [user, organizationId, showCreatePermissionsModal]);
 
   const handleSubmit = async () => {
     // Los admins solo pueden editar permisos, no información personal
@@ -175,6 +191,57 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
       })
       .catch((error: any) => toast.error(error?.message))
       .finally(() => setLoading(false));
+  };
+
+  const handleCreatePermissions = async () => {
+    if (!user) return;
+    
+    setIsCreatingPermissions(true);
+    try {
+      // Crear permisos básicos usando el endpoint de edición (que hace upsert)
+      const formData = new FormData();
+      formData.append('role', 'user');
+      formData.append('hierarchyLevel', '0');
+      
+      // Todos los permisos en false por defecto
+      Object.keys(permissions).forEach((key) => {
+        formData.append(key, 'false');
+      });
+      
+      const updatedUser = await callAPI(`/api/user/${user.id}`, {
+        method: 'PATCH',
+        body: formData,
+      });
+      
+      // El API devuelve permissions como un objeto, necesitamos convertirlo al formato esperado
+      if (updatedUser && updatedUser.permissions) {
+        // Convertir el objeto permissions a un array con organizationId
+        const permissionObj = updatedUser.permissions;
+        const permissionArray = [{
+          organizationId,
+          ...permissionObj,
+        }];
+        
+        setUser({
+          ...user,
+          permissions: permissionArray,
+        });
+      } else {
+        // Si el API no devuelve permissions, crear un objeto básico
+        setUser({
+          ...user,
+          permissions: [{ organizationId, ...permissions, role: 'user', hierarchyLevel: 0 }],
+        });
+      }
+      
+      setShowCreatePermissionsModal(false);
+      setCurrentTab('permissions');
+      toast.success('Perfil de permisos creado exitosamente');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al crear el perfil de permisos');
+    } finally {
+      setIsCreatingPermissions(false);
+    }
   };
 
   const handleDeactivateSubscription = async (subscriptionId: number, userId: number) => {
@@ -247,8 +314,9 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
   ];
 
   return (
+    <>
     <Modal
-      isOpen={open}
+      isOpen={open && !showCreatePermissionsModal}
       onClose={() => setOpen(false)}
       title={user ? _('edit_user') : _('create_user')}
       size="lg"
@@ -509,6 +577,50 @@ const AdminUserDialog: React.FC<AdminUserDialogProps> = ({
         </Button>
       </div>
     </Modal>
+    
+    {/* Modal de confirmación para crear permisos */}
+    <Modal
+      isOpen={showCreatePermissionsModal}
+      onClose={() => {
+        setShowCreatePermissionsModal(false);
+        setOpen(false);
+      }}
+      title="Crear perfil de permisos"
+      size="md"
+    >
+      <div className="space-y-6">
+        <div className="text-center">
+          <Shield className="mx-auto text-cyan-500 mb-4" size={48} />
+          <p className="text-white text-lg font-bold mb-2">
+            Este usuario no tiene permisos configurados en tu organización
+          </p>
+          <p className="text-zinc-400 text-sm">
+            ¿Deseas crearle un perfil de permisos? Podrás configurar sus permisos después de crearlo.
+          </p>
+        </div>
+        
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowCreatePermissionsModal(false);
+              setOpen(false);
+            }}
+            disabled={isCreatingPermissions}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleCreatePermissions} 
+            disabled={isCreatingPermissions} 
+            loading={isCreatingPermissions}
+          >
+            {isCreatingPermissions ? 'Creando...' : 'Crear perfil de permisos'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+    </>
   );
 };
 

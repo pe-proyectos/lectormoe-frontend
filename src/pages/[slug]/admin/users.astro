@@ -17,12 +17,15 @@ if (!logged) {
 }
 
 const subscriptionPlansData = await callAPI(`/api/subscription-plan`);
+// El API devuelve { status: true, data: { items: [...], maxPage, total } }
+// callAPI devuelve result.data, así que subscriptionPlansData es { items: [...], maxPage, total }
+const subscriptionPlans = subscriptionPlansData?.items || (Array.isArray(subscriptionPlansData) ? subscriptionPlansData : []);
 ---
 
 <AdminLayout title={_("admin_users_title")} page="users" organizationSlug={organizationSlug}>
   <AdminUserGrid
     language={language}
-    subscriptionPlans={subscriptionPlansData?.items || []}
+    subscriptionPlans={subscriptionPlans}
     organizationSlug={organizationSlug}
     organizationId={organization.id}
     client:only="react"

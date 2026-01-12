@@ -73,7 +73,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
       id: 'dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
-      href: `/${organizationSlug}/admin/mangas`,
+      href: `/${organizationSlug}/admin`,
     },
     {
       id: 'authors',
