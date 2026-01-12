@@ -571,7 +571,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     setIsDownloadingChapter(chapterNumber);
 
     try {
-      const chapterPages = await callAPI(`/manga-custom/${manga.slug}/chapter/${chapter.number}/pages`);
+      const chapterPages = await callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapter.number}/pages`);
+
+      if (!Array.isArray(chapterPages) || chapterPages.length === 0) {
+        console.error("No se encontraron páginas para este capítulo");
+        alert("No se pudieron obtener las páginas del capítulo. Por favor, intenta de nuevo.");
+        return;
+      }
 
       // Import JSZip dynamically
       const JSZip = (await import("jszip")).default;
@@ -579,17 +585,23 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       const folder = zip.folder(`Chapter ${chapter.number}`);
 
       const pagePromises = chapterPages.map((page: any) =>
-        fetch(page.imageUrl).then((response) => response.blob())
+        fetch(page.imageUrl)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Error al descargar la página: ${response.statusText}`);
+            }
+            return response.blob();
+          })
       );
       const blobs = await Promise.all(pagePromises);
 
       blobs.forEach((blob, index) => {
+        const page = chapterPages[index];
+        const extension = page.imageUrl?.split('.').pop()?.toLowerCase() || 'jpg';
         folder?.file(
-          `${chapter.number.toString().padStart(6, "0")} - ${chapterPages[
-            index
-          ].number
+          `${chapter.number.toString().padStart(6, "0")} - ${page.number
             .toString()
-            .padStart(6, "0")}.jpg`,
+            .padStart(6, "0")}.${extension}`,
           blob
         );
       });
@@ -603,8 +615,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to download chapter", error);
+      const errorMessage = error?.message || "Error al descargar el capítulo. Por favor, verifica que tengas acceso y vuelve a intentar.";
+      alert(errorMessage);
     } finally {
       setIsDownloadingChapter(null);
     }
