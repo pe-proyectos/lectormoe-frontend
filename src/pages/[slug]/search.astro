@@ -2,34 +2,13 @@
 import LandingLayout from "../../layouts/LandingLayout.astro";
 import ExplorePageContainer from "../../components/landing/ExplorePageContainer";
 
-// @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, callAPI, user, organizationSlug } = Astro.locals;
+// @ts-ignore - organization y showAds se definen dinámicamente en el middleware
+const { organization, language, callAPI, user, organizationSlug, showAds } = Astro.locals;
+const logged = !!user;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
   return Astro.redirect("/404");
-}
-
-// Determinar si se deben mostrar ads
-// Por defecto true
-let showAds = true;
-
-// Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
-if (logged && user) {
-  const activeSubscription = user.subscriptions.find((sub: any) => 
-    sub.subscriptionPlan?.hideAds === true && 
-    sub.subscriptionPlan?.organizationId === organization?.id
-  );
-  if (activeSubscription) {
-    showAds = false;
-  }
-  const hasHideAds = user.permissions.some((perm: any) => 
-    perm.hideAds === true &&
-    perm.organizationId === organization?.id
-  );
-  if (hasHideAds) {
-    showAds = false;
-  }
 }
 ---
 

@@ -1,11 +1,60 @@
 import { defineMiddleware } from "astro:middleware";
 import { getIP } from "../util/get-ip";
 
+/**
+ * Calcula si se deben mostrar anuncios basándose en el usuario y la organización
+ * @param user - Usuario autenticado (puede ser null)
+ * @param organization - Organización actual (puede ser null para landing pages)
+ * @returns true si se deben mostrar anuncios, false si no
+ */
+function calculateShowAds(user: any, organization: any): boolean {
+  // Por defecto mostrar anuncios
+  if (!user) {
+    return true;
+  }
+  // Si no hay organización, no mostrar anuncios porque deberiamos estar en landing page o pagina publica
+  if (!organization) {
+    return false;
+  }
+
+  // Verificar suscripciones activas con hideAds
+  // El API ya filtra por active: true y organizationId, así que todas las suscripciones aquí ya cumplen esos criterios
+  if (user.subscriptions && Array.isArray(user.subscriptions)) {
+    const activeSubscription = user.subscriptions.find(
+      (sub: any) =>
+        sub.subscriptionPlan?.hideAds === true &&
+        sub.subscriptionPlan?.organizationId === organization.id,
+    );
+    
+    if (activeSubscription) {
+      console.log(`User ${user.id} has an active subscription ${activeSubscription.id} with hideAds`);
+      return false;
+    }
+  }
+
+  // Verificar permisos con hideAds de la organización actual
+  if (user.permissions && Array.isArray(user.permissions)) {
+    const hasHideAds = user.permissions.some(
+      (perm: any) =>
+        perm.hideAds === true &&
+        perm.organizationId === organization.id &&
+        perm.active === true,
+    );
+    if (hasHideAds) {
+      console.log(`User ${user.id} has a permission with hideAds`);
+      return false;
+    }
+  }
+
+  console.log(`User ${user.id} has no active subscriptions or permissions with hideAds`);
+  return true;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   // ============================================
   // CONFIGURACIONES BÁSICAS
   // ============================================
-  
+
   if (context.url.pathname === "/ads.txt") {
     const adstxt = "google.com, pub-2799839819522052, DIRECT, f08c47fec0942fa0";
     return new Response(adstxt, {
@@ -28,7 +77,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   if (context.url.pathname === "/logout") {
-    context.locals.logged = false;
     context.locals.token = null;
     context.locals.user = null;
     context.cookies.delete("token", { path: "/" });
@@ -44,15 +92,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const callAPI = async (
     url: string,
-    fetchOptions?: Partial<RequestInit> & { includeIp?: any }
+    fetchOptions?: Partial<RequestInit> & { includeIp?: any },
   ) => {
-    const API_URL = import.meta.env.PUBLIC_API_URL || "";
-    const fullUrl = API_URL ? API_URL + url : new URL(url, context.request.url).toString();
+    const API_URL = import.meta.env["PUBLIC_API_URL"] || "";
+    const fullUrl = API_URL
+      ? API_URL + url
+      : new URL(url, context.request.url).toString();
     const response = await fetch(fullUrl, {
       ...(fetchOptions || {}),
       headers: {
         // IMPORTANTE: Solo enviar x-organization si tiene un valor válido
-        ...(organizationIdentifier ? { "x-organization": organizationIdentifier } : {}),
+        ...(organizationIdentifier
+          ? { "x-organization": organizationIdentifier }
+          : {}),
         "Content-Type": "application/json",
         Authorization: context.locals.token
           ? `Bearer ${context.locals.token}`
@@ -149,7 +201,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
             path: "/",
             sameSite: "lax",
           });
-          context.locals.logged = true;
+
+          // Calcular showAds para landing pages (sin organización)
+          context.locals.showAds = calculateShowAds(context.locals.user, null);
 
           return await next();
         }
@@ -157,12 +211,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // Si el check falla matar sesion
       }
     }
-
-    context.locals.logged = false;
     context.locals.token = null;
     context.locals.user = null;
     context.cookies.delete("token", { path: "/" });
     context.cookies.delete("user", { path: "/" });
+
+    // Calcular showAds para landing pages (sin organización, sin usuario)
+    context.locals.showAds = true;
 
     return await next();
   }
@@ -176,6 +231,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     reservedRoutes.includes(organizationSlug) ||
     organizationSlug.startsWith(".")
   ) {
+    // Calcular showAds para rutas reservadas (sin organización)
+    context.locals.showAds = calculateShowAds(context.locals.user, null);
     return await next();
   }
 
@@ -185,24 +242,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
   try {
     // Para la verificación de organización, hacer la llamada sin el header x-organization
     // porque aún no sabemos qué organización es y el endpoint debe usar solo el query param
-    const API_URL = import.meta.env.PUBLIC_API_URL || "";
-    const checkUrl = API_URL 
+    const API_URL = import.meta.env["PUBLIC_API_URL"] || "";
+    const checkUrl = API_URL
       ? `${API_URL}/api/organization/check?slug=${organizationSlug}`
-      : new URL(`/api/organization/check?slug=${organizationSlug}`, context.request.url).toString();
-    const organizationCheckResponse = await fetch(
-      checkUrl,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: context.locals.token
-            ? `Bearer ${context.locals.token}`
-            : "",
-          ip: getIP(context.request.headers) || "0.0.0.0",
-          "Accept-Language": context.locals.language,
-          // NO incluir x-organization aquí para que el endpoint use solo el query param
-        },
-      }
-    );
+      : new URL(
+          `/api/organization/check?slug=${organizationSlug}`,
+          context.request.url,
+        ).toString();
+    const organizationCheckResponse = await fetch(checkUrl, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: context.locals.token
+          ? `Bearer ${context.locals.token}`
+          : "",
+        ip: getIP(context.request.headers) || "0.0.0.0",
+        "Accept-Language": context.locals.language,
+        // NO incluir x-organization aquí para que el endpoint use solo el query param
+      },
+    });
 
     let organizationCheck;
     if (!organizationCheckResponse.ok) {
@@ -244,9 +301,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
         path: "/",
         sameSite: "lax",
       });
-      context.locals.logged = true;
+      // Usuario autenticado - user ya está establecido
     } else {
-      context.locals.logged = false;
       context.locals.token = null;
       context.locals.user = null;
       context.cookies.delete("token", { path: "/" });
@@ -280,7 +336,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (userCountry) {
         const countryOption = organization?.countryOptions?.find(
           (option: any) =>
-            option.countryCode === userCountry.trim().toUpperCase().slice(0, 2)
+            option.countryCode === userCountry.trim().toUpperCase().slice(0, 2),
         );
         if (countryOption) {
           if (organization?.useBlockedCountries && countryOption.blocked) {
@@ -299,11 +355,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
       }
     }
 
-    context.locals.logged = context.locals.token ? true : false;
-
     // Validar acceso a rutas de admin (/{slug}/admin/*)
     if (context.url.pathname.includes("/admin")) {
-      if (!context.locals.logged) {
+      if (!context.locals.user || !context.locals.token) {
         // Si es una ruta de scan, redirigir al login de ese scan
         if (context.locals.organizationSlug) {
           return context.redirect(`/${context.locals.organizationSlug}/login`);
@@ -314,21 +368,27 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // SECURITY: Verificar permiso canSeeAdminPanel
       if (context.locals.user && context.locals.organization) {
         const permissions = context.locals.user.permissions?.find(
-          (p: any) => p.organizationId === context.locals.organization.id
+          (p: any) => p.organizationId === context.locals.organization.id,
         );
 
         if (!permissions?.canSeeAdminPanel) {
           console.warn(
-            `User ${context.locals.user.id} attempted to access admin panel without canSeeAdminPanel permission`
+            `User ${context.locals.user.id} attempted to access admin panel without canSeeAdminPanel permission`,
           );
           return context.redirect(
             context.locals.organizationSlug
               ? `/${context.locals.organizationSlug}`
-              : "/"
+              : "/",
           );
         }
       }
     }
+
+    // Calcular showAds después de establecer user y organization
+    context.locals.showAds = calculateShowAds(
+      context.locals.user,
+      context.locals.organization,
+    );
 
     return await next();
   } catch (error) {

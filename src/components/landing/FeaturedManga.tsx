@@ -55,8 +55,9 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
     <>
       {featuredManga.map((manga) => {
         // Check if user has subscription to this specific organization/scan
+        // Note: We check for active subscriptions since we're on a global landing page
         const userHasSubscription = logged && user?.subscriptions?.some(
-          (sub: any) => sub?.subscriptionPlan?.organizationId && manga.scanSlug
+          (sub: any) => sub.active === true && sub?.subscriptionPlan?.organizationId
         ) || false;
 
         // Check if user has read each chapter

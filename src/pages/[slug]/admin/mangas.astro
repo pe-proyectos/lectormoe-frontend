@@ -5,7 +5,8 @@ import AdminMangaCustomGrid from "../../../components/admin/AdminMangaCustomGrid
 import { getTranslator } from "../../../util/translate";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, organizationSlug } = Astro.locals;
+const { organization, language, user, organizationSlug } = Astro.locals;
+const logged = !!user;
 const _ = getTranslator(language);
 
 // Si no hay organización, redirigir a 404

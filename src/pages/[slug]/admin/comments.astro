@@ -4,7 +4,8 @@ import AdminMangasBreadcrumb from "../../../components/admin/AdminMangasBreadcru
 import AdminComments from "../../../components/admin/AdminComments";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, user, logged, organizationSlug } = Astro.locals;
+const { organization, user, organizationSlug } = Astro.locals;
+const logged = !!user;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {

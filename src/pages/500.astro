@@ -2,10 +2,11 @@
 import LandingLayout from "../layouts/LandingLayout.astro";
 import Error500Page from "../components/landing/Error500Page";
 
-const { organizationSlug } = Astro.locals as any;
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { organizationSlug, showAds } = Astro.locals as any;
 ---
 
-<LandingLayout title="500 - Error del servidor" showAds={false}>
+<LandingLayout title="500 - Error del servidor" showAds={showAds}>
   <Error500Page 
     onNavigateHome={() => {
       window.location.href = organizationSlug ? `/${organizationSlug}` : '/';

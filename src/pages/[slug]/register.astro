@@ -2,8 +2,9 @@
 import LandingLayout from "../../layouts/LandingLayout.astro";
 import RegisterPage from "../../components/landing/RegisterPage";
 
-// @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, user, organizationSlug } = Astro.locals;
+// @ts-ignore - organization y showAds se definen dinámicamente en el middleware
+const { organization, language, user, organizationSlug, showAds } = Astro.locals;
+const logged = !!user;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -16,7 +17,7 @@ if (logged) {
 }
 ---
 
-<LandingLayout showAds={false}>
+<LandingLayout showAds={showAds}>
   <RegisterPage 
     isScanContext={true}
     organization={organization}

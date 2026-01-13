@@ -2,7 +2,9 @@
 import LandingLayout from "../../layouts/LandingLayout.astro";
 import ProfilePageContainer from "../../components/landing/ProfilePageContainer";
 
-const { user: currentUser, logged, callAPI, isLandingPage } = Astro.locals;
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { user: currentUser, callAPI, isLandingPage, showAds } = Astro.locals;
+const logged = !!currentUser;
 const { slug } = Astro.params;
 
 // Si no es landing page, redirigir
@@ -37,30 +39,6 @@ if (!userData) {
 // Solo verificar si el usuario tiene slug definido
 if (userData.slug && userData.slug !== slug) {
   return Astro.redirect("/404");
-}
-
-// Determinar si se deben mostrar ads
-// Por defecto true
-let showAds = true;
-
-// Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
-const user = userData;
-if (logged && user && user?.subscriptions && Array.isArray(user.subscriptions) && user.subscriptions.length > 0) {
-  const activeSubscription = user.subscriptions.find((sub: any) => 
-    sub.subscriptionPlan?.hideAds === true
-  );
-  if (activeSubscription) {
-    showAds = false;
-  }
-}
-
-// Si el usuario tiene permisos y tiene el permiso hideAds, ocultar ads
-if (logged && user && user?.permissions && Array.isArray(user.permissions)) {
-  // Si hay algún permiso con hideAds en cualquier organización, ocultar ads
-  const hasHideAds = user.permissions.some((perm: any) => perm.hideAds === true);
-  if (hasHideAds) {
-    showAds = false;
-  }
 }
 ---
 

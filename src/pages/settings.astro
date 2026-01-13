@@ -2,7 +2,9 @@
 import LandingLayout from '../layouts/LandingLayout.astro';
 import SettingsPageContainer from '../components/landing/SettingsPageContainer';
 
-const { user, logged, language } = Astro.locals;
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { user, language, showAds } = Astro.locals;
+const logged = !!user;
 
 // Redirect if not logged in
 if (!logged || !user) {
@@ -13,7 +15,7 @@ if (!logged || !user) {
 <LandingLayout 
   title="Ajustes | Capibara Traductor"
   description="Configura tu cuenta y preferencias"
-  showAds={false}
+  showAds={showAds}
 >
   <SettingsPageContainer
     user={user}

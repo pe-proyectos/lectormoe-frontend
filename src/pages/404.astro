@@ -2,10 +2,11 @@
 import LandingLayout from "../layouts/LandingLayout.astro";
 import Error404Page from "../components/landing/Error404Page";
 
-const { organizationSlug } = Astro.locals as any;
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { organizationSlug, showAds } = Astro.locals as any;
 ---
 
-<LandingLayout title="404 - Página no encontrada" showAds={false}>
+<LandingLayout title="404 - Página no encontrada" showAds={showAds}>
   <Error404Page 
     onNavigateHome={() => {
       window.location.href = organizationSlug ? `/${organizationSlug}` : '/';

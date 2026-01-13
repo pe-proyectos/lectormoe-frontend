@@ -3,7 +3,9 @@ import LandingLayout from '../../../layouts/LandingLayout.astro';
 import MangaDetailPageContainer from '../../../components/landing/MangaDetailPageContainer';
 
 const { mangaSlug } = Astro.params;
-const { organization, logged, user, callAPI, language } = Astro.locals;
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { organization, user, callAPI, language, showAds } = Astro.locals;
+const logged = !!user;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -25,29 +27,6 @@ const manga = mangaResult;
 // Asegurar que la URL de la imagen sea absoluta para Discord embeds
 // Priorizar bannerUrl sobre imageUrl
 const absoluteImageUrl =  manga.bannerUrl || manga.imageUrl;
-
-
-// Determinar si se deben mostrar ads
-// Por defecto true
-let showAds = true;
-
-// Si el usuario está logeado y tiene una suscripción activa con hideAds en la organización actual, ocultar ads
-if (logged && user) {
-  const activeSubscription = user.subscriptions.find((sub: any) => 
-    sub.subscriptionPlan?.hideAds === true && 
-    sub.subscriptionPlan?.organizationId === organization?.id
-  );
-  if (activeSubscription) {
-    showAds = false;
-  }
-  const hasHideAds = user.permissions.some((perm: any) => 
-    perm.hideAds === true &&
-    perm.organizationId === organization?.id
-  );
-  if (hasHideAds) {
-    showAds = false;
-  }
-}
 ---
 
 <LandingLayout 

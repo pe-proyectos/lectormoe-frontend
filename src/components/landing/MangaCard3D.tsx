@@ -100,7 +100,7 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
         if (
           subscription?.subscriptionPlan?.canReadUnreleased === true && 
           subscription.active === true &&
-          subscription?.organizationId === organization.id
+          subscription?.subscriptionPlan?.organizationId === organization.id
         ) {
           return true;
         }

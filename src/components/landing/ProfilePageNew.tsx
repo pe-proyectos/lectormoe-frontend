@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles } from 'lucide-react';
+import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
 import MangaCard3D from './MangaCard3D';
@@ -67,6 +67,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const [favoritesTotal, setFavoritesTotal] = useState(0);
   const [loadingMoreFavorites, setLoadingMoreFavorites] = useState(false);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   
   const [editData, setEditData] = useState({
     name: user?.username || '',
@@ -83,6 +84,104 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
   // Check if user has active subscription (Pro)
   const isUserPro = user?.subscriptions?.some((sub: any) => sub.active === true) || false;
+  
+  // Get the most expensive active subscription for this organization
+  const getMostExpensiveActiveSubscription = () => {
+    if (!user?.subscriptions || !organization) return null;
+    
+    const activeSubscriptions = user.subscriptions.filter((sub: any) => {
+      // Filtrar por suscripciones activas de esta organización
+      return sub.active === true && 
+             sub.subscriptionPlan?.organizationId === organization.id;
+    });
+    
+    if (activeSubscriptions.length === 0) return null;
+    
+    // Encontrar la suscripción más cara
+    const mostExpensive = activeSubscriptions.reduce((prev: any, current: any) => {
+      const prevPrice = prev.subscriptionPlan?.price || 0;
+      const currentPrice = current.subscriptionPlan?.price || 0;
+      return currentPrice > prevPrice ? current : prev;
+    });
+    
+    return mostExpensive;
+  };
+  
+  const mostExpensiveSubscription = getMostExpensiveActiveSubscription();
+  
+  // Load subscription plans to determine color
+  useEffect(() => {
+    if (!organization) return;
+    
+    const fetchPlans = async () => {
+      try {
+        const result = await callAPI('/api/subscription-plan');
+        if (result && typeof result === 'object' && Array.isArray(result.items) && result.items.length > 0) {
+          // Ordenar por precio de menor a mayor
+          const sortedPlans = [...result.items].sort((a, b) => a.price - b.price);
+          setSubscriptionPlans(sortedPlans);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription plans:', error);
+      }
+    };
+    
+    fetchPlans();
+  }, [organization]);
+  
+  // Get color for subscription plan based on price order (similar to SubscriptionPage)
+  const getSubscriptionColor = (subscription: any) => {
+    if (!subscription?.subscriptionPlan || subscriptionPlans.length === 0) {
+      return { bg: 'bg-zinc-800', text: 'text-zinc-500' };
+    }
+    
+    // Encontrar el índice del plan en la lista ordenada por precio
+    const planIndex = subscriptionPlans.findIndex(
+      (plan: any) => plan.id === subscription.subscriptionPlan.id
+    );
+    
+    if (planIndex === -1) {
+      return { bg: 'bg-zinc-800', text: 'text-zinc-500' };
+    }
+    
+    const total = subscriptionPlans.length;
+    
+    // Colores basados en el orden (más barato primero): zinc -> cyan -> purple -> yellow
+    const colors = [
+      { bg: 'bg-zinc-600', text: 'text-white' },      // Más barato
+      { bg: 'bg-cyan-500', text: 'text-zinc-950' },   // Medio-bajo
+      { bg: 'bg-purple-500', text: 'text-white' },   // Medio-alto
+      { bg: 'bg-yellow-500', text: 'text-zinc-950' }, // Más caro
+    ];
+    
+    if (total === 1) {
+      return colors[3]; // Si solo hay uno, usar el color más alto
+    } else if (total === 2) {
+      return planIndex === 0 ? colors[0] : colors[3];
+    } else if (total === 3) {
+      return planIndex === 0 ? colors[0] : planIndex === 1 ? colors[1] : colors[3];
+    } else {
+      // 4 o más planes: mapear a los 4 colores
+      const lastIndex = total - 1;
+      const segmentSize = lastIndex / 3;
+      
+      if (planIndex === 0) {
+        return colors[0];
+      } else if (planIndex === lastIndex) {
+        return colors[3];
+      } else if (planIndex <= segmentSize) {
+        return colors[1];
+      } else if (planIndex <= segmentSize * 2) {
+        return colors[2];
+      } else {
+        return colors[3];
+      }
+    }
+  };
+  
+  const subscriptionColor = mostExpensiveSubscription 
+    ? getSubscriptionColor(mostExpensiveSubscription)
+    : { bg: 'bg-zinc-800', text: 'text-zinc-500' };
 
   // Update editData when user changes
   useEffect(() => {
@@ -371,9 +470,18 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   alt={user.username || user.email} 
                 />
               </div>
-              <div className={`absolute -bottom-2 -right-2 p-2 rounded-2xl border-4 border-zinc-950 z-20 shadow-lg ${isUserPro ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500'}`}>
-                {isUserPro ? <Zap size={20} fill="currentColor" /> : <Lock size={20} />}
-              </div>
+              {mostExpensiveSubscription ? (
+                <div className={`absolute -bottom-2 -right-2 px-3 py-2 rounded-2xl border-4 border-zinc-950 z-20 shadow-lg ${subscriptionColor.bg} ${subscriptionColor.text} flex items-center gap-2`}>
+                  <Crown size={16} fill="currentColor" />
+                  <span className="text-xs font-black uppercase tracking-tight">
+                    {mostExpensiveSubscription.subscriptionPlan?.name || 'Pro'}
+                  </span>
+                </div>
+              ) : (
+                <div className={`absolute -bottom-2 -right-2 p-2 rounded-2xl border-4 border-zinc-950 z-20 shadow-lg bg-zinc-800 text-zinc-500`}>
+                  <Lock size={20} />
+                </div>
+              )}
             </div>
             
             <div className="flex-1 pb-4 text-center md:text-left">

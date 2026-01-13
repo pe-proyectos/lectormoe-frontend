@@ -2,8 +2,9 @@
 import LandingLayout from "../layouts/LandingLayout.astro";
 import AuthPage from "../components/landing/AuthPage";
 
-// @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, user } = Astro.locals;
+// @ts-ignore - organization y showAds se definen dinámicamente en el middleware
+const { organization, language, user, showAds } = Astro.locals;
+const logged = !!user;
 
 // Si ya está logueado, redirigir al inicio
 if (logged) {
@@ -11,7 +12,7 @@ if (logged) {
 }
 ---
 
-<LandingLayout showAds={false}>
+<LandingLayout showAds={showAds}>
   <AuthPage 
     isScanContext={false}
     client:only="react"

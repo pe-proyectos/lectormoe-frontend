@@ -1,6 +1,7 @@
 ---
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, logged, organizationSlug } = Astro.locals;
+const { organization, user, organizationSlug } = Astro.locals;
+const logged = !!user;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {

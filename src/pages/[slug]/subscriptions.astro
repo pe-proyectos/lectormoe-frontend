@@ -2,8 +2,9 @@
 import LandingLayout from "../../layouts/LandingLayout.astro";
 import SubscriptionPageContainer from "../../components/landing/SubscriptionPageContainer";
 
-// @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, language, logged, callAPI, user, organizationSlug } = Astro.locals;
+// @ts-ignore - organization y showAds se definen dinámicamente en el middleware
+const { organization, language, callAPI, user, organizationSlug, showAds } = Astro.locals;
+const logged = !!user;
 
 // Si no hay organización, redirigir a 404
 if (!organization) {
@@ -14,7 +15,7 @@ if (!organization) {
 const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID;
 ---
 
-<LandingLayout showAds={false}>
+<LandingLayout showAds={showAds}>
   <SubscriptionPageContainer 
     organization={organization}
     user={user}

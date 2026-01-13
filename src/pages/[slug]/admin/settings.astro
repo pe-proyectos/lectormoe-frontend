@@ -4,7 +4,8 @@ import AdminSettings from "../../../components/admin/AdminSettings";
 import { getTranslator } from "../../../util/translate";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { logged, organization, language, organizationSlug } = Astro.locals;
+const { user, organization, language, organizationSlug } = Astro.locals;
+const logged = !!user;
 const _ = getTranslator(language);
 
 // Si no hay organización, redirigir a 404

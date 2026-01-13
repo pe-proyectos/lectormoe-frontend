@@ -4,7 +4,8 @@ import AdminMangaEdit from "../../../../components/admin/AdminMangaEdit";
 import { getTranslator } from "../../../../util/translate";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { language, organization, logged, organizationSlug, callAPI } = Astro.locals;
+const { language, organization, user, organizationSlug, callAPI } = Astro.locals;
+const logged = !!user;
 const { mangaSlug } = Astro.params;
 const _ = getTranslator(language);
 

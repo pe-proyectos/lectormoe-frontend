@@ -4,7 +4,8 @@ import AdminUserGrid from "../../../components/admin/AdminUserGrid";
 import { getTranslator } from "../../../util/translate";
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { language, callAPI, logged, organization, organizationSlug } = Astro.locals;
+const { language, callAPI, user, organization, organizationSlug } = Astro.locals;
+const logged = !!user;
 const _ = getTranslator(language);
 
 // Si no hay organización, redirigir a 404

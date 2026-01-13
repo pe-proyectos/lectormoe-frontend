@@ -2,10 +2,12 @@
 import LandingLayout from "../../layouts/LandingLayout.astro";
 import RegisterScanPageContainer from "../../components/landing/RegisterScanPageContainer";
 
-const { user, logged, language, organization, organizationSlug } = Astro.locals as any;
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { user, language, organization, organizationSlug, showAds } = Astro.locals as any;
+const logged = !!user;
 ---
 
-<LandingLayout title="Registra tu Scan" showAds={false}>
+<LandingLayout title="Registra tu Scan" showAds={showAds}>
   <RegisterScanPageContainer 
     user={user}
     logged={logged}

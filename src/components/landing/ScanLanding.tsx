@@ -43,7 +43,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       (logged &&
         user?.subscriptions?.some(
           (sub: any) =>
-            sub?.subscriptionPlan?.organizationId && organization?.id
+            sub?.subscriptionPlan?.organizationId === organization?.id
         )) ||
       false;
 
