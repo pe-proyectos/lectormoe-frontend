@@ -85,19 +85,34 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   // Check if user has active subscription (Pro)
   const isUserPro = user?.subscriptions?.some((sub: any) => sub.active === true) || false;
   
-  // Get the most expensive active subscription for this organization
+  // Get the most expensive active subscription across all organizations
   const getMostExpensiveActiveSubscription = () => {
-    if (!user?.subscriptions || !organization) return null;
+    if (!user?.subscriptions) return null;
     
+    // Filtrar todas las suscripciones activas
     const activeSubscriptions = user.subscriptions.filter((sub: any) => {
-      // Filtrar por suscripciones activas de esta organización
-      return sub.active === true && 
-             sub.subscriptionPlan?.organizationId === organization.id;
+      return sub.active === true && sub.subscriptionPlan?.price;
     });
     
     if (activeSubscriptions.length === 0) return null;
     
-    // Encontrar la suscripción más cara
+    // Si hay organización, filtrar por esa organización primero
+    if (organization) {
+      const orgSubscriptions = activeSubscriptions.filter(
+        (sub: any) => sub.subscriptionPlan?.organizationId === organization.id
+      );
+      
+      if (orgSubscriptions.length > 0) {
+        // Encontrar la suscripción más cara de esta organización
+        return orgSubscriptions.reduce((prev: any, current: any) => {
+          const prevPrice = prev.subscriptionPlan?.price || 0;
+          const currentPrice = current.subscriptionPlan?.price || 0;
+          return currentPrice > prevPrice ? current : prev;
+        });
+      }
+    }
+    
+    // Si no hay organización o no hay suscripciones de esa organización, buscar en todas
     const mostExpensive = activeSubscriptions.reduce((prev: any, current: any) => {
       const prevPrice = prev.subscriptionPlan?.price || 0;
       const currentPrice = current.subscriptionPlan?.price || 0;
@@ -111,15 +126,32 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   
   // Load subscription plans to determine color
   useEffect(() => {
-    if (!organization) return;
+    // Si hay organización, cargar planes de esa organización
+    // Si no hay organización pero hay suscripción, intentar cargar planes de la organización de la suscripción
+    const targetOrgId = organization?.id || mostExpensiveSubscription?.subscriptionPlan?.organizationId;
+    
+    if (!targetOrgId) return;
     
     const fetchPlans = async () => {
       try {
-        const result = await callAPI('/api/subscription-plan');
-        if (result && typeof result === 'object' && Array.isArray(result.items) && result.items.length > 0) {
-          // Ordenar por precio de menor a mayor
-          const sortedPlans = [...result.items].sort((a, b) => a.price - b.price);
-          setSubscriptionPlans(sortedPlans);
+        // Si tenemos organización con slug, usar callAPI normal
+        if (organization?.slug) {
+          const result = await callAPI('/api/subscription-plan');
+          if (result && typeof result === 'object' && Array.isArray(result.items) && result.items.length > 0) {
+            const sortedPlans = [...result.items].sort((a, b) => a.price - b.price);
+            setSubscriptionPlans(sortedPlans);
+          }
+        } else {
+          // Si no tenemos slug pero tenemos suscripción, intentar obtener planes de todas las organizaciones
+          // y filtrar por la organización de la suscripción
+          const result = await callAPI('/api/subscription-plan');
+          if (result && typeof result === 'object' && Array.isArray(result.items) && result.items.length > 0) {
+            const orgPlans = result.items.filter((plan: any) => plan.organizationId === targetOrgId);
+            if (orgPlans.length > 0) {
+              const sortedPlans = [...orgPlans].sort((a, b) => a.price - b.price);
+              setSubscriptionPlans(sortedPlans);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching subscription plans:', error);
@@ -127,12 +159,21 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     };
     
     fetchPlans();
-  }, [organization]);
+  }, [mostExpensiveSubscription, organization]);
   
   // Get color for subscription plan based on price order (similar to SubscriptionPage)
   const getSubscriptionColor = (subscription: any) => {
-    if (!subscription?.subscriptionPlan || subscriptionPlans.length === 0) {
+    if (!subscription?.subscriptionPlan) {
       return { bg: 'bg-zinc-800', text: 'text-zinc-500' };
+    }
+    
+    // Si no tenemos planes cargados, usar color basado en precio absoluto
+    if (subscriptionPlans.length === 0) {
+      const price = subscription.subscriptionPlan.price || 0;
+      if (price >= 10) return { bg: 'bg-yellow-500', text: 'text-zinc-950' };
+      if (price >= 5) return { bg: 'bg-purple-500', text: 'text-white' };
+      if (price >= 2) return { bg: 'bg-cyan-500', text: 'text-zinc-950' };
+      return { bg: 'bg-zinc-600', text: 'text-white' };
     }
     
     // Encontrar el índice del plan en la lista ordenada por precio
@@ -201,14 +242,12 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   useEffect(() => {
     const fetchFollowedScans = async () => {
       if (!logged || !user) {
-        console.log('Not logged in or no user, skipping followed scans fetch');
         setLoadingScans(false);
         return;
       }
 
       try {
         setLoadingScans(true);
-        console.log('Fetching followed scans for user:', user.id);
         const result = await callAPI("/api/organization/followed");
         
         // callAPI retorna result.data directamente, que es el array de organizaciones
@@ -375,10 +414,18 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       // Upload banner if changed (only for Pro users)
       if (isUserPro) {
         if (bannerFile) {
+          // New file uploaded
           const bannerKey = await uploadFile(bannerFile, undefined, 'profile_pictures');
           formData.append('banner', bannerKey);
-        } else if (editData.banner && editData.banner !== user.bannerUrl && !editData.banner.startsWith('data:')) {
-          formData.append('banner', editData.banner);
+        } else if (editData.banner !== user.bannerUrl) {
+          // Banner changed (including deletion - empty string or null)
+          if (editData.banner && !editData.banner.startsWith('data:')) {
+            // It's a URL (not a data URL), use it directly
+            formData.append('banner', editData.banner);
+          } else if (!editData.banner || editData.banner === '') {
+            // Banner was removed, send null as string (will be converted in transform)
+            formData.append('banner', 'null');
+          }
         }
       }
       
@@ -395,7 +442,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       // Note: The API requires organizationId, but for profile updates we can use any organization
       // The endpoint will use the organization from the header or find a default one
       const result = await callAPI(
-        `/user/${user.id}`, { method: "PATCH", body: formData }
+        `/api/user/${user.id}`, { method: "PATCH", body: formData }
       );
       
       if (result) {
@@ -414,7 +461,6 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
   const toggleSubscription = (scanId: number) => {
     // TODO: Implement subscription pause/resume
-    console.log('Toggle subscription for scan:', scanId);
   };
 
   const statsData = [

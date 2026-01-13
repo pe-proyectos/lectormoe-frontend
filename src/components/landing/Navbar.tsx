@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   CreditCard,
   Shield,
+  Crown,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 
@@ -120,6 +121,66 @@ const Navbar: React.FC<NavbarProps> = ({
 
     fetchUserPermissions();
   }, [logged, user, organization]);
+  
+  // Get the most expensive active subscription
+  // If in organization page, get from that organization
+  // If in landing page, get from all organizations
+  const getMostExpensiveActiveSubscription = () => {
+    if (!user?.subscriptions) return null;
+    
+    // Filter all active subscriptions
+    const activeSubscriptions = user.subscriptions.filter((sub: any) => {
+      return sub.active === true && sub.subscriptionPlan?.price;
+    });
+    
+    if (activeSubscriptions.length === 0) return null;
+    
+    // If there's an organization, filter by that organization first
+    const currentOrg = activeScan || organization;
+    if (currentOrg?.id) {
+      const orgSubscriptions = activeSubscriptions.filter(
+        (sub: any) => sub.subscriptionPlan?.organizationId === currentOrg.id
+      );
+      
+      if (orgSubscriptions.length > 0) {
+        // Find the most expensive subscription from this organization
+        return orgSubscriptions.reduce((prev: any, current: any) => {
+          const prevPrice = prev.subscriptionPlan?.price || 0;
+          const currentPrice = current.subscriptionPlan?.price || 0;
+          return currentPrice > prevPrice ? current : prev;
+        });
+      }
+    }
+    
+    // If no organization or no subscriptions from that organization, search in all
+    const mostExpensive = activeSubscriptions.reduce((prev: any, current: any) => {
+      const prevPrice = prev.subscriptionPlan?.price || 0;
+      const currentPrice = current.subscriptionPlan?.price || 0;
+      return currentPrice > prevPrice ? current : prev;
+    });
+    
+    return mostExpensive;
+  };
+  
+  const mostExpensiveSubscription = getMostExpensiveActiveSubscription();
+  
+  // Get color for subscription plan based on price
+  const getSubscriptionColor = (subscription: any) => {
+    if (!subscription?.subscriptionPlan) {
+      return { bg: 'bg-zinc-800', text: 'text-zinc-500' };
+    }
+    
+    // Use color based on absolute price
+    const price = subscription.subscriptionPlan.price || 0;
+    if (price >= 10) return { bg: 'bg-yellow-500', text: 'text-zinc-950' };
+    if (price >= 5) return { bg: 'bg-purple-500', text: 'text-white' };
+    if (price >= 2) return { bg: 'bg-cyan-500', text: 'text-zinc-950' };
+    return { bg: 'bg-zinc-600', text: 'text-white' };
+  };
+  
+  const subscriptionColor = mostExpensiveSubscription 
+    ? getSubscriptionColor(mostExpensiveSubscription)
+    : { bg: 'bg-zinc-800', text: 'text-zinc-500' };
   
   // Debug: Log permissions check
   useEffect(() => {
@@ -432,6 +493,14 @@ const Navbar: React.FC<NavbarProps> = ({
                     <p className="text-sm font-bold text-white truncate">
                       {user.email || user.username}
                     </p>
+                    {mostExpensiveSubscription && (
+                      <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg ${subscriptionColor.bg} ${subscriptionColor.text}`}>
+                        <Crown size={12} fill="currentColor" />
+                        <span className="text-[10px] font-black uppercase tracking-tight">
+                          {mostExpensiveSubscription.subscriptionPlan?.name || 'Pro'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <a
                     href={`/profile/${user?.slug}`}
