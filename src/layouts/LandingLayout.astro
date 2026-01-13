@@ -1,4 +1,6 @@
 ---
+import SorteoModal from '../components/landing/SorteoModal';
+
 interface Props {
   title?: string;
   description?: string;
@@ -9,6 +11,7 @@ interface Props {
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { organization, user } = Astro.locals;
+const logged = !!user;
 const {
   title: propTitle,
   description: propDescription,
@@ -114,6 +117,7 @@ const siteName =
   </head>
   <body>
     <slot />
+    <SorteoModal organization={organization} logged={logged} client:only="react" />
   </body>
 </html>
 

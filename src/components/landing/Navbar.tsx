@@ -11,6 +11,7 @@ import {
   CreditCard,
   Shield,
   Crown,
+  Gift,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 
@@ -434,6 +435,13 @@ const Navbar: React.FC<NavbarProps> = ({
             <Search size={16} /> Catálogo
           </a>
 
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-sorteo-modal'))}
+            className="text-sm font-bold transition-colors flex items-center gap-2 text-yellow-500 hover:text-yellow-400"
+          >
+            <Gift size={16} /> SORTEO Luckybara
+          </button>
+
           {activeScan && onGoSubscriptions && (
             <a
               href={`/${activeScan?.slug || organization?.slug}/subscriptions`}
@@ -601,6 +609,15 @@ const Navbar: React.FC<NavbarProps> = ({
           >
             <Search size={20} /> Catálogo
           </a>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              window.dispatchEvent(new Event('open-sorteo-modal'));
+            }}
+            className="text-xl font-bold flex items-center gap-4 text-yellow-500"
+          >
+            <Gift size={20} /> SORTEO Luckybara
+          </button>
           {activeScan && onGoSubscriptions && (
             <a
               href={`/${activeScan?.slug || organization?.slug}/subscriptions`}
@@ -697,6 +714,7 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       )}
+
     </nav>
   );
 };
