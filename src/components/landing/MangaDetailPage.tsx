@@ -244,15 +244,21 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
     // Check subscriptions
     for (const subscription of user?.subscriptions || []) {
-      if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
-        return true;
-      }
+      // Verificar que la suscripción esté activa y sea de la organización actual
       if (
-        manga.subscriptionPlans?.find(
-          (plan) => plan.id === subscription?.subscriptionPlan?.id
-        )
+        subscription.active === true &&
+        subscription?.subscriptionPlan?.organizationId === organization?.id
       ) {
-        return true;
+        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
+          return true;
+        }
+        if (
+          manga.subscriptionPlans?.find(
+            (plan) => plan.id === subscription?.subscriptionPlan?.id
+          )
+        ) {
+          return true;
+        }
       }
     }
 

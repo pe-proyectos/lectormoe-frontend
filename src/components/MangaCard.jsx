@@ -70,8 +70,14 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
 
     // Check subscriptions
     for (const subscription of user?.subscriptions || []) {
-      if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
-        return true;
+      // Verificar que la suscripción esté activa y sea de la organización actual
+      if (
+        subscription.active === true &&
+        subscription?.subscriptionPlan?.organizationId === organization?.id
+      ) {
+        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
+          return true;
+        }
       }
     }
 

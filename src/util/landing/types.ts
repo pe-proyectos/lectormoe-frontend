@@ -21,6 +21,7 @@ export type Manga = {
   mangaUrl?: string;
   badgeColor?: string;
   chapters?: Chapter[];
+  organizationId?: number; // Organization ID for subscription checks (used in landing page)
 };
 
 export type Tenant = {

@@ -55,9 +55,11 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
     <>
       {featuredManga.map((manga) => {
         // Check if user has subscription to this specific organization/scan
-        // Note: We check for active subscriptions since we're on a global landing page
-        const userHasSubscription = logged && user?.subscriptions?.some(
-          (sub: any) => sub.active === true && sub?.subscriptionPlan?.organizationId
+        // Note: In landing page, we check if user has subscription to the manga's specific organization
+        const userHasSubscription = logged && manga.organizationId && user?.subscriptions?.some(
+          (sub: any) => 
+            sub.active === true && 
+            sub?.subscriptionPlan?.organizationId === manga.organizationId
         ) || false;
 
         // Check if user has read each chapter
@@ -93,6 +95,7 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
               status: 'Ongoing',
               chapters: chaptersWithReadStatus,
               userHasSubscription: userHasSubscription || false,
+              organizationId: (manga as any).organizationId, // Pass organizationId for subscription checks
             }}
             onClick={() => {
               // Prefer mangaUrl (direct link to manga page), fallback to scanUrl

@@ -684,7 +684,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                       
                       // Check if user has subscription to this organization with canReadUnreleased
                       const userHasSubscription = logged && user?.subscriptions?.some(
-                        (sub: any) => sub?.organizationId === mangaCustom.organization?.id && sub.active === true && sub?.subscriptionPlan?.canReadUnreleased === true
+                        (sub: any) => sub?.subscriptionPlan?.organizationId === mangaCustom.organization?.id && sub.active === true && sub?.subscriptionPlan?.canReadUnreleased === true
                       ) || false;
 
                       // Map chapters with read status

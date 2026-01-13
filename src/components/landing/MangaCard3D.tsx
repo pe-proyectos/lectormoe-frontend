@@ -32,6 +32,7 @@ interface Manga {
   mangaUrl?: string; // Direct URL to manga page: /[scanSlug]/manga/[mangaSlug]
   chapters?: Chapter[]; // Last 2 chapters
   userHasSubscription?: boolean; // Whether user has access to subscriber-only content
+  organizationId?: number; // Organization ID for subscription checks (used in landing page)
 }
 
 interface Props {
@@ -65,10 +66,13 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
   
   const safeMangaUrl = getMangaUrl();
 
+  // Get organization ID from organization prop or manga object (for landing page)
+  const organizationId = organization?.id || manga.organizationId;
+  
   // Find user permissions for this specific organization
   const userPermissions = user?.permissions?.find((permission: any) => {
     // Match by organization ID if available
-    if (organization?.id && permission.organizationId === organization.id) {
+    if (organizationId && permission.organizationId === organizationId) {
       return true;
     }
     // Fallback: if organization ID doesn't match, try to find any permission
@@ -95,12 +99,12 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
     }
 
     // Check if user has subscription with canReadUnreleased for this organization
-    if (user?.subscriptions && organization?.id) {
+    if (user?.subscriptions && organizationId) {
       for (const subscription of user.subscriptions) {
         if (
           subscription?.subscriptionPlan?.canReadUnreleased === true && 
           subscription.active === true &&
-          subscription?.subscriptionPlan?.organizationId === organization.id
+          subscription?.subscriptionPlan?.organizationId === organizationId
         ) {
           return true;
         }

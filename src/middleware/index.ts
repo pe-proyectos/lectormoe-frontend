@@ -25,7 +25,6 @@ function calculateShowAds(user: any, organization: any): boolean {
         sub.subscriptionPlan?.hideAds === true &&
         sub.subscriptionPlan?.organizationId === organization.id,
     );
-    
     if (activeSubscription) {
       console.log(`User ${user.id} has an active subscription ${activeSubscription.id} with hideAds`);
       return false;
@@ -37,15 +36,13 @@ function calculateShowAds(user: any, organization: any): boolean {
     const hasHideAds = user.permissions.some(
       (perm: any) =>
         perm.hideAds === true &&
-        perm.organizationId === organization.id &&
-        perm.active === true,
+        perm.organizationId === organization.id,
     );
     if (hasHideAds) {
-      console.log(`User ${user.id} has a permission with hideAds`);
+      console.log(`User ${user.id} has a permission with hideAds`);  
       return false;
     }
   }
-
   console.log(`User ${user.id} has no active subscriptions or permissions with hideAds`);
   return true;
 }
