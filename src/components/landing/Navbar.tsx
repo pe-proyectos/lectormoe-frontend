@@ -375,7 +375,11 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {activeScan && onGoSubscriptions && (
             <a
-              href="/subscriptions"
+              href={`/${activeScan?.slug || organization?.slug}/subscriptions`}
+              onClick={(e) => {
+                e.preventDefault();
+                onGoSubscriptions();
+              }}
               className={`text-sm font-bold transition-colors flex items-center gap-2 ${
                 activeView === "subscriptions"
                   ? "text-yellow-500"
@@ -530,8 +534,12 @@ const Navbar: React.FC<NavbarProps> = ({
           </a>
           {activeScan && onGoSubscriptions && (
             <a
-              href="/subscriptions"
-              onClick={() => setMobileMenuOpen(false)}
+              href={`/${activeScan?.slug || organization?.slug}/subscriptions`}
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                onGoSubscriptions();
+              }}
               className={`text-xl font-bold flex items-center gap-4 ${
                 activeView === "subscriptions"
                   ? "text-yellow-500"
