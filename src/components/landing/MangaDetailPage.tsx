@@ -24,6 +24,7 @@ interface Chapter {
   imageUrl?: string | null;
   isRead?: boolean;
   hasAccess?: boolean;
+  isUnreleased?: boolean;
 }
 
 interface Genre {
@@ -255,7 +256,68 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       return "Debes iniciar sesión para leer este manga.";
     }
 
-    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+    // Si el capítulo está marcado como isUnreleased (bloqueado para lectura anticipada)
+    // Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo
+    if (chapter.isUnreleased === true) {
+      if (!logged) {
+        const exclusivePlans = manga.subscriptionPlansCanReadReleased || [];
+        const unreleasedPlans = manga.subscriptionPlansCanReadUnreleased || [];
+        const allPlans = [...exclusivePlans, ...unreleasedPlans];
+        const uniquePlans = allPlans.filter((plan, index, self) => 
+          index === self.findIndex((p) => p.id === plan.id)
+        );
+        if (uniquePlans.length > 0) {
+          return `Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado pueden leerlo. Requiere uno de los siguientes planes: ${uniquePlans.map(p => p.name).join(", ")}.`;
+        }
+        return "Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado pueden leerlo.";
+      }
+
+      // Usuario logueado - verificar si tiene acceso
+      let hasExclusiveAccess = false;
+      let hasUnreleasedAccess = false;
+
+      for (const subscription of user?.subscriptions || []) {
+        if (
+          subscription.active === true &&
+          subscription?.subscriptionPlan?.organizationId === organization?.id
+        ) {
+          const hasReleasedPlan = manga.subscriptionPlansCanReadReleased?.find(
+            (plan) => plan.id === subscription?.subscriptionPlan?.id
+          );
+          const hasUnreleasedPlan = manga.subscriptionPlansCanReadUnreleased?.find(
+            (plan) => plan.id === subscription?.subscriptionPlan?.id
+          );
+
+          if (hasReleasedPlan) {
+            hasExclusiveAccess = true;
+          }
+          if (hasUnreleasedPlan) {
+            hasUnreleasedAccess = true;
+          }
+        }
+      }
+
+      // Si no tiene acceso, mostrar mensaje
+      if (!hasExclusiveAccess && !hasUnreleasedAccess) {
+        const exclusivePlans = manga.subscriptionPlansCanReadReleased || [];
+        const unreleasedPlans = manga.subscriptionPlansCanReadUnreleased || [];
+        const allPlans = [...exclusivePlans, ...unreleasedPlans];
+        const uniquePlans = allPlans.filter((plan, index, self) => 
+          index === self.findIndex((p) => p.id === plan.id)
+        );
+        if (uniquePlans.length > 0) {
+          return `Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado pueden leerlo. Requiere uno de los siguientes planes: ${uniquePlans.map(p => p.name).join(", ")}.`;
+        }
+        return "Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado pueden leerlo.";
+      }
+
+      // Si tiene acceso, no mostrar mensaje (retornar null)
+      return null;
+    }
+
+    const isChapterReleased = chapter.releasedAt 
+      ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+      : false;
     const requiredPlans = getRequiredPlansForChapter(chapter);
 
     if (isChapterReleased) {
@@ -291,7 +353,48 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     if (permissions.canEditChapter === true) return true;
     if (permissions.canEditPage === true) return true;
 
-    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+    // Si el capítulo está marcado como isUnreleased (bloqueado para lectura anticipada)
+    // Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo
+    if (chapter.isUnreleased === true) {
+      if (!logged) return false;
+
+      let hasExclusiveAccess = false; // Acceso exclusivo (subscriptionPlansCanReadReleased)
+      let hasUnreleasedAccess = false; // Acceso anticipado (subscriptionPlansCanReadUnreleased)
+
+      for (const subscription of user?.subscriptions || []) {
+        if (
+          subscription.active === true &&
+          subscription?.subscriptionPlan?.organizationId === organization?.id
+        ) {
+          // Verificar si tiene plan de lectura exclusiva
+          const hasReleasedPlan = manga.subscriptionPlansCanReadReleased?.find(
+            (plan) => plan.id === subscription?.subscriptionPlan?.id
+          );
+          // Verificar si tiene plan de lectura anticipada
+          const hasUnreleasedPlan = manga.subscriptionPlansCanReadUnreleased?.find(
+            (plan) => plan.id === subscription?.subscriptionPlan?.id
+          );
+
+          if (hasReleasedPlan) {
+            hasExclusiveAccess = true;
+          }
+          if (hasUnreleasedPlan) {
+            hasUnreleasedAccess = true;
+          }
+        }
+      }
+
+      // Solo puede leer si tiene acceso exclusivo O acceso anticipado (o ambos)
+      // Si solo tiene acceso anticipado, puede leerlo
+      // Si solo tiene acceso exclusivo, puede leerlo
+      // Si tiene ambos, puede leerlo
+      return hasExclusiveAccess || hasUnreleasedAccess;
+    }
+
+    // Lógica normal para capítulos no bloqueados
+    const isChapterReleased = chapter.releasedAt 
+      ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+      : false;
 
     if (isChapterReleased) {
       // Capítulo ya fue lanzado
@@ -1188,6 +1291,29 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                         </>
                                       )}
                                     </div>
+
+                                    {/* Blocked for Unreleased Button */}
+                                    {chapter.isUnreleased === true && (
+                                      <div className="relative group/blocked shrink-0">
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const subscriptionUrl = organization?.slug
+                                              ? `/${organization.slug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapter.number}`
+                                              : '/subscriptions';
+                                            window.location.href = subscriptionUrl;
+                                          }}
+                                          className="px-2 py-1 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-[9px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-colors cursor-pointer"
+                                        >
+                                          Bloqueado para lectura anticipada
+                                        </button>
+                                        <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[8px] font-medium leading-relaxed max-w-[200px] opacity-0 group-hover/blocked:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-normal">
+                                          Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo.
+                                          <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
+                                        </div>
+                                      </div>
+                                    )}
 
                                     <h4 className="text-white font-bold text-lg truncate">
                                       Capítulo {chapter.number}

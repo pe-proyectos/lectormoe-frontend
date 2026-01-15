@@ -3,7 +3,7 @@ import {
   Save, Plus, Calendar, BookOpen, UploadCloud, Trash2, 
   Settings2, Layers, GripVertical, ZoomIn, ZoomOut, 
   Map as MapIcon, CheckCircle2,
-  Camera, List, Info, Edit3, Download, X, ImageIcon
+  Camera, List, Info, Edit3, Download, ImageIcon, Clock
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
@@ -12,10 +12,193 @@ import { uploadFile } from '../../util/uploadFile';
 import Autocomplete from './ui/Autocomplete';
 import { AdminChapterDialog } from './AdminChapterDialog';
 import { MultiImageDropzone } from './ui/MultiImageDropzone';
+import { Popover, PopoverHandler, PopoverContent } from './ui/Popover';
+import { DayPicker } from 'react-day-picker';
+import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import JSZip from 'jszip';
 import 'react-toastify/dist/ReactToastify.css';
+import 'react-day-picker/dist/style.css';
 
 type TabType = 'info' | 'chapters' | 'upload';
+
+interface DateTimePickerProps {
+  value: string | null | undefined;
+  onChange: (value: string | null) => void;
+  disabled?: boolean;
+  showTime?: boolean;
+  className?: string;
+}
+
+// DateTimePicker component for date and time selection
+const DateTimePicker: React.FC<DateTimePickerProps> = ({ 
+  value, 
+  onChange, 
+  disabled = false,
+  showTime = true,
+  className = ''
+}) => {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [timeValue, setTimeValue] = useState<string>('00:00');
+
+  // Initialize from value
+  useEffect(() => {
+    if (value && value.trim() !== '') {
+      // Try to parse as local datetime string (YYYY-MM-DDTHH:mm)
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        setSelectedDate(date);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        setTimeValue(`${hours}:${minutes}`);
+      } else {
+        setSelectedDate(null);
+        setTimeValue('00:00');
+      }
+    } else {
+      setSelectedDate(null);
+      setTimeValue('00:00');
+    }
+  }, [value]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) {
+      setSelectedDate(null);
+      onChange(null);
+      return;
+    }
+
+    const [hours, minutes] = timeValue.split(':');
+    const newDate = new Date(date);
+    newDate.setHours(parseInt(hours || '0', 10));
+    newDate.setMinutes(parseInt(minutes || '0', 10));
+    
+    setSelectedDate(newDate);
+    
+    // Convert to local datetime string format (YYYY-MM-DDTHH:mm)
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, '0');
+    const day = String(newDate.getDate()).padStart(2, '0');
+    const formattedTime = `${String(newDate.getHours()).padStart(2, '0')}:${String(newDate.getMinutes()).padStart(2, '0')}`;
+    onChange(`${year}-${month}-${day}T${formattedTime}`);
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = e.target.value;
+    setTimeValue(newTime);
+    
+    if (selectedDate) {
+      const [hours, minutes] = newTime.split(':');
+      const newDate = new Date(selectedDate);
+      newDate.setHours(parseInt(hours || '0', 10));
+      newDate.setMinutes(parseInt(minutes || '0', 10));
+      
+      // Convert to local datetime string format
+      const year = newDate.getFullYear();
+      const month = String(newDate.getMonth() + 1).padStart(2, '0');
+      const day = String(newDate.getDate()).padStart(2, '0');
+      onChange(`${year}-${month}-${day}T${newTime}`);
+    }
+  };
+
+  const formatDisplayValue = (val: string | null | undefined): string => {
+    if (!val || val.trim() === '') return '';
+    try {
+      const date = new Date(val);
+      if (isNaN(date.getTime())) return '';
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return showTime 
+        ? `${day}/${month}/${year} ${hours}:${minutes}`
+        : `${day}/${month}/${year}`;
+    } catch {
+      return val;
+    }
+  };
+
+  const displayValue = formatDisplayValue(value);
+  const placeholder = showTime ? 'Seleccionar fecha y hora' : 'Seleccionar fecha';
+
+  return (
+    <div className={`relative ${className}`}>
+      <Popover placement="bottom">
+        <PopoverHandler>
+          <div className={disabled ? "cursor-not-allowed" : "cursor-pointer"}>
+            <input
+              type="text"
+              value={displayValue}
+              readOnly
+              disabled={disabled}
+              placeholder={placeholder}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white text-[11px] font-black uppercase focus:border-cyan-500 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+        </PopoverHandler>
+        {!disabled && (
+        <PopoverContent>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-xl">
+            <DayPicker
+              mode="single"
+              selected={selectedDate || undefined}
+              onSelect={handleDateSelect}
+              showOutsideDays
+              className="border-0"
+              classNames={{
+                caption: "flex justify-center py-2 mb-4 relative items-center",
+                caption_label: "text-sm font-medium text-white",
+                nav: "flex items-center",
+                nav_button:
+                  "h-6 w-6 bg-transparent hover:bg-zinc-800 p-1 rounded-md transition-colors duration-300 text-zinc-400 hover:text-white",
+                nav_button_previous: "absolute left-1.5",
+                nav_button_next: "absolute right-1.5",
+                table: "w-full border-collapse",
+                head_row: "flex font-medium text-zinc-400",
+                head_cell: "m-0.5 w-9 font-normal text-sm",
+                row: "flex w-full mt-2",
+                cell: "text-zinc-400 rounded-md h-9 w-9 text-center text-sm p-0 m-0.5 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-zinc-800/20 [&:has([aria-selected].day-outside)]:text-white [&:has([aria-selected])]:bg-cyan-500 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-9 w-9 p-0 font-normal hover:bg-zinc-800 rounded-md transition-colors",
+                day_range_end: "day-range-end",
+                day_selected:
+                  "rounded-md bg-cyan-500 text-white hover:bg-cyan-600 hover:text-white focus:bg-cyan-500 focus:text-white",
+                day_today: "rounded-md bg-zinc-800 text-white font-semibold",
+                day_outside:
+                  "day-outside text-zinc-500 opacity-50 aria-selected:bg-zinc-700 aria-selected:text-white aria-selected:bg-opacity-50",
+                day_disabled: "text-zinc-600 opacity-50 cursor-not-allowed",
+                day_hidden: "invisible",
+              }}
+              // @ts-ignore - react-day-picker components type issue
+              components={{
+                IconLeft: ({ ...props }) => (
+                  <ChevronLeftIcon {...props} className="h-4 w-4 stroke-2" />
+                ),
+                IconRight: ({ ...props }) => (
+                  <ChevronRightIcon {...props} className="h-4 w-4 stroke-2" />
+                ),
+              }}
+            />
+            {showTime && (
+              <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center gap-3">
+                <Clock size={16} className="text-zinc-400" />
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                  Hora:
+                </label>
+                <input
+                  type="time"
+                  value={timeValue}
+                  onChange={handleTimeChange}
+                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-3 text-white text-sm font-bold focus:border-cyan-500 outline-none"
+                />
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+        )}
+      </Popover>
+    </div>
+  );
+};
 
 interface AdminMangaEditProps {
   language?: string;
@@ -38,26 +221,53 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   const [mangaCustom, setMangaCustom] = useState(initialMangaCustom);
   
+  // Helper functions for date handling
+  // Convert UTC date string (from API) to local datetime string for input[type="datetime-local"]
+  const utcToLocalDatetimeString = (utcString: string | null | undefined): string => {
+    if (!utcString) return '';
+    const date = new Date(utcString);
+    // Get local date components
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Convert local datetime string (from input) to UTC ISO string for API
+  const localDatetimeStringToUTC = (localString: string | null | undefined): string | null => {
+    if (!localString) return null;
+    // Create date from local string (browser interprets it as local time)
+    const localDate = new Date(localString);
+    // Return ISO string (UTC)
+    return localDate.toISOString();
+  };
+
+  // Get current date/time in local format for datetime-local input
+  const getCurrentLocalDatetimeString = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
   // Initialize form data from initialMangaCustom
   const initializeFormData = () => {
-    const releasedAt = initialMangaCustom?.releasedAt 
-      ? (typeof initialMangaCustom.releasedAt === 'string' 
-          ? initialMangaCustom.releasedAt 
-          : new Date(initialMangaCustom.releasedAt).toISOString())
-      : null;
-    const nextChapterAt = initialMangaCustom?.nextChapterAt 
-      ? (typeof initialMangaCustom.nextChapterAt === 'string' 
-          ? initialMangaCustom.nextChapterAt 
-          : new Date(initialMangaCustom.nextChapterAt).toISOString())
-      : null;
+    // Store dates as local datetime strings for the form inputs
+    const releasedAt = utcToLocalDatetimeString(initialMangaCustom?.releasedAt);
+    const nextChapterAt = utcToLocalDatetimeString(initialMangaCustom?.nextChapterAt);
 
     return {
       title: initialMangaCustom?.title || '',
       shortDescription: initialMangaCustom?.shortDescription || '',
       description: initialMangaCustom?.description || '',
       status: initialMangaCustom?.status || 'ongoing',
-      releasedAt: releasedAt,
-      nextChapterAt: nextChapterAt,
+      releasedAt: releasedAt || null,
+      nextChapterAt: nextChapterAt || null,
       nextChapterAtMessage: initialMangaCustom?.nextChapterAtMessage || '',
       requireLogin: initialMangaCustom?.requireLogin || false,
       isSimulRelease: initialMangaCustom?.isSimulRelease || false,
@@ -77,6 +287,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     title: '',
     releaseDate: '',
     thumbnail: null as File | string | null,
+    isUnreleased: false,
   });
   
   const [pages, setPages] = useState<(File | string)[]>([]);
@@ -88,6 +299,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false);
   const [isEditingChapter, setIsEditingChapter] = useState(false);
   const [editingChapterNumber, setEditingChapterNumber] = useState<number | null>(null);
+  const [updatingChapterDate, setUpdatingChapterDate] = useState<number | null>(null); // Chapter ID being updated
 
   const [genres, setGenres] = useState<any[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
@@ -284,6 +496,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         releaseDate: '',
         isSubscriberOnly: false,
         thumbnail: null,
+        isUnreleased: false,
       });
       setPages([]);
       setSinglePageIndexes([]);
@@ -293,24 +506,17 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   // Update form data when initialMangaCustom changes
   useEffect(() => {
     if (initialMangaCustom) {
-      const releasedAt = initialMangaCustom?.releasedAt 
-        ? (typeof initialMangaCustom.releasedAt === 'string' 
-            ? initialMangaCustom.releasedAt 
-            : new Date(initialMangaCustom.releasedAt).toISOString())
-        : null;
-      const nextChapterAt = initialMangaCustom?.nextChapterAt 
-        ? (typeof initialMangaCustom.nextChapterAt === 'string' 
-            ? initialMangaCustom.nextChapterAt 
-            : new Date(initialMangaCustom.nextChapterAt).toISOString())
-        : null;
+      // Convert UTC dates from API to local datetime strings for inputs
+      const releasedAt = utcToLocalDatetimeString(initialMangaCustom?.releasedAt);
+      const nextChapterAt = utcToLocalDatetimeString(initialMangaCustom?.nextChapterAt);
 
       setFormData({
         title: initialMangaCustom?.title || '',
         shortDescription: initialMangaCustom?.shortDescription || '',
         description: initialMangaCustom?.description || '',
         status: initialMangaCustom?.status || 'ongoing',
-        releasedAt: releasedAt,
-        nextChapterAt: nextChapterAt,
+        releasedAt: releasedAt || null,
+        nextChapterAt: nextChapterAt || null,
         nextChapterAtMessage: initialMangaCustom?.nextChapterAtMessage || '',
         requireLogin: initialMangaCustom?.requireLogin || false,
         isSimulRelease: initialMangaCustom?.isSimulRelease || false,
@@ -450,8 +656,9 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       setNewChapter({
         number: chapter.number.toString(),
         title: chapter.title || '',
-        releaseDate: chapter.releasedAt ? new Date(chapter.releasedAt).toISOString().slice(0, 16) : '',
+        releaseDate: chapter.isUnreleased ? '' : utcToLocalDatetimeString(chapter.releasedAt),
         thumbnail: chapter.imageUrl || null,
+        isUnreleased: chapter.isUnreleased || false,
       });
 
       // Cargar páginas del capítulo
@@ -991,8 +1198,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           shortDescription: formData.shortDescription || null,
           description: formData.description || null,
           status: formData.status,
-          releasedAt: formData.releasedAt ? new Date(formData.releasedAt).toISOString() : null,
-          nextChapterAt: formData.nextChapterAt ? new Date(formData.nextChapterAt).toISOString() : null,
+          releasedAt: localDatetimeStringToUTC(formData.releasedAt),
+          nextChapterAt: localDatetimeStringToUTC(formData.nextChapterAt),
           nextChapterAtMessage: formData.nextChapterAtMessage || null,
           requireLogin: formData.requireLogin,
           isSimulRelease: formData.isSimulRelease,
@@ -1123,12 +1330,15 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           body: JSON.stringify({
             title: newChapter.title || `Capítulo ${newChapter.number}`,
             number: parseFloat(newChapter.number),
-            releasedAt: newChapter.releaseDate 
-              ? new Date(newChapter.releaseDate).toISOString() 
-              : new Date().toISOString(),
+            releasedAt: newChapter.isUnreleased 
+              ? null 
+              : (newChapter.releaseDate 
+                  ? localDatetimeStringToUTC(newChapter.releaseDate) 
+                  : new Date().toISOString()),
             pages: pageKeys,
             singlePages: singlePageIndexes,
             ...(imageKey ? { image: imageKey } : {}),
+            isUnreleased: newChapter.isUnreleased || false,
           }),
         }
       );
@@ -1141,6 +1351,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         setNewChapter({
           number: '',
           title: '',
+          isUnreleased: false,
           releaseDate: '',
           isSubscriberOnly: false,
           thumbnail: null,
@@ -1158,6 +1369,91 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       toast.error(error?.message || 'Error al crear el capítulo');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to update chapter date and isUnreleased from table
+  // Applies the same rules as the edit chapter form
+  // Only updates isUnreleased field, following backend controller logic
+  const handleUpdateChapterDate = async (chapter: any, newDate: string | null, isUnreleased: boolean) => {
+    const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
+    setUpdatingChapterDate(chapter.id);
+    
+    try {
+      // Build request body following the same rules as handleSaveChapter and backend controller
+      const requestBody: any = {};
+
+      // Only send isUnreleased if it's being changed
+      const isUnreleasedChanged = chapter.isUnreleased !== isUnreleased;
+      
+      if (isUnreleasedChanged) {
+        requestBody.isUnreleased = isUnreleased;
+        
+        // Apply the same logic as backend controller
+        if (isUnreleased === true) {
+          // Si isUnreleased es true, releasedAt debe ser null
+          requestBody.releasedAt = null;
+        } else {
+          // Si isUnreleased cambia de true a false
+          if (newDate) {
+            // Si hay fecha nueva, convertir a UTC
+            requestBody.releasedAt = localDatetimeStringToUTC(newDate);
+          } else {
+            // Si no hay fecha, usar fecha actual (backend lo hará, pero lo enviamos para consistencia)
+            requestBody.releasedAt = new Date().toISOString();
+          }
+        }
+      } else if (newDate !== null) {
+        // Si solo se actualiza la fecha (sin cambiar isUnreleased)
+        // Solo actualizar si isUnreleased no es true
+        if (!chapter.isUnreleased) {
+          requestBody.releasedAt = localDatetimeStringToUTC(newDate);
+        }
+      }
+
+      // Only make request if there's something to update
+      if (Object.keys(requestBody).length === 0) {
+        setUpdatingChapterDate(null);
+        return;
+      }
+
+      const response = await callAPI(
+        `/api/manga-custom/${mangaSlug}/chapter/${chapter.number}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (response?.status || response) {
+        toast.success('Fecha del capítulo actualizada', {
+          position: "bottom-right"
+        });
+        // Update local chapters state
+        setChapters((prevChapters) =>
+          prevChapters.map((ch: any) =>
+            ch.id === chapter.id
+              ? {
+                  ...ch,
+                  releasedAt: isUnreleased 
+                    ? null 
+                    : (newDate 
+                        ? localDatetimeStringToUTC(newDate) 
+                        : (isUnreleasedChanged && chapter.isUnreleased === true 
+                            ? new Date().toISOString() 
+                            : ch.releasedAt)),
+                  isUnreleased: isUnreleasedChanged ? isUnreleased : ch.isUnreleased,
+                }
+              : ch
+          )
+        );
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al actualizar la fecha del capítulo', {
+        position: "bottom-right"
+      });
+    } finally {
+      setUpdatingChapterDate(null);
     }
   };
 
@@ -1619,16 +1915,46 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
                         <Calendar size={12} /> Fecha de salida
                       </label>
-                      <input 
-                        type="datetime-local" 
+                      <DateTimePicker
                         value={newChapter.releaseDate}
-                        onChange={(e) => setNewChapter({...newChapter, releaseDate: e.target.value})}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white text-[11px] font-black uppercase focus:border-cyan-500 outline-none"
+                        onChange={(value) => setNewChapter({...newChapter, releaseDate: value || ''})}
+                        disabled={newChapter.isUnreleased}
+                        showTime={true}
                       />
                       <div className="flex gap-2 p-3 bg-zinc-950/50 rounded-xl border border-zinc-800/50">
                         <Info size={14} className="text-cyan-500 shrink-0 mt-0.5" />
                         <p className="text-[9px] text-zinc-500 font-medium leading-snug">
-                          Solo los suscriptores podrán leer este capítulo antes de la fecha de salida, pasado este tiempo, cualquier usuario podrá leerlo
+                          {newChapter.isUnreleased 
+                            ? "Este capítulo está bloqueado para lectura anticipada, por lo que no tiene fecha de salida. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo."
+                            : "Solo los suscriptores podrán leer este capítulo antes de la fecha de salida, pasado este tiempo, cualquier usuario podrá leerlo"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Blocked for Unreleased */}
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-white text-[10px] font-black uppercase tracking-widest">
+                        <input
+                          type="checkbox"
+                          checked={newChapter.isUnreleased}
+                          onChange={(e) => {
+                            const isUnreleased = e.target.checked;
+                            setNewChapter({
+                              ...newChapter, 
+                              isUnreleased,
+                              // Si se marca isUnreleased, releasedAt debe ser null
+                              // Si se desmarca, releasedAt debe ser la fecha actual en formato local
+                              releaseDate: isUnreleased ? '' : getCurrentLocalDatetimeString()
+                            });
+                          }}
+                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-zinc-950"
+                        />
+                        Bloqueado para lectura anticipada
+                      </label>
+                      <div className="flex gap-2 p-3 bg-zinc-950/50 rounded-xl border border-zinc-800/50">
+                        <Info size={14} className="text-red-500 shrink-0 mt-0.5" />
+                        <p className="text-[9px] text-zinc-500 font-medium leading-snug">
+                          Si está activado, este capítulo solo podrá ser leído por los suscriptores exclusivos y los suscriptores con acceso anticipado del manga. No tendrá fecha de salida y permanecerá bloqueado hasta que se desactive esta opción.
                         </p>
                       </div>
                     </div>
@@ -1649,6 +1975,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             title: '',
                             releaseDate: '',
                             thumbnail: null,
+                            isUnreleased: false,
                           });
                           setPages([]);
                           setSinglePageIndexes([]);
@@ -1804,11 +2131,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
                       <Calendar size={12} /> Fecha de salida (Opcional)
                     </label>
-                    <input 
-                      type="datetime-local" 
-                      value={formData.releasedAt ? new Date(formData.releasedAt).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setFormData({...formData, releasedAt: e.target.value ? new Date(e.target.value).toISOString() : null})}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white text-[11px] font-black uppercase focus:border-cyan-500 outline-none" 
+                    <DateTimePicker
+                      value={formData.releasedAt}
+                      onChange={(value) => setFormData({...formData, releasedAt: value})}
+                      showTime={true}
                     />
                   </div>
 
@@ -1817,11 +2143,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
                       <Calendar size={12} /> Fecha del próximo capítulo (Opcional)
                     </label>
-                    <input 
-                      type="datetime-local" 
-                      value={formData.nextChapterAt ? new Date(formData.nextChapterAt).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setFormData({...formData, nextChapterAt: e.target.value ? new Date(e.target.value).toISOString() : null})}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white text-[11px] font-black uppercase focus:border-cyan-500 outline-none" 
+                    <DateTimePicker
+                      value={formData.nextChapterAt}
+                      onChange={(value) => setFormData({...formData, nextChapterAt: value})}
+                      showTime={true}
                     />
                   </div>
 
@@ -1960,8 +2285,54 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             <td className="px-8 py-6 text-cyan-500 font-black italic">#{ch.number}</td>
                             <td className="px-8 py-6 text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">{ch.title || `Capítulo ${ch.number}`}</td>
                             <td className="px-8 py-6 text-xs font-bold text-zinc-500">{ch.views?.toLocaleString() || '0'}</td>
-                            <td className="px-8 py-6 text-xs font-bold text-zinc-500">
-                              {new Date(ch.releasedAt).toLocaleString()}
+                            <td className="px-8 py-6">
+                              <div className="flex flex-col gap-2 min-w-[200px]">
+                                {/* Checkbox para isUnreleased */}
+                                <label className={`flex items-center gap-2 group/checkbox ${updatingChapterDate === ch.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={ch.isUnreleased || false}
+                                    disabled={updatingChapterDate === ch.id}
+                                    onChange={(e) => {
+                                      if (updatingChapterDate === ch.id) return;
+                                      const newIsUnreleased = e.target.checked;
+                                      // Si se desmarca isUnreleased, usar fecha actual si no hay fecha o si estaba bloqueado
+                                      const newDate = newIsUnreleased 
+                                        ? null 
+                                        : (ch.releasedAt && !ch.isUnreleased 
+                                            ? utcToLocalDatetimeString(ch.releasedAt) 
+                                            : getCurrentLocalDatetimeString());
+                                      handleUpdateChapterDate(ch, newDate, newIsUnreleased);
+                                    }}
+                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-zinc-950 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
+                                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover/checkbox:text-zinc-300">
+                                    Bloqueado para lectura anticipada
+                                  </span>
+                                </label>
+                                
+                                {/* DateTimePicker para fecha (solo si no está bloqueado) */}
+                                {!ch.isUnreleased && (
+                                  <div className="flex items-center gap-2">
+                                    <DateTimePicker
+                                      value={ch.releasedAt ? utcToLocalDatetimeString(ch.releasedAt) : null}
+                                      onChange={(value) => {
+                                        if (value && updatingChapterDate !== ch.id && !ch.isUnreleased) {
+                                          handleUpdateChapterDate(ch, value, false);
+                                        }
+                                      }}
+                                      disabled={updatingChapterDate === ch.id || ch.isUnreleased}
+                                      showTime={true}
+                                      className="flex-1"
+                                    />
+                                  </div>
+                                )}
+                                
+                                {/* Mostrar estado si está bloqueado */}
+                                {ch.isUnreleased && (
+                                  <span className="text-xs font-bold text-red-500">Bloqueado</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-8 py-6 text-right">
                               <div className="flex items-center justify-end gap-2">
