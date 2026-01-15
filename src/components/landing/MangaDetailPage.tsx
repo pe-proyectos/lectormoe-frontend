@@ -1292,28 +1292,6 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                       )}
                                     </div>
 
-                                    {/* Blocked for Unreleased Button */}
-                                    {chapter.isUnreleased === true && (
-                                      <div className="relative group/blocked shrink-0">
-                                        <button
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            const subscriptionUrl = organization?.slug
-                                              ? `/${organization.slug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapter.number}`
-                                              : '/subscriptions';
-                                            window.location.href = subscriptionUrl;
-                                          }}
-                                          className="px-2 py-1 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-[9px] font-bold uppercase tracking-widest hover:bg-red-500/30 transition-colors cursor-pointer"
-                                        >
-                                          Bloqueado para lectura anticipada
-                                        </button>
-                                        <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[8px] font-medium leading-relaxed max-w-[200px] opacity-0 group-hover/blocked:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-normal">
-                                          Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo.
-                                          <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
-                                        </div>
-                                      </div>
-                                    )}
 
                                     <h4 className="text-white font-bold text-lg truncate">
                                       Capítulo {chapter.number}
@@ -1416,6 +1394,26 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                 {(() => {
                                   const label = getChapterLabel(chapter);
                                   if (label !== null) {
+                                    // Si el capítulo está bloqueado para lectura anticipada, agregar tooltip
+                                    if (chapter.isUnreleased === true && label === "Solo para suscriptores") {
+                                      return (
+                                        <div className="relative group/tooltip">
+                                          <span
+                                            className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                                              hasAccess
+                                                ? "text-cyan-400"
+                                                : "text-yellow-400"
+                                            }`}
+                                          >
+                                            {label}
+                                          </span>
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-medium leading-relaxed opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-normal max-w-xs text-center">
+                                            Este capítulo está bloqueado para lectura anticipada. Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo.
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
                                     return (
                                       <span
                                         className={`text-xs font-bold uppercase tracking-widest transition-colors ${
