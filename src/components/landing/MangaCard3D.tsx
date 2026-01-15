@@ -301,9 +301,24 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
               // canRead: chapter is available to read if user has access
               const canRead = canAccess;
               const needsSubscription = !canAccess;
+              
+              // Extraer mangaSlug de mangaUrl o usar manga.id
+              const getMangaSlug = () => {
+                if (manga.mangaUrl) {
+                  const match = manga.mangaUrl.match(/\/manga\/([^\/]+)/);
+                  if (match) return match[1];
+                }
+                return manga.id || '';
+              };
+              
+              const mangaSlug = getMangaSlug();
+              const organizationSlug = manga.scanUrl?.replace('/', '') || organization?.slug || '';
+              
               const href = canRead 
                 ? chapter.chapterUrl 
-                : (needsSubscription && manga.scanUrl ? `${manga.scanUrl}/subscriptions` : '#');
+                : (needsSubscription && organizationSlug && mangaSlug 
+                  ? `/${organizationSlug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapter.number}` 
+                  : '#');
               
               return (
                 <a
@@ -353,30 +368,89 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                     {`"${chapter.title || 'Nuevo capítulo'}"`}
                   </p>
                   
-                  {/* Mostrar información de acceso anticipado si el capítulo no ha sido lanzado y hay rangos configurados */}
-                  {!isReleased && manga.subscriptionPlansCanReadUnreleased && manga.subscriptionPlansCanReadUnreleased.length > 0 && (
-                    <div className="mt-1.5 space-y-1 relative group/tooltip">
-                      <div className="flex items-center gap-1 text-[12px] font-bold text-yellow-400">
-                        <Lock size={8} />
-                        <span>Acceso Anticipado:</span>
+                  {/* Mostrar pills de rangos con acceso si hay rangos configurados */}
+                  {(() => {
+                    const unreleasedPlans = manga.subscriptionPlansCanReadUnreleased || [];
+                    const releasedPlans = manga.subscriptionPlansCanReadReleased || [];
+                    
+                    // Si no hay rangos configurados, no mostrar nada
+                    if (unreleasedPlans.length === 0 && releasedPlans.length === 0) {
+                      return null;
+                    }
+                    
+                    // Crear un mapa de todos los rangos únicos
+                    const allPlansMap = new Map();
+                    
+                    // Agregar rangos de unreleased
+                    unreleasedPlans.forEach((plan: any) => {
+                      allPlansMap.set(plan.id, {
+                        ...plan,
+                        inUnreleased: true,
+                        inReleased: false
+                      });
+                    });
+                    
+                    // Agregar o actualizar rangos de released
+                    releasedPlans.forEach((plan: any) => {
+                      if (allPlansMap.has(plan.id)) {
+                        allPlansMap.get(plan.id).inReleased = true;
+                      } else {
+                        allPlansMap.set(plan.id, {
+                          ...plan,
+                          inUnreleased: false,
+                          inReleased: true
+                        });
+                      }
+                    });
+                    
+                    const allPlans = Array.from(allPlansMap.values());
+                    
+                    // Verificar si el usuario tiene un rango específico
+                    const userHasPlan = (planId: number) => {
+                      if (!user || !organizationId) return false;
+                      return user.subscriptions?.some((sub: any) => 
+                        sub.active === true &&
+                        sub?.subscriptionPlan?.organizationId === organizationId &&
+                        sub?.subscriptionPlan?.id === planId
+                      ) || false;
+                    };
+                    
+                    // Determinar el tooltip para cada rango
+                    const getTooltipText = (plan: any) => {
+                      if (plan.inUnreleased && plan.inReleased) {
+                        return "Acceso de lectura exclusiva + lectura anticipada";
+                      } else if (plan.inUnreleased) {
+                        return "Acceso de lectura anticipada";
+                      } else if (plan.inReleased) {
+                        return "Acceso de lectura exclusiva";
+                      }
+                      return "";
+                    };
+                    
+                    return (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {allPlans.map((plan: any) => {
+                          const hasPlan = userHasPlan(plan.id);
+                          return (
+                            <div key={plan.id} className="relative group/pill">
+                              <span className={`px-1.5 py-0.5 rounded text-[7px] font-bold uppercase cursor-help ${
+                                hasPlan 
+                                  ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                                  : 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-400'
+                              }`}>
+                                {plan.name}
+                              </span>
+                              {/* Tooltip individual para cada pill */}
+                              <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[8px] font-medium leading-relaxed max-w-[160px] opacity-0 group-hover/pill:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-normal">
+                                {getTooltipText(plan)}
+                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {manga.subscriptionPlansCanReadUnreleased.map((plan: any) => (
-                          <span
-                            key={plan.id}
-                            className="px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/50 rounded text-[7px] font-bold text-yellow-400 uppercase"
-                          >
-                            {plan.name}
-                          </span>
-                        ))}
-                      </div>
-                      {/* Tooltip explicativo */}
-                      <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[12px] font-medium leading-relaxed max-w-[140px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
-                        Se requiere uno de estos rangos para leer antes del lanzamiento
-                        <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   
                   {canRead && (
                     <div className={`flex items-center gap-1 mt-1.5 text-[8px] font-black uppercase transition-colors ${
@@ -398,21 +472,38 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
             })}
 
             {/* Subscribe CTA in Hover - Show if any chapter user doesn't have access */}
-            {manga.chapters?.some(ch => !userHasAccess(ch)) && (
-              <a 
-                href={manga.scanUrl ? `${manga.scanUrl}/subscriptions` : '#'}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSubscribe) {
-                    e.preventDefault();
-                    onSubscribe();
-                  }
-                }}
-                className="w-full mt-1 bg-yellow-500 text-black py-2 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white transition-all shadow-lg"
-              >
-                <CreditCard size={12} /> Suscribirme
-              </a>
-            )}
+            {manga.chapters?.some(ch => !userHasAccess(ch)) && (() => {
+              // Extraer mangaSlug de mangaUrl o usar manga.id
+              const getMangaSlug = () => {
+                if (manga.mangaUrl) {
+                  const match = manga.mangaUrl.match(/\/manga\/([^\/]+)/);
+                  if (match) return match[1];
+                }
+                return manga.id || '';
+              };
+              
+              const mangaSlug = getMangaSlug();
+              const organizationSlug = manga.scanUrl?.replace('/', '') || organization?.slug || '';
+              const subscribeHref = organizationSlug && mangaSlug
+                ? `/${organizationSlug}/subscriptions?mangaSlug=${mangaSlug}`
+                : (manga.scanUrl ? `${manga.scanUrl}/subscriptions` : '#');
+              
+              return (
+                <a 
+                  href={subscribeHref}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSubscribe) {
+                      e.preventDefault();
+                      onSubscribe();
+                    }
+                  }}
+                  className="w-full mt-1 bg-yellow-500 text-black py-2 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white transition-all shadow-lg"
+                >
+                  <CreditCard size={12} /> Suscribirme
+                </a>
+              );
+            })()}
           </div>
 
           <div className="absolute bottom-3 left-4 right-4 group-hover:opacity-0 transition-opacity">

@@ -360,14 +360,15 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   };
 
   // Get chapter label
-  const getChapterLabel = (chapter: Chapter): string => {
+  const getChapterLabel = (chapter: Chapter): string | null => {
     if (!userHasAccessToChapter(chapter)) {
       if (!logged && manga.requireLogin) {
         return "Inicia sesión para leer";
       }
       const requiredPlans = getRequiredPlansForChapter(chapter);
       if (requiredPlans && requiredPlans.length > 0) {
-        return `Requiere: ${requiredPlans.map(p => p.name).join(", ")}`;
+        // Return null when there are required plans - we'll show pills instead
+        return null;
       }
       const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
       if (!isChapterReleased) {
@@ -388,6 +389,145 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       return "Continuar leyendo";
     }
     return "Ya leído";
+  };
+
+  // Get required plans for chapter (to render pills)
+  const getRequiredPlansForChapterPills = (chapter: Chapter) => {
+    return getRequiredPlansForChapter(chapter);
+  };
+
+  // Render subscription plan pills for sidebar
+  const renderSidebarSubscriptionPills = (plans: Array<{ id: number; name: string }>, type: 'unreleased' | 'released') => {
+    if (!plans || plans.length === 0) return null;
+
+    // Check if user has a specific plan
+    const userHasPlan = (planId: number) => {
+      if (!user || !organization?.id) return false;
+      return user.subscriptions?.some((sub: any) => 
+        sub.active === true &&
+        sub?.subscriptionPlan?.organizationId === organization.id &&
+        sub?.subscriptionPlan?.id === planId
+      ) || false;
+    };
+
+    // Get tooltip text based on type
+    const getTooltipText = () => {
+      if (type === 'unreleased') {
+        return "Acceso de lectura anticipada";
+      } else {
+        return "Acceso de lectura exclusiva";
+      }
+    };
+
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {plans.map((plan: any) => {
+          const hasPlan = userHasPlan(plan.id);
+          return (
+            <div key={plan.id} className="relative group/pill">
+              <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase cursor-help ${
+                hasPlan 
+                  ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                  : 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-400'
+              }`}>
+                {plan.name}
+              </span>
+              {/* Tooltip individual para cada pill */}
+              <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[8px] font-medium leading-relaxed max-w-[360px] opacity-0 group-hover/pill:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-normal">
+                {getTooltipText()}
+                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Render subscription plan pills with tooltips
+  const renderSubscriptionPlanPills = (chapter: Chapter) => {
+    const requiredPlans = getRequiredPlansForChapterPills(chapter);
+    if (!requiredPlans || requiredPlans.length === 0) return null;
+
+    const unreleasedPlans = manga.subscriptionPlansCanReadUnreleased || [];
+    const releasedPlans = manga.subscriptionPlansCanReadReleased || [];
+
+    // Create a map of all unique plans
+    const allPlansMap = new Map();
+
+    // Add unreleased plans
+    unreleasedPlans.forEach((plan: any) => {
+      allPlansMap.set(plan.id, {
+        ...plan,
+        inUnreleased: true,
+        inReleased: false
+      });
+    });
+
+    // Add or update released plans
+    releasedPlans.forEach((plan: any) => {
+      if (allPlansMap.has(plan.id)) {
+        allPlansMap.get(plan.id).inReleased = true;
+      } else {
+        allPlansMap.set(plan.id, {
+          ...plan,
+          inUnreleased: false,
+          inReleased: true
+        });
+      }
+    });
+
+    // Filter to only show required plans
+    const plansToShow = requiredPlans.map(reqPlan => {
+      const fullPlan = allPlansMap.get(reqPlan.id);
+      return fullPlan || reqPlan;
+    });
+
+    // Check if user has a specific plan
+    const userHasPlan = (planId: number) => {
+      if (!user || !organization?.id) return false;
+      return user.subscriptions?.some((sub: any) => 
+        sub.active === true &&
+        sub?.subscriptionPlan?.organizationId === organization.id &&
+        sub?.subscriptionPlan?.id === planId
+      ) || false;
+    };
+
+    // Get tooltip text for each plan
+    const getTooltipText = (plan: any) => {
+      if (plan.inUnreleased && plan.inReleased) {
+        return "Acceso de lectura exclusiva + lectura anticipada";
+      } else if (plan.inUnreleased) {
+        return "Acceso de lectura anticipada";
+      } else if (plan.inReleased) {
+        return "Acceso de lectura exclusiva";
+      }
+      return "";
+    };
+
+    return (
+      <div className="flex flex-wrap gap-1 sm:gap-1.5">
+        {plansToShow.map((plan: any) => {
+          const hasPlan = userHasPlan(plan.id);
+          return (
+            <div key={plan.id} className="relative group/pill">
+              <span className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[8px] sm:text-[9px] md:text-[10px] font-bold uppercase cursor-help ${
+                hasPlan 
+                  ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                  : 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-400'
+              }`}>
+                {plan.name}
+              </span>
+              {/* Tooltip individual para cada pill */}
+              <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[8px] font-medium leading-relaxed max-w-[200px] sm:max-w-[280px] md:max-w-[360px] opacity-0 group-hover/pill:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-normal">
+                {getTooltipText(plan)}
+                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // Helper function to get chapter URL
@@ -852,6 +992,26 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 </div>
               )}
 
+              {/* Lectura Anticipada */}
+              {manga.subscriptionPlansCanReadUnreleased && manga.subscriptionPlansCanReadUnreleased.length > 0 && (
+                <div>
+                  <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-2">
+                    Lectura Anticipada:
+                  </p>
+                  {renderSidebarSubscriptionPills(manga.subscriptionPlansCanReadUnreleased, 'unreleased')}
+                </div>
+              )}
+
+              {/* Lectura Exclusiva */}
+              {manga.subscriptionPlansCanReadReleased && manga.subscriptionPlansCanReadReleased.length > 0 && (
+                <div>
+                  <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-2">
+                    Lectura Exclusiva:
+                  </p>
+                  {renderSidebarSubscriptionPills(manga.subscriptionPlansCanReadReleased, 'released')}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 {firstChapter && (
                   <a
@@ -959,7 +1119,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 </div>
 
                 <div className="flex gap-6">
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden min-w-0">
                     {currentChapters
                       .sort((a, b) => b.number - a.number)
                       .map((chapter) => {
@@ -976,7 +1136,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                           <a
                             key={chapter.id}
                             href={chapterUrl}
-                            className={`group border rounded-3xl p-6 flex items-center justify-between transition-all cursor-pointer sticky top-20 backdrop-blur-md bg-zinc-900/95 block ${
+                            className={`group border rounded-3xl p-6 flex flex-col md:flex-row md:items-center md:justify-between transition-all cursor-pointer block min-w-0 ${
                               isUpdating
                                 ? "border-zinc-700 opacity-60"
                                 : hasAccess
@@ -988,19 +1148,19 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                 : "border-zinc-800/50 opacity-60"
                             }`}
                           >
-                            <div className="flex items-center gap-6">
-                              <div className="w-24 h-14 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50">
+                            <div className="flex items-center gap-6 min-w-0 flex-1 mb-4 md:mb-0">
+                              <div className="w-24 h-14 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0">
                                 <img
                                   src={chapter.imageUrl || manga.imageUrl || ""}
                                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                                   alt=""
                                 />
                               </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-2">
+                              <div className="space-y-1 min-w-0 flex-1">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <div className="flex items-center gap-2 min-w-0">
                                     {/* Lock/Unlock Icon with Tooltip */}
-                                    <div className="relative group/lock">
+                                    <div className="relative group/lock shrink-0">
                                       {hasAccess && (
                                         <>
                                           <LockOpen
@@ -1029,112 +1189,135 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                       )}
                                     </div>
 
-                                    <h4 className="text-white font-bold text-lg">
+                                    <h4 className="text-white font-bold text-lg truncate">
                                       Capítulo {chapter.number}
                                     </h4>
                                   </div>
 
-                                  <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-wide">
+                                  <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-wide shrink-0">
                                     {formatDate(chapter.releasedAt)}
                                   </span>
                                 </div>
-                                <p className="text-zinc-400 text-base font-bold italic tracking-tight uppercase group-hover:text-cyan-400 transition-colors">
+                                <p className="text-zinc-400 text-base font-bold italic tracking-tight uppercase group-hover:text-cyan-400 transition-colors truncate">
                                   "{chapter.title}"
                                 </p>
                               </div>
                             </div>
 
-                            <div
-                              className="flex flex-col items-end gap-3"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="flex items-center gap-4 text-zinc-500 relative">
-                                <div className="relative group/tooltip">
-                                  <button
-                                    onClick={(e) => handleShareClick(e, chapter.number)}
-                                    className="hover:text-cyan-400 transition-colors cursor-pointer"
-                                  >
-                                    <Share2 size={18} />
-                                  </button>
-                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
-                                    Compartir
-                                  </div>
-                                </div>
-                                {logged && hasAccess && (
-                                  <>
-                                    <div className="relative group/tooltip">
-                                      <button
-                                        onClick={(e) =>
-                                          toggleChapterReadStatus(e, chapter.number)
-                                        }
-                                        disabled={chaptersUpdating.has(chapter.number)}
-                                        className={`transition-colors cursor-pointer ${
-                                          chaptersUpdating.has(chapter.number)
-                                            ? "text-zinc-600 cursor-wait"
-                                            : isRead
-                                            ? "hover:text-cyan-400"
-                                            : "hover:text-cyan-400"
-                                        }`}
-                                      >
-                                        {chaptersUpdating.has(chapter.number) ? (
-                                          <div className="w-[18px] h-[18px] border-2 border-zinc-600 border-t-zinc-400 rounded-full animate-spin" />
-                                        ) : isRead ? (
-                                          <EyeOff size={18} />
-                                        ) : (
-                                          <Eye size={18} />
-                                        )}
-                                      </button>
-                                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
-                                        {chaptersUpdating.has(chapter.number)
-                                          ? "Actualizando..."
-                                          : !isRead
-                                          ? "Marcar como leído"
-                                          : "Marcar como no leído"}
-                                      </div>
-                                      {readFeedback &&
-                                        readFeedback.chapterNumber ===
-                                          chapter.number && (
-                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 z-10">
-                                            {readFeedback.message}
-                                          </div>
-                                        )}
+                            <div className="flex flex-col md:flex-col items-start md:items-end gap-3 min-w-0 flex-shrink-0">
+                              <div
+                                className="flex items-center gap-2 md:gap-4 text-zinc-500 relative shrink-0 w-full md:w-auto justify-between md:justify-end"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2 md:gap-4">
+                                  <div className="relative group/tooltip">
+                                    <button
+                                      onClick={(e) => handleShareClick(e, chapter.number)}
+                                      className="hover:text-cyan-400 transition-colors cursor-pointer"
+                                    >
+                                      <Share2 size={18} />
+                                    </button>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
+                                      Compartir
                                     </div>
-                                    {hasAccess && (
+                                  </div>
+                                  {logged && hasAccess && (
+                                    <>
                                       <div className="relative group/tooltip">
                                         <button
                                           onClick={(e) =>
-                                            downloadChapter(e, chapter.number)
+                                            toggleChapterReadStatus(e, chapter.number)
                                           }
-                                          disabled={
-                                            isDownloadingChapter ===
-                                            chapter.number
-                                          }
-                                          className="hover:text-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                          disabled={chaptersUpdating.has(chapter.number)}
+                                          className={`transition-colors cursor-pointer ${
+                                            chaptersUpdating.has(chapter.number)
+                                              ? "text-zinc-600 cursor-wait"
+                                              : isRead
+                                              ? "hover:text-cyan-400"
+                                              : "hover:text-cyan-400"
+                                          }`}
                                         >
-                                          {isDownloadingChapter ===
-                                          chapter.number ? (
-                                            <div className="w-[18px] h-[18px] border-2 border-zinc-500 border-t-cyan-400 rounded-full animate-spin" />
+                                          {chaptersUpdating.has(chapter.number) ? (
+                                            <div className="w-[18px] h-[18px] border-2 border-zinc-600 border-t-zinc-400 rounded-full animate-spin" />
+                                          ) : isRead ? (
+                                            <EyeOff size={18} />
                                           ) : (
-                                            <Download size={18} />
+                                            <Eye size={18} />
                                           )}
                                         </button>
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
-                                          Descargar capítulo
+                                          {chaptersUpdating.has(chapter.number)
+                                            ? "Actualizando..."
+                                            : !isRead
+                                            ? "Marcar como leído"
+                                            : "Marcar como no leído"}
                                         </div>
+                                        {readFeedback &&
+                                          readFeedback.chapterNumber ===
+                                            chapter.number && (
+                                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 z-10">
+                                                {readFeedback.message}
+                                              </div>
+                                            )}
                                       </div>
-                                    )}
-                                  </>
-                                )}
+                                      {hasAccess && (
+                                        <div className="relative group/tooltip">
+                                          <button
+                                            onClick={(e) =>
+                                              downloadChapter(e, chapter.number)
+                                            }
+                                            disabled={
+                                              isDownloadingChapter ===
+                                              chapter.number
+                                            }
+                                            className="hover:text-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                          >
+                                            {isDownloadingChapter ===
+                                            chapter.number ? (
+                                              <div className="w-[18px] h-[18px] border-2 border-zinc-500 border-t-cyan-400 rounded-full animate-spin" />
+                                            ) : (
+                                              <Download size={18} />
+                                            )}
+                                          </button>
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-10">
+                                            Descargar capítulo
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                {(() => {
+                                  const label = getChapterLabel(chapter);
+                                  if (label !== null) {
+                                    return (
+                                      <span
+                                        className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                                          hasAccess
+                                            ? "text-cyan-400"
+                                            : "text-yellow-400"
+                                        }`}
+                                      >
+                                        {label}
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
-                              <span
-                                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
-                                  hasAccess
-                                    ? "text-cyan-400"
-                                    : "text-yellow-400"
-                                }`}
-                              >
-                                {getChapterLabel(chapter)}
-                              </span>
+                              {/* Pills - Show at bottom on mobile, right side on desktop */}
+                              {(() => {
+                                const label = getChapterLabel(chapter);
+                                if (label === null) {
+                                  // Show pills when there are required plans
+                                  return (
+                                    <div className="w-full md:w-auto flex justify-start md:justify-end mt-0 md:mt-0">
+                                      {renderSubscriptionPlanPills(chapter)}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </a>
                         );

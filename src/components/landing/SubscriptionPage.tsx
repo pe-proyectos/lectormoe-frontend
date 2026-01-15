@@ -39,6 +39,16 @@ interface SubscriptionPageProps {
   paypalClientId?: string;
 }
 
+interface MangaData {
+  id: number;
+  slug: string;
+  title: string;
+  bannerUrl?: string | null;
+  imageUrl?: string | null;
+  subscriptionPlansCanReadUnreleased?: Array<{ id: number; name: string; canReadUnreleased?: boolean }>;
+  subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
+}
+
 declare global {
   interface Window {
     paypal?: any;
@@ -52,6 +62,47 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
   const [loadingDonors, setLoadingDonors] = useState(true);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const paypalButtonsRendered = useRef<Set<number>>(new Set());
+  const [mangaSlug, setMangaSlug] = useState<string | null>(null);
+  const [chapterNumber, setChapterNumber] = useState<string | null>(null);
+  const [mangaData, setMangaData] = useState<MangaData | null>(null);
+  const [loadingManga, setLoadingManga] = useState(false);
+
+  // Read URL query parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const slug = urlParams.get('mangaSlug') || urlParams.get('MangaSLug') || urlParams.get('MangaSlug');
+    const chapter = urlParams.get('chapterNumber');
+    
+    if (slug) {
+      setMangaSlug(slug);
+    }
+    if (chapter) {
+      setChapterNumber(chapter);
+    }
+  }, []);
+
+  // Fetch manga data if mangaSlug exists
+  useEffect(() => {
+    const fetchMangaData = async () => {
+      if (!mangaSlug || !organization?.slug) return;
+      
+      try {
+        setLoadingManga(true);
+        const result = await callAPI(`/api/manga-custom/${mangaSlug}`);
+        if (result && result.id) {
+          setMangaData(result);
+        }
+      } catch (error) {
+        console.error('Error fetching manga data:', error);
+      } finally {
+        setLoadingManga(false);
+      }
+    };
+
+    if (mangaSlug) {
+      fetchMangaData();
+    }
+  }, [mangaSlug, organization?.slug]);
 
   // Load PayPal SDK
   useEffect(() => {
@@ -378,6 +429,44 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
     );
   };
 
+  // Get extra benefit text based on mangaSlug, chapterNumber, and plan properties
+  const getExtraBenefitText = (plan: SubscriptionPlan): string | null => {
+    if (!mangaSlug || !mangaData) return null;
+    
+    // Check if this plan is in the manga's subscription plans arrays
+    const unreleasedPlans = mangaData.subscriptionPlansCanReadUnreleased || [];
+    const releasedPlans = mangaData.subscriptionPlansCanReadReleased || [];
+    
+    // Check if the plan is in unreleased plans
+    const isInUnreleased = unreleasedPlans.some(p => p.id === plan.id);
+    // Check if the plan is in released plans
+    const isInReleased = releasedPlans.some(p => p.id === plan.id);
+    
+    // Only add benefit if the plan is in at least one of the arrays
+    if (!isInUnreleased && !isInReleased) return null;
+    
+    const mangaName = mangaData.title || mangaSlug.toUpperCase();
+    
+    // Determine access type based on which arrays the plan is in
+    if (chapterNumber) {
+      if (isInUnreleased && isInReleased) {
+        return `Acceso exclusivo y anticipado al capitulo ${chapterNumber} de ${mangaName}`;
+      } else if (isInUnreleased) {
+        return `Acceso anticipado al capitulo ${chapterNumber} de ${mangaName}`;
+      } else {
+        return `Acceso exclusivo al capitulo ${chapterNumber} de ${mangaName}`;
+      }
+    } else {
+      if (isInUnreleased && isInReleased) {
+        return `Acceso exclusivo y anticipado a ${mangaName}`;
+      } else if (isInUnreleased) {
+        return `Acceso anticipado a ${mangaName}`;
+      } else {
+        return `Acceso exclusivo a ${mangaName}`;
+      }
+    }
+  };
+
   // Render PayPal buttons when plans are loaded and PayPal SDK is ready
   useEffect(() => {
     if (!paypalLoaded || !logged || subscriptionPlans.length === 0 || !window.paypal) {
@@ -402,8 +491,29 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paypalLoaded, logged, subscriptionPlans.length, user?.id]);
 
+  // Get banner style for gradient background
+  const getBannerStyle = () => {
+    const bannerImage = mangaData?.bannerUrl || mangaData?.imageUrl;
+    if (!bannerImage || !mangaSlug) return {};
+    // Use banner as background if mangaSlug exists (with or without chapterNumber)
+    return {
+      backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url(${bannerImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      backgroundRepeat: 'no-repeat',
+    };
+  };
+
+  // Check if we should show background banner
+  const hasBackgroundBanner = mangaSlug && (mangaData?.bannerUrl || mangaData?.imageUrl);
+  const bannerImage = mangaData?.bannerUrl || mangaData?.imageUrl;
+
   return (
-    <div className="pt-32 pb-24 min-h-screen bg-zinc-950 relative overflow-hidden">
+    <div 
+      className={`pt-32 pb-24 min-h-screen relative ${hasBackgroundBanner ? '' : 'bg-zinc-950'}`}
+      style={getBannerStyle()}
+    >
         {/* Decorative Glows */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 blur-[120px] rounded-full" />
@@ -447,6 +557,10 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                   ? plan.description.split(/[.\n]/).filter(line => line.trim()).map(line => line.trim())
                   : ['Acceso a contenido exclusivo'];
                 
+                // Get extra benefit if mangaSlug exists
+                const extraBenefit = getExtraBenefitText(plan);
+                const allBenefits = extraBenefit ? [...benefits, extraBenefit] : benefits;
+                
                 return (
                   <div 
                     key={plan.id}
@@ -464,14 +578,17 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                     </div>
 
                     <div className="space-y-4 mb-10 flex-1">
-                      {benefits.map((benefit, bIdx) => (
-                        <div key={bIdx} className="flex gap-3">
-                          <div className="mt-1 shrink-0 w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center text-cyan-500">
-                            <Check size={10} />
+                      {allBenefits.map((benefit, bIdx) => {
+                        const isExtraBenefit = extraBenefit && bIdx === allBenefits.length - 1;
+                        return (
+                          <div key={bIdx} className="flex gap-3">
+                            <div className={`mt-1 shrink-0 w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center ${isExtraBenefit ? 'text-yellow-500' : 'text-cyan-500'}`}>
+                              <Check size={10} />
+                            </div>
+                            <span className={`text-xs font-medium leading-snug ${isExtraBenefit ? 'text-yellow-400 font-bold' : 'text-zinc-300'}`}>{benefit}</span>
                           </div>
-                          <span className="text-zinc-300 text-xs font-medium leading-snug">{benefit}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {!logged ? (
