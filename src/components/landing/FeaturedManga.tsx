@@ -96,6 +96,8 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
               chapters: chaptersWithReadStatus,
               userHasSubscription: userHasSubscription || false,
               organizationId: (manga as any).organizationId, // Pass organizationId for subscription checks
+              subscriptionPlansCanReadUnreleased: (manga as any).subscriptionPlansCanReadUnreleased,
+              subscriptionPlansCanReadReleased: (manga as any).subscriptionPlansCanReadReleased,
             }}
             onClick={() => {
               // Prefer mangaUrl (direct link to manga page), fallback to scanUrl

@@ -3,7 +3,6 @@ export type Chapter = {
   number: number;
   title: string;
   releasedAt: string;
-  subscribersOnly: boolean;
   chapterUrl: string;
   isRead?: boolean;
 };

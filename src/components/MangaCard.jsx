@@ -56,11 +56,25 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
     return formatDateUtil(date, organization.language || 'es');
   };
 
-  // Check if user can read unreleased chapters
-  const canReadUnreleased = () => {
-    if (!user) return false;
+  // Check if user can read a specific chapter
+  const userHasAccessToChapter = (chapter) => {
+    if (!chapter) return true;
 
-    // Check user permissions
+    if (!user) {
+      // Si el manga requiere login, no tiene acceso
+      if (manga?.requireLogin) return false;
+      
+      // Verificar si el capítulo fue lanzado y si requiere planes específicos
+      const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+      if (isChapterReleased) {
+        const hasCanReadReleasedPlans = (manga?.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+        return !hasCanReadReleasedPlans; // Si no hay planes específicos, todos pueden leer
+      } else {
+        return false; // Capítulo no lanzado, usuarios no logueados no pueden leer
+      }
+    }
+
+    // Check user permissions (staff)
     const permissions = user.permissions?.find(
       (permission) => permission.organizationId === organization?.id
     ) || {};
@@ -68,20 +82,74 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
     if (permissions.canEditChapter === true) return true;
     if (permissions.canEditPage === true) return true;
 
-    // Check subscriptions
-    for (const subscription of user?.subscriptions || []) {
-      // Verificar que la suscripción esté activa y sea de la organización actual
-      if (
-        subscription.active === true &&
-        subscription?.subscriptionPlan?.organizationId === organization?.id
-      ) {
-        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
-          return true;
+    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+
+    if (isChapterReleased) {
+      // Capítulo ya fue lanzado
+      const hasCanReadReleasedPlans = (manga?.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+      if (hasCanReadReleasedPlans) {
+        // Solo usuarios con planes en subscriptionPlansCanReadReleased pueden leer
+        for (const subscription of user?.subscriptions || []) {
+          if (
+            subscription.active === true &&
+            subscription?.subscriptionPlan?.organizationId === organization?.id
+          ) {
+            const hasPlan = manga?.subscriptionPlansCanReadReleased?.find(
+              (plan) => plan.id === subscription?.subscriptionPlan?.id
+            );
+            if (hasPlan) return true;
+          }
         }
+        return false;
+      } else {
+        // subscriptionPlansCanReadReleased está vacío → Todos pueden leer
+        return true;
+      }
+    } else {
+      // Capítulo NO ha sido lanzado
+      const hasCanReadUnreleasedPlans = (manga?.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+      if (hasCanReadUnreleasedPlans) {
+        // Solo usuarios con planes en subscriptionPlansCanReadUnreleased pueden leer
+        for (const subscription of user?.subscriptions || []) {
+          if (
+            subscription.active === true &&
+            subscription?.subscriptionPlan?.organizationId === organization?.id
+          ) {
+            const hasPlan = manga?.subscriptionPlansCanReadUnreleased?.find(
+              (plan) => plan.id === subscription?.subscriptionPlan?.id
+            );
+            if (hasPlan) return true;
+          }
+        }
+        return false;
+      } else {
+        // subscriptionPlansCanReadUnreleased está vacío → Nadie puede leer antes de la fecha
+        return false;
       }
     }
+  };
 
-    return false;
+  // Get access message for a chapter
+  const getChapterAccessMessage = (chapter) => {
+    if (!chapter) return null;
+    
+    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+    
+    if (isChapterReleased) {
+      const hasCanReadReleasedPlans = (manga?.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+      if (hasCanReadReleasedPlans && manga?.subscriptionPlansCanReadReleased) {
+        const planNames = manga.subscriptionPlansCanReadReleased.map(p => p.name).join(", ");
+        return `Requiere: ${planNames}`;
+      }
+      return null; // Todos pueden leer
+    } else {
+      const hasCanReadUnreleasedPlans = (manga?.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+      if (hasCanReadUnreleasedPlans && manga?.subscriptionPlansCanReadUnreleased) {
+        const planNames = manga.subscriptionPlansCanReadUnreleased.map(p => p.name).join(", ");
+        return `Requiere: ${planNames}`;
+      }
+      return "Aún no publicado";
+    }
   };
 
   const shouldBlur = manga.isNSFW === true && (!user?.birthdate || !isAdult(user?.birthdate));
@@ -219,9 +287,14 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
                           }
                         }}
                       >
-                        {lastChapters[0]?.subscribersOnly && !canReadUnreleased()
-                          ? _("only_for_subscribers")
-                          : formatDate(lastChapters[0]?.releasedAt)}
+                        {(() => {
+                          const hasAccess = userHasAccessToChapter(lastChapters[0]);
+                          if (!hasAccess) {
+                            const accessMsg = getChapterAccessMessage(lastChapters[0]);
+                            return accessMsg || _("only_for_subscribers");
+                          }
+                          return formatDate(lastChapters[0]?.releasedAt);
+                        })()}
                       </a>
                     </div>
                   )}
@@ -248,9 +321,14 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
                           }
                         }}
                       >
-                        {lastChapters[1]?.subscribersOnly && !canReadUnreleased()
-                          ? _("only_for_subscribers")
-                          : formatDate(lastChapters[1]?.releasedAt)}
+                        {(() => {
+                          const hasAccess = userHasAccessToChapter(lastChapters[1]);
+                          if (!hasAccess) {
+                            const accessMsg = getChapterAccessMessage(lastChapters[1]);
+                            return accessMsg || _("only_for_subscribers");
+                          }
+                          return formatDate(lastChapters[1]?.releasedAt);
+                        })()}
                       </a>
                     </div>
                   )}

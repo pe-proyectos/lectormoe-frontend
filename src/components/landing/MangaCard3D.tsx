@@ -8,7 +8,6 @@ interface Chapter {
   number: number;
   title: string;
   releasedAt: string;
-  subscribersOnly: boolean;
   chapterUrl: string;
   isRead?: boolean; // Will be set by the parent component based on user history
 }
@@ -33,6 +32,8 @@ interface Manga {
   chapters?: Chapter[]; // Last 2 chapters
   userHasSubscription?: boolean; // Whether user has access to subscriber-only content
   organizationId?: number; // Organization ID for subscription checks (used in landing page)
+  subscriptionPlansCanReadUnreleased?: Array<{ id: number; name: string }>;
+  subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
 }
 
 interface Props {
@@ -80,13 +81,29 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
     return false;
   }) || {};
 
+  // Helper function to get required plans for a chapter
+  const getRequiredPlansForChapter = (chapter: Chapter): Array<{ id: number; name: string }> | null => {
+    const isChapterReleased = chapter.releasedAt 
+      ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+      : false;
+    
+    if (isChapterReleased) {
+      const hasCanReadReleasedPlans = (manga.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+      if (hasCanReadReleasedPlans) {
+        return manga.subscriptionPlansCanReadReleased || [];
+      }
+      return null; // Todos pueden leer
+    } else {
+      const hasCanReadUnreleasedPlans = (manga.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+      if (hasCanReadUnreleasedPlans) {
+        return manga.subscriptionPlansCanReadUnreleased || [];
+      }
+      return []; // Nadie puede leer
+    }
+  };
+
   // Helper function to check if user has access (considering both subscription and permissions)
   const userHasAccess = (chapter: Chapter): boolean => {
-    // If chapter is not subscriber-only, everyone can access
-    if (!chapter.subscribersOnly) {
-      return true;
-    }
-
     // Check user permissions first (highest priority)
     if (userPermissions?.canReadUnreleased === true) {
       return true;
@@ -98,42 +115,86 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
       return true;
     }
 
-    // Check if user has subscription with canReadUnreleased for this organization
-    if (user?.subscriptions && organizationId) {
-      for (const subscription of user.subscriptions) {
-        if (
-          subscription?.subscriptionPlan?.canReadUnreleased === true && 
-          subscription.active === true &&
-          subscription?.subscriptionPlan?.organizationId === organizationId
-        ) {
-          return true;
+    const isChapterReleased = chapter.releasedAt 
+      ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+      : false;
+
+    if (isChapterReleased) {
+      // Capítulo ya fue lanzado
+      const hasCanReadReleasedPlans = (manga.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+
+      if (hasCanReadReleasedPlans) {
+        // Solo usuarios con planes en subscriptionPlansCanReadReleased pueden leer
+        if (!user || !organizationId) return false;
+
+        for (const subscription of user.subscriptions || []) {
+          if (
+            subscription.active === true &&
+            subscription?.subscriptionPlan?.organizationId === organizationId
+          ) {
+            const hasPlan = manga.subscriptionPlansCanReadReleased?.find(
+              (plan) => plan.id === subscription?.subscriptionPlan?.id
+            );
+            if (hasPlan) return true;
+          }
         }
+        return false;
+      } else {
+        // subscriptionPlansCanReadReleased está vacío → Todos pueden leer
+        return true;
+      }
+    } else {
+      // Capítulo NO ha sido lanzado
+      const hasCanReadUnreleasedPlans = (manga.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+
+      if (hasCanReadUnreleasedPlans) {
+        // Solo usuarios con planes en subscriptionPlansCanReadUnreleased pueden leer
+        if (!user || !organizationId) return false;
+
+        for (const subscription of user.subscriptions || []) {
+          if (
+            subscription.active === true &&
+            subscription?.subscriptionPlan?.organizationId === organizationId
+          ) {
+            const hasPlan = manga.subscriptionPlansCanReadUnreleased?.find(
+              (plan) => plan.id === subscription?.subscriptionPlan?.id
+            );
+            if (hasPlan) return true;
+          }
+        }
+        return false;
+      } else {
+        // subscriptionPlansCanReadUnreleased está vacío → Nadie puede leer antes de la fecha
+        return false;
       }
     }
-
-    // Fallback: check manga.userHasSubscription (for backward compatibility)
-    if (manga.userHasSubscription) {
-      return true;
-    }
-
-    // No access
-    return false;
   };
 
   // Helper function to get access reason message
   const getAccessReason = (chapter: Chapter): string => {
-    if (!chapter.subscribersOnly) return '';
-    
     if (userPermissions?.canReadUnreleased) {
       return 'Tienes acceso por permisos especiales de lectura anticipada';
     }
     if (userPermissions?.canEditChapter || userPermissions?.canEditPage) {
       return 'Tienes acceso por permisos de edición';
     }
-    if (manga.userHasSubscription) {
-      return 'Tienes acceso premium activo';
+
+    const isChapterReleased = chapter.releasedAt 
+      ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+      : false;
+    const requiredPlans = getRequiredPlansForChapter(chapter);
+
+    if (isChapterReleased) {
+      if (requiredPlans && requiredPlans.length > 0) {
+        return `Requiere uno de los siguientes planes: ${requiredPlans.map(p => p.name).join(", ")}`;
+      }
+      return ''; // Todos pueden leer
+    } else {
+      if (requiredPlans && requiredPlans.length > 0) {
+        return `Requiere uno de los siguientes planes para acceso anticipado: ${requiredPlans.map(p => p.name).join(", ")}`;
+      }
+      return 'Este capítulo aún no ha sido publicado';
     }
-    return '';
   };
 
   const handleLockClick = (e: React.MouseEvent, chapter: Chapter) => {
@@ -193,8 +254,8 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
           />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
           
-          {/* Lock Icon for Sub only - Show locked if no access, unlocked if has access */}
-          {manga.chapters && manga.chapters.length > 0 && manga.chapters[0].subscribersOnly && (
+          {/* Lock Icon - Show locked if no access, unlocked if has access */}
+          {manga.chapters && manga.chapters.length > 0 && !userHasAccess(manga.chapters[0]) && (
             userHasAccess(manga.chapters[0]) ? (
               <a 
                 href={manga.chapters[0].chapterUrl}
@@ -241,11 +302,9 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
               const isLatest = index === 0;
               const canAccess = userHasAccess(chapter);
               const isReleased = new Date(chapter.releasedAt).getTime() <= new Date().getTime();
-              // canRead: chapter is available to read
-              // - Public chapters: if released
-              // - Subscriber-only chapters: if user has access (incluso si no está publicado)
-              const canRead = (!chapter.subscribersOnly && isReleased) || (chapter.subscribersOnly && canAccess);
-              const needsSubscription = chapter.subscribersOnly && !canAccess;
+              // canRead: chapter is available to read if user has access
+              const canRead = canAccess;
+              const needsSubscription = !canAccess;
               const href = canRead 
                 ? chapter.chapterUrl 
                 : (needsSubscription && manga.scanUrl ? `${manga.scanUrl}/subscriptions` : '#');
@@ -269,27 +328,37 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                   <div className="flex items-center justify-between mb-0.5">
                     <span className={`${
                       isLatest 
-                        ? (needsSubscription ? 'text-yellow-500' : (chapter.subscribersOnly ? 'text-green-500' : 'text-cyan-400'))
+                        ? (needsSubscription ? 'text-yellow-500' : (canAccess ? 'text-green-500' : 'text-cyan-400'))
                         : 'text-zinc-400'
                     } font-black text-[10px] uppercase flex items-center gap-1`}>
                       Cap. {chapter.number} 
-                      {chapter.subscribersOnly && (
-                        canAccess ? (
-                          <button
-                            type="button"
-                            className="cursor-pointer hover:scale-110 transition-transform inline-block bg-transparent border-none p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              handleLockClick(e, chapter);
-                            }}
-                            title={getAccessReason(chapter)}
-                          >
-                            <Unlock size={8} />
-                          </button>
-                        ) : (
+                      {!canAccess && (
+                        <button
+                          type="button"
+                          className="cursor-pointer hover:scale-110 transition-transform inline-block bg-transparent border-none p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleLockClick(e, chapter);
+                          }}
+                          title={getAccessReason(chapter)}
+                        >
                           <Lock size={8} />
-                        )
+                        </button>
+                      )}
+                      {canAccess && (
+                        <button
+                          type="button"
+                          className="cursor-pointer hover:scale-110 transition-transform inline-block bg-transparent border-none p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleLockClick(e, chapter);
+                          }}
+                          title={getAccessReason(chapter)}
+                        >
+                          <Unlock size={8} />
+                        </button>
                       )}
                     </span>
                     {isLatest && (
@@ -323,8 +392,8 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
               );
             })}
 
-            {/* Subscribe CTA in Hover - Show if any chapter is subscriber-only and user doesn't have access */}
-            {manga.chapters?.some(ch => ch.subscribersOnly && !userHasAccess(ch)) && (
+            {/* Subscribe CTA in Hover - Show if any chapter user doesn't have access */}
+            {manga.chapters?.some(ch => !userHasAccess(ch)) && (
               <a 
                 href={manga.scanUrl ? `${manga.scanUrl}/subscriptions` : '#'}
                 onClick={(e) => {
@@ -350,17 +419,15 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                 (() => {
                   const chapter = manga.chapters[0];
                   const hasAccess = userHasAccess(chapter);
-                  const isSubscriberOnly = chapter.subscribersOnly;
-                  const canLink = !isSubscriberOnly || hasAccess;
+                  const canLink = hasAccess;
                   
                   const content = (
                     <>
                       Cap. {chapter.number}
-                      {isSubscriberOnly && (
-                        hasAccess ? (
-                          <span 
-                            className="cursor-pointer hover:scale-110 transition-transform inline-flex items-center"
-                            onClick={(e) => {
+                      {hasAccess ? (
+                        <span 
+                          className="cursor-pointer hover:scale-110 transition-transform inline-flex items-center"
+                          onClick={(e) => {
                               e.stopPropagation();
                               handleLockClick(e, chapter);
                             }}
@@ -371,7 +438,7 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                         ) : (
                           <Lock size={10} />
                         )
-                      )}
+                      }
                     </>
                   );
                   
@@ -381,9 +448,9 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                         href={chapter.chapterUrl}
                         onClick={(e) => e.stopPropagation()}
                         className={`font-black flex items-center gap-1 hover:underline ${
-                          isSubscriberOnly && !hasAccess 
+                          !hasAccess 
                             ? 'text-yellow-500' 
-                            : (isSubscriberOnly ? 'text-green-500' : 'text-white')
+                            : 'text-green-500'
                         }`}
                       >
                         {content}
@@ -393,9 +460,9 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                   
                   return (
                     <span className={`font-black flex items-center gap-1 ${
-                      isSubscriberOnly && !hasAccess 
+                      !hasAccess 
                         ? 'text-yellow-500' 
-                        : (isSubscriberOnly ? 'text-green-500' : 'text-white')
+                        : 'text-green-500'
                     }`}>
                       {content}
                     </span>

@@ -15,7 +15,6 @@ export function AdminMangaCustomDialog({
   setOpen,
   mangaCustom,
   setMangaCustom,
-  subscriptionPlans,
 }) {
   const _ = getTranslator(language);
 
@@ -61,7 +60,6 @@ export function AdminMangaCustomDialog({
     setCoverImageFile(mangaCustom?.imageUrl || null);
     setBannerImageFile(mangaCustom?.bannerUrl || null);
     setSelectedGenres(mangaCustom?.genres || []);
-    setSelectedSubscriptionPlans(mangaCustom?.subscriptionPlans || []);
   }, [mangaCustom]);
 
   useEffect(() => {
@@ -206,7 +204,6 @@ export function AdminMangaCustomDialog({
             isSimulRelease,
             isNSFW,
             genreIds: selectedGenres.map((genre) => genre.id),
-            subscriptionPlanIds: selectedSubscriptionPlans.map((plan) => plan.id),
             image: imageKey,
             banner: bannerKey,
           }),
@@ -388,25 +385,6 @@ export function AdminMangaCustomDialog({
                 selectedGenres.length >= 4 ? true : false
               }
               onChange={(event, newValue) => setSelectedGenres(newValue)}
-            />
-          </div>
-        </div>
-        <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-          {_("subscription_plans")}
-        </label>
-        <div className="flex">
-          <div className="grow">
-            <Autocomplete
-              multiple
-              options={subscriptionPlans}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              getOptionLabel={(option) => option.name}
-              label={_("subscription_plans")}
-              placeholder={_("subscription_plans") + "..."}
-              value={selectedSubscriptionPlans}
-              onChange={(event, newValue) =>
-                setSelectedSubscriptionPlans(newValue)
-              }
             />
           </div>
         </div>

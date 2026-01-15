@@ -65,7 +65,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       cover: initialMangaCustom?.imageUrl || '',
       banner: initialMangaCustom?.bannerUrl || '',
       genres: initialMangaCustom?.genres || [],
-      subscriptionPlans: initialMangaCustom?.subscriptionPlans || []
+      subscriptionPlansCanReadUnreleased: initialMangaCustom?.subscriptionPlansCanReadUnreleased || [],
+      subscriptionPlansCanReadReleased: initialMangaCustom?.subscriptionPlansCanReadReleased || []
     };
   };
 
@@ -75,7 +76,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     number: '',
     title: '',
     releaseDate: '',
-    isSubscriberOnly: false,
     thumbnail: null as File | string | null,
   });
   
@@ -92,6 +92,177 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [genres, setGenres] = useState<any[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const [infoLoading, setInfoLoading] = useState(false);
+
+  // Función para validar las suscripciones
+  const validateSubscriptions = () => {
+    const unreleasedPlans = formData.subscriptionPlansCanReadUnreleased || [];
+    const releasedPlans = formData.subscriptionPlansCanReadReleased || [];
+    
+    // Si ambos tienen valores, verificar que todos los rangos de acceso anticipado estén en capítulos publicados
+    if (unreleasedPlans.length > 0 && releasedPlans.length > 0) {
+      const unreleasedIds = new Set(unreleasedPlans.map((p: any) => p.id));
+      const releasedIds = new Set(releasedPlans.map((p: any) => p.id));
+      
+      // Encontrar rangos que están en acceso anticipado pero NO en capítulos publicados
+      const missingInReleased = unreleasedPlans.filter((p: any) => !releasedIds.has(p.id));
+      
+      if (missingInReleased.length > 0) {
+        return {
+          isValid: false,
+          error: missingInReleased.map((p: any) => p.name || p.title || `Plan ${p.id}`).join(' y ')
+        };
+      }
+    }
+    
+    return { isValid: true, error: null };
+  };
+
+  // Función para generar el texto explicativo de las combinaciones de suscripciones
+  const getSubscriptionExplanation = () => {
+    const unreleasedPlans = formData.subscriptionPlansCanReadUnreleased || [];
+    const releasedPlans = formData.subscriptionPlansCanReadReleased || [];
+    
+    // Primero verificar validación
+    const validation = validateSubscriptions();
+    if (!validation.isValid) {
+      const errorRanges = validation.error.split(' y ');
+      return {
+        content: (
+          <>
+            Error: Los rangos{' '}
+            {errorRanges.map((range, idx) => (
+              <React.Fragment key={idx}>
+                <span className="font-bold text-yellow-400">{range}</span>
+                {idx < errorRanges.length - 1 && ' y '}
+              </React.Fragment>
+            ))}{' '}
+            están en "Suscripciones con Acceso Anticipado" pero no están en "Suscripciones que pueden leer capítulos publicados". Todos los rangos con acceso anticipado deben estar también en capítulos publicados.
+          </>
+        ),
+        isError: true
+      };
+    }
+    
+    // Ambos vacíos
+    if (unreleasedPlans.length === 0 && releasedPlans.length === 0) {
+      return {
+        content: "Todos los usuarios podrán leer los capítulos después de su fecha de lanzamiento.",
+        isError: false
+      };
+    }
+    
+    // Solo acceso anticipado tiene valores
+    if (unreleasedPlans.length > 0 && releasedPlans.length === 0) {
+      return {
+        content: (
+          <>
+            Todos los usuarios pueden leer los capítulos después de su fecha de lanzamiento. Los usuarios con{' '}
+            {unreleasedPlans.map((p: any, idx: number) => (
+              <React.Fragment key={p.id}>
+                <span className="font-bold text-yellow-400">{p.name || p.title || `Plan ${p.id}`}</span>
+                {idx < unreleasedPlans.length - 1 && ' y '}
+              </React.Fragment>
+            ))}{' '}
+            pueden leer los capítulos antes de su fecha de lanzamiento.
+          </>
+        ),
+        isError: false
+      };
+    }
+    
+    // Solo capítulos publicados tiene valores
+    if (unreleasedPlans.length === 0 && releasedPlans.length > 0) {
+      return {
+        content: (
+          <>
+            Solo los usuarios con{' '}
+            {releasedPlans.map((p: any, idx: number) => (
+              <React.Fragment key={p.id}>
+                <span className="font-bold text-yellow-400">{p.name || p.title || `Plan ${p.id}`}</span>
+                {idx < releasedPlans.length - 1 && ' y '}
+              </React.Fragment>
+            ))}{' '}
+            pueden leer los capítulos después de su fecha de lanzamiento.
+          </>
+        ),
+        isError: false
+      };
+    }
+    
+    // Ambos tienen valores
+    const unreleasedIds = new Set(unreleasedPlans.map((p: any) => p.id));
+    const releasedIds = new Set(releasedPlans.map((p: any) => p.id));
+    
+    // Rangos que están solo en released
+    const onlyReleased = releasedPlans.filter((p: any) => !unreleasedIds.has(p.id));
+    // Rangos que están solo en unreleased
+    const onlyUnreleased = unreleasedPlans.filter((p: any) => !releasedIds.has(p.id));
+    // Rangos que están en ambos
+    const inBoth = unreleasedPlans.filter((p: any) => releasedIds.has(p.id));
+    
+    const parts: React.ReactNode[] = [];
+    
+    if (onlyReleased.length > 0) {
+      parts.push(
+        <>
+          Solo los usuarios con{' '}
+          {onlyReleased.map((p: any, idx: number) => (
+            <React.Fragment key={p.id}>
+              <span className="font-bold text-yellow-400">{p.name || p.title || `Plan ${p.id}`}</span>
+              {idx < onlyReleased.length - 1 && ' y '}
+            </React.Fragment>
+          ))}{' '}
+          pueden leer los capítulos después de su fecha de lanzamiento.
+        </>
+      );
+    }
+    
+    if (inBoth.length > 0) {
+      parts.push(
+        <>
+          Los usuarios con{' '}
+          {inBoth.map((p: any, idx: number) => (
+            <React.Fragment key={p.id}>
+              <span className="font-bold text-yellow-400">{p.name || p.title || `Plan ${p.id}`}</span>
+              {idx < inBoth.length - 1 && ' y '}
+            </React.Fragment>
+          ))}{' '}
+          pueden leer los capítulos después de su fecha de lanzamiento y también antes de su fecha de lanzamiento.
+        </>
+      );
+    }
+    
+    if (onlyUnreleased.length > 0) {
+      parts.push(
+        <>
+          Los usuarios con{' '}
+          {onlyUnreleased.map((p: any, idx: number) => (
+            <React.Fragment key={p.id}>
+              <span className="font-bold text-yellow-400">{p.name || p.title || `Plan ${p.id}`}</span>
+              {idx < onlyUnreleased.length - 1 && ' y '}
+            </React.Fragment>
+          ))}{' '}
+          pueden leer los capítulos antes de su fecha de lanzamiento.
+        </>
+      );
+    }
+    
+    return {
+      content: parts.length > 0 ? (
+        <>
+          {parts.map((part, idx) => (
+            <React.Fragment key={idx}>
+              {part}
+              {idx < parts.length - 1 && ' '}
+            </React.Fragment>
+          ))}
+        </>
+      ) : (
+        "Configuración de suscripciones aplicada."
+      ),
+      isError: false
+    };
+  };
 
   const bannerRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -147,7 +318,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         cover: initialMangaCustom?.imageUrl || '',
         banner: initialMangaCustom?.bannerUrl || '',
         genres: initialMangaCustom?.genres || [],
-        subscriptionPlans: initialMangaCustom?.subscriptionPlans || []
+        subscriptionPlansCanReadUnreleased: initialMangaCustom?.subscriptionPlansCanReadUnreleased || [],
+        subscriptionPlansCanReadReleased: initialMangaCustom?.subscriptionPlansCanReadReleased || []
       });
       setMangaCustom(initialMangaCustom);
     }
@@ -279,7 +451,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         number: chapter.number.toString(),
         title: chapter.title || '',
         releaseDate: chapter.releasedAt ? new Date(chapter.releasedAt).toISOString().slice(0, 16) : '',
-        isSubscriberOnly: chapter.subscribersOnly || false,
         thumbnail: chapter.imageUrl || null,
       });
 
@@ -749,6 +920,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       return;
     }
 
+    // Validar suscripciones
+    const validation = validateSubscriptions();
+    if (!validation.isValid) {
+      toast.error(`Error de validación: Los rangos ${validation.error} están en "Suscripciones con Acceso Anticipado" pero no están en "Suscripciones que pueden leer capítulos publicados".`);
+      return;
+    }
+
     setInfoLoading(true);
     try {
       // Upload cover and banner if they are File objects
@@ -820,7 +998,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           isSimulRelease: formData.isSimulRelease,
           isNSFW: formData.isNSFW,
           genreIds: formData.genres.map((g: any) => g.id),
-          subscriptionPlanIds: formData.subscriptionPlans.map((p: any) => p.id),
+          subscriptionPlanIdsCanReadUnreleased: formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [],
+          subscriptionPlanIdsCanReadReleased: formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [],
           image: coverKey,
           banner: bannerKey,
         }),
@@ -947,7 +1126,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             releasedAt: newChapter.releaseDate 
               ? new Date(newChapter.releaseDate).toISOString() 
               : new Date().toISOString(),
-            subscribersOnly: newChapter.isSubscriberOnly,
             pages: pageKeys,
             singlePages: singlePageIndexes,
             ...(imageKey ? { image: imageKey } : {}),
@@ -1436,22 +1614,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </div>
                     </div>
 
-                    {/* Subscriber Only Toggle */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Solo para suscriptores</span>
-                         <div 
-                          onClick={() => setNewChapter({...newChapter, isSubscriberOnly: !newChapter.isSubscriberOnly})}
-                          className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${newChapter.isSubscriberOnly ? 'bg-yellow-500' : 'bg-zinc-800'}`}
-                         >
-                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${newChapter.isSubscriberOnly ? 'right-1' : 'left-1'}`} />
-                         </div>
-                      </div>
-                      <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
-                        Si se activa, los no suscriptores no podrán leer este capítulo sin importar la fecha de salida
-                      </p>
-                    </div>
-
                     {/* Release Date */}
                     <div className="space-y-3">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
@@ -1486,7 +1648,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             number: '',
                             title: '',
                             releaseDate: '',
-                            isSubscriberOnly: false,
                             thumbnail: null,
                           });
                           setPages([]);
@@ -1572,20 +1733,56 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     />
                   </div>
 
-                  {/* Suscripciones */}
+                  {/* Suscripciones con Acceso Anticipado */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Suscripciones</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Suscripciones con Acceso Anticipado</label>
+                    <p className="text-[9px] text-zinc-500 font-medium leading-relaxed ml-1">
+                      Selecciona los planes de suscripción que podrán leer capítulos antes de su fecha de publicación. Si está vacío, nadie podrá leer los capítulos antes de la fecha de publicación.
+                    </p>
                     <Autocomplete
                       multiple
                       options={subscriptionPlans || []}
-                      value={formData.subscriptionPlans || []}
-                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlans: (newValue as any[]) || []})}
+                      value={formData.subscriptionPlansCanReadUnreleased || []}
+                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlansCanReadUnreleased: (newValue as any[]) || []})}
                       getOptionLabel={(option: any) => option?.name || option?.title || String(option || '')}
                       isOptionEqualToValue={(option: any, value: any) => option?.id === value?.id}
-                      placeholder="Suscripciones..."
+                      placeholder="Suscripciones con Acceso Anticipado..."
                       label=""
                     />
                   </div>
+
+                  {/* Suscripciones que pueden leer capítulos publicados */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Suscripciones que pueden leer capítulos publicados</label>
+                    <p className="text-[9px] text-zinc-500 font-medium leading-relaxed ml-1">
+                      Selecciona los planes de suscripción que podrán leer los capítulos después de su fecha de publicación. Si está vacío, todos los usuarios (con o sin suscripción) podrán leer los capítulos después de la fecha de publicación.
+                    </p>
+                    <Autocomplete
+                      multiple
+                      options={subscriptionPlans || []}
+                      value={formData.subscriptionPlansCanReadReleased || []}
+                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlansCanReadReleased: (newValue as any[]) || []})}
+                      getOptionLabel={(option: any) => option?.name || option?.title || String(option || '')}
+                      isOptionEqualToValue={(option: any, value: any) => option?.id === value?.id}
+                      placeholder="Suscripciones que pueden leer capítulos publicados..."
+                      label=""
+                    />
+                  </div>
+
+                  {/* Texto explicativo dinámico */}
+                  {(() => {
+                    const explanation = getSubscriptionExplanation();
+                    return (
+                      <div className={`space-y-2 p-4 bg-zinc-950/50 rounded-xl border ${explanation.isError ? 'border-red-500/50' : 'border-cyan-500/20'}`}>
+                        <div className="flex items-start gap-2">
+                          <Info size={16} className={`shrink-0 mt-0.5 ${explanation.isError ? 'text-red-500' : 'text-cyan-500'}`} />
+                          <div className={`text-xs font-medium leading-relaxed ${explanation.isError ? 'text-red-400' : 'text-cyan-400'}`}>
+                            {explanation.content}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Estado de la obra */}
                   <div className="space-y-3">
@@ -1764,9 +1961,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             <td className="px-8 py-6 text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">{ch.title || `Capítulo ${ch.number}`}</td>
                             <td className="px-8 py-6 text-xs font-bold text-zinc-500">{ch.views?.toLocaleString() || '0'}</td>
                             <td className="px-8 py-6 text-xs font-bold text-zinc-500">
-                              {ch.subscribersOnly
-                                ? 'Solo suscriptores'
-                                : new Date(ch.releasedAt).toLocaleString()}
+                              {new Date(ch.releasedAt).toLocaleString()}
                             </td>
                             <td className="px-8 py-6 text-right">
                               <div className="flex items-center justify-end gap-2">

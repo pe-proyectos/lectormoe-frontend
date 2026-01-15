@@ -67,7 +67,6 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
           number: chapter.number,
           title: chapter.title,
           releasedAt: chapter.releasedAt,
-          subscribersOnly: chapter.subscribersOnly,
           chapterUrl: mangaSlug && mangaSlug !== 'undefined' 
             ? `/${organization?.slug}/manga/${mangaSlug}/chapters/${chapter.number}`
             : '#',
@@ -93,6 +92,8 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       status: m.status || "Ongoing",
       chapters: chaptersWithReadStatus,
       userHasSubscription: userHasSubscription || false,
+      subscriptionPlansCanReadUnreleased: m.subscriptionPlansCanReadUnreleased,
+      subscriptionPlansCanReadReleased: m.subscriptionPlansCanReadReleased,
     };
   };
 

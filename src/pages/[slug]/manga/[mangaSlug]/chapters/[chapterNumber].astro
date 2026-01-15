@@ -38,37 +38,64 @@ if (!chapter || chapter.status === false) {
 // This allows for better error messaging and user experience
 const userHasAccessToChapter = (chapter: any) => {
   if (!user && manga?.requireLogin === true) return false;
-  if (
-    new Date(chapter.releasedAt).getTime() < new Date().getTime() &&
-    chapter?.subscribersOnly !== true
-  )
-    return true;
-  if (!logged) return false;
   
-  const permissions = user.permissions.find((permission: any) => permission.organizationId === organization?.id) || {};
+  const permissions = user?.permissions?.find((permission: any) => permission.organizationId === organization?.id) || {};
   
   if (permissions.canReadUnreleased === true) return true;
   if (permissions.canEditChapter === true) return true;
   if (permissions.canEditPage === true) return true;
-  for (const subscription of user?.subscriptions || []) {
-    // Verificar que la suscripción esté activa y sea de la organización actual
-    if (
-      subscription.active === true &&
-      subscription?.subscriptionPlan?.organizationId === organization?.id
-    ) {
-      if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
-        return true;
+
+  const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+
+  if (isChapterReleased) {
+    // Capítulo ya fue lanzado
+    const hasCanReadReleasedPlans = (manga?.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+
+    if (hasCanReadReleasedPlans) {
+      // Solo usuarios con planes en subscriptionPlansCanReadReleased pueden leer
+      if (!logged) return false;
+
+      for (const subscription of user?.subscriptions || []) {
+        if (
+          subscription.active === true &&
+          subscription?.subscriptionPlan?.organizationId === organization?.id
+        ) {
+          const hasPlan = manga?.subscriptionPlansCanReadReleased?.find(
+            (plan: any) => plan.id === subscription?.subscriptionPlan?.id
+          );
+          if (hasPlan) return true;
+        }
       }
-      if (
-        manga?.subscriptionPlans?.find(
-          (plan: any) => plan.id === subscription?.subscriptionPlan?.id
-        )
-      ) {
-        return true;
+      return false;
+    } else {
+      // subscriptionPlansCanReadReleased está vacío → Todos pueden leer
+      return true;
+    }
+  } else {
+    // Capítulo NO ha sido lanzado
+    const hasCanReadUnreleasedPlans = (manga?.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+
+    if (hasCanReadUnreleasedPlans) {
+      // Solo usuarios con planes en subscriptionPlansCanReadUnreleased pueden leer
+      if (!logged) return false;
+
+      for (const subscription of user?.subscriptions || []) {
+        if (
+          subscription.active === true &&
+          subscription?.subscriptionPlan?.organizationId === organization?.id
+        ) {
+          const hasPlan = manga?.subscriptionPlansCanReadUnreleased?.find(
+            (plan: any) => plan.id === subscription?.subscriptionPlan?.id
+          );
+          if (hasPlan) return true;
+        }
       }
+      return false;
+    } else {
+      // subscriptionPlansCanReadUnreleased está vacío → Nadie puede leer antes de la fecha
+      return false;
     }
   }
-  return false;
 };
 
 // We still validate access, but we pass the information to the Reader

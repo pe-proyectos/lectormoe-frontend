@@ -30,10 +30,6 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         if (chapter) return new Date(chapter.releasedAt);
         return new Date();
     });
-    const [subscribersOnly, setSubscribersOnly] = useState(() => {
-        if (chapter) return chapter.subscribersOnly;
-        return false;
-    });
     const [chapterImageFile, setChapterImageFile] = useState(() => {
         if (chapter) return chapter.imageUrl;
         return null;
@@ -115,7 +111,6 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             setTitle(chapter.title);
             setNumber(chapter.number);
             setReleasedAt(new Date(chapter.releasedAt));
-            setSubscribersOnly(chapter.subscribersOnly);
             setChapterImageFile(chapter.imageUrl);
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
@@ -229,7 +224,6 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                         title,
                         number,
                         releasedAt: releasedAt.toISOString(),
-                        subscribersOnly,
                         image: imageKey,
                         pages: pageKeys,
                         singlePages: singlePageIndexes,
@@ -298,27 +292,13 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                         </h3>
                         <div>
                             <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
-                                {_("subscribers_only")}
-                            </label>
-                            <Switch
-                                label={_("subscribers_only")}
-                                checked={subscribersOnly}
-                                onChange={(checked) => setSubscribersOnly(checked)}
-                            />
-                            <p className="text-xs text-zinc-500 mt-2">
-                                {_("subscribers_only_description")}
-                            </p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-zinc-400 uppercase tracking-wider mb-2">
                                 {_("release_date")}
                             </label>
                             <input
                                 type="datetime-local"
                                 value={formatDateToInput(releasedAt)}
                                 onChange={(e) => setReleasedAt(new Date(e.target.value))}
-                                disabled={subscribersOnly}
-                                className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
                             />
                             <p className="text-xs text-zinc-500 mt-2">
                                 {_("release_date_description")}

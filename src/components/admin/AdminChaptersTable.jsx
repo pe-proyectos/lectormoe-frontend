@@ -84,9 +84,7 @@ export function AdminChaptersTable({
                 </TableCell>
                 <TableCell>
                   <span className="text-zinc-400">
-                    {chapter.subscribersOnly
-                      ? _("subscribers_only")
-                      : new Date(chapter.releasedAt).toLocaleString()}
+                    {new Date(chapter.releasedAt).toLocaleString()}
                   </span>
                 </TableCell>
                 <TableCell>

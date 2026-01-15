@@ -744,7 +744,6 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                           number: chapter.number,
                           title: chapter.title,
                           releasedAt: chapter.releasedAt,
-                          subscribersOnly: chapter.subscribersOnly,
                           chapterUrl: `/${orgSlug}/manga/${mangaCustom.manga?.slug || ''}/chapters/${chapter.number}`,
                           isRead,
                         };

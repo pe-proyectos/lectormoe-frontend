@@ -546,8 +546,6 @@ export function Reader({
       const errorType =
         !logged && manga?.requireLogin === true
           ? "login_required"
-          : chapter?.subscribersOnly === true
-          ? "subscription_required"
           : "not_released";
 
       const errorMessage =
@@ -607,7 +605,6 @@ export function Reader({
     chapterNumber,
     logged,
     manga?.requireLogin,
-    chapter?.subscribersOnly,
   ]);
 
   // Memoizar componentes de navegación

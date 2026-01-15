@@ -21,7 +21,6 @@ interface Chapter {
   number: number;
   title: string;
   releasedAt: string;
-  subscribersOnly: boolean;
   imageUrl?: string | null;
   isRead?: boolean;
   hasAccess?: boolean;
@@ -50,7 +49,8 @@ interface MangaDetailPageProps {
     genres?: Genre[];
     chapters?: Chapter[];
     authors?: Array<{ name: string }>;
-    subscriptionPlans?: Array<{ id: number; name: string }>;
+    subscriptionPlansCanReadUnreleased?: Array<{ id: number; name: string }>;
+    subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
     requireLogin?: boolean;
     isSimulRelease?: boolean;
     nextChapterAt?: string | null;
@@ -140,6 +140,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
   }, [logged, mangaSlug]);
 
+  // Track view when manga profile page is loaded
+  useEffect(() => {
+    if (!mangaSlug) return;
+    
+    callAPI(`/api/views/manga-custom/${mangaSlug}`, {
+      method: 'POST'
+    }).catch((error) => {
+      // Silenciar errores de tracking de vistas
+      console.debug('Failed to track manga view:', error);
+    });
+  }, [mangaSlug]);
+
   // Fetch recommended mangas
   useEffect(() => {
     if (manga.usersAlsoReadMangaCustomIds) {
@@ -218,51 +230,118 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     setSelectedChapterGroup(lastLabel);
   }, [manga.chapters]);
 
+  // Get required plans for a chapter
+  const getRequiredPlansForChapter = (chapter: Chapter): Array<{ id: number; name: string }> | null => {
+    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+    
+    if (isChapterReleased) {
+      const hasCanReadReleasedPlans = (manga.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+      if (hasCanReadReleasedPlans) {
+        return manga.subscriptionPlansCanReadReleased || [];
+      }
+      return null; // Todos pueden leer
+    } else {
+      const hasCanReadUnreleasedPlans = (manga.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+      if (hasCanReadUnreleasedPlans) {
+        return manga.subscriptionPlansCanReadUnreleased || [];
+      }
+      return []; // Nadie puede leer (array vacío significa que nadie puede)
+    }
+  };
+
+  // Get access reason message
+  const getAccessReasonMessage = (chapter: Chapter): string | null => {
+    if (!logged && manga.requireLogin) {
+      return "Debes iniciar sesión para leer este manga.";
+    }
+
+    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+    const requiredPlans = getRequiredPlansForChapter(chapter);
+
+    if (isChapterReleased) {
+      if (requiredPlans && requiredPlans.length > 0) {
+        if (!logged) {
+          return `Este capítulo requiere uno de los siguientes planes: ${requiredPlans.map(p => p.name).join(", ")}.`;
+        }
+        // Usuario logueado pero sin el plan requerido
+        return `Este capítulo requiere uno de los siguientes planes: ${requiredPlans.map(p => p.name).join(", ")}.`;
+      }
+      return null; // Todos pueden leer
+    } else {
+      if (requiredPlans && requiredPlans.length > 0) {
+        if (!logged) {
+          return `Este capítulo aún no ha sido publicado. Requiere uno de los siguientes planes para acceso anticipado: ${requiredPlans.map(p => p.name).join(", ")}.`;
+        }
+        return `Este capítulo aún no ha sido publicado. Requiere uno de los siguientes planes para acceso anticipado: ${requiredPlans.map(p => p.name).join(", ")}.`;
+      }
+      return "Este capítulo aún no ha sido publicado.";
+    }
+  };
+
   // Check chapter access
   const userHasAccessToChapter = (chapter: Chapter): boolean => {
     if (!logged && manga.requireLogin) return false;
 
-    // If chapter is released and not subscriber-only, user has access
-    if (
-      new Date(chapter.releasedAt).getTime() < new Date().getTime() &&
-      !chapter.subscribersOnly
-    ) {
-      return true;
-    }
-
-    if (!logged) return false;
-
-    // Check user permissions
-    // userPermissions ya viene filtrado por el middleware para la organización actual
+    // Check user permissions (staff)
     const permissions =
-      user.permissions.find(
+      user?.permissions?.find(
         (permission: any) => permission.organizationId === organization?.id
       ) || {};
     if (permissions.canReadUnreleased === true) return true;
     if (permissions.canEditChapter === true) return true;
     if (permissions.canEditPage === true) return true;
 
-    // Check subscriptions
-    for (const subscription of user?.subscriptions || []) {
-      // Verificar que la suscripción esté activa y sea de la organización actual
-      if (
-        subscription.active === true &&
-        subscription?.subscriptionPlan?.organizationId === organization?.id
-      ) {
-        if (subscription?.subscriptionPlan?.canReadUnreleased === true) {
-          return true;
+    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+
+    if (isChapterReleased) {
+      // Capítulo ya fue lanzado
+      const hasCanReadReleasedPlans = (manga.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+
+      if (hasCanReadReleasedPlans) {
+        // Solo usuarios con planes en subscriptionPlansCanReadReleased pueden leer
+        if (!logged) return false;
+
+        for (const subscription of user?.subscriptions || []) {
+          if (
+            subscription.active === true &&
+            subscription?.subscriptionPlan?.organizationId === organization?.id
+          ) {
+            const hasPlan = manga.subscriptionPlansCanReadReleased?.find(
+              (plan) => plan.id === subscription?.subscriptionPlan?.id
+            );
+            if (hasPlan) return true;
+          }
         }
-        if (
-          manga.subscriptionPlans?.find(
-            (plan) => plan.id === subscription?.subscriptionPlan?.id
-          )
-        ) {
-          return true;
+        return false;
+      } else {
+        // subscriptionPlansCanReadReleased está vacío → Todos pueden leer
+        return true;
+      }
+    } else {
+      // Capítulo NO ha sido lanzado
+      const hasCanReadUnreleasedPlans = (manga.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+
+      if (hasCanReadUnreleasedPlans) {
+        // Solo usuarios con planes en subscriptionPlansCanReadUnreleased pueden leer
+        if (!logged) return false;
+
+        for (const subscription of user?.subscriptions || []) {
+          if (
+            subscription.active === true &&
+            subscription?.subscriptionPlan?.organizationId === organization?.id
+          ) {
+            const hasPlan = manga.subscriptionPlansCanReadUnreleased?.find(
+              (plan) => plan.id === subscription?.subscriptionPlan?.id
+            );
+            if (hasPlan) return true;
+          }
         }
+        return false;
+      } else {
+        // subscriptionPlansCanReadUnreleased está vacío → Nadie puede leer antes de la fecha
+        return false;
       }
     }
-
-    return false;
   };
 
   // Get chapter history
@@ -283,9 +362,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   // Get chapter label
   const getChapterLabel = (chapter: Chapter): string => {
     if (!userHasAccessToChapter(chapter)) {
-      return manga.requireLogin
-        ? "Inicia sesión para leer"
-        : "Solo para suscriptores";
+      if (!logged && manga.requireLogin) {
+        return "Inicia sesión para leer";
+      }
+      const requiredPlans = getRequiredPlansForChapter(chapter);
+      if (requiredPlans && requiredPlans.length > 0) {
+        return `Requiere: ${requiredPlans.map(p => p.name).join(", ")}`;
+      }
+      const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+      if (!isChapterReleased) {
+        return "Aún no publicado";
+      }
+      return "Solo para suscriptores";
     }
 
     if (!logged) {
@@ -913,30 +1001,32 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                   <div className="flex items-center gap-2">
                                     {/* Lock/Unlock Icon with Tooltip */}
                                     <div className="relative group/lock">
-                                      {chapter.subscribersOnly && hasAccess && (
+                                      {hasAccess && (
                                         <>
                                           <LockOpen
                                             size={16}
                                             className="text-green-400 animate-pulse"
                                           />
                                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10">
-                                            Desbloqueado - Tienes acceso premium
+                                            Desbloqueado - Tienes acceso
                                           </div>
                                         </>
                                       )}
 
-                                      {chapter.subscribersOnly &&
-                                        !hasAccess && (
-                                          <>
-                                            <Lock
-                                              size={16}
-                                              className="text-yellow-400"
-                                            />
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10">
-                                              Bloqueado - Solo para suscriptores
-                                            </div>
-                                          </>
-                                        )}
+                                      {!hasAccess && (
+                                        <>
+                                          <Lock
+                                            size={16}
+                                            className="text-yellow-400"
+                                          />
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none z-10 max-w-xs">
+                                            {(() => {
+                                              const reason = getAccessReasonMessage(chapter);
+                                              return reason || "Sin acceso";
+                                            })()}
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
 
                                     <h4 className="text-white font-bold text-lg">

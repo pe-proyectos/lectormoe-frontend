@@ -14,11 +14,31 @@ export function MangaAdCard({
   const _ = getTranslator(language);
 
   const getValidMangaSubscriptionPlans = () => {
-    return subscriptionPlansData.filter(
-      (plan) =>
-        plan.canReadUnreleased ||
-        manga?.subscriptionPlans?.find((v) => v.id === plan.id)
-    );
+    if (!manga || !chapter) return [];
+    
+    const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+    
+    if (isChapterReleased) {
+      // Capítulo ya fue lanzado
+      const hasCanReadReleasedPlans = (manga?.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+      if (hasCanReadReleasedPlans) {
+        return subscriptionPlansData.filter((plan) => 
+          manga?.subscriptionPlansCanReadReleased?.find((v) => v.id === plan.id)
+        );
+      }
+      // Si está vacío, no mostrar planes (todos pueden leer)
+      return [];
+    } else {
+      // Capítulo NO ha sido lanzado
+      const hasCanReadUnreleasedPlans = (manga?.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+      if (hasCanReadUnreleasedPlans) {
+        return subscriptionPlansData.filter((plan) => 
+          manga?.subscriptionPlansCanReadUnreleased?.find((v) => v.id === plan.id)
+        );
+      }
+      // Si está vacío, no mostrar planes (nadie puede leer)
+      return [];
+    }
   };
 
   return (
