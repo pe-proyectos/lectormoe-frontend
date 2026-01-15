@@ -246,35 +246,19 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
         }}
         className="relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 shadow-lg group-hover:shadow-cyan-500/20 transition-all duration-300"
       >
-        <div className="aspect-[2/3] relative overflow-hidden">
+        <div className="aspect-[2/3] relative overflow-hidden rounded-t-2xl">
           <img 
             src={manga.cover} 
             alt={manga.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 rounded-t-2xl"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
           
-          {/* Lock Icon - Show locked if no access, unlocked if has access */}
+          {/* Lock Icon - Show locked if no access and has subscription plans */}
           {manga.chapters && manga.chapters.length > 0 && (() => {
             const hasAccess = userHasAccess(manga.chapters[0]);
             const hasSubscriptionPlans = (manga.subscriptionPlansCanReadUnreleased && manga.subscriptionPlansCanReadUnreleased.length > 0) || 
                                         (manga.subscriptionPlansCanReadReleased && manga.subscriptionPlansCanReadReleased.length > 0);
-            
-            if (hasAccess) {
-              return (
-                <a 
-                  href={manga.chapters[0].chapterUrl}
-                  className="absolute top-3 left-3 z-30 p-1.5 bg-green-500 rounded-lg text-white shadow-lg cursor-pointer hover:bg-green-400 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLockClick(e, manga.chapters[0]);
-                  }}
-                  title={getAccessReason(manga.chapters[0])}
-                >
-                  <Unlock size={12} />
-                </a>
-              );
-            }
             
             if (!hasAccess && hasSubscriptionPlans) {
               return (
@@ -358,20 +342,6 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                           <Lock size={8} />
                         </button>
                       )}
-                      {canAccess && (
-                        <button
-                          type="button"
-                          className="cursor-pointer hover:scale-110 transition-transform inline-block bg-transparent border-none p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleLockClick(e, chapter);
-                          }}
-                          title={getAccessReason(chapter)}
-                        >
-                          <Unlock size={8} />
-                        </button>
-                      )}
                     </span>
                     {index < 2 && (
                       <span className="text-zinc-600 text-[8px] font-bold">
@@ -385,8 +355,8 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                   
                   {/* Mostrar información de acceso anticipado si el capítulo no ha sido lanzado y hay rangos configurados */}
                   {!isReleased && manga.subscriptionPlansCanReadUnreleased && manga.subscriptionPlansCanReadUnreleased.length > 0 && (
-                    <div className="mt-1.5 space-y-1">
-                      <div className="flex items-center gap-1 text-[8px] font-bold text-yellow-400">
+                    <div className="mt-1.5 space-y-1 relative group/tooltip">
+                      <div className="flex items-center gap-1 text-[12px] font-bold text-yellow-400">
                         <Lock size={8} />
                         <span>Acceso Anticipado:</span>
                       </div>
@@ -400,12 +370,17 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                           </span>
                         ))}
                       </div>
+                      {/* Tooltip explicativo */}
+                      <div className="absolute bottom-full left-0 mb-2 px-2 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-[12px] font-medium leading-relaxed max-w-[140px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                        Se requiere uno de estos rangos para leer antes del lanzamiento
+                        <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900"></div>
+                      </div>
                     </div>
                   )}
                   
                   {canRead && (
                     <div className={`flex items-center gap-1 mt-1.5 text-[8px] font-black uppercase transition-colors ${
-                      chapter.isRead ? 'text-zinc-600' : 'text-white/40 group-hover/btn:text-cyan-400'
+                      chapter.isRead ? 'text-zinc-600' : 'text-white/40 group-hover/btn:text-green-400'
                     }`}>
                       {chapter.isRead ? (
                         <>
@@ -454,21 +429,9 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                   const content = (
                     <>
                       Cap. {chapter.number}
-                      {hasAccess ? (
-                        <span 
-                          className="cursor-pointer hover:scale-110 transition-transform inline-flex items-center"
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              handleLockClick(e, chapter);
-                            }}
-                            title={getAccessReason(chapter)}
-                          >
-                            <Unlock size={10} />
-                          </span>
-                        ) : (
-                          <Lock size={10} />
-                        )
-                      }
+                      {!hasAccess && (
+                        <Lock size={10} />
+                      )}
                     </>
                   );
                   
