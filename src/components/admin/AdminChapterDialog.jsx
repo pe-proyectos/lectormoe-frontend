@@ -131,7 +131,6 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             setNumber((lastChapterNumber + 1));
             setTitle(`${_("chapter")} ${lastChapterNumber + 1}`);
             setReleasedAt(new Date());
-            setSubscribersOnly(false);
             setChapterImageFile(null);
             setPages([]);
             setSinglePageIndexes([]);

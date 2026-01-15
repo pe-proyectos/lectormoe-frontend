@@ -255,25 +255,37 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
           
           {/* Lock Icon - Show locked if no access, unlocked if has access */}
-          {manga.chapters && manga.chapters.length > 0 && !userHasAccess(manga.chapters[0]) && (
-            userHasAccess(manga.chapters[0]) ? (
-              <a 
-                href={manga.chapters[0].chapterUrl}
-                className="absolute top-3 left-3 z-30 p-1.5 bg-green-500 rounded-lg text-white shadow-lg cursor-pointer hover:bg-green-400 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLockClick(e, manga.chapters[0]);
-                }}
-                title={getAccessReason(manga.chapters[0])}
-              >
-                <Unlock size={12} />
-              </a>
-            ) : (
-              <div className="absolute top-3 left-3 z-30 p-1.5 bg-yellow-500 rounded-lg text-black shadow-lg">
-                <Lock size={12} fill="currentColor" />
-              </div>
-            )
-          )}
+          {manga.chapters && manga.chapters.length > 0 && (() => {
+            const hasAccess = userHasAccess(manga.chapters[0]);
+            const hasSubscriptionPlans = (manga.subscriptionPlansCanReadUnreleased && manga.subscriptionPlansCanReadUnreleased.length > 0) || 
+                                        (manga.subscriptionPlansCanReadReleased && manga.subscriptionPlansCanReadReleased.length > 0);
+            
+            if (hasAccess) {
+              return (
+                <a 
+                  href={manga.chapters[0].chapterUrl}
+                  className="absolute top-3 left-3 z-30 p-1.5 bg-green-500 rounded-lg text-white shadow-lg cursor-pointer hover:bg-green-400 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLockClick(e, manga.chapters[0]);
+                  }}
+                  title={getAccessReason(manga.chapters[0])}
+                >
+                  <Unlock size={12} />
+                </a>
+              );
+            }
+            
+            if (!hasAccess && hasSubscriptionPlans) {
+              return (
+                <div className="absolute top-3 left-3 z-30 p-1.5 bg-yellow-500 rounded-lg text-black shadow-lg">
+                  <Lock size={12} fill="currentColor" />
+                </div>
+              );
+            }
+            
+            return null;
+          })()}
 
           {/* Status badge */}
           {manga.status && (
@@ -361,18 +373,36 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                         </button>
                       )}
                     </span>
-                    {isLatest && (
+                    {index < 2 && (
                       <span className="text-zinc-600 text-[8px] font-bold">
                         {new Date(chapter.releasedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                       </span>
                     )}
                   </div>
                   <p className="text-[9px] font-bold truncate leading-none text-zinc-300">
-                    {needsSubscription 
-                      ? 'Solo para suscriptores' 
-                      : `"${chapter.title || 'Nuevo capítulo'}"`
-                    }
+                    {`"${chapter.title || 'Nuevo capítulo'}"`}
                   </p>
+                  
+                  {/* Mostrar información de acceso anticipado si el capítulo no ha sido lanzado y hay rangos configurados */}
+                  {!isReleased && manga.subscriptionPlansCanReadUnreleased && manga.subscriptionPlansCanReadUnreleased.length > 0 && (
+                    <div className="mt-1.5 space-y-1">
+                      <div className="flex items-center gap-1 text-[8px] font-bold text-yellow-400">
+                        <Lock size={8} />
+                        <span>Acceso Anticipado:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {manga.subscriptionPlansCanReadUnreleased.map((plan: any) => (
+                          <span
+                            key={plan.id}
+                            className="px-1.5 py-0.5 bg-yellow-500/20 border border-yellow-500/50 rounded text-[7px] font-bold text-yellow-400 uppercase"
+                          >
+                            {plan.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   {canRead && (
                     <div className={`flex items-center gap-1 mt-1.5 text-[8px] font-black uppercase transition-colors ${
                       chapter.isRead ? 'text-zinc-600' : 'text-white/40 group-hover/btn:text-cyan-400'
