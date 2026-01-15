@@ -107,6 +107,14 @@ const SorteoModal: React.FC<SorteoModalProps> = ({ organization, logged }) => {
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">
                   Primer Ganador
                 </p>
+                <div className="mb-3 flex justify-center">
+                  <img 
+                    src="/hy1.png" 
+                    alt="Primer Premio" 
+                    className="max-w-full h-auto rounded-lg"
+                    style={{ maxHeight: '200px' }}
+                  />
+                </div>
                 <p className="text-lg font-black text-yellow-500">
                   Sábado 17
                 </p>
