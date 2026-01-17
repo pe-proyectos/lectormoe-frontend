@@ -96,7 +96,7 @@ const SorteoModal: React.FC<SorteoModalProps> = ({ organization, logged }) => {
               </p>
               <div className="mt-6 p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg">
                 <p className="text-zinc-400 text-sm italic">
-                  🎁 Los premios están ocultos y se revelarán pronto. ¡Mantente atento!
+                  Todas las suscripciones desde la web participarán automáticamente.
                 </p>
               </div>
             </div>
@@ -109,20 +109,28 @@ const SorteoModal: React.FC<SorteoModalProps> = ({ organization, logged }) => {
                 </p>
                 <div className="mb-3 flex justify-center">
                   <img 
-                    src="/hy1.png" 
+                    src="/images/hy1.png" 
                     alt="Primer Premio" 
                     className="max-w-full h-auto rounded-lg"
                     style={{ maxHeight: '200px' }}
                   />
                 </div>
-                <p className="text-lg font-black text-yellow-500">
-                  Sábado 17
+                <p className="text-xs font-black text-yellow-500">
+                  @cabodemadagascar
                 </p>
               </div>
               <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 text-center">
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">
                   Segundo Ganador
                 </p>
+                <div className="mb-3 flex justify-center">
+                  <img 
+                    src="/images/hy2.png" 
+                    alt="Segundo Premio" 
+                    className="max-w-full h-auto rounded-lg"
+                    style={{ maxHeight: '200px' }}
+                  />
+                </div>
                 <p className="text-lg font-black text-yellow-500">
                   Sábado 24
                 </p>
@@ -131,11 +139,22 @@ const SorteoModal: React.FC<SorteoModalProps> = ({ organization, logged }) => {
                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">
                   Tercer Ganador
                 </p>
+                <div className="mb-3 flex justify-center">
+                  <img 
+                    src="/images/hy3.png" 
+                    alt="Tercer Premio" 
+                    className="max-w-full h-auto rounded-lg"
+                    style={{ maxHeight: '200px' }}
+                  />
+                </div>
                 <p className="text-lg font-black text-yellow-500">
                   Sábado 31
                 </p>
               </div>
             </div>
+            <p className="text-zinc-400 text-sm italic">
+              Los ganadores tienen hasta el 7 de Febrero para reclamar su premio.
+            </p>
 
             {/* CTA */}
             {!logged && (
