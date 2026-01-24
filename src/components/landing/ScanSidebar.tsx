@@ -3,7 +3,7 @@ import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Cl
 import { callAPI } from '../../util/callApi';
 
 interface ScanSidebarProps {
-  onSubscribeClick: () => void;
+  subscribeUrl: string;
   user?: any;
   logged?: boolean;
   organization: any;
@@ -43,7 +43,7 @@ interface GroupedDonor extends TopDonor {
   planIndex: number;
 }
 
-const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logged, organization, discordUrl }) => {
+const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, organization, discordUrl }) => {
   const [userHistory, setUserHistory] = useState<HistoryItem[]>([]);
   const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
@@ -356,12 +356,12 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ onSubscribeClick, user, logge
             </div>
           )}
 
-          <button 
-            onClick={onSubscribeClick}
-            className="w-full mt-6 py-3 bg-yellow-500 text-zinc-950 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white transition-all active:scale-95 shadow-lg shadow-yellow-500/10"
+          <a 
+            href={subscribeUrl}
+            className="inline-flex w-full mt-6 py-3 bg-yellow-500 text-zinc-950 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white transition-all active:scale-95 shadow-lg shadow-yellow-500/10 justify-center"
           >
             Ser Patrocinador
-          </button>
+          </a>
         </div>
 
         {/* Discord Advertisement Banner - Solo se muestra si hay discordUrl */}

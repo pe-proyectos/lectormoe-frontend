@@ -4,12 +4,12 @@ import MangaCard3D from './MangaCard3D';
 
 interface ScanRecentUpdatesProps {
   mangas: any[];
-  onExploreClick: () => void;
+  exploreUrl: string;
   user: any;
   organization: any;
 }
 
-const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExploreClick, user, organization }) => {
+const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, exploreUrl, user, organization }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -41,13 +41,13 @@ const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, onExplore
       )}
 
       <div className="mt-16 flex justify-center">
-        <button 
-          onClick={onExploreClick}
+        <a 
+          href={exploreUrl}
           className="group relative bg-white text-zinc-950 px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-cyan-500 transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)] flex items-center gap-4 active:scale-95"
         >
           Ver todo el catálogo
           <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-        </button>
+        </a>
       </div>
     </section>
   );

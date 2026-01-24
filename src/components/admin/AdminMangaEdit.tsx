@@ -695,10 +695,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     }
   };
 
-  const handleCreateChapter = () => {
-    setSelectedChapter(null);
-    setIsChapterDialogOpen(true);
-  };
+
 
   // Helper para obtener la URL de una página (File o string)
   const getPageUrl = (page: File | string): string => {
@@ -2236,12 +2233,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Índice de Capítulos</h3>
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1 block">{chapters.length} Episodios Publicados</span>
                   </div>
-                  <button
-                    onClick={handleCreateChapter}
-                    className="flex items-center gap-2 px-6 py-3 bg-cyan-500 text-zinc-950 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-cyan-500/10"
-                  >
-                    <Plus size={16} /> Publicar Capítulo
-                  </button>
                 </div>
                 {chaptersLoading ? (
                   <div className="flex items-center justify-center py-12">
@@ -2367,18 +2358,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                 )}
               </div>
 
-              {/* Chapter Dialog */}
-              <AdminChapterDialog
-                language={language}
-                open={isChapterDialogOpen}
-                setOpen={setIsChapterDialogOpen}
-                mangaCustom={{
-                  ...mangaCustom,
-                  slug: mangaCustom?.manga?.slug || mangaCustom?.slug,
-                  chapters: chapters
-                }}
-                chapter={selectedChapter}
-              />
+
             </div>
           )}
 

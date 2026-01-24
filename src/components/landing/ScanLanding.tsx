@@ -192,13 +192,8 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
     fetchAllMangas();
   }, [organization, logged, user]);
 
-  const handleGoToSub = () => {
-    window.location.href = `/${organization?.slug}/subscriptions`;
-  };
-
-  const handleGoToExplore = () => {
-    window.location.href = `/scans`;
-  };
+  const subUrl = `/${organization?.slug}/subscriptions`;
+  const exploreUrl = organization?.slug ? `/${organization?.slug}/search` : `/search`;
 
   const navigateTo = (path: string) => {
     window.location.href = path;
@@ -212,7 +207,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         onGoHome={() => navigateTo(`/${organization?.slug}`)}
         onGoExplore={() => navigateTo("/scans")}
         onGoSearch={() => navigateTo(`/${organization?.slug}/search`)}
-        onGoSubscriptions={handleGoToSub}
+        onGoSubscriptions={() => navigateTo(subUrl)}
         activeView="scan"
         user={user}
         logged={logged}
@@ -309,7 +304,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
             ) : (
               <ScanRecentUpdates
                 mangas={recentUpdates}
-                onExploreClick={handleGoToExplore}
+                exploreUrl={exploreUrl}
                 user={user}
                 organization={organization}
               />
@@ -318,7 +313,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
 
           {/* SIDEBAR DERECHO */}
           <ScanSidebar
-            onSubscribeClick={handleGoToSub}
+            subscribeUrl={subUrl}
             user={user}
             logged={logged}
             organization={organization}

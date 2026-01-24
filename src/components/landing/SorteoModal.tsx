@@ -131,8 +131,8 @@ const SorteoModal: React.FC<SorteoModalProps> = ({ organization, logged }) => {
                     style={{ maxHeight: '200px' }}
                   />
                 </div>
-                <p className="text-lg font-black text-yellow-500">
-                  Sábado 24
+                <p className="text-xs font-black text-yellow-500">
+                  @Buster
                 </p>
               </div>
               <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 text-center">
