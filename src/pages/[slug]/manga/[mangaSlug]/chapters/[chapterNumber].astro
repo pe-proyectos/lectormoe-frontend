@@ -5,7 +5,7 @@ import { getTranslator } from "../../../../../util/translate";
 
 // @ts-ignore - organization y showAds se definen dinámicamente en el middleware
 const { mangaSlug, chapterNumber } = Astro.params;
-const { language, callAPI, user, organizationSlug, organization, showAds } = Astro.locals as any;
+const { language, callAPI, user, organizationSlug, organization, showAds: showAdsFromMiddleware } = Astro.locals as any;
 const logged = !!user;
 const _ = getTranslator(language);
 
@@ -33,6 +33,10 @@ if (!manga || manga.status === false) {
 if (!chapter || chapter.status === false) {
   return Astro.redirect("/404");
 }
+
+// No mostrar ads de Google si el manga es NSFW, aunque la organización tenga Google Ads habilitado
+// Solo mostrar ads si: la organización tiene ads habilitados Y el manga NO es NSFW
+const showAds = showAdsFromMiddleware && !manga.isNSFW;
 
 // Check access but don't redirect here - let the Reader component handle it
 // This allows for better error messaging and user experience

@@ -4,7 +4,7 @@ import MangaDetailPageContainer from '../../../components/landing/MangaDetailPag
 
 const { mangaSlug } = Astro.params;
 // @ts-ignore - showAds se define dinámicamente en el middleware
-const { organization, user, callAPI, language, showAds } = Astro.locals;
+const { organization, user, callAPI, language, showAds: showAdsFromMiddleware } = Astro.locals;
 const logged = !!user;
 
 // Si no hay organización, redirigir a 404
@@ -23,6 +23,10 @@ if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'obj
 
 // Si llegamos aquí, mangaResult es directamente el objeto manga (data)
 const manga = mangaResult;
+
+// No mostrar ads de Google si el manga es NSFW, aunque la organización tenga Google Ads habilitado
+// Solo mostrar ads si: la organización tiene ads habilitados Y el manga NO es NSFW
+const showAds = showAdsFromMiddleware && !manga.isNSFW;
 
 // Asegurar que la URL de la imagen sea absoluta para Discord embeds
 // Priorizar bannerUrl sobre imageUrl
