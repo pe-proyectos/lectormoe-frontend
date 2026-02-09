@@ -144,13 +144,24 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   // Track view when manga profile page is loaded
   useEffect(() => {
     if (!mangaSlug) return;
-    
+
     callAPI(`/api/views/manga-custom/${mangaSlug}`, {
       method: 'POST'
-    }).catch((error) => {
-      // Silenciar errores de tracking de vistas
-      console.debug('Failed to track manga view:', error);
-    });
+    }).catch(() => {})
+
+    // Track analytics event
+    callAPI('/api/analytics', {
+      method: 'POST',
+      includeIp: true,
+      body: JSON.stringify({
+        event: 'view_manga_profile',
+        path: window.location.pathname,
+        userAgent: navigator.userAgent,
+        screenWidth: screen.width,
+        screenHeight: screen.height,
+        payload: { mangaSlug },
+      }),
+    }).catch(() => {})
   }, [mangaSlug]);
 
   // Fetch recommended mangas

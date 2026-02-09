@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import 'cookie-store';
 
@@ -10,10 +10,28 @@ interface AuthPageProps {
 const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Track page view
+  useEffect(() => {
+    import('../../util/callApi').then(({ callAPI }) => {
+      callAPI('/api/analytics', {
+        method: 'POST',
+        includeIp: true,
+        body: JSON.stringify({
+          event: 'view_login_page',
+          path: window.location.pathname,
+          userAgent: navigator.userAgent,
+          screenWidth: screen.width,
+          screenHeight: screen.height,
+          payload: {},
+        }),
+      }).catch(() => {})
+    })
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +89,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization
         } catch (error) {
           // Silently fail
         }
+
+        // Track successful login
+        callAPI('/api/analytics', {
+          method: 'POST',
+          includeIp: true,
+          body: JSON.stringify({
+            event: 'action_login',
+            path: window.location.pathname,
+            userAgent: navigator.userAgent,
+            screenWidth: screen.width,
+            screenHeight: screen.height,
+            payload: {},
+          }),
+        }).catch(() => {})
 
         // Disparar evento para actualizar el navbar
         window.dispatchEvent(new Event('auth-changed'));

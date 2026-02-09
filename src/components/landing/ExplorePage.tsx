@@ -160,7 +160,43 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [showNSFWModal, setShowNSFWModal] = useState(false);
 
   const isScanBranded = organization && organizationSlug;
-  
+
+  // Track page view
+  useEffect(() => {
+    callAPI('/api/analytics', {
+      method: 'POST',
+      includeIp: true,
+      body: JSON.stringify({
+        event: 'view_manga_search',
+        path: window.location.pathname,
+        userAgent: navigator.userAgent,
+        screenWidth: screen.width,
+        screenHeight: screen.height,
+        payload: {},
+      }),
+    }).catch(() => {})
+  }, [])
+
+  // Track search actions (debounced)
+  useEffect(() => {
+    if (!search || search.length < 2) return
+    const timer = setTimeout(() => {
+      callAPI('/api/analytics', {
+        method: 'POST',
+        includeIp: true,
+        body: JSON.stringify({
+          event: 'action_search_manga',
+          path: window.location.pathname,
+          userAgent: navigator.userAgent,
+          screenWidth: screen.width,
+          screenHeight: screen.height,
+          payload: { query: search },
+        }),
+      }).catch(() => {})
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [search])
+
   // Si hay organización, establecer el scan seleccionado automáticamente
   useEffect(() => {
     if (isScanBranded && organization) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle, ArrowLeft } from 'lucide-react';
 import 'cookie-store';
 
@@ -11,11 +11,29 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Form states
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  // Track page view
+  useEffect(() => {
+    import('../../util/callApi').then(({ callAPI }) => {
+      callAPI('/api/analytics', {
+        method: 'POST',
+        includeIp: true,
+        body: JSON.stringify({
+          event: 'view_register_page',
+          path: window.location.pathname,
+          userAgent: navigator.userAgent,
+          screenWidth: screen.width,
+          screenHeight: screen.height,
+          payload: {},
+        }),
+      }).catch(() => {})
+    })
+  }, [])
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +55,20 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
 
       // callAPI retorna result.data directamente
       if (response?.registered) {
+        // Track successful registration
+        callAPI('/api/analytics', {
+          method: 'POST',
+          includeIp: true,
+          body: JSON.stringify({
+            event: 'action_register',
+            path: window.location.pathname,
+            userAgent: navigator.userAgent,
+            screenWidth: screen.width,
+            screenHeight: screen.height,
+            payload: {},
+          }),
+        }).catch(() => {})
+
         setIsSubmitted(true);
         // Después de 2 segundos, redirigir a login
         setTimeout(() => {

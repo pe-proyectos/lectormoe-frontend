@@ -70,10 +70,10 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
 
   const menuItems = [
     {
-      id: 'dashboard',
+      id: 'analytics',
       label: 'Dashboard',
       icon: LayoutDashboard,
-      href: `/${organizationSlug}/admin`,
+      href: `/${organizationSlug}/admin/analytics`,
     },
     {
       id: 'authors',
