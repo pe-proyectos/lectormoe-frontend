@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Hero from './Hero';
 import FeaturedManga from './FeaturedManga';
 import ScansSection from './ScansSection';
+import TopReaders from './TopReaders';
 import ScansButtonsSection from './ScansButtonsSection';
 import Footer from './Footer';
 import SearchView from './SearchView';
@@ -88,6 +89,8 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
               </div>
             </section>
             
+            <TopReaders />
+
             <ScansSection onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
           </>
         )}

@@ -10,6 +10,8 @@ const logged = !!user;
 if (!logged || !user) {
   return Astro.redirect('/login');
 }
+
+const isStaff = user.permissions?.some((p: any) => p.canSeeAdminPanel) ?? false;
 ---
 
 <LandingLayout 
@@ -21,6 +23,7 @@ if (!logged || !user) {
     user={user}
     logged={logged}
     language={language}
+    isStaff={isStaff}
     client:load
   />
 </LandingLayout>

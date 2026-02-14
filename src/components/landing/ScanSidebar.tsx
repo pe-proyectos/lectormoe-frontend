@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles } from 'lucide-react';
+import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles, BookOpen, Medal } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface ScanSidebarProps {
@@ -17,6 +17,14 @@ interface HistoryItem {
   chapterTitle: string;
   lastVisited: string;
   mangaUrl: string;
+}
+
+interface TopReader {
+  id: number;
+  username: string;
+  slug: string;
+  imageUrl: string | null;
+  chaptersRead: number;
 }
 
 interface TopDonor {
@@ -46,8 +54,10 @@ interface GroupedDonor extends TopDonor {
 const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, organization, discordUrl }) => {
   const [userHistory, setUserHistory] = useState<HistoryItem[]>([]);
   const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
+  const [topReaders, setTopReaders] = useState<TopReader[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loadingDonors, setLoadingDonors] = useState(true);
+  const [loadingReaders, setLoadingReaders] = useState(true);
 
   // Obtener planes de suscripción
   useEffect(() => {
@@ -214,6 +224,31 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
     }
   }, [organization]);
 
+  useEffect(() => {
+    const fetchTopReaders = async () => {
+      try {
+        setLoadingReaders(true);
+        const API_URL = import.meta.env['PUBLIC_API_URL'];
+        const response = await fetch(`${API_URL}/api/organization/${organization?.slug}/top-readers`, {
+          credentials: 'include',
+        });
+        const result = await response.json();
+
+        if (result?.status === true && result?.data) {
+          setTopReaders(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching top readers:', error);
+      } finally {
+        setLoadingReaders(false);
+      }
+    };
+
+    if (organization?.slug) {
+      fetchTopReaders();
+    }
+  }, [organization]);
+
   const handleLogin = () => {
     window.location.href = `/${organization?.slug}/login`;
   };
@@ -279,6 +314,78 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
           ) : (
             <div className="text-center py-8">
               <p className="text-zinc-500 text-sm font-medium">No tienes historial de lectura aún</p>
+            </div>
+          )}
+        </div>
+
+        {/* Top Lectores */}
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/5 blur-3xl rounded-full" />
+
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+              <BookOpen size={20} className="text-cyan-500" /> Top Lectores
+            </h3>
+            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Esta semana</span>
+          </div>
+
+          {loadingReaders ? (
+            <div className="space-y-3 relative z-10">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-zinc-950/40 rounded-xl animate-pulse">
+                  <div className="w-6 h-6 bg-zinc-800 rounded-full" />
+                  <div className="w-8 h-8 bg-zinc-800 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-zinc-800 rounded w-24" />
+                    <div className="h-2 bg-zinc-800 rounded w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : topReaders.length > 0 ? (
+            <div className="space-y-2 relative z-10">
+              {topReaders.map((reader, index) => {
+                const rankColors = index === 0
+                  ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
+                  : index === 1
+                    ? 'text-zinc-300 bg-zinc-400/10 border-zinc-400/30'
+                    : index === 2
+                      ? 'text-amber-600 bg-amber-600/10 border-amber-600/30'
+                      : 'text-zinc-500 bg-zinc-800/50 border-zinc-700/30';
+
+                return (
+                  <a
+                    key={reader.id}
+                    href={`/profile/${reader.slug}`}
+                    className="flex items-center gap-3 p-3 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl hover:bg-zinc-800/80 transition-all hover:translate-x-1"
+                  >
+                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-black text-[10px] ${rankColors}`}>
+                      {index < 3 ? <Medal size={12} fill="currentColor" /> : index + 1}
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center text-zinc-400 font-black text-xs">
+                      {reader.imageUrl ? (
+                        <img
+                          src={reader.imageUrl}
+                          alt={reader.username}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        reader.username[0].toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-xs leading-none mb-1 truncate">{reader.username}</p>
+                      <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
+                        {reader.chaptersRead} capítulos
+                      </p>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 relative z-10">
+              <p className="text-zinc-500 text-sm font-medium">No hay lectores activos esta semana</p>
             </div>
           )}
         </div>

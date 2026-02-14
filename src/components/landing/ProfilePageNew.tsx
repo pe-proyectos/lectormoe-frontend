@@ -57,6 +57,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     toRead: 0,
     favorites: 0,
     activeDays: 0,
+    streak: 0,
+    favoriteGenre: null as string | null,
+    hoursEstimated: 0,
+    weekChaptersRead: 0,
   });
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [loadingScans, setLoadingScans] = useState(true);
@@ -355,6 +359,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             toRead: result.toRead || 0,
             favorites: favorites.length,
             activeDays: result.activeDays || 0,
+            streak: result.streak || 0,
+            favoriteGenre: result.favoriteGenre || null,
+            hoursEstimated: result.hoursEstimated || 0,
+            weekChaptersRead: result.weekChaptersRead || 0,
           });
         }
       } catch (error) {
@@ -365,6 +373,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
           toRead: 0,
           favorites: favorites.length,
           activeDays: user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0,
+          streak: 0,
+          favoriteGenre: null,
+          hoursEstimated: 0,
+          weekChaptersRead: 0,
         });
       }
     };
@@ -464,10 +476,13 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   };
 
   const statsData = [
-    { label: 'Leídos', value: stats.read.toString(), icon: <BookOpen className="text-cyan-500" size={18} /> },
+    { label: 'Leidos', value: stats.read.toString(), icon: <BookOpen className="text-cyan-500" size={18} /> },
     { label: 'Por leer', value: stats.toRead.toString(), icon: <Bookmark className="text-purple-500" size={18} /> },
     { label: 'Favoritos', value: stats.favorites.toString(), icon: <Heart className="text-red-500" size={18} /> },
-    { label: 'Días Activo', value: stats.activeDays.toString(), icon: <Clock className="text-yellow-500" size={18} /> },
+    { label: 'Dias Activo', value: stats.activeDays.toString(), icon: <Clock className="text-yellow-500" size={18} /> },
+    { label: 'Esta Semana', value: stats.weekChaptersRead.toString(), icon: <Zap className="text-green-500" size={18} /> },
+    { label: 'Horas Leidas', value: `~${stats.hoursEstimated}`, icon: <Clock className="text-orange-500" size={18} /> },
+    { label: 'Genero Fav.', value: stats.favoriteGenre || '-', icon: <Award className="text-pink-500" size={18} /> },
   ];
 
   const ProRestrictionTooltip = () => (
@@ -569,8 +584,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {statsData.map((stat, idx) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          {statsData.slice(0, 4).map((stat, idx) => (
             <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group">
               <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
                 {stat.icon}
@@ -582,6 +597,41 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             </div>
           ))}
         </div>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {statsData.slice(4).map((stat, idx) => (
+            <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-2xl font-black text-white italic leading-none mb-1">{stat.value}</p>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{stat.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Reading Streak Badge */}
+        {stats.streak > 0 && (
+          <div className="mb-16 bg-gradient-to-r from-orange-500/10 via-yellow-500/10 to-orange-500/10 border border-orange-500/20 rounded-[32px] p-8 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="text-5xl">🔥</div>
+              <div>
+                <p className="text-3xl font-black text-white italic leading-none mb-1">
+                  {stats.streak} {stats.streak === 1 ? 'Dia' : 'Dias'}
+                </p>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">
+                  Racha de Lectura
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-zinc-400 font-bold">
+                {stats.streak >= 100 ? 'Legendario!' : stats.streak >= 30 ? 'Leyenda!' : stats.streak >= 7 ? 'Imparable!' : 'Sigue asi!'}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-16">

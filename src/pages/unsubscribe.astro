@@ -1,0 +1,38 @@
+---
+import LandingLayout from "../layouts/LandingLayout.astro";
+import UnsubscribePage from "../components/landing/UnsubscribePage";
+
+// @ts-ignore
+const { showAds, callAPI } = Astro.locals;
+
+const token = Astro.url.searchParams.get('token');
+const category = Astro.url.searchParams.get('category');
+let result = { success: false, message: '' };
+
+if (token) {
+  try {
+    const params = new URLSearchParams();
+    params.append('token', token);
+    if (category) params.append('category', category);
+
+    const data = await callAPI(`/api/email/unsubscribe?${params}`);
+    if (data?.status === false) {
+      result = { success: false, message: data?.message || 'Token no valido.' };
+    } else {
+      result = { success: true, message: data?.message || 'Notificaciones canceladas exitosamente.' };
+    }
+  } catch (error: any) {
+    result = { success: false, message: error?.message || 'Token no valido.' };
+  }
+} else {
+  result = { success: false, message: 'Token no proporcionado.' };
+}
+---
+
+<LandingLayout showAds={showAds}>
+  <UnsubscribePage
+    success={result.success}
+    message={result.message}
+    client:load
+  />
+</LandingLayout>

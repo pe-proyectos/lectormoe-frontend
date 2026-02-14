@@ -40,6 +40,9 @@ interface CommentType {
         name: string;
       };
     }>;
+    permissions?: Array<{
+      role: string;
+    }>;
   };
   replies?: CommentType[];
 }
@@ -164,6 +167,11 @@ const CommentItem: React.FC<CommentItemProps> = ({
           <span className="text-white font-black text-sm uppercase tracking-tight">
             {comment?.user?.username}
           </span>
+          {comment?.user?.permissions?.[0]?.role && comment.user.permissions[0].role !== 'user' && (
+            <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-lg text-[9px] font-bold uppercase tracking-widest">
+              {comment.user.permissions[0].role}
+            </span>
+          )}
           {comment?.user?.subscriptions && comment.user.subscriptions.length > 0 && (
             <span className="px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-lg text-[9px] font-bold uppercase tracking-widest">
               {comment.user.subscriptions[0].subscriptionPlan.name} • {getSubscriptionDays(comment.user.subscriptions[0].createdAt)} días

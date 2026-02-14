@@ -435,12 +435,14 @@ const Navbar: React.FC<NavbarProps> = ({
             <Search size={16} /> Catálogo
           </a>
 
+          {/* Sorteo ended — hidden until next giveaway
           <button
             onClick={() => window.dispatchEvent(new Event('open-sorteo-modal'))}
             className="text-sm font-bold transition-colors flex items-center gap-2 text-yellow-500 hover:text-yellow-400"
           >
             <Gift size={16} /> SORTEO Luckybara
           </button>
+          */}
 
           {activeScan && onGoSubscriptions && (
             <a
@@ -609,6 +611,7 @@ const Navbar: React.FC<NavbarProps> = ({
           >
             <Search size={20} /> Catálogo
           </a>
+          {/* Sorteo ended — hidden until next giveaway
           <button
             onClick={() => {
               setMobileMenuOpen(false);
@@ -618,6 +621,7 @@ const Navbar: React.FC<NavbarProps> = ({
           >
             <Gift size={20} /> SORTEO Luckybara
           </button>
+          */}
           {activeScan && onGoSubscriptions && (
             <a
               href={`/${activeScan?.slug || organization?.slug}/subscriptions`}

@@ -1,5 +1,6 @@
 ---
-import SorteoModal from '../components/landing/SorteoModal';
+// Sorteo ended — hidden until next giveaway
+// import SorteoModal from '../components/landing/SorteoModal';
 
 interface Props {
   title?: string;
@@ -117,7 +118,8 @@ const siteName =
   </head>
   <body>
     <slot />
-    <SorteoModal organization={organization} logged={logged} client:only="react" />
+    <!-- Sorteo ended — hidden until next giveaway -->
+    <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
   </body>
 </html>
 

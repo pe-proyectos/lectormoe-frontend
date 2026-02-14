@@ -24,6 +24,11 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  Mail,
+  CheckCircle,
+  XCircle,
+  Percent,
+  Flame,
 } from 'lucide-react'
 import { DatePicker } from '../DatePicker'
 import { callAPI } from '../../util/callApi'
@@ -103,6 +108,22 @@ interface MonthlyRevenue {
   subscriptionPayments: number
 }
 
+interface EmailStats {
+  totalSent: number
+  totalFailed: number
+  deliveryRate: number
+  emailsOverTime: Array<{ date: string; sent: number; failed: number }>
+  typeDistribution: Array<{ id: string; label: string; value: number }>
+}
+
+interface EngagementStats {
+  activeReaders: number
+  totalChaptersRead: number
+  avgChaptersPerReader: number
+  readingOverTime: Array<{ date: string; chapters: number; readers: number }>
+  topReaders: Array<{ id: number; username: string; slug: string; imageUrl: string | null; chaptersRead: number }>
+}
+
 type DatePreset = '7d' | '14d' | '30d' | '90d' | 'custom'
 
 const nivoTheme = {
@@ -137,6 +158,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
   const [to, setTo] = useState(() => new Date())
   const [subStats, setSubStats] = useState<SubscriptionStats | null>(null)
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([])
+  const [emailStats, setEmailStats] = useState<EmailStats | null>(null)
+  const [engagementStats, setEngagementStats] = useState<EngagementStats | null>(null)
 
   const applyPreset = useCallback((p: DatePreset) => {
     setPreset(p)
@@ -152,8 +175,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
     const params = new URLSearchParams()
     params.append('from', from.toISOString())
     params.append('to', to.toISOString())
-    callAPI(`/api/analytics?${params}`)
-      .then((data) => setStats(data))
+    const queryStr = params.toString()
+
+    Promise.all([
+      callAPI(`/api/analytics?${queryStr}`).then((data) => setStats(data)),
+      callAPI(`/api/email-statistics?${queryStr}`).then((data) => setEmailStats(data)).catch(() => {}),
+      callAPI(`/api/engagement-statistics?${queryStr}`).then((data) => setEngagementStats(data)).catch(() => {}),
+    ])
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoading(false))
   }, [from, to])
@@ -675,6 +703,134 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ organization, language,
           data={stats?.view_register_page?.series || []}
           labels={stats?.view_register_page?.labels || []} color="#10b981" />
       </div>
+
+      {/* ═══════════════ Email Statistics ═══════════════ */}
+      {emailStats && (
+        <>
+          <Card>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-cyan-500/10 rounded-lg"><Mail size={18} className="text-cyan-500" /></div>
+              <h3 className="text-sm font-black text-white uppercase tracking-tight">Estadisticas de Email</h3>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+            <StatCard title="Emails Enviados" value={emailStats.totalSent} icon={CheckCircle} color="bg-emerald-600" />
+            <StatCard title="Emails Fallidos" value={emailStats.totalFailed} icon={XCircle} color="bg-red-600" />
+            <Card className="flex-1 min-w-[140px]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-cyan-600">
+                  <Percent size={20} className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider truncate">Tasa de Entrega</p>
+                  <p className="text-2xl font-black text-white tracking-tight">{emailStats.deliveryRate}%</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <LineChartCard title="Emails por Dia" icon={Mail}
+              data={emailStats.emailsOverTime.map(d => d.sent)}
+              labels={emailStats.emailsOverTime.map(d => {
+                const date = new Date(d.date)
+                return `${date.getDate()}/${date.getMonth() + 1}`
+              })}
+              color="#10b981" height={250} />
+            <PieChartCard title="Distribucion por Tipo" icon={Mail}
+              data={emailStats.typeDistribution} height={250} />
+          </div>
+        </>
+      )}
+
+      {/* ═══════════════ Engagement Statistics ═══════════════ */}
+      {engagementStats && (
+        <>
+          <Card>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-cyan-500/10 rounded-lg"><Flame size={18} className="text-cyan-500" /></div>
+              <h3 className="text-sm font-black text-white uppercase tracking-tight">Engagement de Usuarios</h3>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+            <StatCard title="Lectores Activos" value={engagementStats.activeReaders} icon={Users} color="bg-violet-600" />
+            <StatCard title="Capitulos Leidos" value={engagementStats.totalChaptersRead} icon={BookOpen} color="bg-amber-600" />
+            <Card className="flex-1 min-w-[140px]">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-cyan-600">
+                  <BarChart3 size={20} className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider truncate">Caps/Lector Promedio</p>
+                  <p className="text-2xl font-black text-white tracking-tight">{engagementStats.avgChaptersPerReader}</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <LineChartCard title="Actividad de Lectura por Dia" icon={BookOpen}
+              data={engagementStats.readingOverTime.map(d => d.chapters)}
+              labels={engagementStats.readingOverTime.map(d => {
+                const date = new Date(d.date)
+                return `${date.getDate()}/${date.getMonth() + 1}`
+              })}
+              color="#f59e0b" height={250} />
+            <LineChartCard title="Lectores Unicos por Dia" icon={Users}
+              data={engagementStats.readingOverTime.map(d => d.readers)}
+              labels={engagementStats.readingOverTime.map(d => {
+                const date = new Date(d.date)
+                return `${date.getDate()}/${date.getMonth() + 1}`
+              })}
+              color="#8b5cf6" height={250} />
+          </div>
+
+          {/* Top Readers Table */}
+          {engagementStats.topReaders.length > 0 && (
+            <Card>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-cyan-500/10 rounded-lg"><Flame size={18} className="text-cyan-500" /></div>
+                <h3 className="text-sm font-black text-white uppercase tracking-tight">Top 10 Lectores del Periodo</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800">
+                      <th className="text-left py-2.5 px-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">#</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Usuario</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-bold text-zinc-500 uppercase tracking-wider">Capitulos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {engagementStats.topReaders.map((reader, i) => (
+                      <tr key={reader.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                        <td className="py-2.5 px-3 text-zinc-500 font-bold">{i + 1}</td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-zinc-400 font-bold text-xs">
+                              {reader.imageUrl ? (
+                                <img src={reader.imageUrl} alt={reader.username} className="w-full h-full object-cover" />
+                              ) : (
+                                reader.username[0].toUpperCase()
+                              )}
+                            </div>
+                            <span className="text-white font-medium">{reader.username}</span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className="bg-cyan-500/10 text-cyan-400 text-xs font-bold px-2 py-1 rounded-md">{reader.chaptersRead}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   )
 }

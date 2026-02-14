@@ -30,14 +30,16 @@ interface SettingsPageContainerProps {
   language: string;
   organization?: Organization;
   organizationSlug?: string;
+  isStaff?: boolean;
 }
 
-const SettingsPageContainer: React.FC<SettingsPageContainerProps> = ({ 
-  user, 
-  logged, 
-  language, 
+const SettingsPageContainer: React.FC<SettingsPageContainerProps> = ({
+  user,
+  logged,
+  language,
   organization,
-  organizationSlug 
+  organizationSlug,
+  isStaff = false
 }) => {
   const navigateTo = (path: string) => {
     if (typeof window !== 'undefined') {
@@ -60,10 +62,11 @@ const SettingsPageContainer: React.FC<SettingsPageContainerProps> = ({
         onOpenRegister={() => navigateTo('/register')}
       />
       
-      <SettingsPage 
-        user={user} 
+      <SettingsPage
+        user={user}
         language={language}
         organizationSlug={organizationSlug}
+        isStaff={isStaff}
       />
       
       <Footer 

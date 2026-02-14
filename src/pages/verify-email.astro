@@ -1,0 +1,33 @@
+---
+import LandingLayout from "../layouts/LandingLayout.astro";
+import VerifyEmailPage from "../components/landing/VerifyEmailPage";
+
+// @ts-ignore
+const { showAds, callAPI } = Astro.locals;
+
+const token = Astro.url.searchParams.get('token');
+let verificationResult = { success: false, message: '' };
+
+if (token) {
+  try {
+    const result = await callAPI(`/api/auth/verify-email?token=${token}`);
+    if (result?.status === false) {
+      verificationResult = { success: false, message: result?.message || 'Token no valido o expirado.' };
+    } else {
+      verificationResult = { success: true, message: result?.message || 'Email verificado exitosamente!' };
+    }
+  } catch (error: any) {
+    verificationResult = { success: false, message: error?.message || 'Token no valido o expirado.' };
+  }
+} else {
+  verificationResult = { success: false, message: 'Token de verificacion no proporcionado.' };
+}
+---
+
+<LandingLayout showAds={showAds}>
+  <VerifyEmailPage
+    success={verificationResult.success}
+    message={verificationResult.message}
+    client:load
+  />
+</LandingLayout>
