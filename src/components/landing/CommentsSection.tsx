@@ -33,6 +33,7 @@ interface CommentType {
   user: {
     id: number;
     username: string;
+    slug: string;
     imageUrl: string | null;
     subscriptions?: Array<{
       createdAt: string;
@@ -152,21 +153,24 @@ const CommentItem: React.FC<CommentItemProps> = ({
   return (
     <div className="flex gap-6 items-start group min-w-0 w-full">
       {/* Avatar */}
-      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 font-black text-xl shadow-lg overflow-hidden flex-shrink-0">
+      <a
+        href={`/profile/${comment?.user?.slug}`}
+        className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 font-black text-xl shadow-lg overflow-hidden flex-shrink-0 hover:border-cyan-500/50 transition-colors"
+      >
         {comment?.user?.imageUrl ? (
           <img src={comment.user.imageUrl} alt={comment.user.username} className="w-full h-full object-cover" />
         ) : (
           <span>{comment?.user?.username?.[0]?.toUpperCase() || '?'}</span>
         )}
-      </div>
+      </a>
 
       {/* Comment Content */}
       <div className="flex-1 space-y-3 min-w-0 max-w-full">
         {/* User Info */}
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-white font-black text-sm uppercase tracking-tight">
+          <a href={`/profile/${comment?.user?.slug}`} className="text-white font-black text-sm uppercase tracking-tight hover:text-cyan-400 transition-colors">
             {comment?.user?.username}
-          </span>
+          </a>
           {comment?.user?.permissions?.[0]?.role && comment.user.permissions[0].role !== 'user' && (
             <span className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-lg text-[9px] font-bold uppercase tracking-widest">
               {comment.user.permissions[0].role}

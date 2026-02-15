@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles, BookOpen, Medal } from 'lucide-react';
+import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles, BookOpen, Medal, ChevronDown } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+
+interface TopCommenter {
+  id: number;
+  username: string;
+  slug: string;
+  imageUrl: string | null;
+  commentCount: number;
+}
 
 interface ScanSidebarProps {
   subscribeUrl: string;
@@ -57,7 +65,15 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
   const [topReaders, setTopReaders] = useState<TopReader[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loadingDonors, setLoadingDonors] = useState(true);
+  const [topCommenters, setTopCommenters] = useState<TopCommenter[]>([]);
   const [loadingReaders, setLoadingReaders] = useState(true);
+  const [loadingCommenters, setLoadingCommenters] = useState(true);
+
+  // Collapse states (all collapsed by default)
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [donorsOpen, setDonorsOpen] = useState(false);
+  const [readersOpen, setReadersOpen] = useState(false);
+  const [commentersOpen, setCommentersOpen] = useState(false);
 
   // Obtener planes de suscripción
   useEffect(() => {
@@ -249,6 +265,31 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
     }
   }, [organization]);
 
+  useEffect(() => {
+    const fetchTopCommenters = async () => {
+      try {
+        setLoadingCommenters(true);
+        const API_URL = import.meta.env['PUBLIC_API_URL'];
+        const response = await fetch(`${API_URL}/api/organization/${organization?.slug}/top-commenters`, {
+          credentials: 'include',
+        });
+        const result = await response.json();
+
+        if (result?.status === true && result?.data) {
+          setTopCommenters(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching top commenters:', error);
+      } finally {
+        setLoadingCommenters(false);
+      }
+    };
+
+    if (organization?.slug) {
+      fetchTopCommenters();
+    }
+  }, [organization]);
+
   const handleLogin = () => {
     window.location.href = `/${organization?.slug}/login`;
   };
@@ -260,215 +301,323 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
   return (
     <aside className="lg:col-span-4 space-y-8 pt-16">
       <div className="sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto pr-2 custom-scrollbar space-y-8">
-        
-        {/* Continuar Leyendo */}
+
+        {/* 1. Continuar Leyendo */}
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
-          <div className="flex items-center justify-between mb-6">
+          <div
+            className="flex items-center justify-between cursor-pointer select-none"
+            onClick={() => setHistoryOpen(!historyOpen)}
+          >
             <h3 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
               <BookMarked size={20} className="text-cyan-500" /> Continuar leyendo
             </h3>
+            <ChevronDown size={16} className={`text-zinc-500 transition-transform duration-200 ${historyOpen ? 'rotate-180' : ''}`} />
           </div>
 
-          {!logged ? (
-            <div className="space-y-6 text-center py-4">
-              <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700/50">
-                <LogIn size={24} className="text-zinc-500" />
-              </div>
-              <p className="text-zinc-400 text-sm font-medium leading-relaxed">
-                Regístrate o Inicia sesión para ver y guardar tu historial de lectura.
-              </p>
-              <button 
-                onClick={handleLogin}
-                className="w-full py-3.5 bg-cyan-500 text-zinc-950 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-lg shadow-cyan-500/10 active:scale-95"
-              >
-                Ingresar ahora
-              </button>
-            </div>
-          ) : userHistory.length > 0 ? (
-            <div className="space-y-3">
-              {userHistory.map((item) => (
-                <div 
-                  key={item.id} 
-                  className="group bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden"
-                  onClick={() => handleMangaClick(item.mangaUrl)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="min-w-0 flex-1 pr-2">
-                      <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-1 truncate">{item.mangaName}</p>
-                      <h4 className="text-white font-bold text-xs truncate">
-                        Cap. {item.chapterNumber} - {item.chapterTitle}
-                      </h4>
-                    </div>
-                    <button className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">
-                      <Play size={14} fill="currentColor" />
-                    </button>
+          {historyOpen && (
+            <div className="mt-6">
+              {!logged ? (
+                <div className="space-y-6 text-center py-4">
+                  <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700/50">
+                    <LogIn size={24} className="text-zinc-500" />
                   </div>
-                  
-                  <div className="flex items-center gap-1.5 text-zinc-600 text-[8px] font-bold uppercase tracking-widest">
-                    <Clock size={10} />
-                    <span>Visto: {item.lastVisited}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-zinc-500 text-sm font-medium">No tienes historial de lectura aún</p>
-            </div>
-          )}
-        </div>
-
-        {/* Top Lectores */}
-        <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/5 blur-3xl rounded-full" />
-
-          <div className="flex items-center justify-between mb-6 relative z-10">
-            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
-              <BookOpen size={20} className="text-cyan-500" /> Top Lectores
-            </h3>
-            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Esta semana</span>
-          </div>
-
-          {loadingReaders ? (
-            <div className="space-y-3 relative z-10">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-zinc-950/40 rounded-xl animate-pulse">
-                  <div className="w-6 h-6 bg-zinc-800 rounded-full" />
-                  <div className="w-8 h-8 bg-zinc-800 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-zinc-800 rounded w-24" />
-                    <div className="h-2 bg-zinc-800 rounded w-16" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : topReaders.length > 0 ? (
-            <div className="space-y-2 relative z-10">
-              {topReaders.map((reader, index) => {
-                const rankColors = index === 0
-                  ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
-                  : index === 1
-                    ? 'text-zinc-300 bg-zinc-400/10 border-zinc-400/30'
-                    : index === 2
-                      ? 'text-amber-600 bg-amber-600/10 border-amber-600/30'
-                      : 'text-zinc-500 bg-zinc-800/50 border-zinc-700/30';
-
-                return (
-                  <a
-                    key={reader.id}
-                    href={`/profile/${reader.slug}`}
-                    className="flex items-center gap-3 p-3 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl hover:bg-zinc-800/80 transition-all hover:translate-x-1"
+                  <p className="text-zinc-400 text-sm font-medium leading-relaxed">
+                    Regístrate o Inicia sesión para ver y guardar tu historial de lectura.
+                  </p>
+                  <button
+                    onClick={handleLogin}
+                    className="w-full py-3.5 bg-cyan-500 text-zinc-950 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-lg shadow-cyan-500/10 active:scale-95"
                   >
-                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-black text-[10px] ${rankColors}`}>
-                      {index < 3 ? <Medal size={12} fill="currentColor" /> : index + 1}
+                    Ingresar ahora
+                  </button>
+                </div>
+              ) : userHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {userHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="group bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden"
+                      onClick={() => handleMangaClick(item.mangaUrl)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-1 truncate">{item.mangaName}</p>
+                          <h4 className="text-white font-bold text-xs truncate">
+                            Cap. {item.chapterNumber} - {item.chapterTitle}
+                          </h4>
+                        </div>
+                        <button className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">
+                          <Play size={14} fill="currentColor" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-zinc-600 text-[8px] font-bold uppercase tracking-widest">
+                        <Clock size={10} />
+                        <span>Visto: {item.lastVisited}</span>
+                      </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center text-zinc-400 font-black text-xs">
-                      {reader.imageUrl ? (
-                        <img
-                          src={reader.imageUrl}
-                          alt={reader.username}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        reader.username[0].toUpperCase()
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-xs leading-none mb-1 truncate">{reader.username}</p>
-                      <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
-                        {reader.chaptersRead} capítulos
-                      </p>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 relative z-10">
-              <p className="text-zinc-500 text-sm font-medium">No hay lectores activos esta semana</p>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-zinc-500 text-sm font-medium">No tienes historial de lectura aún</p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Top Donadores Agrupados */}
+        {/* 2. Top Donadores Agrupados */}
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/5 blur-3xl rounded-full" />
-          
-          <div className="flex items-center justify-between mb-6 relative z-10">
+
+          <div
+            className="flex items-center justify-between relative z-10 cursor-pointer select-none"
+            onClick={() => setDonorsOpen(!donorsOpen)}
+          >
             <h3 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
               <Trophy size={20} className="text-yellow-500" /> Top Donadores
             </h3>
+            <ChevronDown size={16} className={`text-zinc-500 transition-transform duration-200 ${donorsOpen ? 'rotate-180' : ''}`} />
           </div>
-          
-          {loadingDonors ? (
-            <div className="space-y-3 relative z-10">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-zinc-950/40 rounded-xl animate-pulse">
-                  <div className="w-8 h-8 bg-zinc-800 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 bg-zinc-800 rounded w-24" />
-                    <div className="h-2 bg-zinc-800 rounded w-16" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : groupedDonors.length > 0 ? (
-            <div className="pr-3 space-y-8 relative z-10">
-              {groupedDonors.map((group) => {
-                const config = getPlanColorConfig(group.planIndex, subscriptionPlans.length);
-                return (
-                  <div key={group.planName} className="space-y-4">
-                    <div className="flex items-center gap-3 sticky top-0 bg-[#0c0c0e]/80 backdrop-blur-md py-1 z-10">
-                      <div className={`px-3 py-1 rounded-lg border font-black text-[10px] tracking-[0.2em] uppercase flex items-center gap-2 ${config.bg} ${config.color} ${config.border}`}>
-                        {config.icon} {group.planName}
-                      </div>
-                      <div className="h-px flex-1 bg-zinc-800/50" />
-                    </div>
 
-                    <div className="space-y-2">
-                      {group.members.map((donor) => (
-                        <div 
-                          key={donor.id} 
-                          className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl hover:bg-zinc-800/80 transition-all hover:translate-x-1"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center font-black text-xs border border-zinc-800 transition-colors ${config.color} overflow-hidden`}>
-                              {donor.imageUrl ? (
-                                <img 
-                                  src={donor.imageUrl} 
-                                  alt={donor.username}
-                                  className="w-full h-full rounded-full object-cover"
-                                />
-                              ) : (
-                                donor.username[0].toUpperCase()
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-white font-bold text-xs leading-none mb-1">{donor.username}</p>
-                              <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
-                                {donor.days} días
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+          {donorsOpen && (
+            <div className="mt-6">
+              {loadingDonors ? (
+                <div className="space-y-3 relative z-10">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-zinc-950/40 rounded-xl animate-pulse">
+                      <div className="w-8 h-8 bg-zinc-800 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-zinc-800 rounded w-24" />
+                        <div className="h-2 bg-zinc-800 rounded w-16" />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 relative z-10">
-              <p className="text-zinc-500 text-sm font-medium mb-4">Aún no hay donadores</p>
+                  ))}
+                </div>
+              ) : groupedDonors.length > 0 ? (
+                <div className="pr-3 space-y-8 relative z-10">
+                  {groupedDonors.map((group) => {
+                    const config = getPlanColorConfig(group.planIndex, subscriptionPlans.length);
+                    return (
+                      <div key={group.planName} className="space-y-4">
+                        <div className="flex items-center gap-3 sticky top-0 bg-[#0c0c0e]/80 backdrop-blur-md py-1 z-10">
+                          <div className={`px-3 py-1 rounded-lg border font-black text-[10px] tracking-[0.2em] uppercase flex items-center gap-2 ${config.bg} ${config.color} ${config.border}`}>
+                            {config.icon} {group.planName}
+                          </div>
+                          <div className="h-px flex-1 bg-zinc-800/50" />
+                        </div>
+
+                        <div className="space-y-2">
+                          {group.members.map((donor) => (
+                            <div
+                              key={donor.id}
+                              className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl hover:bg-zinc-800/80 transition-all hover:translate-x-1"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center font-black text-xs border border-zinc-800 transition-colors ${config.color} overflow-hidden`}>
+                                  {donor.imageUrl ? (
+                                    <img
+                                      src={donor.imageUrl}
+                                      alt={donor.username}
+                                      className="w-full h-full rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    donor.username[0].toUpperCase()
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-white font-bold text-xs leading-none mb-1">{donor.username}</p>
+                                  <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
+                                    {donor.days} días
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 relative z-10">
+                  <p className="text-zinc-500 text-sm font-medium mb-4">Aún no hay donadores</p>
+                </div>
+              )}
+
+              <a
+                href={subscribeUrl}
+                className="inline-flex w-full mt-6 py-3 bg-yellow-500 text-zinc-950 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white transition-all active:scale-95 shadow-lg shadow-yellow-500/10 justify-center"
+              >
+                Ser Patrocinador
+              </a>
             </div>
           )}
+        </div>
 
-          <a 
-            href={subscribeUrl}
-            className="inline-flex w-full mt-6 py-3 bg-yellow-500 text-zinc-950 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white transition-all active:scale-95 shadow-lg shadow-yellow-500/10 justify-center"
+        {/* 3. Top Lectores */}
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/5 blur-3xl rounded-full" />
+
+          <div
+            className="flex items-center justify-between relative z-10 cursor-pointer select-none"
+            onClick={() => setReadersOpen(!readersOpen)}
           >
-            Ser Patrocinador
-          </a>
+            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+              <BookOpen size={20} className="text-cyan-500" /> Top Lectores
+            </h3>
+            <div className="flex items-center gap-3">
+              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Esta semana</span>
+              <ChevronDown size={16} className={`text-zinc-500 transition-transform duration-200 ${readersOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+
+          {readersOpen && (
+            <div className="mt-6">
+              {loadingReaders ? (
+                <div className="space-y-3 relative z-10">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-zinc-950/40 rounded-xl animate-pulse">
+                      <div className="w-6 h-6 bg-zinc-800 rounded-full" />
+                      <div className="w-8 h-8 bg-zinc-800 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-zinc-800 rounded w-24" />
+                        <div className="h-2 bg-zinc-800 rounded w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : topReaders.length > 0 ? (
+                <div className="space-y-2 relative z-10">
+                  {topReaders.map((reader, index) => {
+                    const rankColors = index === 0
+                      ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
+                      : index === 1
+                        ? 'text-zinc-300 bg-zinc-400/10 border-zinc-400/30'
+                        : index === 2
+                          ? 'text-amber-600 bg-amber-600/10 border-amber-600/30'
+                          : 'text-zinc-500 bg-zinc-800/50 border-zinc-700/30';
+
+                    return (
+                      <a
+                        key={reader.id}
+                        href={`/profile/${reader.slug}`}
+                        className="flex items-center gap-3 p-3 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl hover:bg-zinc-800/80 transition-all hover:translate-x-1"
+                      >
+                        <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-black text-[10px] ${rankColors}`}>
+                          {index < 3 ? <Medal size={12} fill="currentColor" /> : index + 1}
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center text-zinc-400 font-black text-xs">
+                          {reader.imageUrl ? (
+                            <img
+                              src={reader.imageUrl}
+                              alt={reader.username}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            reader.username[0].toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-xs leading-none mb-1 truncate">{reader.username}</p>
+                          <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
+                            {reader.chaptersRead} capítulos
+                          </p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 relative z-10">
+                  <p className="text-zinc-500 text-sm font-medium">No hay lectores activos esta semana</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 4. Top Comentaristas */}
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/5 blur-3xl rounded-full" />
+
+          <div
+            className="flex items-center justify-between relative z-10 cursor-pointer select-none"
+            onClick={() => setCommentersOpen(!commentersOpen)}
+          >
+            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+              <MessageSquare size={20} className="text-purple-500" /> Top Comentaristas
+            </h3>
+            <div className="flex items-center gap-3">
+              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Esta semana</span>
+              <ChevronDown size={16} className={`text-zinc-500 transition-transform duration-200 ${commentersOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+
+          {commentersOpen && (
+            <div className="mt-6">
+              {loadingCommenters ? (
+                <div className="space-y-3 relative z-10">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-zinc-950/40 rounded-xl animate-pulse">
+                      <div className="w-6 h-6 bg-zinc-800 rounded-full" />
+                      <div className="w-8 h-8 bg-zinc-800 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-zinc-800 rounded w-24" />
+                        <div className="h-2 bg-zinc-800 rounded w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : topCommenters.length > 0 ? (
+                <div className="space-y-2 relative z-10">
+                  {topCommenters.map((commenter, index) => {
+                    const rankColors = index === 0
+                      ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
+                      : index === 1
+                        ? 'text-zinc-300 bg-zinc-400/10 border-zinc-400/30'
+                        : index === 2
+                          ? 'text-amber-600 bg-amber-600/10 border-amber-600/30'
+                          : 'text-zinc-500 bg-zinc-800/50 border-zinc-700/30';
+
+                    return (
+                      <a
+                        key={commenter.id}
+                        href={`/profile/${commenter.slug}`}
+                        className="flex items-center gap-3 p-3 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl hover:bg-zinc-800/80 transition-all hover:translate-x-1"
+                      >
+                        <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-black text-[10px] ${rankColors}`}>
+                          {index < 3 ? <Medal size={12} fill="currentColor" /> : index + 1}
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center text-zinc-400 font-black text-xs">
+                          {commenter.imageUrl ? (
+                            <img
+                              src={commenter.imageUrl}
+                              alt={commenter.username}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            commenter.username[0].toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-xs leading-none mb-1 truncate">{commenter.username}</p>
+                          <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">
+                            {commenter.commentCount} {commenter.commentCount === 1 ? 'comentario' : 'comentarios'}
+                          </p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 relative z-10">
+                  <p className="text-zinc-500 text-sm font-medium">No hay comentaristas activos esta semana</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Discord Advertisement Banner - Solo se muestra si hay discordUrl */}
@@ -481,7 +630,7 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
             <div className="absolute top-4 right-4 text-white/20 animate-pulse">
               <Sparkles size={24} />
             </div>
-            
+
             <div className="relative z-10 space-y-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform">
@@ -492,14 +641,14 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
                   <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">Discord Oficial</h3>
                 </div>
               </div>
-              
+
               <p className="text-white/90 text-sm font-bold leading-relaxed">
                 ¿Quieres leer antes que nadie? ¡Únete a nuestro servidor para recibir alertas al instante y charlar con el staff!
               </p>
-              
-              <a 
-                href={discordUrl} 
-                target="_blank" 
+
+              <a
+                href={discordUrl}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex w-full items-center justify-center gap-3 bg-white text-[#5865F2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-zinc-100 transition-all shadow-xl active:scale-95 group-hover:shadow-white/20"
               >

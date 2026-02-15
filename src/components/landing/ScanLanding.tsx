@@ -94,6 +94,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       userHasSubscription: userHasSubscription || false,
       subscriptionPlansCanReadUnreleased: m.subscriptionPlansCanReadUnreleased,
       subscriptionPlansCanReadReleased: m.subscriptionPlansCanReadReleased,
+      isNSFW: m.isNSFW || organization?.isNSFW || false,
     };
   };
 

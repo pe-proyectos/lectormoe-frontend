@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Play, Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { Play, Plus, ChevronRight, ChevronLeft, Check, AlertTriangle } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface Manga {
@@ -16,6 +16,7 @@ interface Manga {
   lastUpdate?: string;
   chapter?: string;
   chapterTitle?: string;
+  isNSFW?: boolean;
 }
 
 interface HeroProps {
@@ -222,8 +223,15 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
           {/* Side Image - Smaller scale */}
           <div className="hidden lg:block lg:col-span-5 justify-self-end">
             <div className="relative w-[300px] h-[440px] rounded-2xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/5 group transform rotate-2 hover:rotate-0 transition-all duration-500">
-              <img src={current.cover} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={current.title} />
+              <img src={current.cover} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${current.isNSFW ? 'blur-xl scale-110' : ''}`} alt={current.title} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              {current.isNSFW && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                  <div className="bg-red-500/90 text-white px-4 py-2 rounded-xl font-black text-sm uppercase tracking-widest flex items-center gap-2 shadow-lg">
+                    <AlertTriangle size={16} /> +18
+                  </div>
+                </div>
+              )}
               <div className="absolute bottom-4 left-4">
                  <p className="text-white font-black italic text-xl drop-shadow-lg">{current.title}</p>
               </div>

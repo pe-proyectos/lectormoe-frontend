@@ -5,6 +5,7 @@ import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 export function FeaturedMangaCard({ organization, language, manga, organizationSlug, ...props }) {
   const _ = getTranslator(language);
   const orgSlug = organizationSlug || getOrgSlugFromPath();
+  const shouldBlur = manga?.isNSFW === true || organization?.isNSFW === true;
   
   // El slug puede estar en manga.slug, manga.mangaSlug, o manga.manga.slug
   const mangaSlug = manga?.manga?.slug || manga?.slug || manga?.mangaSlug;
@@ -28,7 +29,7 @@ export function FeaturedMangaCard({ organization, language, manga, organizationS
               alt={manga?.title}
               decoding="async"
               loading="lazy"
-              className="absolute inset-0 w-full min-h-full min-w-full max-h-full mx-auto object-cover duration-300 group-hover:scale-[102%] transition-transform"
+              className={`absolute inset-0 w-full min-h-full min-w-full max-h-full mx-auto object-cover duration-300 group-hover:scale-[102%] transition-transform ${shouldBlur ? 'blur-xl scale-110' : ''}`}
             />
           ) : (
             <LazyImage
@@ -36,8 +37,16 @@ export function FeaturedMangaCard({ organization, language, manga, organizationS
               alt={manga?.title}
               decoding="async"
               loading="lazy"
-              className="absolute inset-0 w-full mx-auto object-cover duration-300 top-1/2 -translate-y-1/2 group-hover:scale-[102%] transition-transform"
+              className={`absolute inset-0 w-full mx-auto object-cover duration-300 top-1/2 -translate-y-1/2 group-hover:scale-[102%] transition-transform ${shouldBlur ? 'blur-xl scale-110' : ''}`}
             />
+          )}
+          {/* NSFW Badge */}
+          {shouldBlur && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+              <div className="bg-red-500/90 text-white px-6 py-3 rounded-xl font-black text-lg uppercase tracking-widest shadow-lg">
+                +18
+              </div>
+            </div>
           )}
           <div className="to-bg-black-10 absolute bottom-0 h-2/4 lg:h-3/4 w-full bg-gradient-to-t from-black/90 via-black/60 lg:via-black/80 blur-sm" />
           <div className="absolute top-4 right-4 justify-end">

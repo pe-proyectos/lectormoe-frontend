@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import NSFWAgeModal from './NSFWAgeModal';
+import { isNSFWContent, hasAgeVerification } from '../../util/nsfw';
 
 interface ReaderPageContainerProps {
   // Required props
@@ -27,6 +29,7 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
   hasAccess = true,
 }) => {
   const [Reader, setReader] = useState<any>(null);
+  const [showNSFWModal, setShowNSFWModal] = useState(false);
 
   useEffect(() => {
     // Cargar el Reader solo en el cliente
@@ -35,8 +38,21 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
     });
   }, []);
 
+  // Check if NSFW content and show age verification modal
+  useEffect(() => {
+    const mangaIsNSFW = isNSFWContent(manga) || organization?.isNSFW === true;
+    if (mangaIsNSFW && !hasAgeVerification()) {
+      setShowNSFWModal(true);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-black flex flex-col">
+      {/* NSFW Age Verification Modal */}
+      {showNSFWModal && (
+        <NSFWAgeModal onConfirm={() => setShowNSFWModal(false)} />
+      )}
+
       <Navbar
         user={user}
         logged={logged || false}

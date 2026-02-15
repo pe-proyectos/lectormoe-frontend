@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown } from 'lucide-react';
+import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
 import MangaCard3D from './MangaCard3D';
@@ -8,6 +8,8 @@ interface ProfilePageProps {
   user?: any;
   logged?: boolean;
   organization: any;
+  profileSlug?: string;
+  isOwner?: boolean;
 }
 
 interface FollowedScan {
@@ -47,16 +49,19 @@ interface ReadingHistory {
   lastReadAt: string;
 }
 
-const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization }) => {
+const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization, profileSlug, isOwner = false }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followedScans, setFollowedScans] = useState<FollowedScan[]>([]);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(!isOwner);
   const [stats, setStats] = useState({
     read: 0,
     toRead: 0,
     favorites: 0,
-    activeDays: 0,
+    accountAge: 0,
+    activeDaysStreak: 0,
     streak: 0,
     favoriteGenre: null as string | null,
     hoursEstimated: 0,
@@ -72,7 +77,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [favoritesTotal, setFavoritesTotal] = useState(0);
   const [loadingMoreFavorites, setLoadingMoreFavorites] = useState(false);
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
-  
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [commentRank, setCommentRank] = useState<{ rank: number; count: number } | null>(null);
+  const [loadingAchievements, setLoadingAchievements] = useState(true);
+
   const [editData, setEditData] = useState({
     name: user?.username || '',
     avatar: user?.imageUrl || '',
@@ -86,28 +94,28 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
 
-  // Check if user has active subscription (Pro)
-  const isUserPro = user?.subscriptions?.some((sub: any) => sub.active === true) || false;
-  
+  // The display user: owner uses their own data, visitors use fetched profile
+  const displayUser = isOwner ? user : profileData;
+
+  // Check if display user has active subscription (Pro)
+  const isUserPro = displayUser?.subscriptions?.some((sub: any) => sub.active === true) || false;
+
   // Get the most expensive active subscription across all organizations
   const getMostExpensiveActiveSubscription = () => {
-    if (!user?.subscriptions) return null;
-    
-    // Filtrar todas las suscripciones activas
-    const activeSubscriptions = user.subscriptions.filter((sub: any) => {
+    if (!displayUser?.subscriptions) return null;
+
+    const activeSubscriptions = displayUser.subscriptions.filter((sub: any) => {
       return sub.active === true && sub.subscriptionPlan?.price;
     });
-    
+
     if (activeSubscriptions.length === 0) return null;
-    
-    // Si hay organización, filtrar por esa organización primero
+
     if (organization) {
       const orgSubscriptions = activeSubscriptions.filter(
         (sub: any) => sub.subscriptionPlan?.organizationId === organization.id
       );
-      
+
       if (orgSubscriptions.length > 0) {
-        // Encontrar la suscripción más cara de esta organización
         return orgSubscriptions.reduce((prev: any, current: any) => {
           const prevPrice = prev.subscriptionPlan?.price || 0;
           const currentPrice = current.subscriptionPlan?.price || 0;
@@ -115,30 +123,26 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         });
       }
     }
-    
-    // Si no hay organización o no hay suscripciones de esa organización, buscar en todas
+
     const mostExpensive = activeSubscriptions.reduce((prev: any, current: any) => {
       const prevPrice = prev.subscriptionPlan?.price || 0;
       const currentPrice = current.subscriptionPlan?.price || 0;
       return currentPrice > prevPrice ? current : prev;
     });
-    
+
     return mostExpensive;
   };
-  
+
   const mostExpensiveSubscription = getMostExpensiveActiveSubscription();
-  
+
   // Load subscription plans to determine color
   useEffect(() => {
-    // Si hay organización, cargar planes de esa organización
-    // Si no hay organización pero hay suscripción, intentar cargar planes de la organización de la suscripción
     const targetOrgId = organization?.id || mostExpensiveSubscription?.subscriptionPlan?.organizationId;
-    
+
     if (!targetOrgId) return;
-    
+
     const fetchPlans = async () => {
       try {
-        // Si tenemos organización con slug, usar callAPI normal
         if (organization?.slug) {
           const result = await callAPI('/api/subscription-plan');
           if (result && typeof result === 'object' && Array.isArray(result.items) && result.items.length > 0) {
@@ -146,8 +150,6 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             setSubscriptionPlans(sortedPlans);
           }
         } else {
-          // Si no tenemos slug pero tenemos suscripción, intentar obtener planes de todas las organizaciones
-          // y filtrar por la organización de la suscripción
           const result = await callAPI('/api/subscription-plan');
           if (result && typeof result === 'object' && Array.isArray(result.items) && result.items.length > 0) {
             const orgPlans = result.items.filter((plan: any) => plan.organizationId === targetOrgId);
@@ -161,17 +163,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         console.error('Error fetching subscription plans:', error);
       }
     };
-    
+
     fetchPlans();
   }, [mostExpensiveSubscription, organization]);
-  
-  // Get color for subscription plan based on price order (similar to SubscriptionPage)
+
+  // Get color for subscription plan based on price order
   const getSubscriptionColor = (subscription: any) => {
     if (!subscription?.subscriptionPlan) {
       return { bg: 'bg-zinc-800', text: 'text-zinc-500' };
     }
-    
-    // Si no tenemos planes cargados, usar color basado en precio absoluto
+
     if (subscriptionPlans.length === 0) {
       const price = subscription.subscriptionPlan.price || 0;
       if (price >= 10) return { bg: 'bg-yellow-500', text: 'text-zinc-950' };
@@ -179,37 +180,34 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       if (price >= 2) return { bg: 'bg-cyan-500', text: 'text-zinc-950' };
       return { bg: 'bg-zinc-600', text: 'text-white' };
     }
-    
-    // Encontrar el índice del plan en la lista ordenada por precio
+
     const planIndex = subscriptionPlans.findIndex(
       (plan: any) => plan.id === subscription.subscriptionPlan.id
     );
-    
+
     if (planIndex === -1) {
       return { bg: 'bg-zinc-800', text: 'text-zinc-500' };
     }
-    
+
     const total = subscriptionPlans.length;
-    
-    // Colores basados en el orden (más barato primero): zinc -> cyan -> purple -> yellow
+
     const colors = [
-      { bg: 'bg-zinc-600', text: 'text-white' },      // Más barato
-      { bg: 'bg-cyan-500', text: 'text-zinc-950' },   // Medio-bajo
-      { bg: 'bg-purple-500', text: 'text-white' },   // Medio-alto
-      { bg: 'bg-yellow-500', text: 'text-zinc-950' }, // Más caro
+      { bg: 'bg-zinc-600', text: 'text-white' },
+      { bg: 'bg-cyan-500', text: 'text-zinc-950' },
+      { bg: 'bg-purple-500', text: 'text-white' },
+      { bg: 'bg-yellow-500', text: 'text-zinc-950' },
     ];
-    
+
     if (total === 1) {
-      return colors[3]; // Si solo hay uno, usar el color más alto
+      return colors[3];
     } else if (total === 2) {
       return planIndex === 0 ? colors[0] : colors[3];
     } else if (total === 3) {
       return planIndex === 0 ? colors[0] : planIndex === 1 ? colors[1] : colors[3];
     } else {
-      // 4 o más planes: mapear a los 4 colores
       const lastIndex = total - 1;
       const segmentSize = lastIndex / 3;
-      
+
       if (planIndex === 0) {
         return colors[0];
       } else if (planIndex === lastIndex) {
@@ -223,14 +221,50 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       }
     }
   };
-  
-  const subscriptionColor = mostExpensiveSubscription 
+
+  const subscriptionColor = mostExpensiveSubscription
     ? getSubscriptionColor(mostExpensiveSubscription)
     : { bg: 'bg-zinc-800', text: 'text-zinc-500' };
 
-  // Update editData when user changes
+  // Fetch public profile for non-owner visitors
   useEffect(() => {
-    if (user) {
+    if (isOwner || !profileSlug) return;
+
+    const fetchPublicProfile = async () => {
+      try {
+        setLoadingProfile(true);
+        const API_URL = import.meta.env['PUBLIC_API_URL'];
+        const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}`);
+        const result = await response.json();
+
+        if (result?.status === true && result?.data) {
+          setProfileData(result.data);
+          const s = result.data.stats;
+          setStats({
+            read: s?.read || 0,
+            toRead: s?.toRead || 0,
+            favorites: 0,
+            accountAge: s?.accountAge || 0,
+            activeDaysStreak: s?.activeDaysStreak || 0,
+            streak: s?.streak || 0,
+            favoriteGenre: s?.favoriteGenre || null,
+            hoursEstimated: s?.hoursEstimated || 0,
+            weekChaptersRead: s?.weekChaptersRead || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching public profile:', error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchPublicProfile();
+  }, [isOwner, profileSlug]);
+
+  // Update editData when user changes (owner only)
+  useEffect(() => {
+    if (user && isOwner) {
       setEditData({
         name: user.username || '',
         avatar: user.imageUrl || '',
@@ -240,53 +274,65 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       setAvatarFile(null);
       setBannerFile(null);
     }
-  }, [user]);
+  }, [user, isOwner]);
 
   // Fetch followed organizations
   useEffect(() => {
-    const fetchFollowedScans = async () => {
+    if (isOwner) {
       if (!logged || !user) {
         setLoadingScans(false);
         return;
       }
-
-      try {
-        setLoadingScans(true);
-        const result = await callAPI("/api/organization/followed");
-        
-        // callAPI retorna result.data directamente, que es el array de organizaciones
-        if (Array.isArray(result)) {
-          setFollowedScans(result);
-        } else {
-          console.warn('Unexpected response structure for followed scans:', result);
+      const fetchFollowedScans = async () => {
+        try {
+          setLoadingScans(true);
+          const result = await callAPI("/api/organization/followed");
+          setFollowedScans(Array.isArray(result) ? result : []);
+        } catch (error) {
+          console.error('Error fetching followed scans:', error);
           setFollowedScans([]);
+        } finally {
+          setLoadingScans(false);
         }
-      } catch (error: any) {
-        console.error('Error fetching followed scans:', error);
-        console.error('Error message:', error?.message);
-        console.error('Error stack:', error?.stack);
-        setFollowedScans([]);
-      } finally {
-        setLoadingScans(false);
-      }
-    };
+      };
+      fetchFollowedScans();
+    } else if (profileSlug) {
+      const fetchPublicFollowedScans = async () => {
+        try {
+          setLoadingScans(true);
+          const API_URL = import.meta.env['PUBLIC_API_URL'];
+          const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}/followed-scans`);
+          const result = await response.json();
+          if (result?.status === true && Array.isArray(result?.data)) {
+            setFollowedScans(result.data);
+          } else {
+            setFollowedScans([]);
+          }
+        } catch (error) {
+          console.error('Error fetching public followed scans:', error);
+          setFollowedScans([]);
+        } finally {
+          setLoadingScans(false);
+        }
+      };
+      fetchPublicFollowedScans();
+    } else {
+      setLoadingScans(false);
+    }
+  }, [isOwner, logged, user, profileSlug]);
 
-    fetchFollowedScans();
-  }, [logged, user]);
-
-  // Fetch reading history
+  // Fetch reading history (owner only)
   useEffect(() => {
-    const fetchReadingHistory = async () => {
-      if (!logged || !user) {
-        setLoadingHistory(false);
-        return;
-      }
+    if (!isOwner || !logged || !user) {
+      setLoadingHistory(false);
+      return;
+    }
 
+    const fetchReadingHistory = async () => {
       try {
         setLoadingHistory(true);
         const result = await callAPI('/api/user-chapter-history?limit=30');
-        
-        // El API retorna { items: [...], maxPage: X, total: Y }
+
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
           setReadingHistory(result.items);
           setHistoryTotal(result.total || result.items.length);
@@ -304,75 +350,128 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     };
 
     fetchReadingHistory();
-  }, [logged, user]);
+  }, [isOwner, logged, user]);
 
   // Fetch favorites
   useEffect(() => {
-    const fetchFavorites = async () => {
+    if (isOwner) {
       if (!logged || !user) {
         setLoadingFavorites(false);
         return;
       }
-
-      try {
-        setLoadingFavorites(true);
-        const result = await callAPI('/api/favorites?limit=6');
-        
-        // El API retorna { items: [...], maxPage: X, total: Y } o directamente el array
-        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-          // The API returns favorites with mangaCustom nested
-          setFavorites(result.items);
-          setFavoritesTotal(result.total || result.items.length);
-        } else if (Array.isArray(result)) {
-          // Fallback si el API retorna directamente el array
-          setFavorites(result);
-          setFavoritesTotal(result.length);
-        } else {
+      const fetchFavorites = async () => {
+        try {
+          setLoadingFavorites(true);
+          const result = await callAPI('/api/favorites?limit=6');
+          if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+            setFavorites(result.items);
+            setFavoritesTotal(result.total || result.items.length);
+          } else if (Array.isArray(result)) {
+            setFavorites(result);
+            setFavoritesTotal(result.length);
+          } else {
+            setFavorites([]);
+            setFavoritesTotal(0);
+          }
+        } catch (error) {
+          console.error('Error fetching favorites:', error);
           setFavorites([]);
           setFavoritesTotal(0);
+        } finally {
+          setLoadingFavorites(false);
         }
-      } catch (error) {
-        console.error('Error fetching favorites:', error);
-        setFavorites([]);
-        setFavoritesTotal(0);
-      } finally {
-        setLoadingFavorites(false);
-      }
-    };
+      };
+      fetchFavorites();
+    } else if (profileSlug) {
+      const fetchPublicFavorites = async () => {
+        try {
+          setLoadingFavorites(true);
+          const API_URL = import.meta.env['PUBLIC_API_URL'];
+          const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites`);
+          const result = await response.json();
+          if (result?.status === true && Array.isArray(result?.data)) {
+            setFavorites(result.data);
+            setFavoritesTotal(result.data.length);
+          } else {
+            setFavorites([]);
+            setFavoritesTotal(0);
+          }
+        } catch (error) {
+          console.error('Error fetching public favorites:', error);
+          setFavorites([]);
+          setFavoritesTotal(0);
+        } finally {
+          setLoadingFavorites(false);
+        }
+      };
+      fetchPublicFavorites();
+    } else {
+      setLoadingFavorites(false);
+    }
+  }, [isOwner, logged, user, profileSlug]);
 
-    fetchFavorites();
-  }, [logged, user]);
-
-  // Fetch and calculate stats
+  // Fetch achievements
   useEffect(() => {
-    const fetchStats = async () => {
+    if (isOwner) {
       if (!logged || !user) {
+        setLoadingAchievements(false);
         return;
       }
+      const fetchAchievements = async () => {
+        try {
+          setLoadingAchievements(true);
+          const result = await callAPI('/api/user/achievements');
+          if (Array.isArray(result)) {
+            setAchievements(result);
+          }
+        } catch (error) {
+          console.error('Error fetching achievements:', error);
+        } finally {
+          setLoadingAchievements(false);
+        }
+      };
+      fetchAchievements();
+    } else if (profileData) {
+      setAchievements(profileData.achievements || []);
+      setCommentRank(profileData.commentRank || null);
+      setLoadingAchievements(false);
+    } else {
+      setLoadingAchievements(false);
+    }
+  }, [isOwner, logged, user, profileData]);
 
+  // Fetch stats (owner only - visitors get stats from public profile)
+  useEffect(() => {
+    if (!isOwner || !logged || !user) return;
+
+    const fetchStats = async () => {
       try {
         const result = await callAPI('/api/user/stats');
-        
+
         if (result) {
           setStats({
             read: result.read || 0,
             toRead: result.toRead || 0,
             favorites: favorites.length,
-            activeDays: result.activeDays || 0,
+            accountAge: result.accountAge || 0,
+            activeDaysStreak: result.activeDaysStreak || 0,
             streak: result.streak || 0,
             favoriteGenre: result.favoriteGenre || null,
             hoursEstimated: result.hoursEstimated || 0,
             weekChaptersRead: result.weekChaptersRead || 0,
           });
+          if (result.commentRank) {
+            setCommentRank(result.commentRank);
+          }
         }
       } catch (error) {
         console.error('Error fetching stats:', error);
-        // Fallback to calculated values
         setStats({
           read: 0,
           toRead: 0,
           favorites: favorites.length,
-          activeDays: user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0,
+          accountAge: user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0,
+          activeDaysStreak: 0,
           streak: 0,
           favoriteGenre: null,
           hoursEstimated: 0,
@@ -382,20 +481,18 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     };
 
     fetchStats();
-  }, [logged, user, favorites]);
+  }, [isOwner, logged, user, favorites]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     if (!isUserPro && type === 'banner') return;
     const file = e.target.files?.[0];
     if (file) {
-      // Store the file for upload
       if (type === 'avatar') {
         setAvatarFile(file);
       } else {
         setBannerFile(file);
       }
-      
-      // Preview the image
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setEditData(prev => ({
@@ -409,56 +506,44 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+
     setUploading(true);
     try {
       const formData = new FormData();
-      
-      // Upload avatar if changed
+
       if (avatarFile) {
         const avatarKey = await uploadFile(avatarFile, undefined, 'profile_pictures');
         formData.append('image', avatarKey);
       } else if (editData.avatar && editData.avatar !== user.imageUrl && !editData.avatar.startsWith('data:')) {
-        // If it's a URL (not a data URL), use it directly
         formData.append('image', editData.avatar);
       }
-      
-      // Upload banner if changed (only for Pro users)
+
       if (isUserPro) {
         if (bannerFile) {
-          // New file uploaded
           const bannerKey = await uploadFile(bannerFile, undefined, 'profile_pictures');
           formData.append('banner', bannerKey);
         } else if (editData.banner !== user.bannerUrl) {
-          // Banner changed (including deletion - empty string or null)
           if (editData.banner && !editData.banner.startsWith('data:')) {
-            // It's a URL (not a data URL), use it directly
             formData.append('banner', editData.banner);
           } else if (!editData.banner || editData.banner === '') {
-            // Banner was removed, send null as string (will be converted in transform)
             formData.append('banner', 'null');
           }
         }
       }
-      
-      // Add other fields
+
       if (isUserPro && editData.name !== user.username) {
         formData.append('username', editData.name);
       }
-      
+
       if (isUserPro && editData.description !== (user.description || '')) {
         formData.append('description', editData.description);
       }
-      
-      // Call API to update user
-      // Note: The API requires organizationId, but for profile updates we can use any organization
-      // The endpoint will use the organization from the header or find a default one
+
       const result = await callAPI(
         `/api/user/${user.id}`, { method: "PATCH", body: formData }
       );
-      
+
       if (result) {
-        // Reload page to get updated user data
         window.location.reload();
       } else {
         alert('Error al actualizar el perfil');
@@ -475,60 +560,98 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     // TODO: Implement subscription pause/resume
   };
 
-  const statsData = [
-    { label: 'Leidos', value: stats.read.toString(), icon: <BookOpen className="text-cyan-500" size={18} /> },
-    { label: 'Por leer', value: stats.toRead.toString(), icon: <Bookmark className="text-purple-500" size={18} /> },
-    { label: 'Favoritos', value: stats.favorites.toString(), icon: <Heart className="text-red-500" size={18} /> },
-    { label: 'Dias Activo', value: stats.activeDays.toString(), icon: <Clock className="text-yellow-500" size={18} /> },
-    { label: 'Esta Semana', value: stats.weekChaptersRead.toString(), icon: <Zap className="text-green-500" size={18} /> },
-    { label: 'Horas Leidas', value: `~${stats.hoursEstimated}`, icon: <Clock className="text-orange-500" size={18} /> },
-    { label: 'Genero Fav.', value: stats.favoriteGenre || '-', icon: <Award className="text-pink-500" size={18} /> },
+  // Stats data - for visitors, hide "favorites" and "to read" since those are private
+  const statsData = isOwner ? [
+    { label: 'Leidos', value: stats.read.toString(), icon: <BookOpen className="text-cyan-500" size={18} />, tooltip: 'Capitulos que has terminado de leer' },
+    { label: 'Por leer', value: stats.toRead.toString(), icon: <Bookmark className="text-purple-500" size={18} />, tooltip: 'Capitulos que empezaste pero no terminaste' },
+    { label: 'Favoritos', value: stats.favorites.toString(), icon: <Heart className="text-red-500" size={18} />, tooltip: 'Mangas que guardaste en tus favoritos' },
+    { label: 'Dias Activos', value: stats.activeDaysStreak.toString(), icon: <Flame className="text-orange-500" size={18} />, tooltip: 'Dias consecutivos que has visitado la plataforma' },
+    { label: 'Antiguedad', value: `${stats.accountAge}d`, icon: <Calendar className="text-yellow-500" size={18} />, tooltip: 'Dias desde que creaste tu cuenta' },
+    { label: 'Esta Semana', value: stats.weekChaptersRead.toString(), icon: <Zap className="text-green-500" size={18} />, tooltip: 'Capitulos leidos en los ultimos 7 dias' },
+    { label: 'Horas Leidas', value: `~${stats.hoursEstimated}`, icon: <Clock className="text-orange-500" size={18} />, tooltip: 'Estimacion de horas totales de lectura' },
+    { label: 'Genero Fav.', value: stats.favoriteGenre || '-', icon: <Award className="text-pink-500" size={18} />, tooltip: 'El genero que mas has leido' },
+  ] : [
+    { label: 'Leidos', value: stats.read.toString(), icon: <BookOpen className="text-cyan-500" size={18} />, tooltip: 'Capitulos terminados de leer' },
+    { label: 'Dias Activos', value: stats.activeDaysStreak.toString(), icon: <Flame className="text-orange-500" size={18} />, tooltip: 'Dias consecutivos visitando la plataforma' },
+    { label: 'Antiguedad', value: `${stats.accountAge}d`, icon: <Calendar className="text-yellow-500" size={18} />, tooltip: 'Dias desde que creo su cuenta' },
+    { label: 'Esta Semana', value: stats.weekChaptersRead.toString(), icon: <Zap className="text-green-500" size={18} />, tooltip: 'Capitulos leidos en los ultimos 7 dias' },
+    { label: 'Horas Leidas', value: `~${stats.hoursEstimated}`, icon: <Clock className="text-orange-500" size={18} />, tooltip: 'Estimacion de horas totales de lectura' },
+    { label: 'Genero Fav.', value: stats.favoriteGenre || '-', icon: <Award className="text-pink-500" size={18} />, tooltip: 'El genero que mas ha leido' },
   ];
 
   const ProRestrictionTooltip = () => (
     <div className="absolute -top-10 left-0 bg-yellow-500 text-zinc-950 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl opacity-0 group-hover/input:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap">
-      <Info size={12} /> Para ser Miembro Pro debes tener una suscripción activa
+      <Info size={12} /> Para ser Miembro Pro debes tener una suscripcion activa
     </div>
   );
 
   const ProUnlockedTooltip = () => (
     <div className="absolute -top-10 right-0 bg-cyan-500 text-zinc-950 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl opacity-0 group-hover/unlocked:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap">
-      <Sparkles size={12} /> Función disponible gracias a tu rango miembro pro
+      <Sparkles size={12} /> Funcion disponible gracias a tu rango miembro pro
     </div>
   );
 
-  if (!logged || !user) {
+  // Loading state for public profiles
+  if (!isOwner && loadingProfile) {
     return (
       <div className="pt-24 pb-20 min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-zinc-500 text-lg font-medium">Por favor, inicia sesión para ver tu perfil</p>
+          <div className="w-16 h-16 border-4 border-zinc-800 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-zinc-500 text-sm font-medium">Cargando perfil...</p>
         </div>
       </div>
     );
   }
 
+  // Profile not found
+  if (!isOwner && !profileData) {
+    return (
+      <div className="pt-24 pb-20 min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-zinc-500 text-lg font-medium">Usuario no encontrado</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Owner but not logged in (shouldn't happen with new routing, but safety)
+  if (isOwner && (!logged || !user)) {
+    return (
+      <div className="pt-24 pb-20 min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-zinc-500 text-lg font-medium">Por favor, inicia sesion para ver tu perfil</p>
+        </div>
+      </div>
+    );
+  }
+
+  const displayUsername = displayUser?.username || displayUser?.email || 'Usuario';
+  const displayAvatar = isOwner ? (editData.avatar || user?.imageUrl) : displayUser?.imageUrl;
+  const displayBanner = isOwner ? (editData.banner || user?.bannerUrl) : displayUser?.bannerUrl;
+  const displayDescription = isOwner ? editData.description : displayUser?.description;
+
   return (
     <div className="pt-24 pb-20 min-h-screen bg-zinc-950">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        
+
         {/* Profile Header */}
         <div className="relative mb-12">
           <div className="h-48 md:h-72 rounded-[40px] overflow-hidden relative border border-zinc-800 shadow-2xl">
-            <img 
-              src={editData.banner || "https://picsum.photos/seed/bannerprof/1200/400"} 
-              className="w-full h-full object-cover opacity-60 transition-opacity duration-700" 
-              alt="" 
+            <img
+              src={displayBanner || "https://picsum.photos/seed/bannerprof/1200/400"}
+              className="w-full h-full object-cover opacity-60 transition-opacity duration-700"
+              alt=""
             />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
           </div>
-          
+
           <div className="relative -mt-16 md:-mt-20 px-8 flex flex-col md:flex-row items-end gap-6 md:gap-10">
             <div className="relative group">
               <div className="w-32 h-32 md:w-44 md:h-44 rounded-[40px] overflow-hidden border-8 border-zinc-950 bg-zinc-900 shadow-2xl relative z-10">
-                <img 
-                  src={editData.avatar || user.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || user.email || 'U')}&background=27272a&color=fff&size=176`} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                  alt={user.username || user.email} 
+                <img
+                  src={displayAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayUsername)}&background=27272a&color=fff&size=176`}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  alt={displayUsername}
                 />
               </div>
               {mostExpensiveSubscription ? (
@@ -544,11 +667,11 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 </div>
               )}
             </div>
-            
+
             <div className="flex-1 pb-4 text-center md:text-left">
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-2">
                 <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">
-                  {user.username || user.email || 'Usuario'}
+                  {displayUsername}
                 </h1>
                 {isUserPro && (
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-black uppercase tracking-widest mx-auto md:mx-0">
@@ -556,60 +679,93 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   </div>
                 )}
               </div>
-              <p className="text-zinc-500 font-bold text-base mb-2">{user.email}</p>
-              {editData.description && (
+              {/* Email only visible to owner */}
+              {isOwner && <p className="text-zinc-500 font-bold text-base mb-2">{user?.email}</p>}
+              {displayDescription && (
                 <p className="text-zinc-400 text-sm font-medium leading-relaxed max-w-2xl italic">
-                  "{editData.description}"
+                  "{displayDescription}"
                 </p>
               )}
             </div>
 
-            <div className="pb-4 w-full md:w-auto">
-              <button 
-                onClick={() => {
-                  setEditData({
-                    name: user.username || '',
-                    avatar: user.imageUrl || '',
-                    banner: user.bannerUrl || '',
-                    description: user.description || ''
-                  });
-                  setIsEditModalOpen(true);
-                }}
-                className="w-full md:w-auto bg-white text-zinc-950 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-cyan-500 transition-all transform active:scale-95 shadow-xl shadow-white/5"
-              >
-                Editar Perfil
-              </button>
-            </div>
+            {/* Edit button - owner only */}
+            {isOwner && (
+              <div className="pb-4 w-full md:w-auto">
+                <button
+                  onClick={() => {
+                    setEditData({
+                      name: user.username || '',
+                      avatar: user.imageUrl || '',
+                      banner: user.bannerUrl || '',
+                      description: user.description || ''
+                    });
+                    setIsEditModalOpen(true);
+                  }}
+                  className="w-full md:w-auto bg-white text-zinc-950 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-cyan-500 transition-all transform active:scale-95 shadow-xl shadow-white/5"
+                >
+                  Editar Perfil
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          {statsData.slice(0, 4).map((stat, idx) => (
-            <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group">
-              <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-2xl font-black text-white italic leading-none mb-1">{stat.value}</p>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{stat.label}</p>
-              </div>
+        {isOwner ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              {statsData.slice(0, 4).map((stat, idx) => (
+                <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group relative" title={stat.tooltip}>
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-white italic leading-none mb-1">{stat.value}</p>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{stat.label}</p>
+                  </div>
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-lg text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-xl border border-zinc-700">
+                    {stat.tooltip}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {statsData.slice(4).map((stat, idx) => (
-            <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group">
-              <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
-                {stat.icon}
-              </div>
-              <div>
-                <p className="text-2xl font-black text-white italic leading-none mb-1">{stat.value}</p>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{stat.label}</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {statsData.slice(4).map((stat, idx) => (
+                <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group relative" title={stat.tooltip}>
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-white italic leading-none mb-1">{stat.value}</p>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{stat.label}</p>
+                  </div>
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-lg text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-xl border border-zinc-700">
+                    {stat.tooltip}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+              {statsData.map((stat, idx) => (
+                <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition-colors flex items-center gap-5 group relative" title={stat.tooltip}>
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-white italic leading-none mb-1">{stat.value}</p>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{stat.label}</p>
+                  </div>
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-lg text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap shadow-xl border border-zinc-700">
+                    {stat.tooltip}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Reading Streak Badge */}
         {stats.streak > 0 && (
@@ -633,12 +789,102 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
           </div>
         )}
 
+        {/* Comment Rank */}
+        {commentRank && (
+          <div className="mb-8 bg-zinc-900/50 border border-zinc-800 rounded-[32px] p-8 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-zinc-950 flex items-center justify-center border border-zinc-800">
+                <MessageSquare className="text-cyan-500" size={24} />
+              </div>
+              <div>
+                <p className="text-3xl font-black text-white italic leading-none mb-1">
+                  #{commentRank.rank}
+                </p>
+                <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">
+                  Ranking de Comentarista
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-black text-white italic">{commentRank.count}</p>
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">comentarios</p>
+            </div>
+          </div>
+        )}
+
+        {/* Achievements */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+              <span className="text-yellow-500">Logros</span>
+              {achievements.length > 0 && (
+                <span className="text-zinc-500 text-base ml-3 font-bold not-italic">
+                  {achievements.filter((a: any) => a.unlocked).length}/{achievements.length}
+                </span>
+              )}
+            </h2>
+            <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+              <Trophy size={14} /> Progreso
+            </div>
+          </div>
+          {loadingAchievements ? (
+            <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4 animate-pulse">
+                  <div className="h-10 w-10 bg-zinc-800 rounded-full mx-auto mb-2" />
+                  <div className="h-3 bg-zinc-800 rounded mx-auto w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : achievements.length > 0 ? (
+            <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {achievements.map((achievement: any) => (
+                <div
+                  key={achievement.id}
+                  className={`relative border rounded-2xl p-4 text-center transition-all group ${
+                    achievement.unlocked
+                      ? 'bg-zinc-900/60 border-zinc-700 hover:border-yellow-500/50'
+                      : 'bg-zinc-900/20 border-zinc-800/50 opacity-50'
+                  }`}
+                  title={achievement.description}
+                >
+                  <div className={`text-3xl mb-2 ${achievement.unlocked ? '' : 'grayscale'}`}>
+                    {achievement.unlocked ? achievement.emoji : (
+                      <Lock size={24} className="text-zinc-600 mx-auto" />
+                    )}
+                  </div>
+                  <p className={`text-[9px] font-black uppercase tracking-wider leading-tight ${
+                    achievement.unlocked ? 'text-white' : 'text-zinc-600'
+                  }`}>
+                    {achievement.title}
+                  </p>
+                  {/* Hover tooltip */}
+                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-lg text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl border border-zinc-700 w-[180px] text-center leading-tight">
+                    {achievement.description}
+                  </div>
+                  {achievement.unlocked && achievement.unlockedAt && (
+                    <p className="text-[7px] font-bold text-zinc-600 mt-1">
+                      {new Date(achievement.unlockedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-zinc-900/40 border border-zinc-800 rounded-[32px]">
+              <Trophy size={32} className="text-zinc-700 mx-auto mb-3" />
+              <p className="text-zinc-500 text-sm font-medium">Los logros se desbloquean al leer, comentar y explorar</p>
+            </div>
+          )}
+        </section>
+
+        {/* Followed Scans, Favorites, Reading History */}
         <div className="grid lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-8 space-y-16">
+          <div className={`${isOwner ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-16`}>
             {/* Followed Scans Section */}
             <section>
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Mis <span className="text-purple-500">Scans</span></h2>
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-purple-500">Scans</span></h2>
                 <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                   <Users size={14} /> {followedScans.length} seguido(s)
                 </div>
@@ -653,16 +899,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   ))}
                 </div>
               ) : followedScans.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className={`grid grid-cols-1 ${isOwner ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
                   {followedScans.map((scan) => (
-                    <div key={scan.id} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-[32px] group hover:bg-zinc-900 transition-all shadow-xl">
-                      <div className="flex items-start justify-between mb-6">
+                    <a key={scan.id} href={`/${scan.slug}`} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-[32px] group hover:bg-zinc-900 transition-all shadow-xl block">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-zinc-800 bg-zinc-950">
-                            <img 
-                              src={scan.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=64`} 
-                              className="w-full h-full object-cover" 
-                              alt={scan.name} 
+                            <img
+                              src={scan.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=64`}
+                              className="w-full h-full object-cover"
+                              alt={scan.name}
                             />
                           </div>
                           <div>
@@ -676,59 +922,62 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                         </div>
                       </div>
 
-                      <div className="p-4 bg-zinc-950/50 border border-zinc-800 rounded-2xl mb-4">
-                        {scan.subscription ? (
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-yellow-500"><Award size={16} /></span>
-                                <span className="text-white font-bold text-sm">{scan.subscription.rank}</span>
-                              </div>
-                              <span className="text-white font-black text-sm italic">
-                                {scan.subscription.currency === 'USD' ? '$' : scan.subscription.currency}{scan.subscription.price}/mes
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${scan.subscription.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-orange-500'}`} />
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${scan.subscription.status === 'active' ? 'text-green-500' : 'text-orange-500'}`}>
-                                  {scan.subscription.status === 'active' ? 'Suscripción Activa' : 'Suscripción Pausada'}
+                      {/* Subscription details - owner only */}
+                      {isOwner && (
+                        <div className="p-4 bg-zinc-950/50 border border-zinc-800 rounded-2xl">
+                          {scan.subscription ? (
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-yellow-500"><Award size={16} /></span>
+                                  <span className="text-white font-bold text-sm">{scan.subscription.rank}</span>
+                                </div>
+                                <span className="text-white font-black text-sm italic">
+                                  {scan.subscription.currency === 'USD' ? '$' : scan.subscription.currency}{scan.subscription.price}/mes
                                 </span>
                               </div>
-                              <button 
-                                onClick={() => toggleSubscription(scan.id)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all ${
-                                  scan.subscription.status === 'active' 
-                                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white' 
-                                    : 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white'
-                                }`}
-                              >
-                                {scan.subscription.status === 'active' ? (
-                                  <><Pause size={12} /> Pausar</>
-                                ) : (
-                                  <><PlayCircle size={12} /> Reanudar</>
-                                )}
-                              </button>
+                              <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${scan.subscription.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-orange-500'}`} />
+                                  <span className={`text-[10px] font-black uppercase tracking-widest ${scan.subscription.status === 'active' ? 'text-green-500' : 'text-orange-500'}`}>
+                                    {scan.subscription.status === 'active' ? 'Suscripcion Activa' : 'Suscripcion Pausada'}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSubscription(scan.id); }}
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all ${
+                                    scan.subscription.status === 'active'
+                                      ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white'
+                                      : 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white'
+                                  }`}
+                                >
+                                  {scan.subscription.status === 'active' ? (
+                                    <><Pause size={12} /> Pausar</>
+                                  ) : (
+                                    <><PlayCircle size={12} /> Reanudar</>
+                                  )}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between py-1">
-                            <span className="text-zinc-500 font-bold text-xs">Sin suscripción activa</span>
-                            <a 
-                              href={`/${scan.slug}/subscriptions`}
-                              className="text-cyan-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors"
-                            >
-                              Ver Planes
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                          ) : (
+                            <div className="flex items-center justify-between py-1">
+                              <span className="text-zinc-500 font-bold text-xs">Sin suscripcion activa</span>
+                              <span
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/${scan.slug}/subscriptions`; }}
+                                className="text-cyan-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                              >
+                                Ver Planes
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </a>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-12 bg-zinc-900/40 border border-zinc-800 rounded-[32px]">
-                  <p className="text-zinc-500 text-lg font-medium">No sigues ningún scan todavía</p>
+                  <p className="text-zinc-500 text-lg font-medium">{isOwner ? 'No sigues ningun scan todavia' : 'No sigue ningun scan todavia'}</p>
                 </div>
               )}
             </section>
@@ -736,14 +985,14 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             {/* Favorites Section */}
             <section>
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Mis <span className="text-cyan-500">Favoritos</span></h2>
-                {favorites.length > 6 && !showAllFavorites && (
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Favoritos</span></h2>
+                {isOwner && favorites.length > 6 && !showAllFavorites && (
                   <button
                     onClick={async () => {
                       if (favorites.length < favoritesTotal) {
                         setLoadingMoreFavorites(true);
                         try {
-                          const result = await callAPI(`/favorites?limit=${favoritesTotal}`);
+                          const result = await callAPI(`/api/favorites?limit=${favoritesTotal}`);
                           if (Array.isArray(result)) {
                             setFavorites(result);
                           }
@@ -773,22 +1022,20 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 </div>
               ) : favorites.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    {(showAllFavorites ? favorites : favorites.slice(0, 6)).map((favorite: any) => {
+                  <div className={`grid grid-cols-2 ${isOwner ? 'md:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-6`}>
+                    {(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 12)).map((favorite: any) => {
                       const mangaCustom = favorite.mangaCustom || favorite;
                       const orgSlug = mangaCustom.organization?.slug || '';
-                      
-                      // Check if user has subscription to this organization with canReadUnreleased
+
                       const userHasSubscription = logged && user?.subscriptions?.some(
                         (sub: any) => sub?.subscriptionPlan?.organizationId === mangaCustom.organization?.id && sub.active === true && sub?.subscriptionPlan?.canReadUnreleased === true
                       ) || false;
 
-                      // Map chapters with read status
                       const chaptersWithReadStatus = (mangaCustom.chapters || []).map((chapter: any) => {
                         const isRead = logged && user?.history?.some(
                           (historyItem: any) => historyItem.chapterId === chapter.id && historyItem.finishedAt
                         ) || false;
-                        
+
                         return {
                           id: chapter.id,
                           number: chapter.number,
@@ -800,8 +1047,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                       });
 
                       return (
-                        <MangaCard3D 
-                          key={mangaCustom.id || favorite.id} 
+                        <MangaCard3D
+                          key={mangaCustom.id || favorite.id}
                           user={user}
                           organization={mangaCustom.organization || organization}
                           manga={{
@@ -815,12 +1062,13 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                             status: mangaCustom.status || 'Ongoing',
                             chapters: chaptersWithReadStatus,
                             userHasSubscription: userHasSubscription,
+                            isNSFW: mangaCustom.isNSFW || mangaCustom.organization?.isNSFW || false,
                           }}
                         />
                       );
                     })}
                   </div>
-                  {showAllFavorites && favorites.length > 6 && (
+                  {isOwner && showAllFavorites && favorites.length > 6 && (
                     <div className="mt-8 text-center">
                       <button
                         onClick={() => setShowAllFavorites(false)}
@@ -833,116 +1081,117 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 </>
               ) : (
                 <div className="text-center py-12 bg-zinc-900/40 border border-zinc-800 rounded-[32px]">
-                  <p className="text-zinc-500 text-lg font-medium">No tienes favoritos todavía</p>
+                  <p className="text-zinc-500 text-lg font-medium">{isOwner ? 'No tienes favoritos todavia' : 'No tiene favoritos todavia'}</p>
                 </div>
               )}
             </section>
           </div>
 
-          {/* Sidebar - Reading History */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
-              <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-8 flex items-center gap-3">
-                <BookMarked className="text-cyan-500" size={20} /> Continuar leyendo
-              </h3>
-              {loadingHistory ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 animate-pulse">
-                      <div className="h-4 bg-zinc-800 rounded mb-2" />
-                      <div className="h-3 bg-zinc-800 rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : readingHistory.length > 0 ? (
-                <>
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
-                    {(showAllHistory ? readingHistory : readingHistory.slice(0, 5)).map((item) => {
-                      const orgSlug = item.chapter.mangaCustom.organization.slug;
-                      const chapterUrl = `/${orgSlug}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
-                      return (
-                      <a
-                        key={item.id}
-                        href={chapterUrl}
-                        className="group bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden block"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="min-w-0 flex-1 pr-2">
-                            <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-1 truncate">
-                              {item.chapter.mangaCustom.title}
-                            </p>
-                            <h4 className="text-white font-bold text-xs truncate">
-                              Cap. {item.chapter.number} - {item.chapter.title}
-                            </h4>
-                          </div>
-                          <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">
-                            <PlayCircle size={14} fill="currentColor" />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-zinc-600 text-[8px] font-bold uppercase tracking-widest">
-                          <Clock size={10} />
-                          <span>Visto: {new Date(item.lastReadAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </a>
-                      );
-                    })}
+          {/* Sidebar - Reading History (owner only) */}
+          {isOwner && (
+            <div className="lg:col-span-4 space-y-8">
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-8 flex items-center gap-3">
+                  <BookMarked className="text-cyan-500" size={20} /> Continuar leyendo
+                </h3>
+                {loadingHistory ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 animate-pulse">
+                        <div className="h-4 bg-zinc-800 rounded mb-2" />
+                        <div className="h-3 bg-zinc-800 rounded" />
+                      </div>
+                    ))}
                   </div>
-                  {readingHistory.length > 5 && (
-                    <button
-                      onClick={async () => {
-                        if (!showAllHistory) {
-                          // If we're showing all and there might be more, load more
-                          if (readingHistory.length < historyTotal) {
-                            setLoadingMoreHistory(true);
-                            try {
-                              const result = await callAPI(`/api/user-chapter-history?limit=${historyTotal}`);
-                              if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-                                setReadingHistory(result.items);
-                              } else if (Array.isArray(result)) {
-                                setReadingHistory(result);
+                ) : readingHistory.length > 0 ? (
+                  <>
+                    <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
+                      {(showAllHistory ? readingHistory : readingHistory.slice(0, 5)).map((item) => {
+                        const orgSlug = item.chapter.mangaCustom.organization.slug;
+                        const chapterUrl = `/${orgSlug}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
+                        return (
+                        <a
+                          key={item.id}
+                          href={chapterUrl}
+                          className="group bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden block"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="min-w-0 flex-1 pr-2">
+                              <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-1 truncate">
+                                {item.chapter.mangaCustom.title}
+                              </p>
+                              <h4 className="text-white font-bold text-xs truncate">
+                                Cap. {item.chapter.number} - {item.chapter.title}
+                              </h4>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">
+                              <PlayCircle size={14} fill="currentColor" />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-zinc-600 text-[8px] font-bold uppercase tracking-widest">
+                            <Clock size={10} />
+                            <span>Visto: {new Date(item.lastReadAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </a>
+                        );
+                      })}
+                    </div>
+                    {readingHistory.length > 5 && (
+                      <button
+                        onClick={async () => {
+                          if (!showAllHistory) {
+                            if (readingHistory.length < historyTotal) {
+                              setLoadingMoreHistory(true);
+                              try {
+                                const result = await callAPI(`/api/user-chapter-history?limit=${historyTotal}`);
+                                if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+                                  setReadingHistory(result.items);
+                                } else if (Array.isArray(result)) {
+                                  setReadingHistory(result);
+                                }
+                              } catch (error) {
+                                console.error('Error loading more history:', error);
+                              } finally {
+                                setLoadingMoreHistory(false);
                               }
-                            } catch (error) {
-                              console.error('Error loading more history:', error);
-                            } finally {
-                              setLoadingMoreHistory(false);
                             }
+                            setShowAllHistory(true);
+                          } else {
+                            setShowAllHistory(false);
                           }
-                          setShowAllHistory(true);
-                        } else {
-                          setShowAllHistory(false);
-                        }
-                      }}
-                      disabled={loadingMoreHistory}
-                      className="w-full mt-8 text-center text-[10px] font-black text-zinc-500 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loadingMoreHistory ? (
-                        'Cargando...'
-                      ) : showAllHistory ? (
-                        <>
-                          Ver menos <ChevronRight size={14} className="group-hover:-translate-x-1 transition-transform rotate-180" />
-                        </>
-                      ) : (
-                        <>
-                          Ver historial completo ({historyTotal}) <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                        </>
-                      )}
-                    </button>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-zinc-500 text-sm font-medium">No hay historial de lectura</p>
-                </div>
-              )}
+                        }}
+                        disabled={loadingMoreHistory}
+                        className="w-full mt-8 text-center text-[10px] font-black text-zinc-500 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingMoreHistory ? (
+                          'Cargando...'
+                        ) : showAllHistory ? (
+                          <>
+                            Ver menos <ChevronRight size={14} className="group-hover:-translate-x-1 transition-transform rotate-180" />
+                          </>
+                        ) : (
+                          <>
+                            Ver historial completo ({historyTotal}) <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-zinc-500 text-sm font-medium">No hay historial de lectura</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
-      {isEditModalOpen && (
+      {/* Edit Profile Modal - owner only */}
+      {isOwner && isEditModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 md:px-0">
-          <div 
+          <div
             className="absolute inset-0 bg-black/90 backdrop-blur-md transition-opacity"
             onClick={() => setIsEditModalOpen(false)}
           />
@@ -957,7 +1206,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   </span>
                 )}
               </div>
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
               >
@@ -967,7 +1216,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
             {/* Modal Content */}
             <div className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
-              
+
               {/* Account Basic Info (Username) */}
               <div className="space-y-3 relative group/input">
                 <div className="flex items-center justify-between px-1">
@@ -985,8 +1234,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     )}
                   </div>
                 </div>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editData.name}
                   disabled={!isUserPro}
                   onChange={(e) => setEditData({...editData, name: e.target.value})}
@@ -1017,7 +1266,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     )}
                   </div>
                 </div>
-                <div 
+                <div
                   onClick={() => isUserPro && bannerInputRef.current?.click()}
                   className={`relative h-40 w-full rounded-3xl overflow-hidden border-2 border-dashed transition-all group/input ${!isUserPro ? 'border-zinc-800 cursor-not-allowed' : 'border-zinc-800 hover:border-cyan-500/50 cursor-pointer bg-zinc-950'}`}
                 >
@@ -1040,13 +1289,13 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   {!isUserPro && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
                       <Lock size={32} className="text-yellow-500 mb-2" />
-                      <span className="text-white font-black text-[10px] uppercase tracking-widest">Requiere Suscripción Activa</span>
+                      <span className="text-white font-black text-[10px] uppercase tracking-widest">Requiere Suscripcion Activa</span>
                     </div>
                   )}
-                  <input 
-                    type="file" 
-                    ref={bannerInputRef} 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    ref={bannerInputRef}
+                    className="hidden"
                     accept="image/*"
                     onChange={(e) => handleFileChange(e, 'banner')}
                     disabled={!isUserPro}
@@ -1060,7 +1309,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   <Camera size={14} /> Foto de Perfil (Avatar)
                 </label>
                 <div className="flex items-center gap-8">
-                  <div 
+                  <div
                     onClick={() => avatarInputRef.current?.click()}
                     className="relative w-28 h-28 rounded-[32px] overflow-hidden border-2 border-dashed border-zinc-800 hover:border-cyan-500/50 cursor-pointer group bg-zinc-950 flex items-center justify-center transition-all"
                   >
@@ -1072,10 +1321,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-black/40 transition-opacity">
                       <Camera size={20} className="text-white" />
                     </div>
-                    <input 
-                      type="file" 
-                      ref={avatarInputRef} 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      className="hidden"
                       accept="image/*"
                       onChange={(e) => handleFileChange(e, 'avatar')}
                     />
@@ -1083,7 +1332,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   <div className="flex-1 space-y-2">
                     <p className="text-white font-bold text-sm">Cambiar foto de perfil</p>
                     <p className="text-zinc-500 text-[10px] uppercase font-black tracking-widest">JPG, PNG o WebP (Max 2MB)</p>
-                    <button 
+                    <button
                       onClick={() => avatarInputRef.current?.click()}
                       className="px-4 py-2 bg-zinc-800 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-700 transition-colors"
                     >
@@ -1097,7 +1346,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               <div className="space-y-4 relative group/input">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                    <AlignLeft size={14} /> Biografía / Descripción
+                    <AlignLeft size={14} /> Biografia / Descripcion
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="relative group/unlocked">
@@ -1116,11 +1365,11 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   </div>
                 </div>
                 <div className="relative">
-                  <textarea 
+                  <textarea
                     value={editData.description}
                     disabled={!isUserPro}
                     onChange={(e) => setEditData({...editData, description: e.target.value.slice(0, 140)})}
-                    placeholder={isUserPro ? "Escribe algo sobre ti..." : "Solo miembros Pro pueden tener una descripción personalizada"}
+                    placeholder={isUserPro ? "Escribe algo sobre ti..." : "Solo miembros Pro pueden tener una descripcion personalizada"}
                     rows={4}
                     className={`w-full bg-zinc-950 border rounded-3xl py-4 px-6 text-white transition-all text-sm resize-none ${!isUserPro ? 'border-zinc-800 opacity-50 cursor-not-allowed' : 'border-zinc-800 focus:border-cyan-500'}`}
                   />
@@ -1131,13 +1380,13 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
             {/* Modal Footer */}
             <div className="px-8 py-6 border-t border-zinc-800 bg-zinc-950/30 flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="flex-1 py-4 bg-zinc-800 text-zinc-400 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-zinc-700 transition-all"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={handleSaveProfile}
                 disabled={uploading}
                 className="flex-1 py-4 bg-cyan-500 text-zinc-950 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-white transition-all shadow-lg shadow-cyan-500/10 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1153,4 +1402,3 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 };
 
 export default ProfilePageNew;
-

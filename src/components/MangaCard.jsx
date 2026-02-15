@@ -20,37 +20,6 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
     );
   }
 
-  function isAdult(birthdate) {
-    if (!birthdate) return false;
-    const today = new Date();
-    const dateBirthdate = new Date(birthdate);
-
-    let age = today.getFullYear() - dateBirthdate.getFullYear();
-
-    const agemonth = today.getMonth() - dateBirthdate.getMonth();
-    const ageday = today.getDate() - dateBirthdate.getDate();
-
-    if (agemonth < 0 || (agemonth === 0 && ageday < 0)) {
-      age--;
-    }
-    return age >= 18;
-  }
-
-  const HandleNSFWClick = (e, href) => {
-    e.preventDefault();
-    if (!user?.slug) {
-      location.href = getOrgPath(`/register?redirect=${location.pathname}`, orgSlug);
-      return;
-    }
-
-    if (!user?.birthdate || !isAdult(user?.birthdate)) {
-      location.href = getOrgPath(`/profile/${user.slug}`, orgSlug);
-      return;
-    }
-
-    location.href = href;
-  }
-
   const formatDate = (date) => {
     if (!date) return "";
     return formatDateUtil(date, organization.language || 'es');
@@ -152,7 +121,7 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
     }
   };
 
-  const shouldBlur = manga.isNSFW === true && (!user?.birthdate || !isAdult(user?.birthdate));
+  const shouldBlur = manga.isNSFW === true || organization?.isNSFW === true;
   return (
     <div className="relative grid h-[26rem] max-h-[26rem] w-[16rem] shadow-sm hover:shadow-md hover:shadow-black/5 transition-shadow duration-75 max-w-full group items-end justify-center overflow-hidden text-center rounded-lg">
       <div className="absolute inset-0 m-0 h-full w-full rounded-lg bg-black">
@@ -161,11 +130,20 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
           alt={manga.title}
           decoding="async"
           loading="lazy"
-          className={`absolute inset-0 w-full h-full object-cover 
-                     hover:scale-105 transition-transform duration-300 
+          className={`absolute inset-0 w-full h-full object-cover
+                     hover:scale-105 transition-transform duration-300
                      group-hover:filter group-hover:brightness-90 select-none
-                     ${shouldBlur ? "blur-md" : ""}`}
+                     ${shouldBlur ? "blur-xl scale-110" : ""}`}
         />
+
+        {/* NSFW Badge */}
+        {shouldBlur && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+            <div className="bg-red-500/90 text-white px-4 py-2 rounded-xl font-black text-sm uppercase tracking-widest shadow-lg">
+              +18
+            </div>
+          </div>
+        )}
 
         {/* if lastChapterAt was released in the last 3 days show a chip */}
         {!shouldBlur && (
@@ -181,20 +159,11 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
                       const href = lastChapters?.[0]
                         ? getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)
                         : getOrgPath(`/manga/${mangaSlug}`, orgSlug);
-                      const finalHref = manga.isNSFW === true 
-                        ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug))
-                        : href;
-                      
+
                       return (
                         <a
-                          href={finalHref}
+                          href={href}
                           className="backdrop-blur-sm bg-green-600 bg-opacity-60 text-white cursor-pointer px-2 py-1 rounded border border-white/20 text-xs inline-block"
-                          onClick={(e) => {
-                            if (manga.isNSFW === true) {
-                              e.preventDefault();
-                              HandleNSFWClick(e, href);
-                            }
-                          }}
                         >
                           {_("new_chapter")}
                         </a>
@@ -243,14 +212,8 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
           <div>
             <div className="relative group/tooltip">
               <a
-                href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
+                href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
                 className="font-semibold hover:underline cursor-pointer text-blue-gray-800"
-                onClick={(e) => {
-                  if (manga.isNSFW === true) {
-                    e.preventDefault();
-                    HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}`, orgSlug));
-                  }
-                }}
               >
                 {manga.title.length > 40
                   ? manga.title.slice(0, 40 - 3) + "..."
@@ -272,20 +235,14 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
                   {lastChapters[0] && (
                     <div>
                       <a
-                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)}
+                        href={getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)}
                         className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer block"
                       >
                         {_("chapter")} {lastChapters[0]?.number}
                       </a>
                       <a
-                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)}
+                        href={getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug)}
                         className="font-normal text-blue-gray-800 text-xs hover:underline cursor-pointer block"
-                        onClick={(e) => {
-                          if (manga.isNSFW === true) {
-                            e.preventDefault();
-                            HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[0]?.number}`, orgSlug));
-                          }
-                        }}
                       >
                         {(() => {
                           const hasAccess = userHasAccessToChapter(lastChapters[0]);
@@ -301,25 +258,14 @@ export function MangaCard({ organization, language, manga, user, organizationSlu
                   {lastChapters[1] && (
                     <div>
                       <a
-                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug)}
+                        href={getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug)}
                         className="font-normal text-xs hover:underline cursor-pointer block"
-                        onClick={(e) => {
-                          if (manga.isNSFW === true) {
-                            e.preventDefault();
-                            HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug));
-                          }
-                        }}
                       >
                         {_("chapter")} {lastChapters[1]?.number}
                       </a>
                       <a
-                        href={manga.isNSFW === true ? (user?.slug ? getOrgPath(`/profile/${user.slug}`, orgSlug) : getOrgPath("/register", orgSlug)) : getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug)}
+                        href={getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug)}
                         className="font-normal text-xs hover:underline cursor-pointer block"
-                        onClick={(e) => {
-                          if (manga.isNSFW === true) {
-                            HandleNSFWClick(e, getOrgPath(`/manga/${mangaSlug}/chapters/${lastChapters[1]?.number}`, orgSlug));
-                          }
-                        }}
                       >
                         {(() => {
                           const hasAccess = userHasAccessToChapter(lastChapters[1]);

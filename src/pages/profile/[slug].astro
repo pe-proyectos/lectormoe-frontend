@@ -12,7 +12,7 @@ if (!isLandingPage) {
   return Astro.redirect("/404");
 }
 
-// Obtener datos del usuario
+// Determinar si el perfil es del usuario actual
 let userData = currentUser;
 if (!userData && logged) {
   try {
@@ -25,28 +25,15 @@ if (!userData && logged) {
   }
 }
 
-// Si no está logueado, redirigir
-if (!logged) {
-  return Astro.redirect("/");
-}
-
-// Si no hay datos del usuario después de intentar obtenerlos, redirigir
-if (!userData) {
-  return Astro.redirect("/");
-}
-
-// Verificar que el slug coincida con el usuario actual (permitir acceso al propio perfil)
-// Solo verificar si el usuario tiene slug definido
-if (userData.slug && userData.slug !== slug) {
-  return Astro.redirect("/404");
-}
+const isOwner = logged && userData && userData.slug === slug;
 ---
 
 <LandingLayout showAds={showAds}>
-  <ProfilePageContainer 
-    user={userData} 
+  <ProfilePageContainer
+    user={isOwner ? userData : undefined}
     logged={logged}
-    client:only="react" 
+    profileSlug={slug}
+    isOwner={isOwner}
+    client:only="react"
   />
 </LandingLayout>
-

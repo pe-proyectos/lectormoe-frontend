@@ -15,6 +15,8 @@ import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
+import NSFWAgeModal from "./NSFWAgeModal";
+import { isNSFWContent, hasAgeVerification } from "../../util/nsfw";
 
 interface Chapter {
   id: number;
@@ -57,6 +59,7 @@ interface MangaDetailPageProps {
     nextChapterAt?: string | null;
     nextChapterAtMessage?: string | null;
     usersAlsoReadMangaCustomIds?: string | null;
+    isNSFW?: boolean;
   };
   organization?: any;
   user?: any;
@@ -104,6 +107,15 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   });
   const [copied, setCopied] = useState(false);
   const [chaptersUpdating, setChaptersUpdating] = useState<Set<number>>(new Set());
+  const [showNSFWModal, setShowNSFWModal] = useState(false);
+
+  // Check if NSFW content and show age verification modal
+  useEffect(() => {
+    const mangaIsNSFW = isNSFWContent(manga) || organization?.isNSFW === true;
+    if (mangaIsNSFW && !hasAgeVerification()) {
+      setShowNSFWModal(true);
+    }
+  }, []);
 
   // Check if manga is favorite
   useEffect(() => {
@@ -647,10 +659,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   // Helper function to get chapter URL
   const getChapterUrl = (chapter: Chapter): string => {
     if (!logged && manga.requireLogin) {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : `/${organization?.slug || ''}/manga/${mangaSlug}`;
       return `/${organization?.slug || ""}/login?mangaSlug=${
         mangaSlug
       }&chapterNumber=${chapter.number}&redirect=${
-        window.location.pathname
+        currentPath
       }`.replace("//", "/");
     }
 
@@ -984,6 +997,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-20">
+      {/* NSFW Age Verification Modal */}
+      {showNSFWModal && (
+        <NSFWAgeModal onConfirm={() => setShowNSFWModal(false)} />
+      )}
+
       {/* Banner Backdrop */}
       <div className="relative w-full h-[300px] md:h-[450px] overflow-hidden">
         <img

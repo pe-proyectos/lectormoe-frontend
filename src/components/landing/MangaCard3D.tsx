@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard } from 'lucide-react';
+import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard, AlertTriangle } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 
 interface Chapter {
@@ -34,6 +34,7 @@ interface Manga {
   organizationId?: number; // Organization ID for subscription checks (used in landing page)
   subscriptionPlansCanReadUnreleased?: Array<{ id: number; name: string }>;
   subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
+  isNSFW?: boolean;
 }
 
 interface Props {
@@ -66,6 +67,7 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
   };
   
   const safeMangaUrl = getMangaUrl();
+  const shouldBlur = manga.isNSFW === true;
 
   // Get organization ID from organization prop or manga object (for landing page)
   const organizationId = organization?.id || manga.organizationId;
@@ -247,12 +249,21 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
         className="relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 shadow-lg group-hover:shadow-cyan-500/20 transition-all duration-300"
       >
         <div className="aspect-[2/3] relative overflow-hidden rounded-t-2xl">
-          <img 
-            src={manga.cover} 
+          <img
+            src={manga.cover}
             alt={manga.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 rounded-t-2xl"
+            className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 rounded-t-2xl ${shouldBlur ? 'blur-xl scale-110' : ''}`}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+
+          {/* NSFW Badge */}
+          {shouldBlur && (
+            <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+              <div className="bg-red-500/90 text-white px-4 py-2 rounded-xl font-black text-sm uppercase tracking-widest flex items-center gap-2 shadow-lg">
+                <AlertTriangle size={16} /> +18
+              </div>
+            </div>
+          )}
           
           {/* Lock Icon - Show locked if no access and has subscription plans */}
           {manga.chapters && manga.chapters.length > 0 && (() => {

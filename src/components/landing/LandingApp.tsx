@@ -3,8 +3,10 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Hero from './Hero';
 import FeaturedManga from './FeaturedManga';
+import PerOrgPopular from './PerOrgPopular';
 import ScansSection from './ScansSection';
 import TopReaders from './TopReaders';
+import TopCommenters from './TopCommenters';
 import ScansButtonsSection from './ScansButtonsSection';
 import Footer from './Footer';
 import SearchView from './SearchView';
@@ -89,7 +91,11 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
               </div>
             </section>
             
+            <PerOrgPopular user={user} logged={logged} />
+
             <TopReaders />
+
+            <TopCommenters />
 
             <ScansSection onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
           </>

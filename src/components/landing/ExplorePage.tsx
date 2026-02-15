@@ -50,8 +50,13 @@ const MangaListItem: React.FC<MangaListItemProps> = ({ manga, hideScan }) => {
   return (
     <div className="group relative bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 flex items-center gap-6 hover:bg-zinc-900 hover:border-cyan-500/30 transition-all duration-300">
       {/* Cover */}
-      <div className="w-20 h-28 shrink-0 rounded-lg overflow-hidden shadow-lg border border-white/5">
-        <img src={manga.cover} alt={manga.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+      <div className="w-20 h-28 shrink-0 rounded-lg overflow-hidden shadow-lg border border-white/5 relative">
+        <img src={manga.cover} alt={manga.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${manga.isNSFW ? 'blur-xl scale-110' : ''}`} />
+        {manga.isNSFW && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="bg-red-500/90 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase">+18</span>
+          </div>
+        )}
       </div>
 
       {/* Info Container */}
@@ -276,7 +281,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               userHasSubscription: logged && user?.subscriptions?.some(
                 (sub: any) => sub?.subscriptionPlan?.organizationId === mangaOrg?.id
               ) || false,
-              isNSFW: m.isNSFW || false,
+              isNSFW: m.isNSFW || mangaOrg?.isNSFW || false,
             };
           });
           setMangas(mappedMangas);
