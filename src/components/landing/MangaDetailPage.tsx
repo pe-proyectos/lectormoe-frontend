@@ -760,7 +760,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       } else {
         await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, { method: 'POST' });
         setFavoriteFeedback({
-          message: "Agregado a favoritos",
+          message: "Agregado a favoritos. Recibirás emails cuando salgan nuevos capítulos",
           type: "success",
         });
       }
