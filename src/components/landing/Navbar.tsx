@@ -425,7 +425,7 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
 
           <a
-            href="/search"
+            href={activeScan?.slug ? `/${activeScan.slug}/search` : '/search'}
             className={`text-sm font-bold transition-colors flex items-center gap-2 ${
               activeView === "search"
                 ? "text-cyan-500"
@@ -603,7 +603,7 @@ const Navbar: React.FC<NavbarProps> = ({
             </a>
           )}
           <a
-            href="/search"
+            href={activeScan?.slug ? `/${activeScan.slug}/search` : '/search'}
             onClick={() => setMobileMenuOpen(false)}
             className={`text-xl font-bold flex items-center gap-4 ${
               activeView === "search" ? "text-cyan-500" : "text-zinc-100"

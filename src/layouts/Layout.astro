@@ -42,11 +42,9 @@ const isDecember = new Date().getMonth() === 11;
 		}
 		{/* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */}
 		{
-			!isAdmin && 
-			organization && 
-			(showAds ?? true) && 
-			organization.enableAdsterraAds && 
-			organization.adsterraAdSource && (
+			showAds &&
+			organization?.enableAdsterraAds &&
+			organization?.adsterraAdSource && (
 				<script type='text/javascript' src={organization.adsterraAdSource}></script>
 			)
 		}

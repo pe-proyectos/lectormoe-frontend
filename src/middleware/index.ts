@@ -8,13 +8,19 @@ import { getIP } from "../util/get-ip";
  * @returns true si se deben mostrar anuncios, false si no
  */
 function calculateShowAds(user: any, organization: any): boolean {
-  // Por defecto mostrar anuncios
-  if (!user) {
-    return true;
-  }
-  // Si no hay organización, no mostrar anuncios porque deberiamos estar en landing page o pagina publica
+  // Si no hay organización, no mostrar anuncios
   if (!organization) {
     return false;
+  }
+
+  // Si la organización no tiene Google Ads habilitado, no mostrar anuncios
+  if (!organization.enableGoogleAds) {
+    return false;
+  }
+
+  // Sin usuario autenticado, mostrar anuncios
+  if (!user) {
+    return true;
   }
 
   // Verificar suscripciones activas con hideAds

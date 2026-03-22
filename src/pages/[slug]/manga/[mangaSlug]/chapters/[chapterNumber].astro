@@ -49,7 +49,9 @@ const userHasAccessToChapter = (chapter: any) => {
   if (permissions.canEditChapter === true) return true;
   if (permissions.canEditPage === true) return true;
 
-  const isChapterReleased = new Date(chapter.releasedAt).getTime() < new Date().getTime();
+  const isChapterReleased = chapter.releasedAt
+    ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+    : false; // null releasedAt = no lanzado
 
   if (isChapterReleased) {
     // Capítulo ya fue lanzado
@@ -102,9 +104,12 @@ const userHasAccessToChapter = (chapter: any) => {
   }
 };
 
-// We still validate access, but we pass the information to the Reader
-// so it can display appropriate error messages
 const hasAccess = userHasAccessToChapter(chapter);
+
+if (!hasAccess) {
+  return Astro.redirect(`/${organizationSlug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapterNumber}`);
+}
+
 
 // Use chapter thumbnail if available, otherwise fallback to manga image
 // chapter comes from callAPI which returns result.data, so it's the chapter object directly
