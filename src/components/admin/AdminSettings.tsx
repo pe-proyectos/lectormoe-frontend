@@ -63,8 +63,10 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
   const [countryCode, setCountryCode] = useState('');
 
   // Anuncios
+  const [enableAds, setEnableAds] = useState(false);
   const [enableGoogleAds, setEnableGoogleAds] = useState(false);
   const [enableAdsterraAds, setEnableAdsterraAds] = useState(false);
+  const [isNsfw, setIsNsfw] = useState(false);
 
   // Imágenes
   const [logoImageFile, setLogoImageFile] = useState<any>(null);
@@ -109,8 +111,10 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
         setUseBlockedCountries(organization.useBlockedCountries || false);
         setUseAllowedCountries(organization.useAllowedCountries || false);
         setCountryOptions(organization.countryOptions || []);
+        setEnableAds(organization.enableAds || false);
         setEnableGoogleAds(organization.enableGoogleAds || false);
         setEnableAdsterraAds(organization.enableAdsterraAds || false);
+        setIsNsfw(organization.isNSFW || false);
         setEnableDiscordWebhookNewChapter(organization.enableDiscordWebhookNewChapter === true || organization.enableDiscordWebhookNewChapter === 'true');
         setEnableDiscordWebhookNewSubscription(organization.enableDiscordWebhookNewSubscription === true || organization.enableDiscordWebhookNewSubscription === 'true');
         setDiscordWebhookUrlNewChapter(organization.discordWebhookUrlNewChapter || '');
@@ -241,8 +245,10 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
         discordWebhookMessageTemplateNewSubscription,
         useBlockedCountries,
         useAllowedCountries,
+        enableAds,
         enableGoogleAds,
         enableAdsterraAds,
+        isNSFW: isNsfw,
         facebookUrl,
         twitterUrl,
         instagramUrl,
@@ -645,6 +651,8 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
       {/* Integraciones */}
       <Accordion title="Integraciones y Publicidad" icon={<Zap size={20} />}>
         <div className="space-y-4">
+          <Switch label="Habilitar Anuncios" checked={enableAds} onChange={setEnableAds} />
+          <Switch label="Contenido +18 (NSFW) — usa Adsterra Popunder" checked={isNsfw} onChange={setIsNsfw} />
           <Switch label="Habilitar Google Ads" checked={enableGoogleAds} onChange={setEnableGoogleAds} />
           <Switch label="Habilitar Adsterra Ads" checked={enableAdsterraAds} onChange={setEnableAdsterraAds} />
         </div>

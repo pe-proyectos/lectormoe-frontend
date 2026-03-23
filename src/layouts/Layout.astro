@@ -28,25 +28,15 @@ const isDecember = new Date().getMonth() === 11;
 		<link rel="icon" type="image/png" href={organization?.faviconUrl || "/images/faviconcaptrad.png"} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
-		{/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
-		<meta
-			name="google-adsense-account"
-			content="ca-pub-2799839819522052"
-		/>
-		{/* Google Ads Script - Solo en vistas de organización, no en admin ni globales */}
+		{/* Google AdSense meta tag - always present for verification */}
+		<meta name="google-adsense-account" content="ca-pub-2799839819522052" />
+		{/* Ads: NSFW → Adsterra Popunder | no-NSFW → Google AdSense */}
 		{
-			showAds && (
-				<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052`}
-					crossorigin="anonymous"></script>
-			)
-		}
-		{/* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */}
-		{
-			showAds &&
-			organization?.enableAdsterraAds &&
-			organization?.adsterraAdSource && (
-				<script type='text/javascript' src={organization.adsterraAdSource}></script>
-			)
+			showAds && organization?.isNSFW ? (
+				<script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
+			) : showAds && !organization?.isNSFW ? (
+				<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052" crossorigin="anonymous" />
+			) : null
 		}
 		{/* Metadata General */}
 		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
@@ -135,6 +125,10 @@ const isDecember = new Date().getMonth() === 11;
 			)
 		}
 		<ToastContainer client:only="react"theme="dark" />
+		{/* Adsterra Social Bar - NSFW orgs only */}
+		{showAds && organization?.isNSFW && (
+			<script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
+		)}
 	</body>
 </html>
 

@@ -1016,7 +1016,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         <div className="grid lg:grid-cols-12 gap-10">
           {/* SECCION IZQUIERDA (SIDEBAR) */}
           <div className="lg:col-span-3 space-y-8">
-            <div className="relative group">
+            <div className="relative group mx-auto w-48 sm:w-56 lg:w-full">
               <div className="aspect-[2/3] rounded-3xl overflow-hidden border-4 border-zinc-950 shadow-2xl bg-zinc-900 ring-1 ring-white/10">
                 <img
                   src={manga.imageUrl || ""}
@@ -1268,7 +1268,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                           <a
                             key={chapter.id}
                             href={chapterUrl}
-                            className={`group border rounded-3xl p-6 flex flex-col md:flex-row md:items-center md:justify-between transition-all cursor-pointer block min-w-0 ${
+                            className={`group border rounded-2xl md:rounded-3xl p-3 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between transition-all cursor-pointer block min-w-0 ${
                               isUpdating
                                 ? "border-zinc-700 opacity-60"
                                 : hasAccess
@@ -1280,16 +1280,16 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                 : "border-zinc-800/50 opacity-60"
                             }`}
                           >
-                            <div className="flex items-center gap-6 min-w-0 flex-1 mb-4 md:mb-0">
-                              <div className="w-24 h-14 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0">
+                            <div className="flex items-center gap-3 md:gap-6 min-w-0 flex-1 mb-2 md:mb-0">
+                              <div className="hidden md:block w-24 h-14 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700/50 shrink-0">
                                 <img
                                   src={chapter.imageUrl || manga.imageUrl || ""}
                                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                                   alt=""
                                 />
                               </div>
-                              <div className="space-y-1 min-w-0 flex-1">
-                                <div className="flex items-center gap-3 flex-wrap">
+                              <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2 min-w-0">
                                     {/* Lock/Unlock Icon with Tooltip */}
                                     <div className="relative group/lock shrink-0">
@@ -1322,7 +1322,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                     </div>
 
 
-                                    <h4 className="text-white font-bold text-lg truncate">
+                                    <h4 className="text-white font-bold text-sm md:text-lg truncate">
                                       Capítulo {chapter.number}
                                     </h4>
                                   </div>
@@ -1331,15 +1331,15 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                     {formatDate(chapter.releasedAt)}
                                   </span>
                                 </div>
-                                <p className="text-zinc-400 text-base font-bold italic tracking-tight uppercase group-hover:text-cyan-400 transition-colors truncate">
+                                <p className="text-zinc-500 text-xs md:text-base font-bold italic tracking-tight uppercase group-hover:text-cyan-400 transition-colors truncate">
                                   "{chapter.title}"
                                 </p>
                               </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-col items-start md:items-end gap-3 min-w-0 flex-shrink-0">
+                            <div className="flex flex-col md:flex-col items-start md:items-end gap-2 md:gap-3 min-w-0 flex-shrink-0">
                               <div
-                                className="flex items-center gap-2 md:gap-4 text-zinc-500 relative shrink-0 w-full md:w-auto justify-between md:justify-end"
+                                className="flex items-center gap-3 md:gap-4 text-zinc-500 relative shrink-0 w-full md:w-auto justify-between md:justify-end"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div className="flex items-center gap-2 md:gap-4">

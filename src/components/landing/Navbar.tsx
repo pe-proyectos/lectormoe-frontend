@@ -526,17 +526,23 @@ const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Settings size={16} className="text-zinc-500" /> Ajustes
                   </a>
-                  {(activeScan || organization) &&
-                    userPermissions?.canSeeAdminPanel && (
+                  {user?.permissions
+                    ?.filter((p: any) => p.canSeeAdminPanel && p.organization)
+                    .map((p: any) => (
                       <a
-                        href={`/${activeScan?.slug || organization?.slug}/admin/mangas`}
+                        key={p.organizationId}
+                        href={`/${p.organization.slug}/admin/mangas`}
                         onClick={() => setProfileDropdownOpen(false)}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                       >
-                        <Shield size={16} className="text-purple-500" /> Panel
-                        Admin
+                        {p.organization.logoUrl ? (
+                          <img src={p.organization.logoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                        ) : (
+                          <Shield size={16} className="text-purple-500" />
+                        )}
+                        Panel {p.organization.name}
                       </a>
-                    )}
+                    ))}
                   <div className="h-px bg-zinc-800 my-2" />
                   <button
                     onClick={() => {
@@ -592,7 +598,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl max-h-[80vh] overflow-y-auto">
           {activeScan && (
             <a
               href="/"
@@ -687,16 +693,23 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 <Settings size={20} /> Ajustes
               </a>
-              {(activeScan || organization) &&
-                userPermissions?.canSeeAdminPanel && (
+              {user?.permissions
+                ?.filter((p: any) => p.canSeeAdminPanel && p.organization)
+                .map((p: any) => (
                   <a
-                    href={`/${activeScan?.slug || organization?.slug}/admin/mangas`}
+                    key={p.organizationId}
+                    href={`/${p.organization.slug}/admin/mangas`}
                     onClick={() => setMobileMenuOpen(false)}
                     className="w-full flex items-center gap-4 text-purple-400 font-bold text-lg"
                   >
-                    <Shield size={20} /> Panel Admin
+                    {p.organization.logoUrl ? (
+                      <img src={p.organization.logoUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                    ) : (
+                      <Shield size={20} />
+                    )}
+                    Panel {p.organization.name}
                   </a>
-                )}
+                ))}
               <button
                 onClick={() => {
                   handleLogout();

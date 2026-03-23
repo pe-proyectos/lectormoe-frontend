@@ -58,6 +58,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // CONFIGURACIONES BÁSICAS
   // ============================================
 
+  // Skip middleware for static file requests (service worker, manifests, etc.)
+  const staticFileExtensions = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|json|xml|txt|map|webmanifest)$/i;
+  if (staticFileExtensions.test(context.url.pathname)) {
+    return await next();
+  }
+
   if (context.url.pathname === "/ads.txt") {
     const adstxt = "google.com, pub-2799839819522052, DIRECT, f08c47fec0942fa0";
     return new Response(adstxt, {
@@ -151,6 +157,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "500",
     "forgot",
     "forgot-password",
+    "reset-password",
     "login",
     "register",
     "search",
@@ -159,6 +166,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "organizations",
     "profile",
     "settings",
+    "verify-email",
+    "unsubscribe",
     ".well-known", // Rutas de certificados SSL y otros estándares web
   ];
 

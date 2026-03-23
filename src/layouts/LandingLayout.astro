@@ -12,7 +12,7 @@ interface Props {
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { organization, user } = Astro.locals;
-const logged = !!user;
+
 const {
   title: propTitle,
   description: propDescription,
@@ -50,29 +50,24 @@ const siteName =
     <title>{title}</title>
     <meta name="description" content={description} />
 
-    {/* Google Ads - Solo en vistas de organización, no en admin ni globales */}
+    {/* Google AdSense meta tag - always present for verification */}
     <meta name="google-adsense-account" content="ca-pub-2799839819522052" />
+
+    {/* Ads logic:
+        - enableAds=false or no organization or user has bypass → no ads
+        - enableAds=true + isNsfw=true  → Adsterra Popunder (adult network)
+        - enableAds=true + isNsfw=false → Google AdSense
+    */}
     {
-      /* Google Ads Script - Solo en vistas de organización, no en admin ni globales */
-    }
-    {
-      showAds && (
+      showAds && organization?.isNSFW ? (
+        <script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
+      ) : showAds && !organization?.isNSFW ? (
         <script
           async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052`}
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
           crossorigin="anonymous"
         />
-      )
-    }
-    {
-      /* Adsterra Ads - Solo en vistas de organización, no en admin ni globales */
-    }
-    {
-      showAds &&
-        organization?.enableAdsterraAds &&
-        organization?.adsterraAdSource && (
-          <script type="text/javascript" src={organization.adsterraAdSource} />
-        )
+      ) : null
     }
 
     {/* Open Graph / Facebook */}
@@ -119,6 +114,10 @@ const siteName =
     <slot />
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
+    {/* Adsterra Social Bar - NSFW orgs only */}
+    {showAds && organization?.isNSFW && (
+      <script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
+    )}
   </body>
 </html>
 
