@@ -53,6 +53,25 @@ function calculateShowAds(user: any, organization: any): boolean {
   return true;
 }
 
+// Guarda solo los campos que el cliente necesita para evitar superar el límite de 4KB del cookie
+// Guarda solo los campos que el cliente necesita para evitar superar el límite de 4KB del cookie
+const minimalCookieUser = (user: any) => ({
+  id: user.id,
+  username: user.username,
+  name: user.name,
+  email: user.email,
+  imageUrl: user.imageUrl,
+  slug: user.slug,
+  permissions: user.permissions?.map((p: any) => ({
+    organizationId: p.organizationId,
+    canSeeAdminPanel: p.canSeeAdminPanel,
+    hideAds: p.hideAds,
+    organization: p.organization
+      ? { id: p.organization.id, name: p.organization.name, slug: p.organization.slug, logoUrl: p.organization.logoUrl }
+      : null,
+  })) ?? [],
+});
+
 export const onRequest = defineMiddleware(async (context, next) => {
   // ============================================
   // CONFIGURACIONES BÁSICAS
@@ -208,7 +227,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
             path: "/",
             sameSite: "lax",
           });
-          context.cookies.set("user", JSON.stringify(authCheck.user), {
+          context.cookies.set("user", JSON.stringify(minimalCookieUser(authCheck.user)), {
             maxAge: 60 * 60 * 24 * 7,
             path: "/",
             sameSite: "lax",
@@ -308,7 +327,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         path: "/",
         sameSite: "lax",
       });
-      context.cookies.set("user", JSON.stringify(authCheck.user), {
+      context.cookies.set("user", JSON.stringify(minimalCookieUser(authCheck.user)), {
         maxAge: 60 * 60 * 24 * 7,
         path: "/",
         sameSite: "lax",
