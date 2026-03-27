@@ -41,6 +41,7 @@ export const translations: Record<string, string> = {
   interval_week: "semana",
   interval_month: "mes",
   interval_year: "año",
+  billing_cycle_notice: "Se cobra cada {interval}",
   subscribe_me: "Suscribirme",
   already_subscribed: "Ya estás suscrito a este plan",
   please_log_in_to_subscribe: "Por favor, inicia sesión para suscribirte",

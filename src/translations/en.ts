@@ -38,6 +38,7 @@ export const translations: Record<string, string> = {
   interval_week: "week",
   interval_month: "month",
   interval_year: "year",
+  billing_cycle_notice: "Billed every {interval}",
   subscribe_me: "Subscribe",
   already_subscribed: "Already subscribed to this plan",
   please_log_in_to_subscribe: "Please log in to subscribe",

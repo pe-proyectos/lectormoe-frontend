@@ -97,6 +97,11 @@ export function SubscriptionPlanCard({
             ).toUpperCase()}
           </span>
         </h1>
+        {subscriptionPlan.interval !== 'MONTH' && (
+          <p className="mt-3 text-xs text-yellow-400/80 text-center">
+            ⚠ {_('billing_cycle_notice').replace('{interval}', _(`interval_${subscriptionPlan.interval.toLowerCase()}`))}
+          </p>
+        )}
       </div>
       <div className="p-0 mb-auto">
         <ul className="flex flex-col gap-4">

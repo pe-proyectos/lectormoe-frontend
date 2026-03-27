@@ -21,6 +21,7 @@ interface FollowedScan {
     rank: string;
     price: number;
     currency: string;
+    interval: string;
     status: 'active' | 'paused';
   } | null;
   followerCount: number;
@@ -933,7 +934,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                                   <span className="text-white font-bold text-sm">{scan.subscription.rank}</span>
                                 </div>
                                 <span className="text-white font-black text-sm italic">
-                                  {scan.subscription.currency === 'USD' ? '$' : scan.subscription.currency}{scan.subscription.price}/mes
+                                  {scan.subscription.currency === 'USD' ? '$' : scan.subscription.currency}{scan.subscription.price}/{ { DAY: 'día', WEEK: 'sem', MONTH: 'mes', YEAR: 'año' }[scan.subscription.interval] ?? scan.subscription.interval.toLowerCase() }
                                 </span>
                               </div>
                               <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
