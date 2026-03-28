@@ -8,6 +8,7 @@ interface SubscriptionPlan {
   description?: string | null;
   price: number;
   currency: string;
+  interval: string;
   planId?: string | null;
   canDownload?: boolean;
   canReadUnreleased?: boolean;
@@ -573,7 +574,10 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                       <div className="flex items-baseline gap-1">
                         <span className="text-white text-4xl font-black italic">{plan.currency === 'USD' ? '$' : plan.currency}</span>
                         <span className="text-white text-6xl font-black italic tracking-tighter">{plan.price}</span>
-                        <span className="text-zinc-500 font-bold uppercase text-[10px] ml-1">/ MES</span>
+                        <span className="text-zinc-500 font-bold uppercase text-[10px] ml-1">/ {{ DAY: 'DÍA', WEEK: 'SEM', MONTH: 'MES', YEAR: 'AÑO' }[plan.interval] ?? plan.interval}</span>
+                        {plan.interval !== 'MONTH' && (
+                          <span className="text-yellow-400 text-[9px] font-bold ml-1">⚠ se cobra cada {{ DAY: 'día', WEEK: 'semana', MONTH: 'mes', YEAR: 'año' }[plan.interval] ?? plan.interval}</span>
+                        )}
                       </div>
                     </div>
 
