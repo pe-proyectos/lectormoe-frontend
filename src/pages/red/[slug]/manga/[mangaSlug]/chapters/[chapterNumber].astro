@@ -1,0 +1,113 @@
+---
+import LandingLayout from "../../../../../../layouts/LandingLayout.astro";
+import ReaderPageContainer from "../../../../../../components/landing/ReaderPageContainer";
+import { getTranslator } from "../../../../../../util/translate";
+
+const { mangaSlug, chapterNumber } = Astro.params;
+const { language, callAPI, user, organizationSlug, organization, showAds: showAdsFromMiddleware, nsfwMode } = Astro.locals as any;
+const logged = !!user;
+const _ = getTranslator(language);
+
+if (!organizationSlug) {
+  return Astro.redirect("/404");
+}
+
+let manga, chapter;
+
+try {
+  [manga, chapter] = await Promise.all([
+    callAPI(`/api/manga-custom/${mangaSlug}`),
+    callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}`),
+  ]);
+} catch (error) {
+  console.error("Error fetching manga or chapter:", error);
+  return Astro.redirect("/404");
+}
+
+if (!manga || manga.status === false) {
+  return Astro.redirect("/404");
+}
+
+if (!chapter || chapter.status === false) {
+  return Astro.redirect("/404");
+}
+
+if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
+  return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
+}
+
+const showAds = showAdsFromMiddleware && !manga.isNSFW;
+
+const userHasAccessToChapter = (chapter: any) => {
+  if (!user && manga?.requireLogin === true) return false;
+
+  const permissions = user?.permissions?.find((permission: any) => permission.organizationId === organization?.id) || {};
+
+  if (permissions.canReadUnreleased === true) return true;
+  if (permissions.canEditChapter === true) return true;
+  if (permissions.canEditPage === true) return true;
+
+  const isChapterReleased = chapter.releasedAt
+    ? new Date(chapter.releasedAt).getTime() < new Date().getTime()
+    : false;
+
+  if (isChapterReleased) {
+    const hasCanReadReleasedPlans = (manga?.subscriptionPlansCanReadReleased?.length ?? 0) > 0;
+    if (hasCanReadReleasedPlans) {
+      if (!logged) return false;
+      for (const subscription of user?.subscriptions || []) {
+        if (subscription.active === true && subscription?.subscriptionPlan?.organizationId === organization?.id) {
+          const hasPlan = manga?.subscriptionPlansCanReadReleased?.find((plan: any) => plan.id === subscription?.subscriptionPlan?.id);
+          if (hasPlan) return true;
+        }
+      }
+      return false;
+    } else {
+      return true;
+    }
+  } else {
+    const hasCanReadUnreleasedPlans = (manga?.subscriptionPlansCanReadUnreleased?.length ?? 0) > 0;
+    if (hasCanReadUnreleasedPlans) {
+      if (!logged) return false;
+      for (const subscription of user?.subscriptions || []) {
+        if (subscription.active === true && subscription?.subscriptionPlan?.organizationId === organization?.id) {
+          const hasPlan = manga?.subscriptionPlansCanReadUnreleased?.find((plan: any) => plan.id === subscription?.subscriptionPlan?.id);
+          if (hasPlan) return true;
+        }
+      }
+      return false;
+    } else {
+      return false;
+    }
+  }
+};
+
+const hasAccess = userHasAccessToChapter(chapter);
+
+if (!hasAccess) {
+  return Astro.redirect(`/red/${organizationSlug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapterNumber}`);
+}
+
+const ogImageUrl = chapter?.imageUrl || manga.imageUrl || manga.bannerUrl;
+---
+
+<LandingLayout
+  title={`${chapter.title} - ${manga.title} #${chapter.number}`}
+  imageUrl={ogImageUrl}
+  description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
+  showAds={showAds}
+>
+  <ReaderPageContainer
+    language={language}
+    manga={manga}
+    chapter={chapter}
+    chapterNumber={chapterNumber}
+    logged={logged}
+    user={user}
+    organization={organization}
+    organizationSlug={organizationSlug}
+    hasAccess={hasAccess}
+    nsfwMode={nsfwMode}
+    client:load
+  />
+</LandingLayout>

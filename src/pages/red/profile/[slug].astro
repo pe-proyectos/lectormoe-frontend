@@ -1,0 +1,33 @@
+---
+import LandingLayout from "../../../layouts/LandingLayout.astro";
+import ProfilePageContainer from "../../../components/landing/ProfilePageContainer";
+
+const { user: currentUser, callAPI, isLandingPage, showAds, nsfwMode } = Astro.locals as any;
+const logged = !!currentUser;
+const { slug } = Astro.params;
+
+let userData = currentUser;
+if (!userData && logged) {
+  try {
+    const authCheck = await callAPI("/api/auth/check");
+    if (authCheck?.status === true && authCheck.data?.user) {
+      userData = authCheck.data.user;
+    }
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+  }
+}
+
+const isOwner = logged && userData && userData.slug === slug;
+---
+
+<LandingLayout showAds={showAds}>
+  <ProfilePageContainer
+    user={isOwner ? userData : undefined}
+    logged={logged}
+    profileSlug={slug}
+    isOwner={isOwner}
+    nsfwMode={nsfwMode}
+    client:only="react"
+  />
+</LandingLayout>

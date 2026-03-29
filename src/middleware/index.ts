@@ -32,7 +32,6 @@ function calculateShowAds(user: any, organization: any): boolean {
         sub.subscriptionPlan?.organizationId === organization.id,
     );
     if (activeSubscription) {
-      console.log(`User ${user.id} has an active subscription ${activeSubscription.id} with hideAds`);
       return false;
     }
   }
@@ -45,11 +44,9 @@ function calculateShowAds(user: any, organization: any): boolean {
         perm.organizationId === organization.id,
     );
     if (hasHideAds) {
-      console.log(`User ${user.id} has a permission with hideAds`);  
       return false;
     }
   }
-  console.log(`User ${user.id} has no active subscriptions or permissions with hideAds`);
   return true;
 }
 
@@ -187,7 +184,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "settings",
     "verify-email",
     "unsubscribe",
-    "red", // Prefijo para modo NSFW: /red/{slug}/...
     ".well-known", // Rutas de certificados SSL y otros estándares web
   ];
 
@@ -196,43 +192,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const firstSegment = pathSegments[0] || "";
 
   // ============================================
-  // MODO NSFW: /red/{slug}/... → rewrite a /{slug}/...
-  //            /red            → página catálogo NSFW global
+  // MODO NSFW: /red/{slug}/... → nsfwMode=true, org slug = pathSegments[1]
+  //            /red            → nsfwMode=true, landing page global NSFW
   // ============================================
-  let isNsfwPrefix = false;
+  let nsfwMode = false;
+  let effectiveSlug = firstSegment;
+
   if (firstSegment === "red") {
-    const realSlug = pathSegments[1];
-
-    if (!realSlug) {
-      // /red sin slug → dejar pasar a src/pages/red.astro con nsfwMode=true
-      isNsfwPrefix = true;
-    } else {
-      // /red/{slug}/... → rewrite a /{slug}/... con header nsfwMode
-      const restSegments = pathSegments.slice(2);
-      const newPath = `/${realSlug}${restSegments.length ? "/" + restSegments.join("/") : ""}`;
-      const newUrl = new URL(newPath, context.url);
-      newUrl.search = context.url.search; // preservar query params
-
-      const newHeaders = new Headers(context.request.headers);
-      newHeaders.set("x-nsfw-mode", "1");
-
-      return context.rewrite(
-        new Request(newUrl.toString(), {
-          method: context.request.method,
-          headers: newHeaders,
-        }),
-      );
-    }
+    nsfwMode = true;
+    effectiveSlug = pathSegments[1] || ""; // "" si solo es /red
   }
 
-  // Recoger flag nsfwMode: del header (rewrite de /red/{slug}) o del prefijo /red sin slug
-  context.locals.nsfwMode = context.request.headers.get("x-nsfw-mode") === "1" || isNsfwPrefix;
+  context.locals.nsfwMode = nsfwMode;
 
   // Determinar si es landing page
-  // Es landing si la ruta es "/" o si el primer segmento es una ruta reservada
+  // Es landing si la ruta es "/" o si el slug efectivo es reservado/vacío
   const isLandingPage =
     context.url.pathname === "/" ||
-    (firstSegment && reservedRoutes.includes(firstSegment));
+    !effectiveSlug ||
+    reservedRoutes.includes(effectiveSlug);
 
   context.locals.isLandingPage = isLandingPage;
 
@@ -287,8 +265,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return await next();
   }
 
-  // Extraer el slug de la organización del primer segmento de la ruta
-  const organizationSlug = firstSegment;
+  // Extraer el slug de la organización (efectiveSlug ya resuelve /red/{slug} → slug)
+  const organizationSlug = effectiveSlug;
   context.locals.organizationSlug = organizationSlug;
 
   // Si es una ruta reservada o especial, no buscar organización
@@ -395,7 +373,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     // Si la organización es NSFW y no estamos ya en modo /red/, redirigir
     if (organization?.isNSFW && !context.locals.nsfwMode) {
-      const restSegments = pathSegments.slice(1);
+      // restSegments: todo lo que viene después del slug de la org
+      const orgSegmentIndex = firstSegment === "red" ? 2 : 1;
+      const restSegments = pathSegments.slice(orgSegmentIndex);
       const nsfwPath = `/red/${organization.slug}${restSegments.length ? `/${restSegments.join("/")}` : ""}`;
       const redirectUrl = new URL(nsfwPath, context.url);
       redirectUrl.search = context.url.search;

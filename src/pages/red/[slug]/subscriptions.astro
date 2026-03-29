@@ -1,0 +1,23 @@
+---
+import LandingLayout from "../../../layouts/LandingLayout.astro";
+import SubscriptionPageContainer from "../../../components/landing/SubscriptionPageContainer";
+
+const { organization, user, showAds } = Astro.locals as any;
+const logged = !!user;
+
+if (!organization) {
+  return Astro.redirect("/404");
+}
+
+const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID;
+---
+
+<LandingLayout showAds={showAds}>
+  <SubscriptionPageContainer
+    organization={organization}
+    user={user}
+    logged={logged}
+    paypalClientId={paypalClientId}
+    client:only="react"
+  />
+</LandingLayout>

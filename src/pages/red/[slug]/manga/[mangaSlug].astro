@@ -1,0 +1,45 @@
+---
+import LandingLayout from '../../../../layouts/LandingLayout.astro';
+import MangaDetailPageContainer from '../../../../components/landing/MangaDetailPageContainer';
+
+const { mangaSlug } = Astro.params;
+const { organization, user, callAPI, language, showAds: showAdsFromMiddleware, nsfwMode } = Astro.locals as any;
+const logged = !!user;
+
+if (!organization) {
+  return Astro.redirect("/404");
+}
+
+const mangaResult = await callAPI(`/api/manga-custom/${mangaSlug}`);
+
+if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'object' || !mangaResult.manga?.slug) {
+    return Astro.redirect('/404');
+}
+
+const manga = mangaResult;
+
+if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
+  return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
+}
+
+const showAds = showAdsFromMiddleware && !manga.isNSFW;
+const absoluteImageUrl = manga.bannerUrl || manga.imageUrl;
+---
+
+<LandingLayout
+  title={`${manga.title} | ${organization.name}`}
+  description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
+  imageUrl={absoluteImageUrl}
+  organization={organization}
+  showAds={showAds}
+>
+  <MangaDetailPageContainer
+    manga={manga}
+    organization={organization}
+    user={user}
+    logged={logged}
+    language={language}
+    nsfwMode={nsfwMode}
+    client:load
+  />
+</LandingLayout>

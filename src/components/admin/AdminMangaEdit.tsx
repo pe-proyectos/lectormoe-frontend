@@ -266,6 +266,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       shortDescription: initialMangaCustom?.shortDescription || '',
       description: initialMangaCustom?.description || '',
       status: initialMangaCustom?.status || 'ongoing',
+      workType: initialMangaCustom?.workType || 'manga',
       releasedAt: releasedAt || null,
       nextChapterAt: nextChapterAt || null,
       nextChapterAtMessage: initialMangaCustom?.nextChapterAtMessage || '',
@@ -1195,6 +1196,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           shortDescription: formData.shortDescription || null,
           description: formData.description || null,
           status: formData.status,
+          workType: formData.workType,
           releasedAt: localDatetimeStringToUTC(formData.releasedAt),
           nextChapterAt: localDatetimeStringToUTC(formData.nextChapterAt),
           nextChapterAtMessage: formData.nextChapterAtMessage || null,
@@ -2120,6 +2122,20 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <option value="completed">Completado</option>
                       <option value="hiatus">En pausa</option>
                       <option value="cancelled">Cancelado</option>
+                    </select>
+                  </div>
+
+                  {/* Tipo de obra */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Tipo de obra</label>
+                    <select
+                      value={formData.workType}
+                      onChange={(e) => setFormData({...formData, workType: e.target.value})}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:border-cyan-500 transition-all outline-none"
+                    >
+                      <option value="manga">Manga (derecha → izquierda)</option>
+                      <option value="manwha">Manwha (scroll vertical)</option>
+                      <option value="comic">Comic (izquierda → derecha)</option>
                     </select>
                   </div>
 

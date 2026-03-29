@@ -1,0 +1,21 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import ScanLanding from "../../components/landing/ScanLanding";
+
+const { organization, language, callAPI, user, organizationSlug, showAds, nsfwMode } = Astro.locals as any;
+const logged = !!user;
+
+if (!organization) {
+  return Astro.redirect("/404");
+}
+---
+
+<LandingLayout showAds={showAds}>
+  <ScanLanding
+    organization={organization}
+    user={user}
+    logged={logged}
+    nsfwMode={nsfwMode}
+    client:only="react"
+  />
+</LandingLayout>

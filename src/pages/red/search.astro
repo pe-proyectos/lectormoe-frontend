@@ -1,0 +1,16 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import ExplorePageContainer from "../../components/landing/ExplorePageContainer";
+
+const { language, user, showAds, nsfwMode } = Astro.locals as any;
+const logged = !!user;
+---
+
+<LandingLayout showAds={showAds}>
+  <ExplorePageContainer
+    user={user}
+    logged={logged}
+    nsfwMode={nsfwMode}
+    client:only="react"
+  />
+</LandingLayout>

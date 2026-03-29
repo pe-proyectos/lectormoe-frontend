@@ -78,7 +78,7 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false 
             />
             
             {/* Scans Buttons Section */}
-            <ScansButtonsSection onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+            <ScansButtonsSection nsfwMode={nsfwMode} onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
 
             {/* Featured Mangas Section */}
             <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">

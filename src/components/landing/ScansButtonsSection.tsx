@@ -10,9 +10,10 @@ interface Scan {
 
 interface Props {
   onNavigate: (scanId: string) => void;
+  nsfwMode?: boolean;
 }
 
-const ScansButtonsSection: React.FC<Props> = ({ onNavigate }) => {
+const ScansButtonsSection: React.FC<Props> = ({ onNavigate, nsfwMode = false }) => {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,8 +70,8 @@ const ScansButtonsSection: React.FC<Props> = ({ onNavigate }) => {
           <button 
             key={scan.id}
             onClick={() => {
-              // Redirigir a la ruta del organization/scan
-              onNavigate(scan.url);
+              const url = nsfwMode ? `/red${scan.url}` : scan.url;
+              onNavigate(url);
             }}
             className="flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full hover:border-cyan-500/50 hover:bg-zinc-800 transition-all group shadow-2xl"
           >
