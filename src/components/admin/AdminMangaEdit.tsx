@@ -522,6 +522,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         requireLogin: initialMangaCustom?.requireLogin || false,
         isSimulRelease: initialMangaCustom?.isSimulRelease || false,
         isNSFW: initialMangaCustom?.isNSFW || false,
+        workType: initialMangaCustom?.workType || 'manga',
         cover: initialMangaCustom?.imageUrl || '',
         banner: initialMangaCustom?.bannerUrl || '',
         genres: initialMangaCustom?.genres || [],

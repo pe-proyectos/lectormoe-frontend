@@ -150,16 +150,18 @@ export function Reader({
 
   const [accessError, setAccessError] = useState(null);
 
-  const [settings, setSettings] = useState(() => ({
-    readType:
-      localStorage.getItem("readType") ||
-      manga?.bookType?.default_read_type ||
-      readTypes.CASCADE,
-    limitPageHeight: localStorage.getItem("limitPageHeight") === "true",
-    useDoublePages: localStorage.getItem("useDoublePages") === "true",
-    chapterSettings: localStorage.getItem("chapterSettings") === "true",
-    pageGap: localStorage.getItem("pageGap") || "minimo",
-  }));
+  const [settings, setSettings] = useState(() => {
+    const savedReadType = localStorage.getItem("readType");
+    const workType = manga?.workType || 'manga';
+    const defaultReadType = savedReadType || (workType === 'manwha' ? readTypes.CASCADE : readTypes.PAGINATED);
+    return {
+      readType: defaultReadType,
+      limitPageHeight: localStorage.getItem("limitPageHeight") === "true",
+      useDoublePages: localStorage.getItem("useDoublePages") === "true",
+      chapterSettings: localStorage.getItem("chapterSettings") === "true",
+      pageGap: localStorage.getItem("pageGap") || "minimo",
+    };
+  });
 
   // Memoizar detección de mobile
   useEffect(() => {
@@ -278,7 +280,10 @@ export function Reader({
 
   const handlePageClick = useCallback(
     (evt) => {
-      const isGoingForward = evt.clientX > window.innerWidth / 2;
+      const clickedRight = evt.clientX > window.innerWidth / 2;
+      // Comics (LTR): right = forward. Manga (RTL): right = backward (invert direction)
+      const workType = manga?.workType || 'manga';
+      const isGoingForward = workType === 'comic' ? clickedRight : !clickedRight;
       const currentPageIndex = chapterData.pages.findIndex(
         (p) => p.number === currentPage
       );
@@ -308,7 +313,7 @@ export function Reader({
         location.href = "#manga-pages-top";
       }
     },
-    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth]
+    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, manga?.workType]
   );
 
   const handlePageGap = useCallback((value) => {
@@ -937,6 +942,11 @@ export function Reader({
                   <p className="text-gray-400 text-sm font-medium mb-3">
                     {_("read_type")}
                   </p>
+                  {settings.readType === readTypes.PAGINATED && (
+                    <p className="text-xs text-zinc-500 mb-2">
+                      {(manga?.workType === 'comic') ? '← → Izquierda a derecha (Comic)' : '→ ← Derecha a izquierda (Manga)'}
+                    </p>
+                  )}
                   <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
                     <button
                       onClick={() => handleSetReadType(readTypes.PAGINATED)}
