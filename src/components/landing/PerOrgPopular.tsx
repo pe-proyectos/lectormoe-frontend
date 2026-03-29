@@ -5,6 +5,7 @@ import MangaCard3D from './MangaCard3D';
 interface PerOrgPopularProps {
   user?: any;
   logged?: boolean;
+  nsfwMode?: boolean;
 }
 
 interface OrgPopularData {
@@ -17,7 +18,7 @@ interface OrgPopularData {
   mangas: any[];
 }
 
-const PerOrgPopular: React.FC<PerOrgPopularProps> = ({ user, logged }) => {
+const PerOrgPopular: React.FC<PerOrgPopularProps> = ({ user, logged, nsfwMode = false }) => {
   const [orgData, setOrgData] = useState<OrgPopularData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +26,7 @@ const PerOrgPopular: React.FC<PerOrgPopularProps> = ({ user, logged }) => {
     const fetchPerOrgPopular = async () => {
       try {
         const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/landing/per-org-popular`);
+        const response = await fetch(`${API_URL}/api/landing/per-org-popular?nsfw=${nsfwMode}`);
         const result = await response.json();
 
         if (result?.status === true && Array.isArray(result?.data)) {
@@ -146,6 +147,7 @@ const PerOrgPopular: React.FC<PerOrgPopularProps> = ({ user, logged }) => {
                     key={manga.id}
                     user={user}
                     organization={item.organization}
+                    nsfwMode={nsfwMode}
                     manga={{
                       id: manga.id?.toString() || '',
                       title: manga.title,

@@ -10,6 +10,7 @@ interface ProfilePageProps {
   organization: any;
   profileSlug?: string;
   isOwner?: boolean;
+  nsfwMode?: boolean;
 }
 
 interface FollowedScan {
@@ -17,6 +18,7 @@ interface FollowedScan {
   name: string;
   logoUrl: string | null;
   slug: string;
+  isNSFW?: boolean;
   subscription: {
     rank: string;
     price: number;
@@ -50,7 +52,7 @@ interface ReadingHistory {
   lastReadAt: string;
 }
 
-const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization, profileSlug, isOwner = false }) => {
+const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization, profileSlug, isOwner = false, nsfwMode = false }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followedScans, setFollowedScans] = useState<FollowedScan[]>([]);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
@@ -887,7 +889,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-purple-500">Scans</span></h2>
                 <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                  <Users size={14} /> {followedScans.length} seguido(s)
+                  <Users size={14} /> {followedScans.filter(s => nsfwMode ? s.isNSFW : !s.isNSFW).length} seguido(s)
                 </div>
               </div>
               {loadingScans ? (
@@ -899,10 +901,10 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     </div>
                   ))}
                 </div>
-              ) : followedScans.length > 0 ? (
+              ) : followedScans.filter(s => nsfwMode ? s.isNSFW : !s.isNSFW).length > 0 ? (
                 <div className={`grid grid-cols-1 ${isOwner ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
-                  {followedScans.map((scan) => (
-                    <a key={scan.id} href={`/${scan.slug}`} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-[32px] group hover:bg-zinc-900 transition-all shadow-xl block">
+                  {followedScans.filter(s => nsfwMode ? s.isNSFW : !s.isNSFW).map((scan) => (
+                    <a key={scan.id} href={nsfwMode ? `/red/${scan.slug}` : `/${scan.slug}`} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-[32px] group hover:bg-zinc-900 transition-all shadow-xl block">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-zinc-800 bg-zinc-950">
@@ -1024,9 +1026,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ) : favorites.length > 0 ? (
                 <>
                   <div className={`grid grid-cols-2 ${isOwner ? 'md:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-6`}>
-                    {(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 12)).map((favorite: any) => {
+                    {(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 12))
+                      .filter((favorite: any) => {
+                        const mangaCustom = favorite.mangaCustom || favorite;
+                        const isNSFW = mangaCustom.isNSFW || mangaCustom.organization?.isNSFW || false;
+                        return nsfwMode ? isNSFW : !isNSFW;
+                      })
+                      .map((favorite: any) => {
                       const mangaCustom = favorite.mangaCustom || favorite;
                       const orgSlug = mangaCustom.organization?.slug || '';
+                      const orgBase = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
 
                       const userHasSubscription = logged && user?.subscriptions?.some(
                         (sub: any) => sub?.subscriptionPlan?.organizationId === mangaCustom.organization?.id && sub.active === true && sub?.subscriptionPlan?.canReadUnreleased === true
@@ -1042,7 +1051,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                           number: chapter.number,
                           title: chapter.title,
                           releasedAt: chapter.releasedAt,
-                          chapterUrl: `/${orgSlug}/manga/${mangaCustom.manga?.slug || ''}/chapters/${chapter.number}`,
+                          chapterUrl: `${orgBase}/manga/${mangaCustom.manga?.slug || ''}/chapters/${chapter.number}`,
                           isRead,
                         };
                       });
@@ -1058,8 +1067,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                             cover: mangaCustom.imageUrl,
                             scan: mangaCustom.organization?.name || '',
                             scanName: mangaCustom.organization?.name || '',
-                            scanUrl: `/${orgSlug}`,
-                            mangaUrl: `/${orgSlug}/manga/${mangaCustom.manga?.slug || ''}`,
+                            scanUrl: orgBase,
+                            mangaUrl: `${orgBase}/manga/${mangaCustom.manga?.slug || ''}`,
                             status: mangaCustom.status || 'Ongoing',
                             chapters: chaptersWithReadStatus,
                             userHasSubscription: userHasSubscription,
@@ -1107,9 +1116,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 ) : readingHistory.length > 0 ? (
                   <>
                     <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
-                      {(showAllHistory ? readingHistory : readingHistory.slice(0, 5)).map((item) => {
+                      {(showAllHistory ? readingHistory : readingHistory.slice(0, 5))
+                        .filter((item) => {
+                          const mc = item.chapter.mangaCustom as any;
+                          const isNSFW = mc.isNSFW || mc.organization?.isNSFW || false;
+                          return nsfwMode ? isNSFW : !isNSFW;
+                        })
+                        .map((item) => {
                         const orgSlug = item.chapter.mangaCustom.organization.slug;
-                        const chapterUrl = `/${orgSlug}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
+                        const orgBase = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
+                        const chapterUrl = `${orgBase}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
                         return (
                         <a
                           key={item.id}

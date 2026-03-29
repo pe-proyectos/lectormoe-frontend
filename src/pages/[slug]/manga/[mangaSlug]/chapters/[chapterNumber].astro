@@ -5,7 +5,7 @@ import { getTranslator } from "../../../../../util/translate";
 
 // @ts-ignore - organization y showAds se definen dinámicamente en el middleware
 const { mangaSlug, chapterNumber } = Astro.params;
-const { language, callAPI, user, organizationSlug, organization, showAds: showAdsFromMiddleware } = Astro.locals as any;
+const { language, callAPI, user, organizationSlug, organization, showAds: showAdsFromMiddleware, nsfwMode } = Astro.locals as any;
 const logged = !!user;
 const _ = getTranslator(language);
 
@@ -32,6 +32,11 @@ if (!manga || manga.status === false) {
 
 if (!chapter || chapter.status === false) {
   return Astro.redirect("/404");
+}
+
+// Si el manga o la org es NSFW y no estamos en modo /red/, redirigir
+if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
+  return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
 
 // No mostrar ads de Google si el manga es NSFW, aunque la organización tenga Google Ads habilitado
@@ -131,7 +136,9 @@ const ogImageUrl = chapter?.imageUrl || manga.imageUrl || manga.bannerUrl;
     logged={logged}
     user={user}
     organization={organization}
+    organizationSlug={organizationSlug}
     hasAccess={hasAccess}
+    nsfwMode={nsfwMode}
     client:load
   />
 </LandingLayout>

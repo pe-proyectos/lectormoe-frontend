@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Facebook, Instagram, MessageSquare, Star, Loader2 } from 'lucide-react';
+import { Users, BookOpen, ShieldAlert, Facebook, Instagram, MessageSquare, Star, Loader2 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface ScanStatsBarProps {
@@ -108,6 +108,22 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, user, logged 
           <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
             <Users size={12} /> {followerCount.toLocaleString()} Seguidores
           </span>
+          {(organization?.mangaCount ?? 0) > 0 && (
+            <>
+              <div className="hidden md:block h-4 w-px bg-zinc-800" />
+              <span className="hidden md:flex text-zinc-500 text-[10px] font-bold uppercase tracking-widest items-center gap-2">
+                <BookOpen size={12} /> {(organization.mangaCount as number).toLocaleString()} {organization.mangaCount === 1 ? 'Proyecto' : 'Proyectos'}
+              </span>
+            </>
+          )}
+          {(organization?.nsfwMangaCount ?? 0) > 0 && (
+            <>
+              <div className="hidden md:block h-4 w-px bg-zinc-800" />
+              <span className="hidden md:flex text-zinc-500 text-[10px] font-bold uppercase tracking-widest items-center gap-2">
+                <ShieldAlert size={12} className="text-red-500" /> {(organization.nsfwMangaCount as number).toLocaleString()} NSFW
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-6">

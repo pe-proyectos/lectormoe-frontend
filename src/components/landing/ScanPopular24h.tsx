@@ -6,9 +6,10 @@ interface ScanPopular24hProps {
   mangas: any[];
   user: any;
   organization: any;
+  nsfwMode?: boolean;
 }
 
-const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, user, organization }) => {
+const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, user, organization, nsfwMode = false }) => {
   const [showAll, setShowAll] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -45,12 +46,13 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, user, organizat
       
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
         {visibleMangas.map((manga, i) => (
-          <MangaCard3D 
-            key={`pop24h-${i}`} 
+          <MangaCard3D
+            key={`pop24h-${i}`}
             user={user}
             organization={organization}
-            manga={manga} 
+            manga={manga}
             hideScan={true}
+            nsfwMode={nsfwMode}
           />
         ))}
       </div>

@@ -64,6 +64,7 @@ interface MangaDetailPageProps {
   organization?: any;
   user?: any;
   logged?: boolean;
+  nsfwMode?: boolean;
 }
 
 const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
@@ -71,6 +72,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   organization,
   user,
   logged,
+  nsfwMode = false,
 }) => {
   // El slug está en manga.manga.slug (relación anidada del mangaCustom)
   const mangaSlug = (manga as any)?.manga?.slug || manga.slug;
@@ -658,8 +660,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
   // Helper function to get chapter URL
   const getChapterUrl = (chapter: Chapter): string => {
+    const orgBase = nsfwMode ? `/red/${organization?.slug || ""}` : `/${organization?.slug || ""}`;
     if (!logged && manga.requireLogin) {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : `/${organization?.slug || ''}/manga/${mangaSlug}`;
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : `${orgBase}/manga/${mangaSlug}`;
       return `/${organization?.slug || ""}/login?mangaSlug=${
         mangaSlug
       }&chapterNumber=${chapter.number}&redirect=${
@@ -679,13 +682,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       const history = getChapterHistory(chapter.number);
       if (history && !history.finishedAt && history.pageNumber) {
         return organization?.slug
-          ? `/${organization.slug}/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`
+          ? `${orgBase}/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`
           : `/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`;
       }
     }
 
     return organization?.slug
-      ? `/${organization.slug}/manga/${mangaSlug}/chapters/${chapter.number}`
+      ? `${orgBase}/manga/${mangaSlug}/chapters/${chapter.number}`
       : `/manga/${mangaSlug}/chapters/${chapter.number}`;
   };
 
@@ -1173,10 +1176,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                     {recommendedMangas.map((recommendedManga) => {
                       // El slug está en recommendedManga.manga.slug (relación anidada del mangaCustom)
                       const recommendedMangaSlug = recommendedManga.manga?.slug || recommendedManga.slug;
+                      const recOrgBase = nsfwMode ? `/red/${organization?.slug}` : `/${organization?.slug}`;
                       const mangaUrl = recommendedMangaSlug && recommendedMangaSlug !== 'undefined' && organization?.slug
-                        ? `/${organization.slug}/manga/${recommendedMangaSlug}`
-                        : (recommendedMangaSlug && recommendedMangaSlug !== 'undefined' 
-                          ? `/manga/${recommendedMangaSlug}` 
+                        ? `${recOrgBase}/manga/${recommendedMangaSlug}`
+                        : (recommendedMangaSlug && recommendedMangaSlug !== 'undefined'
+                          ? `/manga/${recommendedMangaSlug}`
                           : '#');
 
                       return (

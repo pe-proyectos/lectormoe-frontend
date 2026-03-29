@@ -187,12 +187,46 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "settings",
     "verify-email",
     "unsubscribe",
+    "red", // Prefijo para modo NSFW: /red/{slug}/...
     ".well-known", // Rutas de certificados SSL y otros estándares web
   ];
 
   // Extraer el primer segmento de la ruta
   const pathSegments = context.url.pathname.split("/").filter(Boolean);
   const firstSegment = pathSegments[0] || "";
+
+  // ============================================
+  // MODO NSFW: /red/{slug}/... → rewrite a /{slug}/...
+  //            /red            → página catálogo NSFW global
+  // ============================================
+  let isNsfwPrefix = false;
+  if (firstSegment === "red") {
+    const realSlug = pathSegments[1];
+
+    if (!realSlug) {
+      // /red sin slug → dejar pasar a src/pages/red.astro con nsfwMode=true
+      isNsfwPrefix = true;
+    } else {
+      // /red/{slug}/... → rewrite a /{slug}/... con header nsfwMode
+      const restSegments = pathSegments.slice(2);
+      const newPath = `/${realSlug}${restSegments.length ? "/" + restSegments.join("/") : ""}`;
+      const newUrl = new URL(newPath, context.url);
+      newUrl.search = context.url.search; // preservar query params
+
+      const newHeaders = new Headers(context.request.headers);
+      newHeaders.set("x-nsfw-mode", "1");
+
+      return context.rewrite(
+        new Request(newUrl.toString(), {
+          method: context.request.method,
+          headers: newHeaders,
+        }),
+      );
+    }
+  }
+
+  // Recoger flag nsfwMode: del header (rewrite de /red/{slug}) o del prefijo /red sin slug
+  context.locals.nsfwMode = context.request.headers.get("x-nsfw-mode") === "1" || isNsfwPrefix;
 
   // Determinar si es landing page
   // Es landing si la ruta es "/" o si el primer segmento es una ruta reservada
@@ -358,6 +392,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Actualizar el identifier con el slug de la organización para las siguientes llamadas al API
     organizationIdentifier = organization.slug;
     // NO usamos cookies para x-organization, solo el path actual determina la organización
+
+    // Si la organización es NSFW y no estamos ya en modo /red/, redirigir
+    if (organization?.isNSFW && !context.locals.nsfwMode) {
+      const restSegments = pathSegments.slice(1);
+      const nsfwPath = `/red/${organization.slug}${restSegments.length ? `/${restSegments.join("/")}` : ""}`;
+      const redirectUrl = new URL(nsfwPath, context.url);
+      redirectUrl.search = context.url.search;
+      return context.redirect(redirectUrl.toString());
+    }
 
     if (
       organization?.useBlockedCountries ||

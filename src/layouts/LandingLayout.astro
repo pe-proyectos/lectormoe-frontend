@@ -11,7 +11,7 @@ interface Props {
 }
 
 // @ts-ignore - organization se define dinámicamente en el middleware
-const { organization, user } = Astro.locals;
+const { organization, user, nsfwMode } = Astro.locals;
 
 const {
   title: propTitle,
@@ -31,18 +31,18 @@ const description =
   organization?.description ||
   organization?.shortDescription ||
   "Infraestructura independiente para comunidades de scanlation. Tu scan merece su propio espacio.";
-const faviconUrl = organization?.faviconUrl || "/images/faviconcaptrad.png";
+const faviconUrl = organization?.faviconUrl || (nsfwMode ? "/images/redfaviconcaptrad.png" : "/images/faviconcaptrad.png");
 // Usar la imagen específica si se proporciona, si no usar el banner de la organización
 const imageUrl =
   propImageUrl ||
   organization?.bannerUrl ||
   organization?.logoUrl ||
-  "/images/logocaptrad.png";
+  (nsfwMode ? "/images/redlogocaptrad.png" : "/images/logocaptrad.png");
 const siteName =
   organization?.title || organization?.name || "CapibaraTraductor";
 ---
 
-<html lang="es" class="scroll-smooth">
+<html lang="es" class="scroll-smooth" data-nsfw={nsfwMode ? "true" : "false"}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -170,6 +170,21 @@ const siteName =
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #52525b;
+  }
+
+  /* NSFW mode: swap cyan → red */
+  [data-nsfw="true"] {
+    --color-cyan-50: var(--color-red-50);
+    --color-cyan-100: var(--color-red-100);
+    --color-cyan-200: var(--color-red-200);
+    --color-cyan-300: var(--color-red-300);
+    --color-cyan-400: var(--color-red-400);
+    --color-cyan-500: var(--color-red-500);
+    --color-cyan-600: var(--color-red-600);
+    --color-cyan-700: var(--color-red-700);
+    --color-cyan-800: var(--color-red-800);
+    --color-cyan-900: var(--color-red-900);
+    --color-cyan-950: var(--color-red-950);
   }
 
   /* Ocultar scrollbar en mobile */

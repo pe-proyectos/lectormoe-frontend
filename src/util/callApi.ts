@@ -51,7 +51,13 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
         // Determinar el x-organization SOLO desde el path actual (NO cookies)
         let orgDomain: string | null = null;
 
-        if (!isLandingPage) {
+        if (firstSegment === 'red' && pathSegments.length > 1) {
+            // /red/{slug}/... → usar el segundo segmento como org
+            const actualSlug = pathSegments[1];
+            if (!reservedRoutes.includes(actualSlug)) {
+                orgDomain = actualSlug;
+            }
+        } else if (!isLandingPage) {
             // Si estamos en una página de organización, extraer slug del path
             if (firstSegment && !reservedRoutes.includes(firstSegment)) {
                 orgDomain = firstSegment;

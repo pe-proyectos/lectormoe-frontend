@@ -9,25 +9,29 @@ interface ProfilePageContainerProps {
   organization?: any;
   profileSlug?: string;
   isOwner?: boolean;
+  nsfwMode?: boolean;
 }
 
-const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logged, organization, profileSlug, isOwner }) => {
+const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logged, organization, profileSlug, isOwner, nsfwMode = false }) => {
   const navigateTo = (path: string) => {
     window.location.href = path;
   };
 
+  const orgPrefix = nsfwMode ? `/red/${organization?.slug}` : `/${organization?.slug}`;
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar
-        onOpenRegister={() => navigateTo('/register')}
-        onOpenLogin={() => navigateTo('/login')}
-        onGoHome={() => navigateTo('/')}
+        onOpenRegister={() => navigateTo(organization?.slug ? `${orgPrefix}/register` : '/register')}
+        onOpenLogin={() => navigateTo(organization?.slug ? `${orgPrefix}/login` : '/login')}
+        onGoHome={() => navigateTo(nsfwMode ? '/red' : '/')}
         onGoExplore={() => navigateTo('/scans')}
-        onGoSearch={() => navigateTo(organization?.slug ? `/${organization.slug}/search` : '/search')}
+        onGoSearch={() => navigateTo(organization?.slug ? `${orgPrefix}/search` : '/search')}
         activeView="profile"
         user={user}
         logged={logged}
         organization={organization}
+        nsfwMode={nsfwMode}
       />
 
       <ProfilePageNew
@@ -36,6 +40,7 @@ const ProfilePageContainer: React.FC<ProfilePageContainerProps> = ({ user, logge
         organization={organization}
         profileSlug={profileSlug}
         isOwner={isOwner}
+        nsfwMode={nsfwMode}
       />
 
       <Footer

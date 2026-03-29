@@ -44,9 +44,10 @@ interface Props {
   hideScan?: boolean;
   onSubscribe?: () => void;
   onClick?: () => void;
+  nsfwMode?: boolean;
 }
 
-const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = false, onSubscribe, onClick }) => {
+const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = false, onSubscribe, onClick, nsfwMode = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
   
@@ -67,7 +68,21 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
   };
   
   const safeMangaUrl = getMangaUrl();
-  const shouldBlur = manga.isNSFW === true;
+  const shouldBlur = !nsfwMode && manga.isNSFW === true;
+
+  const formatChapterDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const diffMs = Date.now() - date.getTime();
+    const absMins = Math.floor(Math.abs(diffMs) / 60000);
+    if (absMins < 1) return 'ahora';
+    const future = diffMs < 0;
+    if (absMins < 60) return future ? `en ${absMins}m` : `hace ${absMins}m`;
+    const absHours = Math.floor(absMins / 60);
+    if (absHours < 24) return future ? `en ${absHours}h` : `hace ${absHours}h`;
+    const absDays = Math.floor(absHours / 24);
+    if (absDays < 3) return future ? `en ${absDays}d` : `hace ${absDays}d`;
+    return (future ? 'el ' : '') + date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  };
 
   // Get organization ID from organization prop or manga object (for landing page)
   const organizationId = organization?.id || manga.organizationId;
@@ -370,8 +385,34 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                       )}
                     </span>
                     {index < 2 && (
-                      <span className="text-zinc-600 text-[8px] font-bold">
-                        {new Date(chapter.releasedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                      <span
+                        className="text-zinc-500 text-[10px] font-bold hidden md:inline-block relative group/date cursor-default"
+                        title=""
+                      >
+                        {formatChapterDate(chapter.releasedAt)}
+                        {/* Tooltip desktop */}
+                        <span className="pointer-events-none absolute bottom-full right-0 mb-1.5 hidden group-hover/date:flex flex-col gap-0.5 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 shadow-2xl z-50 min-w-max text-left">
+                          <span className="text-white text-[10px] font-bold whitespace-nowrap">
+                            {new Date(chapter.releasedAt).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                            {' · '}
+                            {new Date(chapter.releasedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {!isReleased && (
+                            <span className="text-yellow-400 text-[9px] font-black uppercase tracking-widest">
+                              ⏳ Lectura anticipada
+                            </span>
+                          )}
+                          {isReleased && needsSubscription && (
+                            <span className="text-yellow-400 text-[9px] font-black uppercase tracking-widest">
+                              🔒 Requiere suscripción
+                            </span>
+                          )}
+                          {isReleased && !needsSubscription && (
+                            <span className="text-green-400 text-[9px] font-black uppercase tracking-widest">
+                              ✓ Disponible
+                            </span>
+                          )}
+                        </span>
                       </span>
                     )}
                   </div>
@@ -565,9 +606,21 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                 })()
               )}
               {manga.chapters && manga.chapters.length > 0 && manga.chapters[0].releasedAt && (
-                <span className="text-zinc-500 font-bold flex items-center gap-1">
-                  <Clock size={10} /> 
-                  {new Date(manga.chapters[0].releasedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                <span className="hidden md:flex text-zinc-500 font-bold items-center gap-1 relative group/footerdate cursor-default">
+                  <Clock size={10} />
+                  {formatChapterDate(manga.chapters[0].releasedAt)}
+                  <span className="pointer-events-none absolute bottom-full left-0 mb-1.5 hidden group-hover/footerdate:flex flex-col gap-0.5 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 shadow-2xl z-50 min-w-max">
+                    <span className="text-white text-[10px] font-bold whitespace-nowrap">
+                      {new Date(manga.chapters[0].releasedAt).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                      {' · '}
+                      {new Date(manga.chapters[0].releasedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {new Date(manga.chapters[0].releasedAt).getTime() > Date.now() ? (
+                      <span className="text-yellow-400 text-[9px] font-black uppercase tracking-widest">⏳ Lectura anticipada</span>
+                    ) : (
+                      <span className="text-green-400 text-[9px] font-black uppercase tracking-widest">✓ Disponible</span>
+                    )}
+                  </span>
                 </span>
               )}
             </div>

@@ -12,16 +12,18 @@ import { callAPI } from "../../util/callApi";
 interface ScanLandingProps {
   // Required props
   organization: any;
-  
+
   // Optional props
   user?: any;
   logged?: boolean;
+  nsfwMode?: boolean;
 }
 
 const ScanLanding: React.FC<ScanLandingProps> = ({
   organization,
   user,
   logged,
+  nsfwMode = false,
 }) => {
   // Get user permissions for the current organization
   const userPermissions = user?.permissions?.find(
@@ -35,6 +37,8 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
   const [loadingTopThree, setLoadingTopThree] = useState(true);
   const [loadingPopular, setLoadingPopular] = useState(true);
   const [loadingRecent, setLoadingRecent] = useState(true);
+
+  const orgPrefix = nsfwMode ? `/red/${organization?.slug}` : `/${organization?.slug}`;
 
   // Helper function to map manga data
   const mapMangaData = (m: any) => {
@@ -61,14 +65,14 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
 
         // El slug está en m.manga.slug (relación anidada del mangaCustom)
         const mangaSlug = m.manga?.slug || m.slug || m.id;
-        
+
         return {
           id: chapter.id,
           number: chapter.number,
           title: chapter.title,
           releasedAt: chapter.releasedAt,
-          chapterUrl: mangaSlug && mangaSlug !== 'undefined' 
-            ? `/${organization?.slug}/manga/${mangaSlug}/chapters/${chapter.number}`
+          chapterUrl: mangaSlug && mangaSlug !== 'undefined'
+            ? `${orgPrefix}/manga/${mangaSlug}/chapters/${chapter.number}`
             : '#',
           isRead,
         };
@@ -77,8 +81,8 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
 
     // El slug está en m.manga.slug (relación anidada del mangaCustom)
     const mangaSlug = m.manga?.slug || m.slug || m.id;
-    const mangaUrl = mangaSlug && mangaSlug !== 'undefined' 
-      ? `/${organization?.slug}/manga/${mangaSlug}`
+    const mangaUrl = mangaSlug && mangaSlug !== 'undefined'
+      ? `${orgPrefix}/manga/${mangaSlug}`
       : undefined;
 
     return {
@@ -87,7 +91,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       cover: m.imageUrl || m.cover || "",
       scan: organization?.name || "",
       scanName: organization?.name || "",
-      scanUrl: `/${organization?.slug}`,
+      scanUrl: orgPrefix,
       mangaUrl: mangaUrl,
       status: m.status || "Ongoing",
       chapters: chaptersWithReadStatus,
@@ -111,12 +115,13 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
 
       try {
         // Fetch all data in parallel
+        const nsfwParam = nsfwMode ? '&nsfw=true' : '&nsfw=false';
         const [heroResult, topThreeResult, popularResult, recentResult] =
           await Promise.allSettled([
-            callAPI('/api/manga-custom?order=latest&limit=5'),
-            callAPI('/api/manga-custom?order=featured&limit=3'),
-            callAPI('/api/manga-custom?order=popular&limit=9'),
-            callAPI('/api/manga-custom?order=latest&limit=18'),
+            callAPI(`/api/manga-custom?order=latest&limit=5${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=featured&limit=3${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=popular&limit=9${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=latest&limit=18${nsfwParam}`),
           ]);
 
         // Process hero mangas
@@ -193,8 +198,8 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
     fetchAllMangas();
   }, [organization, logged, user]);
 
-  const subUrl = `/${organization?.slug}/subscriptions`;
-  const exploreUrl = organization?.slug ? `/${organization?.slug}/search` : `/search`;
+  const subUrl = `${orgPrefix}/subscriptions`;
+  const exploreUrl = organization?.slug ? `${orgPrefix}/search` : (nsfwMode ? `/red/search` : `/search`);
 
   const navigateTo = (path: string) => {
     window.location.href = path;
@@ -205,15 +210,16 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       <Navbar
         onOpenRegister={() => navigateTo(`/${organization?.slug}/register`)}
         onOpenLogin={() => navigateTo(`/${organization?.slug}/login`)}
-        onGoHome={() => navigateTo(`/${organization?.slug}`)}
+        onGoHome={() => navigateTo(orgPrefix)}
         onGoExplore={() => navigateTo("/scans")}
-        onGoSearch={() => navigateTo(`/${organization?.slug}/search`)}
+        onGoSearch={() => navigateTo(`${orgPrefix}/search`)}
         onGoSubscriptions={() => navigateTo(subUrl)}
         activeView="scan"
         user={user}
         logged={logged}
         activeScan={organization}
         organization={organization}
+        nsfwMode={nsfwMode}
       />
 
       {/* Hero with independent skeleton */}
@@ -278,6 +284,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
                 mangas={popular24h}
                 user={user}
                 organization={organization}
+                nsfwMode={nsfwMode}
               />
             )}
 
@@ -308,6 +315,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
                 exploreUrl={exploreUrl}
                 user={user}
                 organization={organization}
+                nsfwMode={nsfwMode}
               />
             )}
           </div>
@@ -327,7 +335,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         organization={organization}
         onNavigate={(page) => {
           if (page === "explore") navigateTo("/scans");
-          else if (page === "home") navigateTo("/");
+          else if (page === "home") navigateTo(nsfwMode ? "/red" : "/");
         }}
       />
     </div>

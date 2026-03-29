@@ -4,7 +4,7 @@ import MangaDetailPageContainer from '../../../components/landing/MangaDetailPag
 
 const { mangaSlug } = Astro.params;
 // @ts-ignore - showAds se define dinámicamente en el middleware
-const { organization, user, callAPI, language, showAds: showAdsFromMiddleware } = Astro.locals;
+const { organization, user, callAPI, language, showAds: showAdsFromMiddleware, nsfwMode } = Astro.locals;
 const logged = !!user;
 
 // Si no hay organización, redirigir a 404
@@ -23,6 +23,11 @@ if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'obj
 
 // Si llegamos aquí, mangaResult es directamente el objeto manga (data)
 const manga = mangaResult;
+
+// Si el manga o la org es NSFW y no estamos en modo /red/, redirigir
+if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
+  return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
+}
 
 // No mostrar ads de Google si el manga es NSFW, aunque la organización tenga Google Ads habilitado
 // Solo mostrar ads si: la organización tiene ads habilitados Y el manga NO es NSFW
@@ -46,6 +51,7 @@ const absoluteImageUrl =  manga.bannerUrl || manga.imageUrl;
     user={user}
     logged={logged}
     language={language}
+    nsfwMode={nsfwMode}
     client:load
   />
 </LandingLayout>

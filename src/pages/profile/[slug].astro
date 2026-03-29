@@ -3,7 +3,7 @@ import LandingLayout from "../../layouts/LandingLayout.astro";
 import ProfilePageContainer from "../../components/landing/ProfilePageContainer";
 
 // @ts-ignore - showAds se define dinámicamente en el middleware
-const { user: currentUser, callAPI, isLandingPage, showAds } = Astro.locals;
+const { user: currentUser, callAPI, isLandingPage, showAds, nsfwMode } = Astro.locals;
 const logged = !!currentUser;
 const { slug } = Astro.params;
 
@@ -28,12 +28,13 @@ if (!userData && logged) {
 const isOwner = logged && userData && userData.slug === slug;
 ---
 
-<LandingLayout showAds={showAds}>
+<LandingLayout showAds={showAds} nsfwMode={nsfwMode}>
   <ProfilePageContainer
     user={isOwner ? userData : undefined}
     logged={logged}
     profileSlug={slug}
     isOwner={isOwner}
+    nsfwMode={nsfwMode}
     client:only="react"
   />
 </LandingLayout>

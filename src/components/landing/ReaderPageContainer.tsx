@@ -13,9 +13,11 @@ interface ReaderPageContainerProps {
   logged: boolean;
   user: any;
   organization: any;
-  
+
   // Optional props
+  organizationSlug?: string;
   hasAccess?: boolean;
+  nsfwMode?: boolean;
 }
 
 const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
@@ -26,7 +28,9 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
   logged,
   user,
   organization,
+  organizationSlug,
   hasAccess = true,
+  nsfwMode = false,
 }) => {
   const [Reader, setReader] = useState<any>(null);
   const [showNSFWModal, setShowNSFWModal] = useState(false);
@@ -60,18 +64,21 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
         organization={organization}
         isSticky={false}
         activeView="reader"
+        nsfwMode={nsfwMode}
         onGoHome={() => {
-          window.location.href = organization?.slug ? `/${organization.slug}` : '/';
+          const prefix = nsfwMode ? `/red/${organization?.slug}` : `/${organization?.slug}`;
+          window.location.href = organization?.slug ? prefix : '/';
         }}
         onGoSearch={() => {
-          window.location.href = organization?.slug ? `/${organization.slug}/search` : '/search';
+          const prefix = nsfwMode ? `/red/${organization?.slug}` : `/${organization?.slug}`;
+          window.location.href = organization?.slug ? `${prefix}/search` : '/search';
         }}
         onGoExplore={() => {
           window.location.href = '/scans';
         }}
         onGoSubscriptions={() => {
           if (organization?.slug) {
-            window.location.href = `/${organization.slug}/subscriptions`;
+            window.location.href = `${nsfwMode ? `/red/${organization.slug}` : `/${organization.slug}`}/subscriptions`;
           }
         }}
         onOpenLogin={() => {
@@ -91,6 +98,7 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
             logged={logged}
             user={user}
             organization={organization}
+            organizationSlug={organizationSlug || organization?.slug}
             hasAccess={hasAccess}
           />
         ) : (

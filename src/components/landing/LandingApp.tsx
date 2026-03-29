@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Hero from './Hero';
 import FeaturedManga from './FeaturedManga';
+import LatestUpdates from './LatestUpdates';
 import PerOrgPopular from './PerOrgPopular';
 import ScansSection from './ScansSection';
 import TopReaders from './TopReaders';
@@ -15,9 +16,10 @@ import { Star } from 'lucide-react';
 interface LandingAppProps {
   user?: any;
   logged?: boolean;
+  nsfwMode?: boolean;
 }
 
-const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
+const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false }) => {
   const [currentPath, setCurrentPath] = useState(typeof window !== 'undefined' ? window.location.pathname : '/');
 
   useEffect(() => {
@@ -47,30 +49,32 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
   const openUserRegistration = () => navigateTo('/register'); // Para usuarios
   const openLogin = () => navigateTo('/login');
 
-  const isHome = currentPath === '/';
+  const isHome = nsfwMode || currentPath === '/';
   const isScans = currentPath === '/scans';
   const isSearch = currentPath === '/search';
 
   return (
     <div className="min-h-screen bg-zinc-950 selection:bg-cyan-500/30 selection:text-cyan-400">
-      <Navbar 
+      <Navbar
         onOpenRegister={openUserRegistration}
         onOpenLogin={openLogin}
-        onGoHome={() => navigateTo('/')} 
+        onGoHome={() => navigateTo(nsfwMode ? '/red' : '/')}
         onGoExplore={() => navigateTo('/scans')}
-        onGoSearch={() => navigateTo('/search')}
+        onGoSearch={() => navigateTo(nsfwMode ? '/red/search' : '/search')}
         activeView={isScans ? 'explore' : isSearch ? 'search' : 'home'}
         user={user}
         logged={logged}
+        nsfwMode={nsfwMode}
       />
       
       <main>
         {isHome && (
           <>
-            <Hero 
-              onExplore={() => navigateTo('/scans')} 
+            <Hero
+              onExplore={() => navigateTo('/scans')}
               user={user}
               logged={logged}
+              nsfwMode={nsfwMode}
             />
             
             {/* Scans Buttons Section */}
@@ -87,15 +91,18 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged }) => {
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
-                <FeaturedManga user={user} logged={logged} />
+                <FeaturedManga user={user} logged={logged} nsfwMode={nsfwMode} />
               </div>
             </section>
             
-            <PerOrgPopular user={user} logged={logged} />
 
-            <TopReaders />
 
-            <TopCommenters />
+            <LatestUpdates user={user} logged={logged} nsfwMode={nsfwMode} />
+
+            <div className="grid md:grid-cols-2 gap-0">
+              <TopReaders />
+              <TopCommenters />
+            </div>
 
             <ScansSection onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
           </>

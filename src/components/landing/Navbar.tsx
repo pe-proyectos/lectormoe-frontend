@@ -23,7 +23,7 @@ interface NavbarProps {
   onGoHome: () => void;
   onGoExplore: () => void;
   onGoSearch: () => void;
-  
+
   // Optional props
   user?: any;
   logged?: boolean;
@@ -31,6 +31,7 @@ interface NavbarProps {
   organization?: any;
   onGoSubscriptions?: () => void; // Optional callback for subscriptions navigation
   isSticky?: boolean; // Whether the navbar should be sticky (default true)
+  nsfwMode?: boolean; // Whether currently in /red/ NSFW mode
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -47,6 +48,7 @@ const Navbar: React.FC<NavbarProps> = ({
   organization,
   onGoSubscriptions,
   isSticky = true,
+  nsfwMode = false,
   // Note: onOpenRegister and onGoExplore are in interface for API compatibility but not currently used
   onOpenRegister: _onOpenRegister,
   onGoExplore: _onGoExplore,
@@ -54,6 +56,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [nsfwModalOpen, setNsfwModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState(initialUser);
   const [logged, setLogged] = useState(initialLogged);
@@ -353,7 +356,20 @@ const Navbar: React.FC<NavbarProps> = ({
     window.location.href = path;
   };
 
+  const getNsfwToggleTarget = () => {
+    if (nsfwMode) {
+      if (activeScan) return `/${activeScan.slug}`;
+      if (activeView === 'search') return '/search';
+      return '/';
+    } else {
+      if (activeScan) return `/red/${activeScan.slug}`;
+      if (activeView === 'search') return '/red/search';
+      return '/red';
+    }
+  };
+
   return (
+    <>
     <nav
       className={`${
         isSticky ? "fixed" : "relative"
@@ -396,13 +412,13 @@ const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                   <img
-                    src="/images/logocaptrad.png"
+                    src={nsfwMode ? "/images/redlogocaptrad.png" : "/images/logocaptrad.png"}
                     alt="CapibaraTraductor"
                     className="w-full h-full object-contain"
                   />
                 </div>
                 <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                  Capibara<span className="text-cyan-500">Traductor</span>
+                  {nsfwMode && <span className="text-red-500">Red </span>}Capibara<span className="text-cyan-500">Traductor</span>
                 </span>
               </div>
             )}
@@ -413,7 +429,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <div className="hidden md:flex items-center gap-8">
           {activeScan && (
             <a
-              href="/"
+              href={nsfwMode ? '/red' : '/'}
               className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-1 transition-all mr-2 group/back"
             >
               <ChevronLeft
@@ -425,7 +441,7 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
 
           <a
-            href={activeScan?.slug ? `/${activeScan.slug}/search` : '/search'}
+            href={activeScan?.slug ? (nsfwMode ? `/red/${activeScan.slug}/search` : `/${activeScan.slug}/search`) : (nsfwMode ? '/red/search' : '/search')}
             className={`text-sm font-bold transition-colors flex items-center gap-2 ${
               activeView === "search"
                 ? "text-cyan-500"
@@ -446,7 +462,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {activeScan && onGoSubscriptions && (
             <a
-              href={`/${activeScan?.slug || organization?.slug}/subscriptions`}
+              href={`${nsfwMode ? `/red/${activeScan?.slug || organization?.slug}` : `/${activeScan?.slug || organization?.slug}`}/subscriptions`}
               onClick={(e) => {
                 e.preventDefault();
                 onGoSubscriptions();
@@ -462,6 +478,19 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
 
           <div className="h-6 w-px bg-zinc-800 mx-2" />
+
+          {/* NSFW Mode Toggle Circle */}
+          <button
+            onClick={() => setNsfwModalOpen(true)}
+            title={nsfwMode ? 'Salir del modo +18' : 'Activar modo +18'}
+            className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-[10px] tracking-tight transition-all shadow-lg group/nsfw cursor-pointer ${
+              nsfwMode
+                ? 'bg-red-500 text-white shadow-red-500/30 hover:bg-red-400'
+                : 'bg-cyan-500 text-zinc-950 shadow-cyan-500/30 hover:bg-red-500 hover:text-white hover:shadow-red-500/30'
+            }`}
+          >
+            {nsfwMode ? '18+' : <span className="opacity-0 group-hover/nsfw:opacity-100 transition-opacity">18+</span>}
+          </button>
 
           {logged && user && (user.username || user.email) ? (
             <div className="relative" ref={dropdownRef}>
@@ -526,23 +555,27 @@ const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Settings size={16} className="text-zinc-500" /> Ajustes
                   </a>
-                  {user?.permissions
-                    ?.filter((p: any) => p.canSeeAdminPanel && p.organization)
-                    .map((p: any) => (
-                      <a
-                        key={p.organizationId}
-                        href={`/${p.organization.slug}/admin/mangas`}
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
-                      >
-                        {p.organization.logoUrl ? (
-                          <img src={p.organization.logoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
-                        ) : (
-                          <Shield size={16} className="text-purple-500" />
-                        )}
-                        Panel {p.organization.name}
-                      </a>
-                    ))}
+                  {user?.permissions?.some((p: any) => p.canSeeAdminPanel && p.organization) && (
+                    <div className="max-h-48 overflow-y-auto">
+                      {user.permissions
+                        .filter((p: any) => p.canSeeAdminPanel && p.organization)
+                        .map((p: any) => (
+                          <a
+                            key={p.organizationId}
+                            href={`/${p.organization.slug}/admin/mangas`}
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+                          >
+                            {p.organization.logoUrl ? (
+                              <img src={p.organization.logoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                            ) : (
+                              <Shield size={16} className="text-purple-500" />
+                            )}
+                            Panel {p.organization.name}
+                          </a>
+                        ))}
+                    </div>
+                  )}
                   <div className="h-px bg-zinc-800 my-2" />
                   <button
                     onClick={() => {
@@ -571,7 +604,20 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Toggle */}
-        <div className="flex items-center gap-4 md:hidden">
+        <div className="flex items-center gap-3 md:hidden">
+          {/* NSFW Mode Toggle Circle - mobile */}
+          <button
+            onClick={() => setNsfwModalOpen(true)}
+            title={nsfwMode ? 'Salir del modo +18' : 'Activar modo +18'}
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[9px] transition-all shadow-md group/nsfw-m cursor-pointer ${
+              nsfwMode
+                ? 'bg-red-500 text-white shadow-red-500/30'
+                : 'bg-cyan-500 text-zinc-950 shadow-cyan-500/30 hover:bg-red-500 hover:text-white hover:shadow-red-500/30'
+            }`}
+          >
+            {nsfwMode ? '18+' : <span className="opacity-0 group-hover/nsfw-m:opacity-100 transition-opacity">18+</span>}
+          </button>
+
           {logged && user && (
             <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500 bg-zinc-800 flex items-center justify-center">
               {user.imageUrl ? (
@@ -601,7 +647,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl max-h-[80vh] overflow-y-auto">
           {activeScan && (
             <a
-              href="/"
+              href={nsfwMode ? '/red' : '/'}
               onClick={() => setMobileMenuOpen(false)}
               className="text-zinc-500 font-bold flex items-center gap-4 text-lg"
             >
@@ -609,7 +655,7 @@ const Navbar: React.FC<NavbarProps> = ({
             </a>
           )}
           <a
-            href={activeScan?.slug ? `/${activeScan.slug}/search` : '/search'}
+            href={activeScan?.slug ? (nsfwMode ? `/red/${activeScan.slug}/search` : `/${activeScan.slug}/search`) : (nsfwMode ? '/red/search' : '/search')}
             onClick={() => setMobileMenuOpen(false)}
             className={`text-xl font-bold flex items-center gap-4 ${
               activeView === "search" ? "text-cyan-500" : "text-zinc-100"
@@ -630,7 +676,7 @@ const Navbar: React.FC<NavbarProps> = ({
           */}
           {activeScan && onGoSubscriptions && (
             <a
-              href={`/${activeScan?.slug || organization?.slug}/subscriptions`}
+              href={`${nsfwMode ? `/red/${activeScan?.slug || organization?.slug}` : `/${activeScan?.slug || organization?.slug}`}/subscriptions`}
               onClick={(e) => {
                 e.preventDefault();
                 setMobileMenuOpen(false);
@@ -733,6 +779,55 @@ const Navbar: React.FC<NavbarProps> = ({
       )}
 
     </nav>
+
+    {/* NSFW Mode Confirmation Modal */}
+    {nsfwModalOpen && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={() => setNsfwModalOpen(false)}
+        />
+        <div className="relative bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+            nsfwMode ? 'bg-zinc-800' : 'bg-red-500/20'
+          }`}>
+            <span className={`text-2xl font-black ${nsfwMode ? 'text-zinc-300' : 'text-red-400'}`}>
+              {nsfwMode ? '🔓' : '🔞'}
+            </span>
+          </div>
+          <h2 className="text-xl font-black text-white text-center uppercase tracking-tight mb-3">
+            {nsfwMode ? 'Salir del modo +18' : 'Contenido para adultos'}
+          </h2>
+          <p className="text-zinc-400 text-sm text-center leading-relaxed mb-8">
+            {nsfwMode
+              ? 'Volverás al catálogo general sin contenido para adultos.'
+              : 'Confirma que tienes 18 años o más para acceder a contenido para adultos.'}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setNsfwModalOpen(false)}
+              className="flex-1 px-4 py-3 bg-zinc-800 text-zinc-300 rounded-2xl font-bold text-sm hover:bg-zinc-700 transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                setNsfwModalOpen(false);
+                window.location.href = getNsfwToggleTarget();
+              }}
+              className={`flex-1 px-4 py-3 rounded-2xl font-black text-sm transition-colors cursor-pointer ${
+                nsfwMode
+                  ? 'bg-zinc-700 text-white hover:bg-zinc-600'
+                  : 'bg-red-500 text-white hover:bg-red-400 shadow-lg shadow-red-500/30'
+              }`}
+            >
+              {nsfwMode ? 'Confirmar' : 'Tengo 18+ años'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

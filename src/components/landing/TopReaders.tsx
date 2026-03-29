@@ -74,7 +74,7 @@ const TopReaders: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-5 animate-pulse">
               <div className="flex flex-col items-center gap-3">
@@ -86,7 +86,7 @@ const TopReaders: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {readers.map((reader, index) => {
             const style = getRankStyle(index);
             return (

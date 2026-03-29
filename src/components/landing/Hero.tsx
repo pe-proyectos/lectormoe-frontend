@@ -23,9 +23,10 @@ interface HeroProps {
   onExplore: () => void;
   user?: any;
   logged?: boolean;
+  nsfwMode?: boolean;
 }
 
-const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
+const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
     const fetchFeaturedManga = async () => {
       try {
         setLoading(true);
-        const result = await callAPI('/api/landing/featured-manga?limit=5');
+        const result = await callAPI(`/api/landing/featured-manga?limit=5&nsfw=${nsfwMode}`);
 
         if (Array.isArray(result)) {
           setMangas(result);
@@ -154,8 +155,8 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
                 <span className="bg-cyan-500 text-black font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-widest">Featured</span>
                 <span className="text-cyan-500 font-bold text-[10px] uppercase tracking-[0.3em]">{current.scan || current.scanName || 'Capibara Traductor'}</span>
               </div>
-              <h1 className="text-5xl md:text-7xl font-black text-white italic leading-tight tracking-tighter uppercase drop-shadow-2xl">
-                {current.title.split(' ')[0]} 
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white italic leading-tight tracking-tighter uppercase drop-shadow-2xl line-clamp-2">
+                {current.title.split(' ')[0]}
                 <span className="text-outline-white text-transparent ml-2">{current.title.split(' ').slice(1).join(' ') || 'Manga'}</span>
               </h1>
             </div>
@@ -223,9 +224,9 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
           {/* Side Image - Smaller scale */}
           <div className="hidden lg:block lg:col-span-5 justify-self-end">
             <div className="relative w-[300px] h-[440px] rounded-2xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/5 group transform rotate-2 hover:rotate-0 transition-all duration-500">
-              <img src={current.cover} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${current.isNSFW ? 'blur-xl scale-110' : ''}`} alt={current.title} />
+              <img src={current.cover} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${!nsfwMode && current.isNSFW ? 'blur-xl scale-110' : ''}`} alt={current.title} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              {current.isNSFW && (
+              {!nsfwMode && current.isNSFW && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                   <div className="bg-red-500/90 text-white px-4 py-2 rounded-xl font-black text-sm uppercase tracking-widest flex items-center gap-2 shadow-lg">
                     <AlertTriangle size={16} /> +18
@@ -233,7 +234,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged }) => {
                 </div>
               )}
               <div className="absolute bottom-4 left-4">
-                 <p className="text-white font-black italic text-xl drop-shadow-lg">{current.title}</p>
+                 <p className="text-white font-black italic text-lg drop-shadow-lg line-clamp-2">{current.title}</p>
               </div>
             </div>
           </div>

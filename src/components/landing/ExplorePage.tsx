@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import MangaCard3D from './MangaCard3D';
-import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User, Eye, EyeOff, AlertTriangle, X } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 import { callAPI } from '../../util/callApi';
 
@@ -26,9 +26,10 @@ interface Manga {
 interface MangaListItemProps {
   manga: Manga;
   hideScan?: boolean;
+  nsfwMode?: boolean;
 }
 
-const MangaListItem: React.FC<MangaListItemProps> = ({ manga, hideScan }) => {
+const MangaListItem: React.FC<MangaListItemProps> = ({ manga, hideScan, nsfwMode = false }) => {
 
   const handleInfoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,8 +52,8 @@ const MangaListItem: React.FC<MangaListItemProps> = ({ manga, hideScan }) => {
     <div className="group relative bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 flex items-center gap-6 hover:bg-zinc-900 hover:border-cyan-500/30 transition-all duration-300">
       {/* Cover */}
       <div className="w-20 h-28 shrink-0 rounded-lg overflow-hidden shadow-lg border border-white/5 relative">
-        <img src={manga.cover} alt={manga.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${manga.isNSFW ? 'blur-xl scale-110' : ''}`} />
-        {manga.isNSFW && (
+        <img src={manga.cover} alt={manga.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${!nsfwMode && manga.isNSFW ? 'blur-xl scale-110' : ''}`} />
+        {!nsfwMode && manga.isNSFW && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="bg-red-500/90 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase">+18</span>
           </div>
@@ -146,9 +147,10 @@ interface ExplorePageProps {
   user?: any;
   logged?: boolean;
   initialScan?: string;
+  nsfwMode?: boolean;
 }
 
-const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged }) => {
+const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged, nsfwMode = false }) => {
   const [search, setSearch] = useState('');
   const [selectedScan, setSelectedScan] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -161,8 +163,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [genres, setGenres] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [maxPage, setMaxPage] = useState(1);
-  const [showNSFW, setShowNSFW] = useState(false);
-  const [showNSFWModal, setShowNSFWModal] = useState(false);
+  const showNSFW = nsfwMode;
 
   const isScanBranded = organization && organizationSlug;
 
@@ -237,6 +238,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           page: page.toString(),
           limit: '24',
           order: sortBy,
+          nsfw: nsfwMode ? 'true' : 'false',
         });
 
         if (search) {
@@ -262,8 +264,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
             const mangaSlug = m.manga?.slug || m.slug || m.id;
             
             // Solo construir mangaUrl si tenemos un slug válido
-            const mangaUrl = mangaSlug && mangaSlug !== 'undefined' 
-              ? (mangaOrgSlug ? `/${mangaOrgSlug}/manga/${mangaSlug}` : `/manga/${mangaSlug}`)
+            const mangaOrgPrefix = mangaOrgSlug ? (nsfwMode ? `/red/${mangaOrgSlug}` : `/${mangaOrgSlug}`) : null;
+            const mangaUrl = mangaSlug && mangaSlug !== 'undefined'
+              ? (mangaOrgPrefix ? `${mangaOrgPrefix}/manga/${mangaSlug}` : `/manga/${mangaSlug}`)
               : undefined;
             
             return {
@@ -277,7 +280,12 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               status: m.status || 'Ongoing',
               author: m.author?.name || m.author,
               genres: m.genres?.map((g: any) => g.name || g) || [],
-              chapters: m.chapters || m.lastChapters || [],
+              chapters: (m.chapters || m.lastChapters || []).map((ch: any) => ({
+                ...ch,
+                chapterUrl: mangaSlug && mangaSlug !== 'undefined' && mangaOrgSlug
+                  ? `${mangaOrgPrefix}/manga/${mangaSlug}/chapters/${ch.number}`
+                  : '#',
+              })),
               userHasSubscription: logged && user?.subscriptions?.some(
                 (sub: any) => sub?.subscriptionPlan?.organizationId === mangaOrg?.id
               ) || false,
@@ -306,24 +314,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     setGenres(Array.from(uniqueGenres).sort());
   }, [mangas]);
 
-  const handleNSFWToggle = () => {
-    if (!showNSFW) {
-      // Mostrar modal de confirmación
-      setShowNSFWModal(true);
-    } else {
-      // Si ya está activado, simplemente desactivarlo
-      setShowNSFW(false);
-    }
-  };
-
-  const handleNSFWConfirm = () => {
-    setShowNSFW(true);
-    setShowNSFWModal(false);
-  };
-
-  const handleNSFWCancel = () => {
-    setShowNSFWModal(false);
-  };
 
   const filteredMangas = useMemo(() => {
     return mangas.filter(manga => {
@@ -421,18 +411,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               </select>
             )}
 
-            {/* NSFW Toggle */}
-            <button
-              onClick={handleNSFWToggle}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
-                showNSFW 
-                ? 'bg-red-500/10 border-red-500/50 text-red-400 hover:bg-red-500/20' 
-                : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-500 hover:text-white hover:border-zinc-600'
-              }`}
-            >
-              {showNSFW ? <EyeOff size={14} /> : <Eye size={14} />}
-              {showNSFW ? 'Ocultar NSFW' : 'Mostrar NSFW'}
-            </button>
 
             <div className="flex-1" />
 
@@ -490,14 +468,15 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           viewMode === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
               {filteredMangas.map((manga) => (
-                <MangaCard3D 
+                <MangaCard3D
                   user={user}
                   organization={organization}
-                  key={manga.id} 
+                  key={manga.id}
+                  nsfwMode={nsfwMode}
                   manga={{
                     ...manga,
-                    status: (manga.status === 'Ongoing' || manga.status === 'Completed' || manga.status === 'Hiatus') 
-                      ? manga.status 
+                    status: (manga.status === 'Ongoing' || manga.status === 'Completed' || manga.status === 'Hiatus')
+                      ? manga.status
                       : 'Ongoing' as 'Ongoing' | 'Completed' | 'Hiatus'
                   }}
                 />
@@ -506,7 +485,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           ) : (
             <div className="flex flex-col gap-4">
               {filteredMangas.map((manga) => (
-                <MangaListItem key={manga.id} manga={manga} hideScan={!!isScanBranded} />
+                <MangaListItem key={manga.id} manga={manga} hideScan={!!isScanBranded} nsfwMode={nsfwMode} />
               ))}
             </div>
           )
@@ -556,58 +535,6 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           </div>
         )}
 
-        {/* NSFW Confirmation Modal */}
-        {showNSFWModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="bg-zinc-900 border-2 border-red-500/30 rounded-3xl p-8 max-w-md mx-4 shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-                    <AlertTriangle className="text-red-500" size={24} />
-                  </div>
-                  <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">
-                    Contenido <span className="text-red-500">NSFW</span>
-                  </h3>
-                </div>
-                <button
-                  onClick={handleNSFWCancel}
-                  className="text-zinc-500 hover:text-white transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <p className="text-zinc-300 text-sm leading-relaxed">
-                  Estás a punto de habilitar la visualización de contenido explícito (NSFW). Este contenido está dirigido únicamente a personas mayores de 18 años.
-                </p>
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-                  <p className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">
-                    ⚠️ Advertencia
-                  </p>
-                  <p className="text-zinc-400 text-xs leading-relaxed">
-                    Al activar este filtro, confirmas que eres mayor de edad y que deseas ver contenido para adultos.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleNSFWCancel}
-                  className="flex-1 px-6 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-zinc-300 font-black text-xs uppercase tracking-widest hover:bg-zinc-700 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleNSFWConfirm}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
-                >
-                  Confirmar (18+)
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

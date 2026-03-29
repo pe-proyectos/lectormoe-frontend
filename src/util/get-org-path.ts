@@ -11,14 +11,19 @@ export function getOrgPath(path: string, organizationSlug?: string | null): stri
 
   // Remove leading slash from path
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  
-  // If path is empty, return just the organization slug
+
+  // Check if we're in /red/ NSFW context
+  const isNsfwContext = typeof window !== 'undefined' &&
+    window.location.pathname.startsWith('/red/');
+  const prefix = isNsfwContext ? `/red/${organizationSlug}` : `/${organizationSlug}`;
+
+  // If path is empty, return just the prefix
   if (!cleanPath) {
-    return `/${organizationSlug}`;
+    return prefix;
   }
 
-  // Construct path with organization slug
-  return `/${organizationSlug}/${cleanPath}`;
+  // Construct path with organization slug (and /red/ prefix if needed)
+  return `${prefix}/${cleanPath}`;
 }
 
 /**
@@ -46,6 +51,15 @@ export function getOrgSlugFromPath(): string | null {
     'manga',
     'profile',
   ];
+
+  // Handle /red/{slug}/... — return the actual org slug (second segment)
+  if (firstSegment === 'red' && pathSegments.length > 1) {
+    const secondSegment = pathSegments[1];
+    if (secondSegment && !reservedRoutes.includes(secondSegment)) {
+      return secondSegment;
+    }
+    return null;
+  }
 
   // If first segment is a reserved route, no organization
   if (reservedRoutes.includes(firstSegment)) {

@@ -3,7 +3,7 @@ import LandingLayout from "../layouts/LandingLayout.astro";
 import ScanLanding from "../components/landing/ScanLanding";
 
 // @ts-ignore - organization y showAds se definen dinámicamente en el middleware
-const { organization, language, callAPI, user, organizationSlug, showAds } = Astro.locals;
+const { organization, language, callAPI, user, organizationSlug, showAds, nsfwMode } = Astro.locals;
 const logged = !!user;
 
 // Si no hay organización, redirigir a 404
@@ -13,10 +13,11 @@ if (!organization) {
 ---
 
 <LandingLayout showAds={showAds}>
-  <ScanLanding 
+  <ScanLanding
     organization={organization}
     user={user}
     logged={logged}
+    nsfwMode={nsfwMode}
     client:only="react"
   />
 </LandingLayout>

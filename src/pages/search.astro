@@ -3,7 +3,7 @@ import LandingLayout from "../layouts/LandingLayout.astro";
 import ExplorePageContainer from "../components/landing/ExplorePageContainer";
 
 // @ts-ignore - showAds se define dinámicamente en el middleware
-const { language, user, showAds } = Astro.locals;
+const { language, user, showAds, nsfwMode } = Astro.locals;
 const logged = !!user;
 ---
 
@@ -11,6 +11,7 @@ const logged = !!user;
   <ExplorePageContainer
     user={user}
     logged={logged}
+    nsfwMode={nsfwMode}
     client:only="react"
   />
 </LandingLayout>

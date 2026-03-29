@@ -161,7 +161,7 @@ const ScansSection: React.FC<Props> = ({ onNavigate }) => {
               )}
 
               {/* Card Header Content */}
-              <div className="px-8 -mt-10 relative z-10 flex items-end justify-between mb-6">
+              <div className={`px-8 relative z-10 flex items-end justify-between mb-6 ${scan.banner ? '-mt-10' : 'pt-8'}`}>
                 <div className="relative">
                   <div className={`w-20 h-20 rounded-2xl overflow-hidden border-4 border-zinc-900 bg-zinc-800 transition-colors shadow-2xl ${scan.isNSFW ? 'group-hover:border-red-500/50' : 'group-hover:border-cyan-500/50'}`}>
                     <img src={scan.logo} alt={scan.name} className="w-full h-full object-cover" />

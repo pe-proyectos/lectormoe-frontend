@@ -7,9 +7,10 @@ interface ScanRecentUpdatesProps {
   exploreUrl: string;
   user: any;
   organization: any;
+  nsfwMode?: boolean;
 }
 
-const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, exploreUrl, user, organization }) => {
+const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, exploreUrl, user, organization, nsfwMode = false }) => {
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
@@ -24,12 +25,13 @@ const ScanRecentUpdates: React.FC<ScanRecentUpdatesProps> = ({ mangas, exploreUr
       {mangas.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
           {mangas.map((manga, i) => (
-            <MangaCard3D 
+            <MangaCard3D
               user={user}
               organization={organization}
-              key={`recent-${i}`} 
-              manga={manga} 
+              key={`recent-${i}`}
+              manga={manga}
               hideScan={true}
+              nsfwMode={nsfwMode}
             />
           ))}
         </div>
