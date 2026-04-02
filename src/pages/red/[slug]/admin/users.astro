@@ -1,0 +1,26 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import AdminUserGrid from "../../../../components/admin/AdminUserGrid";
+import { getTranslator } from "../../../../util/translate";
+
+// @ts-ignore
+const { language, callAPI, user, organization, organizationSlug } = Astro.locals;
+const logged = !!user;
+const _ = getTranslator(language);
+
+if (!organization) return Astro.redirect("/404");
+if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
+
+const subscriptionPlansData = await callAPI(`/api/subscription-plan`);
+const subscriptionPlans = subscriptionPlansData?.items || (Array.isArray(subscriptionPlansData) ? subscriptionPlansData : []);
+---
+
+<AdminLayout title={_("admin_users_title")} page="users" organizationSlug={organizationSlug}>
+  <AdminUserGrid
+    language={language}
+    subscriptionPlans={subscriptionPlans}
+    organizationSlug={organizationSlug}
+    organizationId={organization.id}
+    client:only="react"
+  />
+</AdminLayout>

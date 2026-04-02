@@ -1,0 +1,24 @@
+---
+import LandingLayout from "../../../layouts/LandingLayout.astro";
+import AuthPage from "../../../components/landing/AuthPage";
+
+// @ts-ignore
+const { organization, language, user, organizationSlug, showAds } = Astro.locals;
+const logged = !!user;
+
+if (!organization) {
+  return Astro.redirect("/404");
+}
+
+if (logged) {
+  return Astro.redirect(`/red/${organizationSlug}`);
+}
+---
+
+<LandingLayout showAds={showAds}>
+  <AuthPage
+    isScanContext={true}
+    organization={organization}
+    client:only="react"
+  />
+</LandingLayout>

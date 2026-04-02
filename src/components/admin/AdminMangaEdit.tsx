@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Save, Plus, Calendar, BookOpen, UploadCloud, Trash2, 
-  Settings2, Layers, GripVertical, ZoomIn, ZoomOut, 
+import {
+  Save, Plus, Calendar, BookOpen, UploadCloud, Trash2,
+  Settings2, Layers, GripVertical, ZoomIn, ZoomOut,
   Map as MapIcon, CheckCircle2,
   Camera, List, Info, Edit3, Download, ImageIcon, Clock
 } from 'lucide-react';
@@ -587,25 +587,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       toast.error(error?.message || 'Error al cargar capítulos');
     } finally {
       setChaptersLoading(false);
-    }
-  };
-
-  const handleDeleteChapter = async (chapter: any) => {
-    if (!confirm(`¿Estás seguro de eliminar el capítulo ${chapter.number}?`)) {
-      return;
-    }
-
-    try {
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      await callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapter.number}`, {
-        method: 'DELETE',
-      });
-      toast.success('Capítulo eliminado correctamente', {
-        position: "bottom-right"
-      });
-      loadChapters();
-    } catch (error: any) {
-      toast.error(error?.message || 'Error al eliminar el capítulo');
     }
   };
 
@@ -2229,7 +2210,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
                   {/* Save Button */}
                   <div className="pt-6 border-t border-zinc-800">
-                    <button 
+                    <button
                       onClick={handleSaveInfo}
                       disabled={infoLoading || !formData.title}
                       className="w-full py-4 bg-cyan-500 text-zinc-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-cyan-500/10 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2357,13 +2338,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                                   title="Descargar"
                                 >
                                   <Download size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteChapter(ch)}
-                                  className="p-2 bg-zinc-950 text-zinc-500 hover:text-red-500 border border-zinc-800 rounded-lg transition-all"
-                                  title="Eliminar"
-                                >
-                                  <Trash2 size={16} />
                                 </button>
                               </div>
                             </td>

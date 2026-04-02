@@ -414,7 +414,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (!context.locals.user || !context.locals.token) {
         // Si es una ruta de scan, redirigir al login de ese scan
         if (context.locals.organizationSlug) {
-          return context.redirect(`/${context.locals.organizationSlug}/login`);
+          const loginPath = nsfwMode
+            ? `/red/${context.locals.organizationSlug}/login`
+            : `/${context.locals.organizationSlug}/login`;
+          return context.redirect(loginPath);
         }
         return context.redirect("/login");
       }
@@ -429,11 +432,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
           console.warn(
             `User ${context.locals.user.id} attempted to access admin panel without canSeeAdminPanel permission`,
           );
-          return context.redirect(
-            context.locals.organizationSlug
-              ? `/${context.locals.organizationSlug}`
-              : "/",
-          );
+          const homePath = context.locals.organizationSlug
+            ? (nsfwMode ? `/red/${context.locals.organizationSlug}` : `/${context.locals.organizationSlug}`)
+            : "/";
+          return context.redirect(homePath);
         }
       }
     }

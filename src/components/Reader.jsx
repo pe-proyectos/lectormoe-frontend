@@ -154,8 +154,10 @@ export function Reader({
     const savedReadType = localStorage.getItem("readType");
     const workType = manga?.workType || 'manga';
     const defaultReadType = savedReadType || (workType === 'manwha' ? readTypes.CASCADE : readTypes.PAGINATED);
+    const defaultDirection = workType === 'comic' ? 'ltr' : 'rtl';
     return {
       readType: defaultReadType,
+      readingDirection: localStorage.getItem("readingDirection") || defaultDirection,
       limitPageHeight: localStorage.getItem("limitPageHeight") === "true",
       useDoublePages: localStorage.getItem("useDoublePages") === "true",
       chapterSettings: localStorage.getItem("chapterSettings") === "true",
@@ -250,6 +252,14 @@ export function Reader({
     setSettings((prev) => ({ ...prev, readType: type }));
   }, []);
 
+  const handleToggleReadingDirection = useCallback(() => {
+    setSettings((prev) => {
+      const newDir = prev.readingDirection === 'rtl' ? 'ltr' : 'rtl';
+      localStorage.setItem("readingDirection", newDir);
+      return { ...prev, readingDirection: newDir };
+    });
+  }, []);
+
   const handleToggleSettings = useCallback(() => {
     setSettings((prev) => {
       const newValue = !prev.chapterSettings;
@@ -281,9 +291,7 @@ export function Reader({
   const handlePageClick = useCallback(
     (evt) => {
       const clickedRight = evt.clientX > window.innerWidth / 2;
-      // Comics (LTR): right = forward. Manga (RTL): right = backward (invert direction)
-      const workType = manga?.workType || 'manga';
-      const isGoingForward = workType === 'comic' ? clickedRight : !clickedRight;
+      const isGoingForward = settings.readingDirection === 'ltr' ? clickedRight : !clickedRight;
       const currentPageIndex = chapterData.pages.findIndex(
         (p) => p.number === currentPage
       );
@@ -313,8 +321,36 @@ export function Reader({
         location.href = "#manga-pages-top";
       }
     },
-    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, manga?.workType]
+    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, settings.readingDirection]
   );
+
+  useEffect(() => {
+    if (settings.readType === readTypes.CASCADE) return;
+    const handleKeyDown = (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      const clickedRight = e.key === 'ArrowRight';
+      const isGoingForward = settings.readingDirection === 'ltr' ? clickedRight : !clickedRight;
+      const currentPageIndex = chapterData.pages.findIndex((p) => p.number === currentPage);
+      if (currentPageIndex === -1) return;
+      let targetIndex;
+      if (isGoingForward) {
+        const isSideBySide = shouldRenderSideBySide(currentPageIndex, chapterData.pages, medianWidth);
+        targetIndex = currentPageIndex + (isSideBySide ? 2 : 1);
+      } else {
+        const prevIndex = currentPageIndex - 1;
+        const isPrevSideBySide = prevIndex >= 0 && shouldRenderSideBySide(prevIndex, chapterData.pages, medianWidth);
+        targetIndex = currentPageIndex - (isPrevSideBySide ? 2 : 1);
+      }
+      const targetPage = chapterData.pages[targetIndex];
+      if (targetPage) {
+        setCurrentPage(targetPage.number);
+        location.href = '#manga-pages-top';
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [settings.readType, readTypes.CASCADE, chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, settings.readingDirection]);
 
   const handlePageGap = useCallback((value) => {
     localStorage.setItem("pageGap", value);
@@ -942,11 +978,6 @@ export function Reader({
                   <p className="text-gray-400 text-sm font-medium mb-3">
                     {_("read_type")}
                   </p>
-                  {settings.readType === readTypes.PAGINATED && (
-                    <p className="text-xs text-zinc-500 mb-2">
-                      {(manga?.workType === 'comic') ? '← → Izquierda a derecha (Comic)' : '→ ← Derecha a izquierda (Manga)'}
-                    </p>
-                  )}
                   <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
                     <button
                       onClick={() => handleSetReadType(readTypes.PAGINATED)}
@@ -969,6 +1000,33 @@ export function Reader({
                       {_("cascade")}
                     </button>
                   </div>
+                  {settings.readType === readTypes.PAGINATED && (
+                    <div className="mt-3">
+                      <p className="text-gray-400 text-sm font-medium mb-2">Dirección de lectura</p>
+                      <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+                        <button
+                          onClick={() => { if (settings.readingDirection !== 'rtl') handleToggleReadingDirection(); }}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                            settings.readingDirection === 'rtl'
+                              ? "bg-red-500 text-white shadow-lg"
+                              : "text-gray-400 hover:text-white hover:bg-zinc-800"
+                          }`}
+                        >
+                          → ← Manga
+                        </button>
+                        <button
+                          onClick={() => { if (settings.readingDirection !== 'ltr') handleToggleReadingDirection(); }}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                            settings.readingDirection === 'ltr'
+                              ? "bg-red-500 text-white shadow-lg"
+                              : "text-gray-400 hover:text-white hover:bg-zinc-800"
+                          }`}
+                        >
+                          ← → Comic
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1204,7 +1262,7 @@ export function Reader({
             )}
         </div>
 
-        <div className="flex p-0 md:p-4 w-full justify-center mt-2 mb-8">
+        <div className="w-full bg-zinc-950 border-t border-zinc-800 px-4 md:px-8 py-6">
           {/* Comments Section - Below Reader */}
           {chapterData.pages.length > 0 && !loading && (
             <CommentsSection

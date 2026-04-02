@@ -1,0 +1,27 @@
+---
+import AdminLayout from "../../../../../layouts/AdminLayout.astro";
+import AdminMangaEdit from "../../../../../components/admin/AdminMangaEdit";
+import { getTranslator } from "../../../../../util/translate";
+
+// @ts-ignore
+const { language, organization, user, organizationSlug, callAPI } = Astro.locals;
+const logged = !!user;
+const { mangaSlug } = Astro.params;
+const _ = getTranslator(language);
+
+if (!organization) return Astro.redirect("/404");
+if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
+
+const manga = await callAPI(`/api/manga-custom/${mangaSlug}`);
+
+if (!manga || manga?.status === false) return Astro.redirect("/404");
+---
+
+<AdminLayout title={_("admin_manga_title")} page="mangas" organizationSlug={organizationSlug}>
+  <AdminMangaEdit
+    language={language}
+    initialMangaCustom={manga.data || manga}
+    organizationSlug={organizationSlug}
+    client:load
+  />
+</AdminLayout>

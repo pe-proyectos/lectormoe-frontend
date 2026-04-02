@@ -522,7 +522,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   };
 
   return (
-    <div className="mt-24 pt-16 border-t border-zinc-900 space-y-10 mb-20 relative z-10 w-full max-h-[80vh] overflow-y-auto md:max-w-4xl md:mx-auto">
+    <div className="mt-12 pt-10 border-t border-zinc-800 space-y-10 mb-20 relative z-10 w-full md:max-w-4xl md:mx-auto">
       <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Comentarios</h2>
 
       {/* Comments List */}

@@ -1,0 +1,19 @@
+---
+import { getTranslator } from "../../../../util/translate";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+
+// @ts-ignore
+const { language, user, organization, organizationSlug } = Astro.locals;
+const logged = !!user;
+const _ = getTranslator(language);
+
+if (!organization) return Astro.redirect("/404");
+if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
+---
+
+<AdminLayout title={_("admin_storage_title")} page="storage" organizationSlug={organizationSlug}>
+  <div class="p-4 md:p-8">
+    <h1 class="text-2xl font-black text-white uppercase tracking-tight mb-6">Storage</h1>
+    <p class="text-zinc-400">Contenido de Storage próximamente...</p>
+  </div>
+</AdminLayout>

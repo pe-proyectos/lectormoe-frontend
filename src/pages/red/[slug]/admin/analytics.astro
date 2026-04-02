@@ -1,0 +1,17 @@
+---
+import { getTranslator } from "../../../../util/translate";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import AdminDashboard from "../../../../components/admin/AdminDashboard";
+
+// @ts-ignore
+const { language, user, organization, organizationSlug } = Astro.locals;
+const logged = !!user;
+const _ = getTranslator(language);
+
+if (!organization) return Astro.redirect("/404");
+if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
+---
+
+<AdminLayout title={_("admin_analytics_title")} page="analytics" organizationSlug={organizationSlug}>
+  <AdminDashboard organization={organization} language={language} organizationSlug={organizationSlug} client:only="react" />
+</AdminLayout>

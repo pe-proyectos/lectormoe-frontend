@@ -1,0 +1,21 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import AdminMangasBreadcrumb from "../../../../components/admin/AdminMangasBreadcrumb";
+import AdminGenreGrid from "../../../../components/admin/AdminGenreGrid";
+import { getTranslator } from "../../../../util/translate";
+
+// @ts-ignore
+const { organization, language, user, organizationSlug } = Astro.locals;
+const logged = !!user;
+const _ = getTranslator(language);
+
+if (!organization) return Astro.redirect("/404");
+if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
+---
+
+<AdminLayout title={_("admin_genres_title")} page="genres" organizationSlug={organizationSlug}>
+  <AdminMangasBreadcrumb language={language} organizationSlug={organizationSlug} client:only="react" />
+  <div class="py-2"></div>
+  <h1>Géneros</h1>
+  <AdminGenreGrid organization={organization} language={language} organizationSlug={organizationSlug} client:only="react" />
+</AdminLayout>
