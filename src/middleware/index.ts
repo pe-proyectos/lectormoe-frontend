@@ -185,6 +185,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "verify-email",
     "unsubscribe",
     ".well-known", // Rutas de certificados SSL y otros estándares web
+    "superadmin",
   ];
 
   // Extraer el primer segmento de la ruta
