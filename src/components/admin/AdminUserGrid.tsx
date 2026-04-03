@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { Search, Users, Mail, User, Filter, ChevronDown } from 'lucide-react';
+import { Search, Users, User } from 'lucide-react';
 import AdminUserDialog from './AdminUserDialog';
 import { PageNavigation } from '../PageNavigation';
 import { callAPI } from '../../util/callApi';
@@ -24,7 +24,6 @@ interface Subscription {
 interface User {
   id: number;
   username: string;
-  email: string;
   imageUrl?: string | null;
   createdAt: string;
   subscriptions: Subscription[];
@@ -83,10 +82,6 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
   const [total, setTotal] = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-  const [email, setEmail] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('email') || '';
-  });
   const [username, setUsername] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('username') || '';
@@ -134,11 +129,10 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
     limit,
     selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
     selectedPermissionKeys: JSON.stringify([...selectedPermissionKeys].sort()),
-    email,
     username,
     page
   });
-  
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -147,30 +141,27 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
         limit,
         selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
         selectedPermissionKeys: JSON.stringify([...selectedPermissionKeys].sort()),
-        email,
         username,
         page
       };
       return;
     }
-    
+
     const currentFilters = {
       orderBy,
       limit,
       selectedSubscriptionPlanIds: JSON.stringify([...selectedSubscriptionPlanIds].sort()),
       selectedPermissionKeys: JSON.stringify([...selectedPermissionKeys].sort()),
-      email,
       username,
       page
     };
-    
+
     // Verificar si realmente cambiaron los filtros (no la página)
-    const filtersChanged = 
+    const filtersChanged =
       prevFiltersRef.current.orderBy !== currentFilters.orderBy ||
       prevFiltersRef.current.limit !== currentFilters.limit ||
       prevFiltersRef.current.selectedSubscriptionPlanIds !== currentFilters.selectedSubscriptionPlanIds ||
       prevFiltersRef.current.selectedPermissionKeys !== currentFilters.selectedPermissionKeys ||
-      prevFiltersRef.current.email !== currentFilters.email ||
       prevFiltersRef.current.username !== currentFilters.username;
     
     if (filtersChanged) {
@@ -186,7 +177,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       prevFiltersRef.current.page = page;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderBy, limit, selectedSubscriptionPlanIds, selectedPermissionKeys, email, username, page]);
+  }, [orderBy, limit, selectedSubscriptionPlanIds, selectedPermissionKeys, username, page]);
 
   useEffect(() => {
     if (!isUserDialogOpen) refreshUserList();
@@ -210,10 +201,6 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       limit: limit.toString(),
       order: orderBy,
     });
-    if (email) {
-      query.set('email', email);
-      urlParams.set('email', email);
-    }
     if (username) {
       query.set('username', username);
       urlParams.set('username', username);
@@ -238,7 +225,7 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       })
       .catch((error: any) => toast.error(error?.message))
       .finally(() => setLoading(false));
-  }, [page, limit, orderBy, email, username, selectedSubscriptionPlanIds, selectedPermissionKeys]);
+  }, [page, limit, orderBy, username, selectedSubscriptionPlanIds, selectedPermissionKeys]);
 
   const handleSubscriptionPlanToggle = (planId: number) => {
     setSelectedSubscriptionPlanIds((prev) =>
@@ -262,13 +249,6 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
       {/* Filters */}
       <Card className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Input
-            label={_('search_email')}
-            placeholder={_('search_by_email')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            icon={<Mail size={18} />}
-          />
           <Input
             label={_('search_username')}
             placeholder={_('search_by_username')}
@@ -414,7 +394,6 @@ const AdminUserGrid: React.FC<AdminUserGridProps> = ({ language, subscriptionPla
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{user.username}</h3>
-                  <p className="text-gray-400 text-xs sm:text-sm break-all">{user.email}</p>
                 </div>
               </div>
             </div>
