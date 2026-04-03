@@ -21,7 +21,7 @@ interface OrgStat {
   id: number;
   name: string;
   slug: string;
-  imageUrl: string | null;
+  logoUrl: string | null;
   createdAt: string;
   mangaCount: number;
   chapterCount: number;
@@ -256,8 +256,8 @@ const OrgsTab = ({ token }: { token: string }) => {
               <tr key={org.id} className="bg-zinc-950 hover:bg-zinc-900 transition-colors">
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-2">
-                    {org.imageUrl ? (
-                      <img src={org.imageUrl} alt={org.name} className="w-7 h-7 rounded-full object-cover" />
+                    {org.logoUrl ? (
+                      <img src={org.logoUrl} alt={org.name} className="w-7 h-7 rounded-full object-cover" />
                     ) : (
                       <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
                         {org.name[0]}
@@ -313,14 +313,19 @@ const RequestsTab = ({ token }: { token: string }) => {
 
   useEffect(() => { load(statusFilter); }, [statusFilter, load]);
 
-  const doReview = async (id: number, action: 'accept' | 'reject', notes?: string) => {
+  const doReview = async (id: number, action: 'accept' | 'reject' | 'accept_no_email', notes?: string) => {
     setReviewing(id);
     try {
       await saFetch(`/api/superadmin/requests/${id}/review`, token, {
         method: 'PATCH',
         body: JSON.stringify({ action, notes }),
       });
-      setActionFeedback({ id, msg: `Correo de ${action === 'accept' ? 'aceptación' : 'rechazo'} enviado ✓`, ok: true });
+      const msgs: Record<string, string> = {
+        accept: 'Aceptada y correo enviado ✓',
+        accept_no_email: 'Marcada como aceptada (sin correo) ✓',
+        reject: 'Rechazada y correo enviado ✓',
+      };
+      setActionFeedback({ id, msg: msgs[action], ok: true });
       setRequests((prev) => prev.filter((r) => r.id !== id));
       setExpanded(null);
     } catch (e: any) {
@@ -424,13 +429,22 @@ const RequestsTab = ({ token }: { token: string }) => {
                         {reviewing === req.id ? '...' : '✗ Rechazar'}
                       </button>
                     </div>
-                    <button
-                      disabled={reviewing === req.id}
-                      onClick={() => doReview(req.id, 'accept')}
-                      className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
-                    >
-                      {reviewing === req.id ? 'Enviando correo...' : '✓ Aceptar y enviar correo de bienvenida'}
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        disabled={reviewing === req.id}
+                        onClick={() => doReview(req.id, 'accept')}
+                        className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
+                      >
+                        {reviewing === req.id ? '...' : '✓ Aceptar + enviar correo'}
+                      </button>
+                      <button
+                        disabled={reviewing === req.id}
+                        onClick={() => doReview(req.id, 'accept_no_email')}
+                        className="px-4 py-2.5 bg-zinc-600 hover:bg-zinc-500 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
+                      >
+                        {reviewing === req.id ? '...' : '✓ Aceptar sin correo'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
