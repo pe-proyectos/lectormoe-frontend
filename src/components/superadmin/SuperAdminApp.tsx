@@ -29,6 +29,8 @@ interface OrgStat {
   followerCount: number;
   totalRevenue: number;
   capibaraFees: number;
+  paypalFees: number;
+  saldo: number;
 }
 
 interface OrgRequest {
@@ -247,8 +249,10 @@ const OrgsTab = ({ token }: { token: string }) => {
               <SortTh k="mangaCount" label="Mangas" />
               <SortTh k="chapterCount" label="Caps" />
               <SortTh k="subscriptionCount" label="Subs activas" />
-              <SortTh k="totalRevenue" label="Revenue" />
-              <SortTh k="capibaraFees" label="Fee" />
+              <SortTh k="totalRevenue" label="Revenue bruto" />
+              <SortTh k="capibaraFees" label="Fee Capibara" />
+              <SortTh k="paypalFees" label="Fee PayPal" />
+              <SortTh k="saldo" label="Saldo actual" />
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
@@ -280,8 +284,10 @@ const OrgsTab = ({ token }: { token: string }) => {
                 <td className="px-3 py-3 text-zinc-300">{org.mangaCount}</td>
                 <td className="px-3 py-3 text-zinc-300">{org.chapterCount}</td>
                 <td className="px-3 py-3 text-zinc-300">{org.subscriptionCount}</td>
-                <td className="px-3 py-3 font-semibold text-green-400">{money(org.totalRevenue)}</td>
+                <td className="px-3 py-3 text-zinc-300">{money(org.totalRevenue)}</td>
                 <td className="px-3 py-3 text-yellow-400">{money(org.capibaraFees)}</td>
+                <td className="px-3 py-3 text-orange-400">{money(org.paypalFees)}</td>
+                <td className="px-3 py-3 font-bold text-green-400">{money(org.saldo)}</td>
               </tr>
             ))}
           </tbody>

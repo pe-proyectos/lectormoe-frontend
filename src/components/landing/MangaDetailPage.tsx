@@ -472,6 +472,31 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
   };
 
+  // Check if the user has permission to download chapters
+  const userCanDownload = (): boolean => {
+    if (!logged || !user) return false;
+
+    // Staff with canDownload permission
+    const permissions =
+      user?.permissions?.find(
+        (permission: any) => permission.organizationId === organization?.id
+      ) || {};
+    if (permissions.canDownload === true) return true;
+
+    // Active subscription with canDownload enabled for this org
+    for (const subscription of user?.subscriptions || []) {
+      if (
+        subscription.active === true &&
+        subscription?.subscriptionPlan?.organizationId === organization?.id &&
+        subscription?.subscriptionPlan?.canDownload === true
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Get chapter history
   const getChapterHistory = (chapterNumber: number) => {
     if (!logged || !Array.isArray(userChapterHistory)) return null;
@@ -925,6 +950,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         "//",
         "/"
       );
+      return;
+    }
+
+    if (!userCanDownload()) {
+      alert("No tienes permisos para descargar capítulos. Necesitas una suscripción activa con acceso a descargas.");
       return;
     }
 
@@ -1397,7 +1427,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                               </div>
                                             )}
                                       </div>
-                                      {hasAccess && (
+                                      {hasAccess && userCanDownload() && (
                                         <div className="relative group/tooltip">
                                           <button
                                             onClick={(e) =>
