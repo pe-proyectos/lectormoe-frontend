@@ -165,6 +165,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [maxPage, setMaxPage] = useState(1);
   const showNSFW = nsfwMode;
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedStatus, selectedGenre, sortBy]);
+
   const isScanBranded = organization && organizationSlug;
 
   // Track page view
@@ -242,7 +247,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
         });
 
         if (search) {
-          queryParams.set('title', search);
+          queryParams.set('search', search);
         }
 
         if (selectedStatus !== 'All') {
@@ -316,19 +321,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
 
 
   const filteredMangas = useMemo(() => {
+    // Solo filtros que no se aplican server-side
     return mangas.filter(manga => {
-      const matchesSearch = manga.title.toLowerCase().includes(search.toLowerCase()) || 
-                           manga.author?.toLowerCase().includes(search.toLowerCase());
-      // Si está en modo scan branded, todos los mangas ya vienen filtrados por la organización
       const matchesScan = isScanBranded || selectedScan === 'All' || manga.scan === selectedScan;
-      const matchesStatus = selectedStatus === 'All' || manga.status === selectedStatus;
-      const matchesGenre = selectedGenre === 'All' || manga.genres?.includes(selectedGenre);
-      // Filter by NSFW
       const matchesNSFW = showNSFW || !manga.isNSFW;
-      
-      return matchesSearch && matchesScan && matchesStatus && matchesGenre && matchesNSFW;
+      return matchesScan && matchesNSFW;
     });
-  }, [mangas, search, selectedScan, selectedStatus, selectedGenre, isScanBranded, showNSFW]);
+  }, [mangas, selectedScan, isScanBranded, showNSFW]);
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-zinc-950">

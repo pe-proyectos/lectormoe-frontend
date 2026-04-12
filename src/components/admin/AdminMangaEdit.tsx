@@ -929,16 +929,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         }
       }, 300);
 
-      if (response?.status) {
+      if (response) {
         toast.success('Banner actualizado correctamente', {
           position: "bottom-right"
         });
         // Actualizar mangaCustom con la respuesta del servidor
-        if (response.data) {
-          setMangaCustom(response.data);
-          // Usar la URL completa del servidor (bannerUrl) en lugar del fileKey
-          setFormData(prev => ({ ...prev, banner: response.data.bannerUrl || prev.banner }));
-        }
+        setMangaCustom(response);
+        // Usar la URL completa del servidor (bannerUrl) en lugar del fileKey
+        setFormData(prev => ({ ...prev, banner: response.bannerUrl || prev.banner }));
       } else {
         toast.error('Error al guardar el banner en el servidor', {
           position: "bottom-right"
@@ -1069,16 +1067,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         }
       }, 300);
 
-      if (response?.status) {
+      if (response) {
         toast.success('Portada actualizada correctamente', {
           position: "bottom-right"
         });
         // Actualizar mangaCustom con la respuesta del servidor
-        if (response.data) {
-          setMangaCustom(response.data);
-          // Usar la URL completa del servidor (imageUrl) en lugar del fileKey
-          setFormData(prev => ({ ...prev, cover: response.data.imageUrl || prev.cover }));
-        }
+        setMangaCustom(response);
+        // Usar la URL completa del servidor (imageUrl) en lugar del fileKey
+        setFormData(prev => ({ ...prev, cover: response.imageUrl || prev.cover }));
       } else {
         toast.error('Error al guardar la portada en el servidor', {
           position: "bottom-right"
@@ -1198,12 +1194,15 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           position: "bottom-right"
         });
         // Update local state with response data
-        if (response.data) {
-          setMangaCustom(response.data);
+        if (response) {
+          setMangaCustom(response);
           setFormData(prev => ({
             ...prev,
-            cover: response.data.imageUrl || prev.cover,
-            banner: response.data.bannerUrl || prev.banner,
+            genres: response.genres || prev.genres,
+            subscriptionPlansCanReadUnreleased: response.subscriptionPlansCanReadUnreleased || prev.subscriptionPlansCanReadUnreleased,
+            subscriptionPlansCanReadReleased: response.subscriptionPlansCanReadReleased || prev.subscriptionPlansCanReadReleased,
+            cover: response.imageUrl || prev.cover,
+            banner: response.bannerUrl || prev.banner,
           }));
         }
       }
