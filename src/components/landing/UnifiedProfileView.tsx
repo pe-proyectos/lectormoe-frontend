@@ -117,13 +117,13 @@ const UnifiedProfileView: React.FC<UnifiedProfileViewProps> = ({ user, language 
         }),
       });
 
-      if (response.status) {
-        setCurrentUser(response.data);
+      if (response) {
+        setCurrentUser(response);
         toast.success("Perfil actualizado exitosamente");
         setEditDialogOpen(false);
         setNewImage(null);
-        setNewDescription(response.data.description || "");
-        setBirthdate(response.data.birthdate || "");
+        setNewDescription(response.description || "");
+        setBirthdate(response.birthdate || "");
       }
     } catch (error: any) {
       toast.error(error?.message || "Error al actualizar el perfil");
