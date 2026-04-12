@@ -481,8 +481,10 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
                     <p className="text-sm text-cyan-400 font-bold mb-2">Variables disponibles:</p>
                     <div className="space-y-1 text-xs text-zinc-400">
                       <p><code className="text-cyan-500">%manga%</code> - Nombre del manga</p>
-                      <p><code className="text-cyan-500">%chapter%</code> - Número de capítulo</p>
-                      <p><code className="text-cyan-500">%link%</code> - Enlace al capítulo</p>
+                      <p><code className="text-cyan-500">%chapter%</code> - Numero del capitulo</p>
+                      <p><code className="text-cyan-500">%chapter_title%</code> - Titulo del capitulo</p>
+                      <p><code className="text-cyan-500">%scan%</code> - Nombre del scan</p>
+                      <p><code className="text-cyan-500">%link%</code> - Enlace al capitulo</p>
                     </div>
                   </div>
                 </>
@@ -519,6 +521,7 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
                       <p><code className="text-cyan-500">%user%</code> - Nombre de usuario</p>
                       <p><code className="text-cyan-500">%plan%</code> - Nombre del plan</p>
                       <p><code className="text-cyan-500">%amount%</code> - Monto pagado</p>
+                      <p><code className="text-cyan-500">%scan%</code> - Nombre del scan</p>
                     </div>
                   </div>
                 </>

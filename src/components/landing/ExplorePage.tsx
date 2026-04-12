@@ -310,14 +310,41 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     fetchMangas();
   }, [search, selectedStatus, selectedGenre, sortBy, page, organizationSlug, organization, user, logged]);
 
-  // Extract unique genres from mangas
+  // Load genres: from API for org-specific pages, from all loaded mangas for global
   useEffect(() => {
-    const uniqueGenres = new Set<string>();
-    mangas.forEach(manga => {
-      manga.genres?.forEach(genre => uniqueGenres.add(genre));
-    });
-    setGenres(Array.from(uniqueGenres).sort());
-  }, [mangas]);
+    if (isScanBranded) {
+      // Org-specific: fetch from genre API
+      const fetchGenres = async () => {
+        try {
+          const result = await callAPI('/api/genre');
+          if (Array.isArray(result)) {
+            setGenres(result.map((g: any) => g.name).sort());
+          }
+        } catch {
+          // Fallback: extract from mangas
+          const uniqueGenres = new Set<string>();
+          mangas.forEach(manga => {
+            manga.genres?.forEach(genre => uniqueGenres.add(genre));
+          });
+          setGenres(Array.from(uniqueGenres).sort());
+        }
+      };
+      fetchGenres();
+    }
+  }, [organizationSlug, isScanBranded]);
+
+  // For global search: accumulate genres from all loaded mangas
+  useEffect(() => {
+    if (!isScanBranded) {
+      setGenres(prev => {
+        const allGenres = new Set<string>(prev);
+        mangas.forEach(manga => {
+          manga.genres?.forEach(genre => allGenres.add(genre));
+        });
+        return Array.from(allGenres).sort();
+      });
+    }
+  }, [mangas, isScanBranded]);
 
 
   const filteredMangas = useMemo(() => {
