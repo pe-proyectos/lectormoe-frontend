@@ -222,56 +222,70 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
           <p className="text-sm mt-1">Crea uno o espera ser invitado.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {joints.map((item: any) => {
             const joint = item.joint;
             const myStatus = item.status;
             const myRole = item.role;
+            const cover = joint.imageUrl || joint.manga?.imageUrl;
 
             return (
-              <div key={joint.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-                <div className="aspect-[16/9] relative overflow-hidden bg-zinc-800">
-                  <img
-                    src={joint.imageUrl || 'https://via.placeholder.com/320x180'}
-                    alt={joint.title}
-                    className="w-full h-full object-cover opacity-70"
-                  />
-                  <div className="absolute top-2 right-2 flex gap-1">
+              <div key={joint.id} className="group bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden hover:border-cyan-500/40 transition-all duration-300">
+                {/* Cover image — portrait format */}
+                <div className="relative overflow-hidden bg-zinc-800" style={{ aspectRatio: '2/3' }}>
+                  {cover ? (
+                    <img
+                      src={cover}
+                      alt={joint.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e: any) => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+                      <Users size={28} className="text-zinc-600" />
+                    </div>
+                  )}
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-transparent to-transparent" />
+                  {/* Status badge */}
+                  <div className="absolute top-2 left-2">
                     {myStatus === 'INVITED' && (
-                      <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                        <Clock size={10} /> Invitación pendiente
+                      <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <Clock size={8} /> Invitado
                       </span>
                     )}
-                    {myStatus === 'ACCEPTED' && (
-                      <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-1 rounded-full">
-                        {myRole === 'LEADER' ? '★ Líder' : myRole === 'UPLOADER' ? 'Uploader' : 'Viewer'}
+                    {myStatus === 'ACCEPTED' && myRole === 'LEADER' && (
+                      <span className="bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        ★ Líder
                       </span>
                     )}
                   </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3 className="text-white font-bold">{joint.title}</h3>
-                    <p className="text-zinc-500 text-xs">/joint/manga/{joint.slug}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {(joint.members || []).map((m: any) => (
-                      <div key={m.organization.id} title={m.organization.name} className="w-6 h-6 rounded-full overflow-hidden bg-zinc-700">
-                        {m.organization.logoUrl && <img src={m.organization.logoUrl} alt="" className="w-full h-full object-cover" />}
+                  {/* Member orgs */}
+                  <div className="absolute bottom-2 left-2 flex -space-x-1">
+                    {(joint.members || []).slice(0, 4).map((m: any) => (
+                      <div key={m.organization.id} title={m.organization.name} className="w-5 h-5 rounded-full overflow-hidden bg-zinc-700 border border-zinc-900">
+                        {m.organization.logoUrl && (
+                          <img src={m.organization.logoUrl} alt="" className="w-full h-full object-cover" onError={(e: any) => { e.target.style.display = 'none'; }} />
+                        )}
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Info */}
+                <div className="p-2.5 space-y-2">
+                  <h3 className="text-white font-bold text-xs leading-snug line-clamp-2">{joint.title}</h3>
                   {myStatus === 'INVITED' ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <button
                         onClick={() => handleRespond(joint.slug, true)}
-                        className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-xl text-xs"
+                        className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-1.5 rounded-lg text-[10px]"
                       >
                         Aceptar
                       </button>
                       <button
                         onClick={() => handleRespond(joint.slug, false)}
-                        className="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 font-bold py-2 rounded-xl text-xs"
+                        className="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 font-bold py-1.5 rounded-lg text-[10px]"
                       >
                         Rechazar
                       </button>
@@ -279,7 +293,7 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
                   ) : (
                     <a
                       href={`/${organizationSlug}/admin/joints/${joint.slug}`}
-                      className="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl text-xs transition-colors"
+                      className="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-1.5 rounded-lg text-[10px] transition-colors"
                     >
                       Gestionar
                     </a>

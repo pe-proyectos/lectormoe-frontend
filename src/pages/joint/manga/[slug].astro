@@ -1,6 +1,6 @@
 ---
 import LandingLayout from '../../../layouts/LandingLayout.astro';
-import JointMangaDetailPage from '../../../components/landing/JointMangaDetailPage';
+import MangaDetailPageContainer from '../../../components/landing/MangaDetailPageContainer';
 
 const { slug } = Astro.params;
 const { callAPI, user } = Astro.locals as any;
@@ -15,15 +15,56 @@ try {
 
 if (!joint) return Astro.redirect('/404');
 
+// Transform joint into the manga shape expected by MangaDetailPageContainer
+const mangaFromJoint = {
+  id: joint.id,
+  slug: joint.slug,
+  title: joint.title || joint.manga?.title || 'Joint',
+  description: joint.description || joint.manga?.description || null,
+  shortDescription: joint.shortDescription || joint.manga?.shortDescription || null,
+  imageUrl: joint.imageUrl || joint.manga?.imageUrl || null,
+  bannerUrl: joint.bannerUrl || joint.imageUrl || joint.manga?.bannerUrl || joint.manga?.imageUrl || null,
+  status: joint.status || 'ongoing',
+  demography: joint.manga?.demography || null,
+  genres: joint.manga?.genres || [],
+  authors: joint.manga?.authors || [],
+  chapters: (joint.chapters || []).map((ch: any) => ({
+    id: ch.id,
+    number: ch.number,
+    title: ch.title || null,
+    releasedAt: ch.releasedAt,
+    imageUrl: ch.imageUrl || null,
+    isUnreleased: ch.isUnreleased || false,
+    hasAccess: true,
+  })),
+  requireLogin: false,
+  isSimulRelease: false,
+  isNSFW: false,
+  subscriptionPlansCanReadReleased: [],
+  subscriptionPlansCanReadUnreleased: [],
+  // Include member org logos for display
+  jointMembers: joint.members || [],
+};
+
+// Use slug 'joint' so chapter URLs resolve to /joint/manga/{slug}/chapters/{number}
+const orgFromJoint = {
+  id: 0,
+  name: 'Joint',
+  slug: 'joint',
+  logoUrl: null,
+  isPublic: true,
+};
+
 const title = joint.title || joint.manga?.title || 'Joint';
 const description = joint.shortDescription || joint.description || '';
 const image = joint.imageUrl || joint.manga?.imageUrl || '';
 ---
 
 <LandingLayout title={title} description={description} imageUrl={image}>
-  <JointMangaDetailPage
+  <MangaDetailPageContainer
     client:load
-    joint={joint}
+    manga={mangaFromJoint}
+    organization={orgFromJoint}
     user={user}
     logged={logged}
   />

@@ -97,49 +97,82 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
     }
   };
 
+  const coverImage = joint.imageUrl || joint.manga?.imageUrl || null;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <a href={`/${organizationSlug}/admin/joints`} className="text-zinc-500 hover:text-white text-sm">
-              Joints
-            </a>
-            <span className="text-zinc-600">/</span>
-            <span className="text-white text-sm font-bold">{joint.title}</span>
-          </div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <Users size={24} /> {joint.title}
-          </h1>
-          <a href={`/joint/manga/${joint.slug}`} className="text-cyan-500 text-xs hover:underline">
-            Ver página pública →
-          </a>
-        </div>
-        {isLeader && (
-          <button
-            onClick={handleDissolve}
-            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-2 px-4 rounded-xl text-sm flex items-center gap-2"
-          >
-            <Trash2 size={14} /> Disolver joint
-          </button>
-        )}
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm">
+        <a href={`/${organizationSlug}/admin/joints`} className="text-zinc-500 hover:text-white">
+          Joints
+        </a>
+        <span className="text-zinc-600">/</span>
+        <span className="text-white font-bold">{joint.title}</span>
       </div>
 
-      {/* My role badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-zinc-500 uppercase">Tu rol:</span>
-        <span
-          className={`text-xs font-bold px-3 py-1 rounded-full ${
-            isLeader
-              ? 'bg-yellow-500/20 text-yellow-400'
-              : myMember?.role === 'UPLOADER'
-              ? 'bg-blue-500/20 text-blue-400'
-              : 'bg-zinc-700 text-zinc-400'
-          }`}
-        >
-          {isLeader ? '★ Líder' : myMember?.role === 'UPLOADER' ? 'Uploader' : 'Viewer'}
-        </span>
+      {/* Header card with cover */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+        {/* Banner */}
+        <div className="relative h-32 bg-gradient-to-br from-zinc-800 to-zinc-900 overflow-hidden">
+          {(joint.bannerUrl || coverImage) && (
+            <img
+              src={joint.bannerUrl || coverImage}
+              alt=""
+              className="w-full h-full object-cover opacity-30"
+              onError={(e: any) => { e.target.style.display = 'none'; }}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent" />
+        </div>
+
+        <div className="px-6 pb-6 -mt-10 relative">
+          <div className="flex items-end gap-4">
+            {/* Cover */}
+            <div className="w-20 h-28 rounded-xl overflow-hidden bg-zinc-800 border-2 border-zinc-900 shrink-0 shadow-xl">
+              {coverImage ? (
+                <img
+                  src={coverImage}
+                  alt={joint.title}
+                  className="w-full h-full object-cover"
+                  onError={(e: any) => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Users size={24} className="text-zinc-600" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0 pb-1">
+              <h1 className="text-xl font-black text-white truncate">{joint.title}</h1>
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                <span
+                  className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    isLeader
+                      ? 'bg-yellow-500/20 text-yellow-400'
+                      : myMember?.role === 'UPLOADER'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-zinc-700 text-zinc-400'
+                  }`}
+                >
+                  {isLeader ? '★ Líder' : myMember?.role === 'UPLOADER' ? 'Uploader' : 'Viewer'}
+                </span>
+                <a href={`/joint/manga/${joint.slug}`} className="text-cyan-500 text-xs hover:underline flex items-center gap-1">
+                  Ver página pública →
+                </a>
+              </div>
+            </div>
+
+            {isLeader && (
+              <button
+                onClick={handleDissolve}
+                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-2 px-3 rounded-xl text-sm flex items-center gap-1.5 shrink-0"
+              >
+                <Trash2 size={13} /> Disolver
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -161,29 +194,30 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
 
       {/* Info Tab */}
       {activeTab === 'info' && (
-        <div className="bg-zinc-900 rounded-2xl p-6 space-y-4">
-          <p className="text-zinc-400 text-sm">
-            {canEditJoint
-              ? 'Puedes editar la información del joint.'
-              : 'Solo el líder puede editar la información.'}
-          </p>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="space-y-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Título</p>
-              <p className="text-white">{joint.title}</p>
+              <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Manga base</p>
+              <p className="text-white">{joint.manga?.title || '—'}</p>
             </div>
             <div>
               <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Estado</p>
-              <p className="text-white capitalize">{joint.status}</p>
-            </div>
-            <div>
-              <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Manga base</p>
-              <p className="text-white">{joint.manga?.title}</p>
+              <p className="text-white capitalize">{joint.status || '—'}</p>
             </div>
             <div>
               <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Slug</p>
               <p className="text-zinc-400 font-mono text-xs">{joint.slug}</p>
             </div>
+            <div>
+              <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Capítulos</p>
+              <p className="text-white">{joint.chapters?.length || 0}</p>
+            </div>
+            {joint.shortDescription && (
+              <div className="col-span-2">
+                <p className="text-zinc-500 text-xs uppercase font-bold mb-1">Descripción corta</p>
+                <p className="text-zinc-300 text-sm">{joint.shortDescription}</p>
+              </div>
+            )}
           </div>
           {canEditJoint && (
             <a
@@ -311,12 +345,15 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
               href={`/${organizationSlug}/admin/joints/${joint.slug}/chapter/create`}
               className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm transition-colors"
             >
-              <span>+ Subir capítulo</span>
+              <Plus size={14} /> Subir capítulo
             </a>
           )}
           <div className="space-y-2">
             {!joint.chapters || joint.chapters.length === 0 ? (
-              <p className="text-zinc-500">No hay capítulos aún.</p>
+              <div className="text-center py-12 text-zinc-600">
+                <p className="font-bold">No hay capítulos aún</p>
+                {canUpload && <p className="text-sm mt-1">Sube el primer capítulo del joint.</p>}
+              </div>
             ) : (
               joint.chapters.map((ch: any) => {
                 const isMine = ch.uploadedByOrganization?.id === organization.id;
@@ -324,49 +361,63 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
                 return (
                   <div
                     key={ch.id}
-                    className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
+                    className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-white font-bold text-sm">Cap. {ch.number}</span>
-                      {ch.title && <span className="text-zinc-400 text-sm">{ch.title}</span>}
-                      <div className="flex gap-1">
-                        {ch.workedByOrganizations?.map((org: any) => (
-                          <img
-                            key={org.id}
-                            src={org.logoUrl || ''}
-                            alt={org.name}
-                            title={org.name}
-                            className="w-5 h-5 rounded-full object-cover bg-zinc-700"
-                            onError={(e: any) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        ))}
+                    {ch.imageUrl && (
+                      <img
+                        src={ch.imageUrl}
+                        alt=""
+                        className="w-8 h-11 object-cover rounded shrink-0"
+                        onError={(e: any) => { e.target.style.display = 'none'; }}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-bold text-sm">Cap. {ch.number}</span>
+                        {ch.title && <span className="text-zinc-400 text-sm truncate">{ch.title}</span>}
+                        {isMine && (
+                          <span className="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full">Tuyo</span>
+                        )}
+                        {ch.isUnreleased && (
+                          <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full">No publicado</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-zinc-600 text-xs">
+                          {ch.releasedAt ? new Date(ch.releasedAt).toLocaleDateString('es') : 'Sin fecha'}
+                        </span>
+                        <div className="flex gap-1">
+                          {ch.workedByOrganizations?.map((org: any) => (
+                            <img
+                              key={org.id}
+                              src={org.logoUrl || ''}
+                              alt={org.name}
+                              title={org.name}
+                              className="w-4 h-4 rounded-full object-cover bg-zinc-700"
+                              onError={(e: any) => { e.target.style.display = 'none'; }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-500 text-xs">
-                        {ch.releasedAt ? new Date(ch.releasedAt).toLocaleDateString('es') : '—'}
-                      </span>
-                      {isMine && (
-                        <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">Tuyo</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {(isMine || canEditJoint) && (
+                        <a
+                          href={`/${organizationSlug}/admin/joints/${joint.slug}/chapter/${ch.number}/edit`}
+                          className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
+                          title="Editar"
+                        >
+                          <ArrowRight size={14} />
+                        </a>
                       )}
                       {canDelete && (
                         <button
                           onClick={() => handleDeleteChapter(ch.number)}
-                          className="text-red-400 hover:text-red-300 p-1"
+                          className="text-zinc-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                          title="Eliminar"
                         >
                           <Trash2 size={14} />
                         </button>
-                      )}
-                      {(isMine || canEditJoint) && (
-                        <a
-                          href={`/${organizationSlug}/admin/joints/${joint.slug}/chapter/${ch.number}/edit`}
-                          className="text-zinc-400 hover:text-white p-1"
-                          title="Editar capítulo"
-                        >
-                          ✏️
-                        </a>
                       )}
                     </div>
                   </div>
