@@ -1,0 +1,30 @@
+---
+import AdminLayout from '../../../../../../../layouts/AdminLayout.astro';
+import AdminJointChapterCreate from '../../../../../../../components/admin/AdminJointChapterCreate';
+
+// @ts-ignore
+const { organization, language, user, organizationSlug, callAPI } = Astro.locals;
+const logged = !!user;
+const { jointSlug } = Astro.params;
+
+if (!organization) return Astro.redirect('/404');
+if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
+
+let joint = null;
+try {
+  joint = await callAPI(`/api/joint/${jointSlug}/admin`);
+} catch (e) {
+  return Astro.redirect(`/red/${organizationSlug}/admin/joints`);
+}
+
+if (!joint) return Astro.redirect(`/red/${organizationSlug}/admin/joints`);
+---
+
+<AdminLayout title={`Nuevo capítulo — ${joint?.title}`} page="joints" organizationSlug={organizationSlug}>
+  <AdminJointChapterCreate
+    client:load
+    joint={joint}
+    organization={organization}
+    organizationSlug={organizationSlug}
+  />
+</AdminLayout>

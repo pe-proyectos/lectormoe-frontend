@@ -185,6 +185,14 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
               <p className="text-zinc-400 font-mono text-xs">{joint.slug}</p>
             </div>
           </div>
+          {canEditJoint && (
+            <a
+              href={`/${organizationSlug}/admin/joints/${joint.slug}/edit`}
+              className="inline-block bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm transition-colors"
+            >
+              Editar información
+            </a>
+          )}
         </div>
       )}
 
@@ -299,10 +307,12 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
       {activeTab === 'chapters' && (
         <div className="space-y-4">
           {canUpload && (
-            <p className="text-zinc-400 text-sm">
-              Para subir capítulos, ve a la sección de capítulos en el panel de administración del manga dentro de tu
-              organización, o usa la API directamente en /api/joint/{joint.slug}/chapter.
-            </p>
+            <a
+              href={`/${organizationSlug}/admin/joints/${joint.slug}/chapter/create`}
+              className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm transition-colors"
+            >
+              <span>+ Subir capítulo</span>
+            </a>
           )}
           <div className="space-y-2">
             {!joint.chapters || joint.chapters.length === 0 ? (
