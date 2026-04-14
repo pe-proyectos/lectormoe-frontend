@@ -438,16 +438,24 @@ export function Reader({
     }).catch(console.error);
   }, [settings, mangaSlug, chapterNumber]);
 
+  // Detect joint chapter and extract joint slug from mangaUrl
+  const isJoint = mangaUrl && mangaUrl.startsWith('/joint/manga/');
+  const jointSlug = isJoint ? mangaUrl.replace('/joint/manga/', '').split('/')[0] : null;
+
   // Save chapter history - con debounce
   useEffect(() => {
-    if (!logged || !mangaSlug || !chapterNumber) return;
+    if (!logged || !chapterNumber) return;
+    if (!isJoint && !mangaSlug) return;
 
-    const url = `/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages/${currentPage}`;
-    if (lastSaveUrl === url) return;
+    const historyUrl = isJoint
+      ? `/api/user-chapter-history/joint/${jointSlug}/chapter/${chapterNumber}/pages/${currentPage}`
+      : `/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages/${currentPage}`;
+
+    if (lastSaveUrl === historyUrl) return;
 
     const timeoutId = setTimeout(() => {
-      setLastSaveUrl(url);
-      callAPI(url, { method: 'POST' }).catch((error) => {
+      setLastSaveUrl(historyUrl);
+      callAPI(historyUrl, { method: 'POST' }).catch((error) => {
         // Solo loggear errores que no sean 404 (recurso no encontrado)
         if (error?.message && !error.message.includes('No se encontró el recurso')) {
           console.error("Failed to save chapter history", error);
@@ -456,19 +464,24 @@ export function Reader({
     }, 500); // Debounce de 500ms
 
     return () => clearTimeout(timeoutId);
-  }, [currentPage, logged, mangaSlug, chapterNumber, lastSaveUrl]);
+  }, [currentPage, logged, mangaSlug, chapterNumber, lastSaveUrl, isJoint, jointSlug]);
 
   // Track view - solo una vez
   useEffect(() => {
-    if (!mangaSlug || !chapterNumber) return;
-    
-    callAPI(`/api/views/manga-custom/${mangaSlug}/chapter/${chapterNumber}`, {
+    if (!chapterNumber) return;
+    if (!isJoint && !mangaSlug) return;
+
+    const viewsUrl = isJoint
+      ? `/api/views/joint/${jointSlug}/chapter/${chapterNumber}`
+      : `/api/views/manga-custom/${mangaSlug}/chapter/${chapterNumber}`;
+
+    callAPI(viewsUrl, {
       method: 'POST'
     }).catch((error) => {
       // Silenciar errores de tracking de vistas
       console.debug('Failed to track view:', error);
     });
-  }, [mangaSlug, chapterNumber]);
+  }, [mangaSlug, chapterNumber, isJoint, jointSlug]);
 
   // Update URL - con debounce
   useEffect(() => {
