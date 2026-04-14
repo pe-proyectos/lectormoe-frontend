@@ -1,0 +1,30 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import AdminJointDetail from '../../../../components/admin/AdminJointDetail';
+
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { organization, language, user, organizationSlug, callAPI } = Astro.locals;
+const logged = !!user;
+const { jointSlug } = Astro.params;
+
+if (!organization) return Astro.redirect('/404');
+if (!logged) return Astro.redirect(`/${organizationSlug}/login`);
+
+let joint = null;
+try {
+  joint = await callAPI(`/api/joint/${jointSlug}/admin`);
+} catch (e) {
+  return Astro.redirect(`/${organizationSlug}/admin/joints`);
+}
+
+if (!joint) return Astro.redirect(`/${organizationSlug}/admin/joints`);
+---
+
+<AdminLayout title={`Joint: ${joint?.title}`} page="joints" organizationSlug={organizationSlug}>
+  <AdminJointDetail
+    client:load
+    joint={joint}
+    organization={organization}
+    organizationSlug={organizationSlug}
+  />
+</AdminLayout>
