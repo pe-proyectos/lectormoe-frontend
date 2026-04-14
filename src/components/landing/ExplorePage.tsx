@@ -163,6 +163,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [genres, setGenres] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [maxPage, setMaxPage] = useState(1);
+  const [joints, setJoints] = useState<any[]>([]);
   const showNSFW = nsfwMode;
 
   // Reset page when filters change
@@ -231,6 +232,22 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     if (!isScanBranded) {
       fetchScans();
     }
+  }, [isScanBranded]);
+
+  // Fetch joints for global catalog
+  useEffect(() => {
+    if (isScanBranded) return;
+    const fetchJoints = async () => {
+      try {
+        const result = await callAPI('/api/joint/list?limit=20&page=1');
+        if (result && Array.isArray(result.data)) {
+          setJoints(result.data);
+        }
+      } catch {
+        // joints section is best-effort
+      }
+    };
+    fetchJoints();
   }, [isScanBranded]);
 
   // Fetch mangas
@@ -535,6 +552,71 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
             >
               Resetear Filtros
             </button>
+          </div>
+        )}
+
+        {/* Joints Section (global only, no search filter applied) */}
+        {!isScanBranded && !search && joints.length > 0 && (
+          <div className="mt-16">
+            <div className="flex items-center gap-3 mb-6">
+              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                Mangas <span className="text-purple-400">Joint</span>
+              </h2>
+              <span className="bg-purple-500/20 text-purple-400 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
+                Multi-scan
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+              {joints.map((joint: any) => (
+                <a
+                  key={joint.id}
+                  href={`/joint/manga/${joint.slug}`}
+                  className="group block bg-zinc-900/50 border border-zinc-800/50 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="aspect-[2/3] relative overflow-hidden">
+                    <img
+                      src={joint.imageUrl || 'https://via.placeholder.com/300x420'}
+                      alt={joint.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-2 left-2">
+                      <span className="bg-purple-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Joint
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <h3 className="text-white font-black text-xs uppercase italic tracking-tight truncate group-hover:text-purple-400 transition-colors">
+                      {joint.title}
+                    </h3>
+                    <div className="flex items-center gap-1 mt-1">
+                      {(joint.members || []).slice(0, 3).map((m: any) => (
+                        m.organization.logoUrl ? (
+                          <img
+                            key={m.organization.id}
+                            src={m.organization.logoUrl}
+                            alt={m.organization.name}
+                            title={m.organization.name}
+                            className="w-4 h-4 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            key={m.organization.id}
+                            className="w-4 h-4 rounded-full bg-zinc-700 flex items-center justify-center text-[7px] text-zinc-400"
+                            title={m.organization.name}
+                          >
+                            {m.organization.name[0]}
+                          </div>
+                        )
+                      ))}
+                      {(joint.members || []).length > 3 && (
+                        <span className="text-zinc-500 text-[8px]">+{joint.members.length - 3}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         )}
 

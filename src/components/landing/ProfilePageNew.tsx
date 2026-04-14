@@ -35,7 +35,9 @@ interface ReadingHistory {
     id: number;
     number: number;
     title: string;
-    mangaCustom: {
+    mangaCustomId?: number | null;
+    jointId?: number | null;
+    mangaCustom?: {
       organization: {
         slug: string;
       };
@@ -46,7 +48,13 @@ interface ReadingHistory {
       manga: {
         slug: string;
       };
-    };
+    } | null;
+    joint?: {
+      id: number;
+      title: string;
+      slug: string;
+      imageUrl: string | null;
+    } | null;
   };
   pageNumber: number;
   lastReadAt: string;
@@ -1118,14 +1126,22 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
                       {(showAllHistory ? readingHistory : readingHistory.slice(0, 5))
                         .filter((item) => {
-                          const mc = item.chapter.mangaCustom as any;
+                          const mc = (item.chapter as any).mangaCustom;
+                          if (!mc) return true; // joint chapter — always show
                           const isNSFW = mc.isNSFW || mc.organization?.isNSFW || false;
                           return nsfwMode ? isNSFW : !isNSFW;
                         })
                         .map((item) => {
-                        const orgSlug = item.chapter.mangaCustom.organization.slug;
-                        const orgBase = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
-                        const chapterUrl = `${orgBase}/manga/${item.chapter.mangaCustom.manga.slug}/chapters/${item.chapter.number}?page=${item.pageNumber}`;
+                        const ch = item.chapter as any;
+                        const isJoint = !ch.mangaCustomId && !!ch.jointId;
+                        const chapterUrl = isJoint
+                          ? `/joint/manga/${ch.joint?.slug}/chapters/${ch.number}?page=${item.pageNumber}`
+                          : (() => {
+                              const orgSlug = ch.mangaCustom?.organization?.slug;
+                              const orgBase = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
+                              return `${orgBase}/manga/${ch.mangaCustom?.manga?.slug}/chapters/${ch.number}?page=${item.pageNumber}`;
+                            })();
+                        const mangaTitle = isJoint ? ch.joint?.title : ch.mangaCustom?.title;
                         return (
                         <a
                           key={item.id}
@@ -1134,11 +1150,12 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div className="min-w-0 flex-1 pr-2">
-                              <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-1 truncate">
-                                {item.chapter.mangaCustom.title}
+                              <p className="text-[8px] font-black text-cyan-500 uppercase tracking-widest mb-1 truncate flex items-center gap-1">
+                                {isJoint && <span className="bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded text-[7px] font-black">JOINT</span>}
+                                {mangaTitle}
                               </p>
                               <h4 className="text-white font-bold text-xs truncate">
-                                Cap. {item.chapter.number} - {item.chapter.title}
+                                Cap. {ch.number} - {ch.title}
                               </h4>
                             </div>
                             <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">

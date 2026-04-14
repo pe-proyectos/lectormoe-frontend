@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Heart } from 'lucide-react';
+import { callAPI } from '../../util/callApi';
 
 interface JointMangaDetailPageProps {
   joint: any;
@@ -8,13 +9,38 @@ interface JointMangaDetailPageProps {
 }
 
 const JointMangaDetailPage: React.FC<JointMangaDetailPageProps> = ({ joint, user, logged }) => {
-  const [addedToFavorites, setAddedToFavorites] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [loadingFav, setLoadingFav] = useState(false);
 
   const activeMembers = joint.members?.filter((m: any) => m.status === 'ACCEPTED') || [];
   const chapters = joint.chapters || [];
 
-  const handleAddToFavorites = async () => {
-    alert('Favoritos para joints próximamente');
+  useEffect(() => {
+    if (!logged) return;
+    callAPI(`/api/joint/${joint.slug}/favorite`)
+      .then((res: any) => { if (res?.data === true) setIsFavorite(true); })
+      .catch(() => {});
+  }, [logged, joint.slug]);
+
+  const handleToggleFavorite = async () => {
+    if (!logged) {
+      window.location.href = '/login';
+      return;
+    }
+    setLoadingFav(true);
+    try {
+      if (isFavorite) {
+        await callAPI(`/api/joint/${joint.slug}/favorite`, { method: 'DELETE' });
+        setIsFavorite(false);
+      } else {
+        await callAPI(`/api/joint/${joint.slug}/favorite`, { method: 'POST' });
+        setIsFavorite(true);
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Error al actualizar favoritos');
+    } finally {
+      setLoadingFav(false);
+    }
   };
 
   return (
@@ -81,10 +107,16 @@ const JointMangaDetailPage: React.FC<JointMangaDetailPageProps> = ({ joint, user
 
             {/* Add to favorites */}
             <button
-              onClick={handleAddToFavorites}
-              className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 px-6 rounded-2xl transition-colors text-sm"
+              onClick={handleToggleFavorite}
+              disabled={loadingFav}
+              className={`flex items-center gap-2 font-bold py-3 px-6 rounded-2xl transition-colors text-sm ${
+                isFavorite
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+              } disabled:opacity-50`}
             >
-              AÑADIR A FAVORITOS
+              <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+              {isFavorite ? 'EN FAVORITOS' : 'AÑADIR A FAVORITOS'}
             </button>
           </div>
         </div>
