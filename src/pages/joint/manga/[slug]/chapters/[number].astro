@@ -1,0 +1,76 @@
+---
+import LandingLayout from '../../../../../layouts/LandingLayout.astro';
+import ReaderPageContainer from '../../../../../components/landing/ReaderPageContainer';
+
+const { slug, number } = Astro.params;
+const { callAPI, user, language } = Astro.locals as any;
+const logged = !!user;
+
+let chapterData = null;
+try {
+  chapterData = await callAPI(`/api/joint/${slug}/chapter/${number}`);
+} catch (e) {
+  return Astro.redirect('/404');
+}
+
+if (!chapterData || chapterData?.status === false) return Astro.redirect('/404');
+
+const { chapter, prevChapter, nextChapter, joint } = chapterData;
+
+if (!chapter || !joint) return Astro.redirect('/404');
+
+// Build a manga-like object from joint data so ReaderPageContainer can work with it
+const mangaFromJoint = {
+  ...joint,
+  slug: joint.slug,
+  title: joint.title,
+  imageUrl: joint.imageUrl,
+  bannerUrl: joint.bannerUrl,
+  shortDescription: joint.shortDescription || joint.description,
+  isNSFW: false,
+  requireLogin: false,
+  subscriptionPlansCanReadReleased: [],
+  subscriptionPlansCanReadUnreleased: [],
+  // Inject prev/next chapter navigation into the chapter object
+};
+
+// Inject prev/next into chapter for the Reader navigation
+const chapterWithNav = {
+  ...chapter,
+  prevChapter: prevChapter || null,
+  nextChapter: nextChapter || null,
+  // Build nav URLs pointing to joint paths
+  prevChapterUrl: prevChapter ? `/joint/manga/${slug}/chapters/${prevChapter.number}` : null,
+  nextChapterUrl: nextChapter ? `/joint/manga/${slug}/chapters/${nextChapter.number}` : null,
+  mangaUrl: `/joint/manga/${slug}`,
+};
+
+// Build a minimal org-like object from joint (for navbar/footer)
+const orgFromJoint = {
+  slug: `joint-${joint.slug}`,
+  name: joint.title,
+  logoUrl: joint.imageUrl,
+  isNSFW: false,
+};
+
+const ogImageUrl = chapter?.imageUrl || joint.imageUrl || joint.bannerUrl;
+---
+
+<LandingLayout
+  title={`${joint.title} - Cap. ${chapter.number}${chapter.title ? ` - ${chapter.title}` : ''}`}
+  description={`Lee el capítulo ${chapter.number} de ${joint.title}`}
+  imageUrl={ogImageUrl}
+>
+  <ReaderPageContainer
+    language={language || 'es'}
+    manga={mangaFromJoint}
+    chapter={chapterWithNav}
+    chapterNumber={number}
+    logged={logged}
+    user={user}
+    organization={orgFromJoint}
+    organizationSlug={`joint-${joint.slug}`}
+    hasAccess={true}
+    client:load
+  />
+</LandingLayout>
