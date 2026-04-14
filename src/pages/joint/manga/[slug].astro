@@ -1,0 +1,30 @@
+---
+import LandingLayout from '../../../layouts/LandingLayout.astro';
+import JointMangaDetailPage from '../../../components/landing/JointMangaDetailPage';
+
+const { slug } = Astro.params;
+const { callAPI, user } = Astro.locals as any;
+const logged = !!user;
+
+let joint = null;
+try {
+  joint = await callAPI(`/api/joint/${slug}`);
+} catch (e) {
+  return Astro.redirect('/404');
+}
+
+if (!joint || joint?.status === false) return Astro.redirect('/404');
+
+const title = joint.title || joint.manga?.title || 'Joint';
+const description = joint.shortDescription || joint.description || '';
+const image = joint.imageUrl || joint.manga?.imageUrl || '';
+---
+
+<LandingLayout title={title} description={description} imageUrl={image}>
+  <JointMangaDetailPage
+    client:load
+    joint={joint}
+    user={user}
+    logged={logged}
+  />
+</LandingLayout>
