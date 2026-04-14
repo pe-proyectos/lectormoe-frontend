@@ -186,6 +186,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "unsubscribe",
     ".well-known", // Rutas de certificados SSL y otros estándares web
     "superadmin",
+    "joint",
   ];
 
   // Extraer el primer segmento de la ruta
