@@ -483,6 +483,12 @@ export function Reader({
     });
   }, [mangaSlug, chapterNumber, isJoint, jointSlug]);
 
+  // Record manga-level view once on mount
+  useEffect(() => {
+    if (!isJoint || !jointSlug) return;
+    fetch(`/api/views/joint/${jointSlug}`, { method: 'POST' }).catch(() => {});
+  }, [isJoint, jointSlug]);
+
   // Update URL - con debounce
   useEffect(() => {
     if (!chapter || !chapterData.pages.length || loading) return;
