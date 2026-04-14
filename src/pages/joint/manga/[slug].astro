@@ -13,7 +13,7 @@ try {
   return Astro.redirect('/404');
 }
 
-if (!joint || joint?.status === false) return Astro.redirect('/404');
+if (!joint) return Astro.redirect('/404');
 
 const title = joint.title || joint.manga?.title || 'Joint';
 const description = joint.shortDescription || joint.description || '';

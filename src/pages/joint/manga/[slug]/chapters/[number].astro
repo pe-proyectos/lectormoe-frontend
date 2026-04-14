@@ -13,7 +13,7 @@ try {
   return Astro.redirect('/404');
 }
 
-if (!chapterData || chapterData?.status === false) return Astro.redirect('/404');
+if (!chapterData) return Astro.redirect('/404');
 
 const { chapter, prevChapter, nextChapter, joint } = chapterData;
 
