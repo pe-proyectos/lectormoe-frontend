@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { callAPI } from '@/util/callApi';
-import { Users, Plus, Clock } from 'lucide-react';
+import { Users, Plus, Clock, Search, X, Check } from 'lucide-react';
 
 interface AdminJointGridProps {
   organization: any;
@@ -13,8 +13,13 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
   const [joints, setJoints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [mangaSlug, setMangaSlug] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Manga picker state
+  const [mangaCatalog, setMangaCatalog] = useState<any[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selectedManga, setSelectedManga] = useState<any | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -32,16 +37,46 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
     load();
   }, []);
 
+  const openCreateForm = async () => {
+    setShowCreateForm(true);
+    setSelectedManga(null);
+    setSearch('');
+    if (mangaCatalog.length === 0) {
+      setLoadingCatalog(true);
+      try {
+        const result = await callAPI('/api/manga/autocomplete');
+        if (Array.isArray(result)) setMangaCatalog(result);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingCatalog(false);
+      }
+    }
+  };
+
+  const closeCreateForm = () => {
+    setShowCreateForm(false);
+    setSelectedManga(null);
+    setSearch('');
+  };
+
+  const filteredCatalog = useMemo(() => {
+    if (!search.trim()) return mangaCatalog.slice(0, 20);
+    const q = search.toLowerCase();
+    return mangaCatalog
+      .filter(m => m.title.toLowerCase().includes(q) || m.slug.includes(q))
+      .slice(0, 20);
+  }, [mangaCatalog, search]);
+
   const handleCreate = async () => {
-    if (!mangaSlug.trim()) return;
+    if (!selectedManga) return;
     setCreating(true);
     try {
       await callAPI('/api/joint', {
         method: 'POST',
-        body: JSON.stringify({ mangaSlug: mangaSlug.trim() }),
+        body: JSON.stringify({ mangaSlug: selectedManga.slug }),
       });
-      setMangaSlug('');
-      setShowCreateForm(false);
+      closeCreateForm();
       load();
     } catch (e: any) {
       alert(e?.message || 'Error al crear el joint');
@@ -71,7 +106,7 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
           <Users size={24} /> Joints
         </h1>
         <button
-          onClick={() => setShowCreateForm(true)}
+          onClick={openCreateForm}
           className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm transition-colors"
         >
           <Plus size={16} /> Crear Joint
@@ -80,25 +115,98 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
 
       {showCreateForm && (
         <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 space-y-4">
-          <h3 className="text-white font-bold">Crear nuevo joint</h3>
-          <p className="text-zinc-400 text-sm">Ingresa el slug del manga base para crear un joint.</p>
-          <input
-            type="text"
-            value={mangaSlug}
-            onChange={e => setMangaSlug(e.target.value)}
-            placeholder="ej: blue-lock"
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-cyan-500"
-          />
-          <div className="flex gap-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-white font-bold">Crear nuevo joint</h3>
+            <button onClick={closeCreateForm} className="text-zinc-500 hover:text-white">
+              <X size={18} />
+            </button>
+          </div>
+
+          <p className="text-zinc-400 text-sm">
+            Busca y selecciona el manga base del joint. El slug se genera automáticamente.
+          </p>
+
+          {/* Selected manga preview */}
+          {selectedManga && (
+            <div className="flex items-center gap-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl px-4 py-3">
+              {selectedManga.imageUrl && (
+                <img
+                  src={selectedManga.imageUrl}
+                  alt={selectedManga.title}
+                  className="w-10 h-14 object-cover rounded-lg"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-sm truncate">{selectedManga.title}</p>
+                <p className="text-zinc-400 text-xs font-mono">{selectedManga.slug}</p>
+              </div>
+              <Check size={18} className="text-cyan-400 shrink-0" />
+            </div>
+          )}
+
+          {/* Search input */}
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar manga por título..."
+              autoFocus
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-9 pr-4 py-3 text-white text-sm outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          {/* Manga list */}
+          <div className="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+            {loadingCatalog ? (
+              <p className="text-zinc-500 text-sm text-center py-4">Cargando catálogo...</p>
+            ) : filteredCatalog.length === 0 ? (
+              <p className="text-zinc-500 text-sm text-center py-4">Sin resultados</p>
+            ) : (
+              filteredCatalog.map(manga => {
+                const isSelected = selectedManga?.slug === manga.slug;
+                return (
+                  <button
+                    key={manga.id}
+                    type="button"
+                    onClick={() => setSelectedManga(isSelected ? null : manga)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
+                      isSelected
+                        ? 'bg-cyan-500/20 border border-cyan-500/40'
+                        : 'hover:bg-zinc-800 border border-transparent'
+                    }`}
+                  >
+                    {manga.imageUrl ? (
+                      <img
+                        src={manga.imageUrl}
+                        alt={manga.title}
+                        className="w-8 h-11 object-cover rounded shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-11 bg-zinc-700 rounded shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{manga.title}</p>
+                      <p className="text-zinc-500 text-xs font-mono truncate">{manga.slug}</p>
+                    </div>
+                    {isSelected && <Check size={14} className="text-cyan-400 shrink-0 ml-auto" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-1">
             <button
               onClick={handleCreate}
-              disabled={creating}
-              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm disabled:opacity-50"
+              disabled={!selectedManga || creating}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-5 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {creating ? 'Creando...' : 'Crear'}
+              {creating ? 'Creando...' : 'Crear joint'}
             </button>
             <button
-              onClick={() => setShowCreateForm(false)}
+              onClick={closeCreateForm}
               className="bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 px-4 rounded-xl text-sm"
             >
               Cancelar
