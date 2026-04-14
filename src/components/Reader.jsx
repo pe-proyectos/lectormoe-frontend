@@ -102,6 +102,9 @@ export function Reader({
   organizationSlug,
   organization,
   hasAccess = true,
+  prevChapterUrl,
+  nextChapterUrl,
+  mangaUrl,
 }) {
   const _ = getTranslator(language);
   
@@ -648,6 +651,23 @@ export function Reader({
     manga?.requireLogin,
   ]);
 
+  // Compute effective prev/next navigation URLs
+  // Props prevChapterUrl/nextChapterUrl take precedence (used for joint pages);
+  // otherwise fall back to org-path construction.
+  const resolvedPrevChapterUrl = prevChapterUrl !== undefined
+    ? prevChapterUrl
+    : (chapter?.previousChapter?.number
+        ? getOrgPath(`/manga/${mangaSlug}/chapters/${chapter?.previousChapter?.number}`, orgSlug)
+        : null);
+  const resolvedNextChapterUrl = nextChapterUrl !== undefined
+    ? nextChapterUrl
+    : (chapter?.nextChapter?.number
+        ? getOrgPath(`/manga/${mangaSlug}/chapters/${chapter?.nextChapter?.number}`, orgSlug)
+        : null);
+  const resolvedMangaUrl = mangaUrl !== undefined
+    ? mangaUrl
+    : getOrgPath(`/manga/${mangaSlug}`, orgSlug);
+
   // Memoizar componentes de navegación
   const PreviousChapterArrow = useMemo(
     () =>
@@ -656,11 +676,8 @@ export function Reader({
           <div
             className="flex flex-grow items-center h-full justify-center group/nav"
             onClick={() => {
-              if (chapter?.previousChapter?.number)
-                location.href = getOrgPath(
-                  `/manga/${mangaSlug}/chapters/${chapter?.previousChapter?.number}`,
-                  orgSlug
-                );
+              if (chapter?.previousChapter?.number && resolvedPrevChapterUrl)
+                location.href = resolvedPrevChapterUrl;
             }}
             {...props}
           >
@@ -680,7 +697,7 @@ export function Reader({
             </div>
           </div>
         ),
-    [chapter?.previousChapter, mangaSlug, orgSlug, _]
+    [chapter?.previousChapter, resolvedPrevChapterUrl, _]
   );
 
   const NextChapterArrow = useMemo(
@@ -690,11 +707,8 @@ export function Reader({
           <div
             className="flex flex-grow items-center h-full justify-center group/nav"
             onClick={() => {
-              if (chapter?.nextChapter?.number)
-                location.href = getOrgPath(
-                  `/manga/${mangaSlug}/chapters/${chapter?.nextChapter?.number}`,
-                  orgSlug
-                );
+              if (chapter?.nextChapter?.number && resolvedNextChapterUrl)
+                location.href = resolvedNextChapterUrl;
             }}
             {...props}
           >
@@ -714,7 +728,7 @@ export function Reader({
             </div>
           </div>
         ),
-    [chapter?.nextChapter, mangaSlug, orgSlug, _]
+    [chapter?.nextChapter, resolvedNextChapterUrl, _]
   );
 
   // Renderizar páginas - OPTIMIZADO para evitar re-renders innecesarios
@@ -1197,12 +1211,7 @@ export function Reader({
               (new Date(chapter.previousChapter?.releasedAt).getTime() <
               new Date().getTime() ? (
                 <button
-                  onClick={() =>
-                    (location.href = getOrgPath(
-                      `/manga/${mangaSlug}/chapters/${chapter?.previousChapter?.number}`,
-                      orgSlug
-                    ))
-                  }
+                  onClick={() => resolvedPrevChapterUrl && (location.href = resolvedPrevChapterUrl)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   {_("previous_chapter")}#{chapter?.previousChapter?.number}{" "}
@@ -1218,9 +1227,7 @@ export function Reader({
                 </button>
               ))}
             <button
-              onClick={() =>
-                (location.href = getOrgPath(`/manga/${mangaSlug}`, orgSlug))
-              }
+              onClick={() => (location.href = resolvedMangaUrl)}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
               {_("back_to_chapter_list")}
@@ -1229,12 +1236,7 @@ export function Reader({
               (new Date(chapter.nextChapter?.releasedAt).getTime() <
               new Date().getTime() ? (
                 <button
-                  onClick={() =>
-                    (location.href = getOrgPath(
-                      `/manga/${mangaSlug}/chapters/${chapter?.nextChapter?.number}`,
-                      orgSlug
-                    ))
-                  }
+                  onClick={() => resolvedNextChapterUrl && (location.href = resolvedNextChapterUrl)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   {_("next_chapter")}

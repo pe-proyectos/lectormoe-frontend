@@ -18,6 +18,9 @@ interface ReaderPageContainerProps {
   organizationSlug?: string;
   hasAccess?: boolean;
   nsfwMode?: boolean;
+  prevChapterUrl?: string | null;
+  nextChapterUrl?: string | null;
+  mangaUrl?: string | null;
 }
 
 const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
@@ -31,6 +34,9 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
   organizationSlug,
   hasAccess = true,
   nsfwMode = false,
+  prevChapterUrl,
+  nextChapterUrl,
+  mangaUrl,
 }) => {
   const [Reader, setReader] = useState<any>(null);
   const [showNSFWModal, setShowNSFWModal] = useState(false);
@@ -100,6 +106,9 @@ const ReaderPageContainer: React.FC<ReaderPageContainerProps> = ({
             organization={organization}
             organizationSlug={organizationSlug || organization?.slug}
             hasAccess={hasAccess}
+            prevChapterUrl={prevChapterUrl}
+            nextChapterUrl={nextChapterUrl}
+            mangaUrl={mangaUrl}
           />
         ) : (
           <div className="flex items-center justify-center min-h-screen">
