@@ -18,6 +18,11 @@ if (mangaResult?.status === false || !mangaResult || typeof mangaResult !== 'obj
 
 const manga = mangaResult;
 
+// Si el manga pertenece a un joint, redirigir a la página del joint
+if (manga?.jointSlug) {
+  return Astro.redirect(`/joint/manga/${manga.jointSlug}`, 301);
+}
+
 if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
