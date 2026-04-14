@@ -1,0 +1,35 @@
+---
+import AdminLayout from '../../../../../../../layouts/AdminLayout.astro';
+import AdminJointChapterEdit from '../../../../../../../components/admin/AdminJointChapterEdit';
+
+// @ts-ignore
+const { organization, user, organizationSlug, callAPI } = Astro.locals;
+const logged = !!user;
+const { jointSlug, chapterNumber } = Astro.params;
+
+if (!organization) return Astro.redirect('/404');
+if (!logged) return Astro.redirect(`/${organizationSlug}/login`);
+
+let joint = null;
+let chapter = null;
+try {
+  const data = await callAPI(`/api/joint/${jointSlug}/chapter/${chapterNumber}`);
+  joint = data?.joint;
+  chapter = data?.chapter;
+} catch (e) {
+  return Astro.redirect(`/${organizationSlug}/admin/joints/${jointSlug}`);
+}
+
+if (!joint || !chapter) return Astro.redirect(`/${organizationSlug}/admin/joints/${jointSlug}`);
+---
+
+<AdminLayout title={`Editar cap. ${chapter?.number} — ${joint?.title}`} page="joints" organizationSlug={organizationSlug}>
+  <AdminJointChapterEdit
+    client:load
+    joint={joint}
+    chapter={chapter}
+    organization={organization}
+    organizationSlug={organizationSlug}
+    user={user}
+  />
+</AdminLayout>

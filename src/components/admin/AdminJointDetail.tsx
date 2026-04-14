@@ -359,6 +359,15 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
                           <Trash2 size={14} />
                         </button>
                       )}
+                      {(isMine || canEditJoint) && (
+                        <a
+                          href={`/${organizationSlug}/admin/joints/${joint.slug}/chapter/${ch.number}/edit`}
+                          className="text-zinc-400 hover:text-white p-1"
+                          title="Editar capítulo"
+                        >
+                          ✏️
+                        </a>
+                      )}
                     </div>
                   </div>
                 );
