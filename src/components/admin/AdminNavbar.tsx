@@ -10,6 +10,7 @@ import {
   Settings,
   Tag,
   UserCircle,
+  Link2,
 } from 'lucide-react';
 
 interface AdminNavbarProps {
@@ -98,6 +99,12 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
       label: 'Usuarios',
       icon: Users,
       href: `/${organizationSlug}/admin/users`,
+    },
+    {
+      id: 'joints',
+      label: 'Joints',
+      icon: Link2,
+      href: `/${organizationSlug}/admin/joints`,
     },
     {
       id: 'subscription_plans',

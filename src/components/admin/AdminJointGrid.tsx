@@ -1,0 +1,189 @@
+import React, { useEffect, useState } from 'react';
+import { callAPI } from '@/util/callApi';
+import { Users, Plus, Clock } from 'lucide-react';
+
+interface AdminJointGridProps {
+  organization: any;
+  organizationSlug: string;
+  user?: any;
+  token?: string;
+}
+
+const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizationSlug }) => {
+  const [joints, setJoints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [mangaSlug, setMangaSlug] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const result = await callAPI('/api/joint');
+      if (Array.isArray(result)) setJoints(result);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleCreate = async () => {
+    if (!mangaSlug.trim()) return;
+    setCreating(true);
+    try {
+      await callAPI('/api/joint', {
+        method: 'POST',
+        body: JSON.stringify({ mangaSlug: mangaSlug.trim() }),
+      });
+      setMangaSlug('');
+      setShowCreateForm(false);
+      load();
+    } catch (e: any) {
+      alert(e?.message || 'Error al crear el joint');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleRespond = async (jointSlug: string, accept: boolean) => {
+    try {
+      await callAPI(`/api/joint/${jointSlug}/respond`, {
+        method: 'PATCH',
+        body: JSON.stringify({ accept }),
+      });
+      load();
+    } catch (e: any) {
+      alert(e?.message || 'Error al responder la invitación');
+    }
+  };
+
+  if (loading) return <div className="text-zinc-400">Cargando joints...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <Users size={24} /> Joints
+        </h1>
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm transition-colors"
+        >
+          <Plus size={16} /> Crear Joint
+        </button>
+      </div>
+
+      {showCreateForm && (
+        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 space-y-4">
+          <h3 className="text-white font-bold">Crear nuevo joint</h3>
+          <p className="text-zinc-400 text-sm">Ingresa el slug del manga base para crear un joint.</p>
+          <input
+            type="text"
+            value={mangaSlug}
+            onChange={e => setMangaSlug(e.target.value)}
+            placeholder="ej: blue-lock"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-cyan-500"
+          />
+          <div className="flex gap-3">
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-xl text-sm disabled:opacity-50"
+            >
+              {creating ? 'Creando...' : 'Crear'}
+            </button>
+            <button
+              onClick={() => setShowCreateForm(false)}
+              className="bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 px-4 rounded-xl text-sm"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {joints.length === 0 ? (
+        <div className="text-center py-16 text-zinc-500">
+          <Users size={48} className="mx-auto mb-4 opacity-20" />
+          <p className="font-bold">No tienes joints activos</p>
+          <p className="text-sm mt-1">Crea uno o espera ser invitado.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {joints.map((item: any) => {
+            const joint = item.joint;
+            const myStatus = item.status;
+            const myRole = item.role;
+
+            return (
+              <div key={joint.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="aspect-[16/9] relative overflow-hidden bg-zinc-800">
+                  <img
+                    src={joint.imageUrl || 'https://via.placeholder.com/320x180'}
+                    alt={joint.title}
+                    className="w-full h-full object-cover opacity-70"
+                  />
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    {myStatus === 'INVITED' && (
+                      <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                        <Clock size={10} /> Invitación pendiente
+                      </span>
+                    )}
+                    {myStatus === 'ACCEPTED' && (
+                      <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-1 rounded-full">
+                        {myRole === 'LEADER' ? '★ Líder' : myRole === 'UPLOADER' ? 'Uploader' : 'Viewer'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div>
+                    <h3 className="text-white font-bold">{joint.title}</h3>
+                    <p className="text-zinc-500 text-xs">/joint/manga/{joint.slug}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(joint.members || []).map((m: any) => (
+                      <div key={m.organization.id} title={m.organization.name} className="w-6 h-6 rounded-full overflow-hidden bg-zinc-700">
+                        {m.organization.logoUrl && <img src={m.organization.logoUrl} alt="" className="w-full h-full object-cover" />}
+                      </div>
+                    ))}
+                  </div>
+                  {myStatus === 'INVITED' ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleRespond(joint.slug, true)}
+                        className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-xl text-xs"
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        onClick={() => handleRespond(joint.slug, false)}
+                        className="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 font-bold py-2 rounded-xl text-xs"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  ) : (
+                    <a
+                      href={`/${organizationSlug}/admin/joints/${joint.slug}`}
+                      className="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2 rounded-xl text-xs transition-colors"
+                    >
+                      Gestionar
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminJointGrid;

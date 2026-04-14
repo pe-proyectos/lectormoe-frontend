@@ -9,6 +9,7 @@ import {
   Settings,
   Tag,
   UserCircle,
+  Link2,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -48,6 +49,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ page, organizationSlug }) =
       label: 'Usuarios',
       icon: Users,
       href: `/${organizationSlug}/admin/users`,
+    },
+    {
+      id: 'joints',
+      label: 'Joints',
+      icon: Link2,
+      href: `/${organizationSlug}/admin/joints`,
     },
     {
       id: 'subscription_plans',
