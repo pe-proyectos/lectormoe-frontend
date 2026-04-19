@@ -112,10 +112,10 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
         setFeedback({ message: 'Agregado a favoritos', type: 'success' });
       }
       setTimeout(() => setFeedback(null), 3000);
-    } catch (error) {
+    } catch (error: any) {
       // Revert on error
       setFavorites({ ...favorites, [mangaSlug]: isFavorite });
-      setFeedback({ message: 'Error al actualizar favoritos', type: 'error' });
+      setFeedback({ message: error?.message || 'Error al actualizar favoritos', type: 'error' });
       setTimeout(() => setFeedback(null), 3000);
     }
   };

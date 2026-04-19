@@ -797,11 +797,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       setTimeout(() => {
         setFavoriteFeedback(null);
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       // Revert optimistic update on error
       setIsFavorite(wasFavorite);
       setFavoriteFeedback({
-        message: "Error al actualizar favoritos",
+        message: error?.message || "Error al actualizar favoritos",
         type: "error",
       });
       console.error("Failed to toggle favorite", error);
