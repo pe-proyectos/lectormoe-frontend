@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '../../../../../layouts/AdminLayout.astro';
-import AdminJointDetail from '../../../../../components/admin/AdminJointDetail';
+import AdminMangaEdit from '../../../../../components/admin/AdminMangaEdit';
 
 // @ts-ignore
 const { organization, language, user, organizationSlug, callAPI } = Astro.locals;
@@ -21,8 +21,9 @@ if (!joint) return Astro.redirect(`/red/${organizationSlug}/admin/joints`);
 ---
 
 <AdminLayout title={`Joint: ${joint?.title}`} page="joints" organizationSlug={organizationSlug}>
-  <AdminJointDetail
+  <AdminMangaEdit
     client:load
+    language={language}
     joint={joint}
     organization={organization}
     organizationSlug={organizationSlug}

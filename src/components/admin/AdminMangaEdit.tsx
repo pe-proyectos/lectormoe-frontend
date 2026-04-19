@@ -3,7 +3,8 @@ import {
   Save, Plus, Calendar, BookOpen, UploadCloud, Trash2,
   Settings2, Layers, GripVertical, ZoomIn, ZoomOut,
   Map as MapIcon, CheckCircle2,
-  Camera, List, Info, Edit3, Download, ImageIcon, Clock, Users
+  Camera, List, Info, Edit3, Download, ImageIcon, Clock, Users,
+  ArrowRight, Check,
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
@@ -19,7 +20,7 @@ import JSZip from 'jszip';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-day-picker/dist/style.css';
 
-type TabType = 'info' | 'chapters' | 'upload';
+type TabType = 'info' | 'chapters' | 'upload' | 'members';
 
 interface DateTimePickerProps {
   value: string | null | undefined;
@@ -202,25 +203,65 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
 interface AdminMangaEditProps {
   language?: string;
-  initialMangaCustom: any;
+  initialMangaCustom?: any;
+  /** When present, this component operates in joint mode: same UI, joint-specific endpoints */
+  joint?: any;
+  /** Caller's organization (required in joint mode for permission checks) */
+  organization?: any;
   organizationSlug: string;
 }
 
 const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   language,
   initialMangaCustom,
+  joint: initialJoint,
+  organization,
   organizationSlug,
 }) => {
+  // Joint mode swaps the resource under edit from a MangaCustom to a MangaJoint.
+  // Both shapes share id/slug/title/description/imageUrl/bannerUrl/status/workType/chapters,
+  // so the component duck-types through the same `mangaCustom` state.
+  const mode: 'manga' | 'joint' = initialJoint ? 'joint' : 'manga';
+  const isJointMode = mode === 'joint';
+  const initialResource = initialJoint || initialMangaCustom;
   const _ = getTranslator(language);
-  const [activeTab, setActiveTab] = useState<TabType>('upload');
+  // In joint mode, default to chapters list (upload may not be available to this member).
+  const [activeTab, setActiveTab] = useState<TabType>(initialJoint ? 'chapters' : 'upload');
   const [showMinimap, setShowMinimap] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [loading, setLoading] = useState(false);
   
   const [dragId, setDragId] = useState<string | null>(null);
 
-  const [mangaCustom, setMangaCustom] = useState(initialMangaCustom);
+  const [mangaCustom, setMangaCustom] = useState(initialResource);
   const [activeJoint, setActiveJoint] = useState<{ slug: string; title: string } | null>(null);
+
+  // Joint-only: my membership + invite state for the Miembros tab
+  const jointMembers: any[] = (isJointMode ? (mangaCustom?.members || []) : []) as any[];
+  const myMember = isJointMode && organization
+    ? jointMembers.find((m: any) => m.organization?.id === organization.id)
+    : null;
+  const isLeader = myMember?.role === 'LEADER';
+  const canEditJoint = isLeader || !!myMember?.canEditJoint;
+  const canUpload = isLeader || myMember?.role === 'UPLOADER';
+  const canInviteJoint = isLeader || !!myMember?.canInvite;
+  const [inviteSlug, setInviteSlug] = useState('');
+  const [inviteRole, setInviteRole] = useState<'UPLOADER' | 'VIEWER'>('UPLOADER');
+  const [inviting, setInviting] = useState(false);
+  // Joint chapter worked-by selector (accepted member orgs that contributed)
+  const [workedByIds, setWorkedByIds] = useState<number[]>([]);
+
+  // ── URL helpers — swap between manga-custom and joint endpoints transparently ──
+  const resourceSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
+  const resourceBase = () => isJointMode
+    ? `/api/joint/${resourceSlug}`
+    : `/api/manga-custom/${resourceSlug}`;
+  const resourceFetchUrl = () => isJointMode
+    ? `/api/joint/${resourceSlug}/admin`
+    : `/api/manga-custom/${resourceSlug}`;
+  const chapterListUrl = () => `${resourceBase()}/chapter`;
+  const chapterUrl = (num: number | string) => `${resourceBase()}/chapter/${num}`;
+  const pagesUrl = (num: number | string) => `${resourceBase()}/chapter/${num}/pages`;
   
   // Helper functions for date handling
   // Convert UTC date string (from API) to local datetime string for input[type="datetime-local"]
@@ -256,29 +297,29 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
   
-  // Initialize form data from initialMangaCustom
+  // Initialize form data from initial resource (manga or joint)
   const initializeFormData = () => {
     // Store dates as local datetime strings for the form inputs
-    const releasedAt = utcToLocalDatetimeString(initialMangaCustom?.releasedAt);
-    const nextChapterAt = utcToLocalDatetimeString(initialMangaCustom?.nextChapterAt);
+    const releasedAt = utcToLocalDatetimeString(initialResource?.releasedAt);
+    const nextChapterAt = utcToLocalDatetimeString(initialResource?.nextChapterAt);
 
     return {
-      title: initialMangaCustom?.title || '',
-      shortDescription: initialMangaCustom?.shortDescription || '',
-      description: initialMangaCustom?.description || '',
-      status: initialMangaCustom?.status || 'ongoing',
-      workType: initialMangaCustom?.workType || 'manga',
+      title: initialResource?.title || '',
+      shortDescription: initialResource?.shortDescription || '',
+      description: initialResource?.description || '',
+      status: initialResource?.status || 'ongoing',
+      workType: initialResource?.workType || 'manga',
       releasedAt: releasedAt || null,
       nextChapterAt: nextChapterAt || null,
-      nextChapterAtMessage: initialMangaCustom?.nextChapterAtMessage || '',
-      requireLogin: initialMangaCustom?.requireLogin || false,
-      isSimulRelease: initialMangaCustom?.isSimulRelease || false,
-      isNSFW: initialMangaCustom?.isNSFW || false,
-      cover: initialMangaCustom?.imageUrl || '',
-      banner: initialMangaCustom?.bannerUrl || '',
-      genres: initialMangaCustom?.genres || [],
-      subscriptionPlansCanReadUnreleased: initialMangaCustom?.subscriptionPlansCanReadUnreleased || [],
-      subscriptionPlansCanReadReleased: initialMangaCustom?.subscriptionPlansCanReadReleased || []
+      nextChapterAtMessage: initialResource?.nextChapterAtMessage || '',
+      requireLogin: initialResource?.requireLogin || false,
+      isSimulRelease: initialResource?.isSimulRelease || false,
+      isNSFW: initialResource?.isNSFW || false,
+      cover: initialResource?.imageUrl || '',
+      banner: initialResource?.bannerUrl || '',
+      genres: initialResource?.genres || [],
+      subscriptionPlansCanReadUnreleased: initialResource?.subscriptionPlansCanReadUnreleased || [],
+      subscriptionPlansCanReadReleased: initialResource?.subscriptionPlansCanReadReleased || []
     };
   };
 
@@ -505,34 +546,33 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     }
   }, [activeTab]);
 
-  // Update form data when initialMangaCustom changes
+  // Update form data when initial resource changes
   useEffect(() => {
-    if (initialMangaCustom) {
-      // Convert UTC dates from API to local datetime strings for inputs
-      const releasedAt = utcToLocalDatetimeString(initialMangaCustom?.releasedAt);
-      const nextChapterAt = utcToLocalDatetimeString(initialMangaCustom?.nextChapterAt);
+    if (initialResource) {
+      const releasedAt = utcToLocalDatetimeString(initialResource?.releasedAt);
+      const nextChapterAt = utcToLocalDatetimeString(initialResource?.nextChapterAt);
 
       setFormData({
-        title: initialMangaCustom?.title || '',
-        shortDescription: initialMangaCustom?.shortDescription || '',
-        description: initialMangaCustom?.description || '',
-        status: initialMangaCustom?.status || 'ongoing',
+        title: initialResource?.title || '',
+        shortDescription: initialResource?.shortDescription || '',
+        description: initialResource?.description || '',
+        status: initialResource?.status || 'ongoing',
         releasedAt: releasedAt || null,
         nextChapterAt: nextChapterAt || null,
-        nextChapterAtMessage: initialMangaCustom?.nextChapterAtMessage || '',
-        requireLogin: initialMangaCustom?.requireLogin || false,
-        isSimulRelease: initialMangaCustom?.isSimulRelease || false,
-        isNSFW: initialMangaCustom?.isNSFW || false,
-        workType: initialMangaCustom?.workType || 'manga',
-        cover: initialMangaCustom?.imageUrl || '',
-        banner: initialMangaCustom?.bannerUrl || '',
-        genres: initialMangaCustom?.genres || [],
-        subscriptionPlansCanReadUnreleased: initialMangaCustom?.subscriptionPlansCanReadUnreleased || [],
-        subscriptionPlansCanReadReleased: initialMangaCustom?.subscriptionPlansCanReadReleased || []
+        nextChapterAtMessage: initialResource?.nextChapterAtMessage || '',
+        requireLogin: initialResource?.requireLogin || false,
+        isSimulRelease: initialResource?.isSimulRelease || false,
+        isNSFW: initialResource?.isNSFW || false,
+        workType: initialResource?.workType || 'manga',
+        cover: initialResource?.imageUrl || '',
+        banner: initialResource?.bannerUrl || '',
+        genres: initialResource?.genres || [],
+        subscriptionPlansCanReadUnreleased: initialResource?.subscriptionPlansCanReadUnreleased || [],
+        subscriptionPlansCanReadReleased: initialResource?.subscriptionPlansCanReadReleased || []
       });
-      setMangaCustom(initialMangaCustom);
+      setMangaCustom(initialResource);
     }
-  }, [initialMangaCustom]);
+  }, [initialResource]);
 
   // Cargar géneros y planes de suscripción cuando se cambia al tab de información
   useEffect(() => {
@@ -544,13 +584,15 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   // Detect if the base manga is part of an active joint — chapter uploads must go through
   // the joint admin so they reach every member scan, not just this one.
+  // (Only relevant in manga mode — joint mode IS the joint.)
   useEffect(() => {
-    const slug = initialMangaCustom?.manga?.slug || initialMangaCustom?.slug;
+    if (isJointMode) { setActiveJoint(null); return; }
+    const slug = initialResource?.manga?.slug || initialResource?.slug;
     if (!slug) return;
     callAPI(`/api/manga/${slug}/joint`)
       .then((j: any) => { setActiveJoint(j && j.slug ? { slug: j.slug, title: j.title } : null); })
       .catch(() => { setActiveJoint(null); });
-  }, [initialMangaCustom]);
+  }, [initialResource, isJointMode]);
 
   const loadGenres = async () => {
     try {
@@ -581,17 +623,18 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const loadChapters = async () => {
     setChaptersLoading(true);
     try {
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      const result = await callAPI(`/api/manga-custom/${mangaSlug}`);
+      const result = await callAPI(resourceFetchUrl());
       if (result?.data?.chapters) {
         setChapters(result.data.chapters);
+        if (isJointMode) setMangaCustom(result.data);
       } else if (result?.chapters) {
         setChapters(result.chapters);
+        if (isJointMode) setMangaCustom(result);
       } else if (result?.data) {
-        // Si el resultado tiene data pero no chapters, intentar obtenerlos del mangaCustom actualizado
-        const updatedManga = await callAPI(`/api/manga-custom/${mangaSlug}`);
-        if (updatedManga?.chapters) {
-          setChapters(updatedManga.chapters);
+        const updated = await callAPI(resourceFetchUrl());
+        if (updated?.chapters) {
+          setChapters(updated.chapters);
+          if (isJointMode) setMangaCustom(updated);
         }
       }
     } catch (error: any) {
@@ -604,10 +647,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const handleDownloadChapter = async (chapter: any) => {
     toast.info(`Descargando capítulo ${chapter.number}...`);
     try {
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      const chapterPages = await callAPI(
-        `/api/manga-custom/${mangaSlug}/chapter/${chapter.number}/pages`
-      );
+      const chapterPages = await callAPI(pagesUrl(chapter.number));
       
       const zip = new JSZip();
       const folder = zip.folder(`Chapter ${chapter.number}`);
@@ -644,8 +684,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const handleEditChapter = async (chapter: any) => {
     setLoading(true);
     try {
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      
       // Cargar datos del capítulo
       setNewChapter({
         number: chapter.number.toString(),
@@ -654,11 +692,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         thumbnail: chapter.imageUrl || null,
         isUnreleased: chapter.isUnreleased || false,
       });
+      // Preload the joint worked-by selector from the chapter
+      if (isJointMode) {
+        setWorkedByIds((chapter.workedByOrganizations || []).map((o: any) => o.id));
+      }
 
       // Cargar páginas del capítulo
-      const chapterPages = await callAPI(
-        `/api/manga-custom/${mangaSlug}/chapter/${chapter.number}/pages`
-      );
+      const chapterPages = await callAPI(pagesUrl(chapter.number));
 
       // Convertir páginas al formato esperado
       const loadedPages: string[] = chapterPages.map((page: any) => page.imageUrl);
@@ -918,11 +958,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       }, 100);
       
       // 3. Enviar al API para guardar permanentemente
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      const response = await callAPI(`/api/manga-custom/${mangaSlug}`, {
+      const response = await callAPI(resourceBase(), {
         method: 'PATCH',
         body: JSON.stringify({
-          mangaCustomId: mangaCustom?.id,
+          ...(isJointMode ? {} : { mangaCustomId: mangaCustom?.id }),
           banner: fileKey,
         }),
       });
@@ -1056,11 +1095,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       }, 100);
       
       // 3. Enviar al API para guardar permanentemente
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      const response = await callAPI(`/api/manga-custom/${mangaSlug}`, {
+      const response = await callAPI(resourceBase(), {
         method: 'PATCH',
         body: JSON.stringify({
-          mangaCustomId: mangaCustom?.id,
+          ...(isJointMode ? {} : { mangaCustomId: mangaCustom?.id }),
           image: fileKey,
         }),
       });
@@ -1176,28 +1214,32 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         throw error;
       }
 
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      const response = await callAPI(`/api/manga-custom/${mangaSlug}`, {
+      // Body fields that apply to both manga and joint. Manga-only fields are stripped in joint mode
+      // (backend would ignore them but we keep the payload clean).
+      const patchBody: any = {
+        title: formData.title,
+        shortDescription: formData.shortDescription || null,
+        description: formData.description || null,
+        status: formData.status,
+        workType: formData.workType,
+        image: coverKey,
+        banner: bannerKey,
+      };
+      if (!isJointMode) {
+        patchBody.mangaCustomId = mangaCustom?.id;
+        patchBody.releasedAt = localDatetimeStringToUTC(formData.releasedAt);
+        patchBody.nextChapterAt = localDatetimeStringToUTC(formData.nextChapterAt);
+        patchBody.nextChapterAtMessage = formData.nextChapterAtMessage || null;
+        patchBody.requireLogin = formData.requireLogin;
+        patchBody.isSimulRelease = formData.isSimulRelease;
+        patchBody.isNSFW = formData.isNSFW;
+        patchBody.genreIds = formData.genres.map((g: any) => g.id);
+        patchBody.subscriptionPlanIdsCanReadUnreleased = formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [];
+        patchBody.subscriptionPlanIdsCanReadReleased = formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [];
+      }
+      const response = await callAPI(resourceBase(), {
         method: 'PATCH',
-        body: JSON.stringify({
-          mangaCustomId: mangaCustom?.id,
-          title: formData.title,
-          shortDescription: formData.shortDescription || null,
-          description: formData.description || null,
-          status: formData.status,
-          workType: formData.workType,
-          releasedAt: localDatetimeStringToUTC(formData.releasedAt),
-          nextChapterAt: localDatetimeStringToUTC(formData.nextChapterAt),
-          nextChapterAtMessage: formData.nextChapterAtMessage || null,
-          requireLogin: formData.requireLogin,
-          isSimulRelease: formData.isSimulRelease,
-          isNSFW: formData.isNSFW,
-          genreIds: formData.genres.map((g: any) => g.id),
-          subscriptionPlanIdsCanReadUnreleased: formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [],
-          subscriptionPlanIdsCanReadReleased: formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [],
-          image: coverKey,
-          banner: bannerKey,
-        }),
+        body: JSON.stringify(patchBody),
       });
 
       if (response?.status || response) {
@@ -1306,30 +1348,27 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         throw error;
       }
 
-      const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
-      
       // Determinar si es edición o creación
       const isEdit = isEditingChapter && editingChapterNumber !== null;
       const chapterNumber = isEdit ? editingChapterNumber : parseFloat(newChapter.number);
-      
+
       const response = await callAPI(
-        isEdit 
-          ? `/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}`
-          : `/api/manga-custom/${mangaSlug}/chapter`,
+        isEdit ? chapterUrl(chapterNumber as number) : chapterListUrl(),
         {
           method: isEdit ? 'PATCH' : 'POST',
           body: JSON.stringify({
             title: newChapter.title || `Capítulo ${newChapter.number}`,
             number: parseFloat(newChapter.number),
-            releasedAt: newChapter.isUnreleased 
-              ? null 
-              : (newChapter.releaseDate 
-                  ? localDatetimeStringToUTC(newChapter.releaseDate) 
+            releasedAt: newChapter.isUnreleased
+              ? null
+              : (newChapter.releaseDate
+                  ? localDatetimeStringToUTC(newChapter.releaseDate)
                   : new Date().toISOString()),
             pages: pageKeys,
             singlePages: singlePageIndexes,
             ...(imageKey ? { image: imageKey } : {}),
             isUnreleased: newChapter.isUnreleased || false,
+            ...(isJointMode ? { workedByOrganizationIds: workedByIds } : {}),
           }),
         }
       );
@@ -1366,8 +1405,73 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   // Function to update chapter date and isUnreleased from table
   // Applies the same rules as the edit chapter form
   // Only updates isUnreleased field, following backend controller logic
+  // ── Joint-only handlers (members management) ──
+  const reloadResource = async () => {
+    try {
+      const data = await callAPI(resourceFetchUrl());
+      if (data) setMangaCustom(data);
+    } catch {}
+  };
+
+  const handleInviteMember = async () => {
+    if (!inviteSlug.trim()) return;
+    setInviting(true);
+    try {
+      await callAPI(`/api/joint/${resourceSlug}/invite`, {
+        method: 'POST',
+        body: JSON.stringify({ organizationSlug: inviteSlug.trim(), role: inviteRole }),
+      });
+      toast.success('Invitación enviada', { position: 'bottom-right' });
+      setInviteSlug('');
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al invitar', { position: 'bottom-right' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleExpelMember = async (orgSlug: string) => {
+    if (!confirm('¿Expulsar a este scan del joint?')) return;
+    try {
+      await callAPI(`/api/joint/${resourceSlug}/member/${orgSlug}`, { method: 'DELETE' });
+      toast.success('Miembro expulsado', { position: 'bottom-right' });
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al expulsar', { position: 'bottom-right' });
+    }
+  };
+
+  const handleTransferLeadership = async (orgSlug: string) => {
+    if (!confirm(`¿Transferir el liderazgo a ${orgSlug}? Tú pasarás a ser UPLOADER.`)) return;
+    try {
+      await callAPI(`/api/joint/${resourceSlug}/transfer`, {
+        method: 'PATCH',
+        body: JSON.stringify({ organizationSlug: orgSlug }),
+      });
+      toast.success('Liderazgo transferido', { position: 'bottom-right' });
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al transferir', { position: 'bottom-right' });
+    }
+  };
+
+  const handleDissolveJoint = async () => {
+    if (!confirm('¿Disolver el joint? Esto eliminará todos los capítulos del joint.')) return;
+    try {
+      await callAPI(`/api/joint/${resourceSlug}`, { method: 'DELETE' });
+      toast.success('Joint disuelto', { position: 'bottom-right' });
+      window.location.href = `/${organizationSlug}/admin/joints`;
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al disolver', { position: 'bottom-right' });
+    }
+  };
+
+  const toggleWorkedBy = (orgId: number) => {
+    setWorkedByIds(prev => prev.includes(orgId) ? prev.filter(id => id !== orgId) : [...prev, orgId]);
+  };
+
   const handleUpdateChapterDate = async (chapter: any, newDate: string | null, isUnreleased: boolean) => {
-    const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
     setUpdatingChapterDate(chapter.id);
     
     try {
@@ -1409,7 +1513,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       }
 
       const response = await callAPI(
-        `/api/manga-custom/${mangaSlug}/chapter/${chapter.number}`,
+        chapterUrl(chapter.number),
         {
           method: 'PATCH',
           body: JSON.stringify(requestBody),
@@ -1447,8 +1551,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       setUpdatingChapterDate(null);
     }
   };
-
-  const mangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
 
   return (
     <div className="pt-20 min-h-screen bg-zinc-950">
@@ -1501,17 +1603,29 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             </h1>
             <div className="flex items-center gap-4 mt-3">
             <p className="text-cyan-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-1.5">
-              <Settings2 size={12} /> Editor de Capítulos
+              {isJointMode ? <><Users size={12} /> Joint · Editor</> : <><Settings2 size={12} /> Editor de Capítulos</>}
             </p>
               <span className="text-zinc-700">•</span>
-              <a 
-                href={`/${organizationSlug}/manga/${mangaCustom?.manga?.slug || mangaCustom?.slug}`}
+              <a
+                href={isJointMode ? `/joint/manga/${resourceSlug}` : `/${organizationSlug}/manga/${resourceSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-400 hover:text-cyan-500 text-[9px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5"
               >
-                <BookOpen size={12} /> Ir al manga
+                <BookOpen size={12} /> {isJointMode ? 'Ver joint' : 'Ir al manga'}
               </a>
+              {isJointMode && myMember && (
+                <>
+                  <span className="text-zinc-700">•</span>
+                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                    isLeader ? 'bg-yellow-500/20 text-yellow-400'
+                    : myMember.role === 'UPLOADER' ? 'bg-blue-500/20 text-blue-400'
+                    : 'bg-zinc-800 text-zinc-400'
+                  }`}>
+                    {isLeader ? '★ Líder' : myMember.role === 'UPLOADER' ? 'Uploader' : 'Viewer'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1548,18 +1662,28 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           >
             <Settings2 size={14} /> Información
           </button>
-          <button 
+          {isJointMode && (
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'members' ? 'bg-zinc-800 text-cyan-400 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+            >
+              <Users size={14} /> Miembros
+            </button>
+          )}
+          <button
             onClick={() => setActiveTab('chapters')}
             className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'chapters' ? 'bg-zinc-800 text-cyan-400 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
           >
             <List size={14} /> Capítulos
           </button>
-          <button 
-            onClick={() => setActiveTab('upload')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'upload' ? 'bg-cyan-500 text-zinc-950 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
-          >
-            <UploadCloud size={14} /> {isEditingChapter ? 'Editar Capítulo' : 'Subir Capítulo'}
-          </button>
+          {(!isJointMode || canUpload) && (
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'upload' ? 'bg-cyan-500 text-zinc-950 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+            >
+              <UploadCloud size={14} /> {isEditingChapter ? 'Editar Capítulo' : 'Subir Capítulo'}
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
@@ -1971,9 +2095,39 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </div>
                     </div>
 
+                    {/* Worked by — joint only */}
+                    {isJointMode && (
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Trabajado por</label>
+                        <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
+                          Marca qué scans del joint participaron en este capítulo.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {jointMembers.filter((m: any) => m.status === 'ACCEPTED').map((m: any) => (
+                            <button
+                              key={m.organization.id}
+                              type="button"
+                              onClick={() => toggleWorkedBy(m.organization.id)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                                workedByIds.includes(m.organization.id)
+                                  ? 'bg-cyan-500 text-black'
+                                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                              }`}
+                            >
+                              {m.organization.logoUrl && (
+                                <img src={m.organization.logoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                              )}
+                              {m.organization.name}
+                              {workedByIds.includes(m.organization.id) && <Check size={12} />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Actions */}
                     <div className="pt-6 space-y-3 border-t border-zinc-800">
-                      <button 
+                      <button
                         onClick={handleSaveChapter}
                         disabled={loading || !newChapter.number || pages.length === 0}
                         className="w-full py-4 bg-cyan-500 text-zinc-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-cyan-500/10 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2001,6 +2155,138 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Miembros tab (joint only) ── */}
+          {isJointMode && activeTab === 'members' && (
+            <div className="space-y-6 max-w-5xl">
+              {canInviteJoint && (
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 space-y-4">
+                  <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <Plus size={14} className="text-cyan-500" /> Invitar scan
+                  </h3>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={inviteSlug}
+                      onChange={e => setInviteSlug(e.target.value)}
+                      placeholder="Slug del scan (ej: senshimanga)"
+                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-5 text-white text-sm focus:border-cyan-500 transition-all outline-none"
+                    />
+                    <select
+                      value={inviteRole}
+                      onChange={e => setInviteRole(e.target.value as 'UPLOADER' | 'VIEWER')}
+                      className="bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 text-white text-sm focus:border-cyan-500 outline-none"
+                    >
+                      <option value="UPLOADER">Uploader</option>
+                      <option value="VIEWER">Viewer</option>
+                    </select>
+                    <button
+                      onClick={handleInviteMember}
+                      disabled={inviting || !inviteSlug.trim()}
+                      className="bg-cyan-500 hover:bg-cyan-400 text-black font-black py-3 px-6 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {inviting ? '...' : 'Invitar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] overflow-hidden shadow-2xl">
+                <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Miembros del Joint</h3>
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1 block">
+                      {jointMembers.length} escáneres
+                    </span>
+                  </div>
+                  {isLeader && (
+                    <button
+                      onClick={handleDissolveJoint}
+                      className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black py-2 px-5 rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2"
+                    >
+                      <Trash2 size={12} /> Disolver joint
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-zinc-950/50 border-b border-zinc-800">
+                      <tr>
+                        <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Scan</th>
+                        <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest w-28">Rol</th>
+                        <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest w-28">Estado</th>
+                        {isLeader && <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right w-32">Acciones</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/50">
+                      {jointMembers.map((m: any) => (
+                        <tr key={m.id} className="hover:bg-zinc-800/20 transition-colors group">
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-3">
+                              {m.organization.logoUrl ? (
+                                <img
+                                  src={m.organization.logoUrl}
+                                  alt=""
+                                  className="w-8 h-8 rounded-full object-cover"
+                                  onError={(e: any) => { e.target.style.display = 'none'; }}
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-zinc-800" />
+                              )}
+                              <div>
+                                <p className="text-white font-bold text-sm">{m.organization.name}</p>
+                                <p className="text-zinc-500 text-xs">{m.organization.slug}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                              m.role === 'LEADER' ? 'bg-yellow-500/20 text-yellow-400'
+                                : m.role === 'UPLOADER' ? 'bg-blue-500/20 text-blue-400'
+                                : 'bg-zinc-700 text-zinc-400'
+                            }`}>
+                              {m.role === 'LEADER' ? '★ Líder' : m.role}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                              m.status === 'ACCEPTED' ? 'bg-green-500/10 text-green-400'
+                                : m.status === 'INVITED' ? 'bg-yellow-500/10 text-yellow-400'
+                                : 'bg-red-500/10 text-red-400'
+                            }`}>
+                              {m.status === 'ACCEPTED' ? 'Activo' : m.status === 'INVITED' ? 'Invitado' : 'Expulsado'}
+                            </span>
+                          </td>
+                          {isLeader && (
+                            <td className="px-8 py-5 text-right">
+                              {m.organization.id !== organization?.id && m.role !== 'LEADER' && m.status === 'ACCEPTED' && (
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleTransferLeadership(m.organization.slug)}
+                                    title="Transferir liderazgo"
+                                    className="p-2 bg-zinc-950 text-zinc-500 hover:text-yellow-400 border border-zinc-800 rounded-lg transition-all"
+                                  >
+                                    <ArrowRight size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleExpelMember(m.organization.slug)}
+                                    title="Expulsar"
+                                    className="p-2 bg-zinc-950 text-zinc-500 hover:text-red-400 border border-zinc-800 rounded-lg transition-all"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -2057,7 +2343,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     />
                   </div>
 
-                  {/* Géneros */}
+                  {/* Géneros (manga only — joints inherit from base manga) */}
+                  {!isJointMode && (
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Géneros</label>
                     <Autocomplete
@@ -2071,6 +2358,11 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       label=""
                     />
                   </div>
+                  )}
+
+                  {/* Suscripciones — solo manga */}
+                  {!isJointMode && (
+                  <>
 
                   {/* Suscripciones con Acceso Anticipado */}
                   <div className="space-y-3">
@@ -2123,6 +2415,9 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     );
                   })()}
 
+                  </>
+                  )}
+
                   {/* Estado de la obra */}
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Estado de la obra</label>
@@ -2152,7 +2447,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     </select>
                   </div>
 
-                  {/* Fecha de salida */}
+                  {/* Fecha de salida — manga only */}
+                  {!isJointMode && (
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
                       <Calendar size={12} /> Fecha de salida (Opcional)
@@ -2163,8 +2459,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       showTime={true}
                     />
                   </div>
+                  )}
 
-                  {/* Fecha del próximo capítulo */}
+                  {/* Fecha del próximo capítulo — manga only */}
+                  {!isJointMode && (
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
                       <Calendar size={12} /> Fecha del próximo capítulo (Opcional)
@@ -2175,20 +2473,24 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       showTime={true}
                     />
                   </div>
+                  )}
 
-                  {/* Mensaje del próximo capítulo */}
+                  {/* Mensaje del próximo capítulo — manga only */}
+                  {!isJointMode && (
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Mensaje del próximo capítulo (Opcional)</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={formData.nextChapterAtMessage}
                       onChange={(e) => setFormData({...formData, nextChapterAtMessage: e.target.value})}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-cyan-500 outline-none"
                       placeholder="Ej: ¡Próximo capítulo el 15 de marzo!"
                     />
                   </div>
+                  )}
 
-                  {/* Toggles */}
+                  {/* Toggles — manga only (joints don't have these flags) */}
+                  {!isJointMode && (
                   <div className="space-y-6 pt-4 border-t border-zinc-800">
                     {/* Manga con simul release */}
                     <div className="space-y-3">
@@ -2226,7 +2528,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Requiere inicio de sesión (Opcional)</span>
-                        <div 
+                        <div
                           onClick={() => setFormData({...formData, requireLogin: !formData.requireLogin})}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.requireLogin ? 'bg-yellow-500' : 'bg-zinc-800'}`}
                         >
@@ -2238,6 +2540,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </p>
                     </div>
                   </div>
+                  )}
 
                   {/* Save Button */}
                   <div className="pt-6 border-t border-zinc-800">
