@@ -627,7 +627,10 @@ export function Reader({
     }
 
     setLoading(true);
-    callAPI(`/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages`)
+    const pagesUrl = isJoint
+      ? `/api/joint/${jointSlug}/chapter/${chapterNumber}/pages`
+      : `/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages`;
+    callAPI(pagesUrl)
       .then((result) => {
         // callAPI ya extrae result.data, así que result es directamente el array de páginas
         // Si hay un error, callAPI lanza una excepción, así que si llegamos aquí, result es válido
@@ -668,6 +671,8 @@ export function Reader({
     chapterNumber,
     logged,
     manga?.requireLogin,
+    isJoint,
+    jointSlug,
   ]);
 
   // Compute effective prev/next navigation URLs
