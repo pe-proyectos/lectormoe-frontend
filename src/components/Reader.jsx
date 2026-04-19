@@ -419,8 +419,14 @@ export function Reader({
     ]
   );
 
+  // Detect joint chapter and extract joint slug from mangaUrl
+  const isJoint = mangaUrl && mangaUrl.startsWith('/joint/manga/');
+  const jointSlug = isJoint ? mangaUrl.replace('/joint/manga/', '').split('/')[0] : null;
+
   // Analytics - solo una vez por cambio de settings
+  // Skipped on joint pages because /api/analytics requires org context (x-organization) and joint URLs have none.
   useEffect(() => {
+    if (isJoint) return;
     callAPI('/api/analytics', {
       method: 'POST',
       body: JSON.stringify({
@@ -436,11 +442,7 @@ export function Reader({
         },
       }),
     }).catch(console.error);
-  }, [settings, mangaSlug, chapterNumber]);
-
-  // Detect joint chapter and extract joint slug from mangaUrl
-  const isJoint = mangaUrl && mangaUrl.startsWith('/joint/manga/');
-  const jointSlug = isJoint ? mangaUrl.replace('/joint/manga/', '').split('/')[0] : null;
+  }, [settings, mangaSlug, chapterNumber, isJoint]);
 
   // Save chapter history - con debounce
   useEffect(() => {
@@ -1292,7 +1294,7 @@ export function Reader({
           {/* Comments Section - Below Reader */}
           {chapterData.pages.length > 0 && !loading && (
             <CommentsSection
-              identifier={`${mangaSlug}_${chapterNumber}`}
+              identifier={isJoint ? `joint_${jointSlug}_${chapterNumber}` : `${mangaSlug}_${chapterNumber}`}
               logged={logged || false}
               user={user}
               organization={organization}

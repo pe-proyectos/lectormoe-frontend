@@ -1539,7 +1539,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
         {/* COMMENTS SECTION (FULL WIDTH) */}
         <CommentsSection
-          identifier={mangaSlug}
+          identifier={isJoint ? `joint_${mangaSlug}` : mangaSlug}
           logged={logged || false}
           user={user}
           organization={organization}
