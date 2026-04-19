@@ -76,7 +76,12 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 }) => {
   // El slug está en manga.manga.slug (relación anidada del mangaCustom)
   const mangaSlug = (manga as any)?.manga?.slug || manga.slug;
-  
+
+  // Joint pages reuse this component but don't have manga-custom-specific endpoints
+  // (favorites, history by manga_slug, view tracking, analytics with mangaSlug payload).
+  // Detect joint mode via the sentinel organization slug set by the joint Astro page.
+  const isJoint = organization?.slug === 'joint';
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [userChapterHistory, setUserChapterHistory] = useState<any[]>([]);
   const [selectedChapterGroup, setSelectedChapterGroup] = useState("");
@@ -119,51 +124,43 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
   }, []);
 
-  // Check if manga is favorite
+  // Check if manga/joint is favorite
   useEffect(() => {
-    if (logged) {
-      callAPI(`/api/favorites/manga-custom/${mangaSlug}`)
-        .then((value) => {
-          setIsFavorite(value);
-        })
-        .catch(() => {
-          // Not favorite or error
-        });
-    }
-  }, [logged, mangaSlug]);
+    if (!logged) return;
+    const endpoint = isJoint
+      ? `/api/joint/${mangaSlug}/favorite`
+      : `/api/favorites/manga-custom/${mangaSlug}`;
+    callAPI(endpoint)
+      .then((value) => { setIsFavorite(!!value); })
+      .catch(() => {});
+  }, [logged, mangaSlug, isJoint]);
 
-  // Fetch user chapter history
+  // Fetch user chapter history (manga-custom only — joints don't support manga_slug filter)
   useEffect(() => {
-    if (logged) {
-      callAPI(`/api/user-chapter-history?limit=1000&include_finished=true&manga_slug=${mangaSlug}`)
-        .then((result) => {
-          // El API retorna { items: [...], maxPage: X, total: Y }
-          if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-            setUserChapterHistory(result.items);
-          } else if (Array.isArray(result)) {
-            // Fallback si el API retorna directamente el array
-            setUserChapterHistory(result);
-          } else {
-            setUserChapterHistory([]);
-          }
-        })
-        .catch(() => {
-          setUserChapterHistory([]);
-        });
-    } else {
+    if (!logged || isJoint) {
       setUserChapterHistory([]);
+      return;
     }
-  }, [logged, mangaSlug]);
+    callAPI(`/api/user-chapter-history?limit=1000&include_finished=true&manga_slug=${mangaSlug}`)
+      .then((result) => {
+        if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+          setUserChapterHistory(result.items);
+        } else if (Array.isArray(result)) {
+          setUserChapterHistory(result);
+        } else {
+          setUserChapterHistory([]);
+        }
+      })
+      .catch(() => { setUserChapterHistory([]); });
+  }, [logged, mangaSlug, isJoint]);
 
-  // Track view when manga profile page is loaded
+  // Track view when profile page is loaded
   useEffect(() => {
     if (!mangaSlug) return;
+    if (isJoint) return; // joints don't use the manga-custom view endpoint
 
-    callAPI(`/api/views/manga-custom/${mangaSlug}`, {
-      method: 'POST'
-    }).catch(() => {})
+    callAPI(`/api/views/manga-custom/${mangaSlug}`, { method: 'POST' }).catch(() => {});
 
-    // Track analytics event
     callAPI('/api/analytics', {
       method: 'POST',
       includeIp: true,
@@ -175,8 +172,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         screenHeight: screen.height,
         payload: { mangaSlug },
       }),
-    }).catch(() => {})
-  }, [mangaSlug]);
+    }).catch(() => {});
+  }, [mangaSlug, isJoint]);
 
   // Fetch recommended mangas
   useEffect(() => {
@@ -779,14 +776,17 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     setFavoriteFeedback(null);
 
     try {
+      const favEndpoint = isJoint
+        ? `/api/joint/${mangaSlug}/favorite`
+        : `/api/favorites/manga-custom/${mangaSlug}`;
       if (wasFavorite) {
-        await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, { method: 'DELETE' });
+        await callAPI(favEndpoint, { method: 'DELETE' });
         setFavoriteFeedback({
           message: "Eliminado de favoritos",
           type: "success",
         });
       } else {
-        await callAPI(`/api/favorites/manga-custom/${mangaSlug}`, { method: 'POST' });
+        await callAPI(favEndpoint, { method: 'POST' });
         setFavoriteFeedback({
           message: "Agregado a favoritos. Recibirás emails cuando salgan nuevos capítulos",
           type: "success",
