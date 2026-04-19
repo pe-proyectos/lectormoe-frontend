@@ -3,7 +3,7 @@ import {
   Save, Plus, Calendar, BookOpen, UploadCloud, Trash2,
   Settings2, Layers, GripVertical, ZoomIn, ZoomOut,
   Map as MapIcon, CheckCircle2,
-  Camera, List, Info, Edit3, Download, ImageIcon, Clock
+  Camera, List, Info, Edit3, Download, ImageIcon, Clock, Users
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
@@ -220,6 +220,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [dragId, setDragId] = useState<string | null>(null);
 
   const [mangaCustom, setMangaCustom] = useState(initialMangaCustom);
+  const [activeJoint, setActiveJoint] = useState<{ slug: string; title: string } | null>(null);
   
   // Helper functions for date handling
   // Convert UTC date string (from API) to local datetime string for input[type="datetime-local"]
@@ -540,6 +541,16 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       loadSubscriptionPlans();
     }
   }, [activeTab]);
+
+  // Detect if the base manga is part of an active joint — chapter uploads must go through
+  // the joint admin so they reach every member scan, not just this one.
+  useEffect(() => {
+    const slug = initialMangaCustom?.manga?.slug || initialMangaCustom?.slug;
+    if (!slug) return;
+    callAPI(`/api/manga/${slug}/joint`)
+      .then((j: any) => { setActiveJoint(j && j.slug ? { slug: j.slug, title: j.title } : null); })
+      .catch(() => { setActiveJoint(null); });
+  }, [initialMangaCustom]);
 
   const loadGenres = async () => {
     try {
@@ -1507,7 +1518,28 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        
+
+        {/* Active-joint notice: base manga has a joint → chapter uploads must go through the joint admin */}
+        {activeJoint && (
+          <div className="mb-8 flex items-center gap-4 bg-cyan-500/10 border border-cyan-500/30 rounded-2xl px-6 py-4">
+            <Users size={20} className="text-cyan-400 shrink-0" />
+            <div className="flex-1 text-sm">
+              <p className="text-white font-bold">
+                Este manga es parte del joint <span className="text-cyan-400">{activeJoint.title}</span>
+              </p>
+              <p className="text-zinc-400 text-xs mt-0.5">
+                Los capítulos deben subirse desde el admin del joint para que lleguen a todos los scans participantes.
+              </p>
+            </div>
+            <a
+              href={`/${organizationSlug}/admin/joints/${activeJoint.slug}`}
+              className="bg-cyan-500 hover:bg-cyan-400 text-black font-black py-2 px-5 rounded-xl text-[10px] uppercase tracking-widest transition-colors whitespace-nowrap"
+            >
+              Ir al joint →
+            </a>
+          </div>
+        )}
+
         {/* Navigation Tabs */}
         <div className="flex items-center gap-1 p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl w-fit mb-10">
           <button 
