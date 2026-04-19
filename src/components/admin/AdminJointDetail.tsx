@@ -3,8 +3,9 @@ import { callAPI } from '@/util/callApi';
 import { toast, ToastContainer } from 'react-toastify';
 import {
   Settings2, List, UploadCloud, Users, Plus, Trash2,
-  Edit3, ArrowRight, BookOpen, Check,
+  Edit3, ArrowRight, BookOpen, Check, Download,
 } from 'lucide-react';
+import JSZip from 'jszip';
 import 'react-toastify/dist/ReactToastify.css';
 
 type TabType = 'info' | 'members' | 'chapters' | 'upload';
@@ -169,6 +170,36 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
       reload();
     } catch (e: any) {
       toast.error(e?.message || 'Error al eliminar', { position: 'bottom-right' });
+    }
+  };
+
+  const handleDownloadChapter = async (ch: any) => {
+    toast.info(`Descargando capítulo ${ch.number}...`, { position: 'bottom-right' });
+    try {
+      const pages = await callAPI(`/api/joint/${joint.slug}/chapter/${ch.number}/pages`);
+      if (!Array.isArray(pages) || pages.length === 0) {
+        toast.error('No hay páginas para descargar', { position: 'bottom-right' });
+        return;
+      }
+      const zip = new JSZip();
+      const folder = zip.folder(`Chapter ${ch.number}`);
+      const blobs = await Promise.all(
+        pages.map((p: any) => fetch(p.imageUrl).then(r => r.blob()))
+      );
+      blobs.forEach((blob, i) => {
+        folder?.file(`Page ${pages[i].number}.jpg`, blob, { type: 'blob' });
+      });
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${joint.slug} - Chapter ${ch.number}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al descargar', { position: 'bottom-right' });
     }
   };
 
@@ -666,15 +697,29 @@ const AdminJointDetail: React.FC<AdminJointDetailProps> = ({
                             </td>
                             <td className="px-8 py-6 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                {(isMine || canEditJoint) && (
-                                  <button
-                                    onClick={() => handleEditChapter(ch)}
-                                    className="p-2 bg-zinc-950 text-zinc-500 hover:text-cyan-400 border border-zinc-800 rounded-lg transition-all"
-                                    title="Editar"
-                                  >
-                                    <Edit3 size={16} />
-                                  </button>
-                                )}
+                                <a
+                                  href={`/joint/manga/${joint.slug}/chapters/${ch.number}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 bg-zinc-950 text-zinc-500 hover:text-white border border-zinc-800 rounded-lg transition-all"
+                                  title="Ver capítulo"
+                                >
+                                  <BookOpen size={16} />
+                                </a>
+                                <button
+                                  onClick={() => handleEditChapter(ch)}
+                                  className="p-2 bg-zinc-950 text-zinc-500 hover:text-cyan-400 border border-zinc-800 rounded-lg transition-all"
+                                  title={isMine || canEditJoint ? 'Editar' : 'Ver detalles (solo el uploader o el líder pueden guardar cambios)'}
+                                >
+                                  <Edit3 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDownloadChapter(ch)}
+                                  className="p-2 bg-zinc-950 text-zinc-500 hover:text-white border border-zinc-800 rounded-lg transition-all"
+                                  title="Descargar"
+                                >
+                                  <Download size={16} />
+                                </button>
                                 {canDelete && (
                                   <button
                                     onClick={() => handleDeleteChapter(ch.number)}
