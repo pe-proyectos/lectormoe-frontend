@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Star,
+  Bookmark,
   Share2,
   Eye,
   Download,
@@ -83,6 +84,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const isJoint = organization?.slug === 'joint';
 
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isInUserList, setIsInUserList] = useState(false);
+  const [userListFeedback, setUserListFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [userChapterHistory, setUserChapterHistory] = useState<any[]>([]);
   const [selectedChapterGroup, setSelectedChapterGroup] = useState("");
   const [chapterGroups, setChapterGroups] = useState<
@@ -134,6 +137,45 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       .then((value) => { setIsFavorite(!!value); })
       .catch(() => {});
   }, [logged, mangaSlug, isJoint]);
+
+  // Check if manga/joint is in user's 'Mi Lista'
+  useEffect(() => {
+    if (!logged) return;
+    const endpoint = isJoint
+      ? `/api/user-list/joint/${mangaSlug}`
+      : `/api/user-list/manga-custom/${mangaSlug}`;
+    callAPI(endpoint)
+      .then((value) => { setIsInUserList(!!value); })
+      .catch(() => {});
+  }, [logged, mangaSlug, isJoint]);
+
+  const handleToggleUserList = async () => {
+    if (!logged) {
+      window.location.href = '/login';
+      return;
+    }
+    const wasIn = isInUserList;
+    setIsInUserList(!wasIn);
+    setUserListFeedback(null);
+    try {
+      const endpoint = isJoint
+        ? `/api/user-list/joint/${mangaSlug}`
+        : `/api/user-list/manga-custom/${mangaSlug}`;
+      await callAPI(endpoint, { method: wasIn ? 'DELETE' : 'POST' });
+      setUserListFeedback({
+        message: wasIn ? 'Eliminado de tu lista' : 'Agregado a tu lista',
+        type: 'success',
+      });
+      setTimeout(() => setUserListFeedback(null), 3000);
+    } catch (error: any) {
+      setIsInUserList(wasIn);
+      setUserListFeedback({
+        message: error?.message || 'Error al actualizar la lista',
+        type: 'error',
+      });
+      setTimeout(() => setUserListFeedback(null), 3000);
+    }
+  };
 
   // Fetch user chapter history (manga-custom only — joints don't support manga_slug filter)
   useEffect(() => {
@@ -1071,6 +1113,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               {isFavorite ? "QUITAR DE FAVORITOS" : "AÑADIR A FAVORITOS"}
             </button>
 
+            <button
+              onClick={handleToggleUserList}
+              className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border-2 transition-all active:scale-95 ${
+                isInUserList
+                  ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20'
+                  : 'bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:border-cyan-500/50 hover:text-cyan-400'
+              }`}
+            >
+              <Bookmark size={18} fill={isInUserList ? 'currentColor' : 'none'} />
+              {isInUserList ? 'EN MI LISTA' : 'AÑADIR A MI LISTA'}
+            </button>
+
             {/* Feedback message */}
             {favoriteFeedback && (
               <div
@@ -1081,6 +1135,17 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 }`}
               >
                 {favoriteFeedback.message}
+              </div>
+            )}
+            {userListFeedback && (
+              <div
+                className={`p-4 rounded-2xl border text-sm font-bold text-center transition-all animate-in fade-in slide-in-from-top-2 ${
+                  userListFeedback.type === 'success'
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                    : 'bg-red-500/10 border-red-500/30 text-red-400'
+                }`}
+              >
+                {userListFeedback.message}
               </div>
             )}
 

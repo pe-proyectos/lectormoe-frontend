@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
-import MangaCard3D from './MangaCard3D';
+import SortableMangaList from './SortableMangaList';
 
 interface ProfilePageProps {
   user?: any;
@@ -87,6 +87,13 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const [favoritesTotal, setFavoritesTotal] = useState(0);
   const [loadingMoreFavorites, setLoadingMoreFavorites] = useState(false);
+
+  // 'Mi lista' — a second curated list, identical shape to favorites.
+  const [userList, setUserList] = useState<any[]>([]);
+  const [userListTotal, setUserListTotal] = useState(0);
+  const [loadingUserList, setLoadingUserList] = useState(true);
+  const [showAllUserList, setShowAllUserList] = useState(false);
+  const [loadingMoreUserList, setLoadingMoreUserList] = useState(false);
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [commentRank, setCommentRank] = useState<{ rank: number; count: number } | null>(null);
@@ -398,11 +405,18 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         try {
           setLoadingFavorites(true);
           const API_URL = import.meta.env['PUBLIC_API_URL'];
-          const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites`);
+          // Load a preview of 12 — total count comes in the response so we can show
+          // a 'Mostrar todos' button if there are more.
+          const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites?limit=12`);
           const result = await response.json();
-          if (result?.status === true && Array.isArray(result?.data)) {
-            setFavorites(result.data);
-            setFavoritesTotal(result.data.length);
+          const data = result?.data;
+          // New shape: { items, total }. Old shape (backward compat): bare array.
+          if (data && Array.isArray(data.items)) {
+            setFavorites(data.items);
+            setFavoritesTotal(data.total ?? data.items.length);
+          } else if (Array.isArray(data)) {
+            setFavorites(data);
+            setFavoritesTotal(data.length);
           } else {
             setFavorites([]);
             setFavoritesTotal(0);
@@ -420,6 +434,89 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       setLoadingFavorites(false);
     }
   }, [isOwner, logged, user, profileSlug]);
+
+  // Fetch Mi Lista — mirrors the favorites fetch above, against /api/user-list
+  useEffect(() => {
+    if (isOwner) {
+      if (!logged || !user) {
+        setLoadingUserList(false);
+        return;
+      }
+      const run = async () => {
+        try {
+          setLoadingUserList(true);
+          const result = await callAPI('/api/user-list?limit=12');
+          if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+            setUserList(result.items);
+            setUserListTotal(result.total || result.items.length);
+          } else if (Array.isArray(result)) {
+            setUserList(result);
+            setUserListTotal(result.length);
+          } else {
+            setUserList([]);
+            setUserListTotal(0);
+          }
+        } catch (error) {
+          console.error('Error fetching user list:', error);
+          setUserList([]);
+          setUserListTotal(0);
+        } finally {
+          setLoadingUserList(false);
+        }
+      };
+      run();
+    } else if (profileSlug) {
+      const run = async () => {
+        try {
+          setLoadingUserList(true);
+          const API_URL = import.meta.env['PUBLIC_API_URL'];
+          const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=12`);
+          const json = await r.json();
+          const data = json?.data;
+          if (data && Array.isArray(data.items)) {
+            setUserList(data.items);
+            setUserListTotal(data.total ?? data.items.length);
+          } else {
+            setUserList([]);
+            setUserListTotal(0);
+          }
+        } catch (error) {
+          console.error('Error fetching public user list:', error);
+          setUserList([]);
+          setUserListTotal(0);
+        } finally {
+          setLoadingUserList(false);
+        }
+      };
+      run();
+    } else {
+      setLoadingUserList(false);
+    }
+  }, [isOwner, logged, user, profileSlug]);
+
+  // Persist a reorder (optimistic). Called by <SortableMangaList>.
+  const persistReorder = async (endpoint: '/api/favorites/reorder' | '/api/user-list/reorder', ids: number[]) => {
+    try {
+      await callAPI(endpoint, {
+        method: 'PATCH',
+        body: JSON.stringify({ ids }),
+      });
+    } catch (error) {
+      console.error('Error saving order:', error);
+    }
+  };
+
+  const handleReorderFavorites = (newIds: number[]) => {
+    const byId = new Map(favorites.map((f: any) => [f.id, f]));
+    setFavorites(newIds.map((id, i) => ({ ...byId.get(id), order: i + 1 })));
+    persistReorder('/api/favorites/reorder', newIds);
+  };
+
+  const handleReorderUserList = (newIds: number[]) => {
+    const byId = new Map(userList.map((f: any) => [f.id, f]));
+    setUserList(newIds.map((id, i) => ({ ...byId.get(id), order: i + 1 })));
+    persistReorder('/api/user-list/reorder', newIds);
+  };
 
   // Fetch achievements
   useEffect(() => {
@@ -999,17 +1096,26 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             <section>
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Favoritos</span></h2>
-                {isOwner && favoritesTotal > 6 && !showAllFavorites && (
+                {favoritesTotal > (isOwner ? 6 : 12) && !showAllFavorites && (
                   <button
                     onClick={async () => {
                       if (favorites.length < favoritesTotal) {
                         setLoadingMoreFavorites(true);
                         try {
-                          const result = await callAPI(`/api/favorites?limit=${favoritesTotal}`);
-                          if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-                            setFavorites(result.items);
-                          } else if (Array.isArray(result)) {
-                            setFavorites(result);
+                          if (isOwner) {
+                            const result = await callAPI(`/api/favorites?limit=${favoritesTotal}`);
+                            if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+                              setFavorites(result.items);
+                            } else if (Array.isArray(result)) {
+                              setFavorites(result);
+                            }
+                          } else if (profileSlug) {
+                            const API_URL = import.meta.env['PUBLIC_API_URL'];
+                            const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites?limit=${favoritesTotal}`);
+                            const j = await r.json();
+                            const d = j?.data;
+                            if (d && Array.isArray(d.items)) setFavorites(d.items);
+                            else if (Array.isArray(d)) setFavorites(d);
                           }
                         } catch (error) {
                           console.error('Error loading all favorites:', error);
@@ -1037,61 +1143,19 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 </div>
               ) : favorites.length > 0 ? (
                 <>
-                  <div className={`grid grid-cols-2 ${isOwner ? 'md:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-6`}>
-                    {(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 12))
+                  <SortableMangaList
+                    entries={(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 12))
                       .filter((favorite: any) => {
-                        const mangaCustom = favorite.mangaCustom || favorite;
-                        const isNSFW = mangaCustom.isNSFW || mangaCustom.organization?.isNSFW || false;
+                        const source = favorite.joint || favorite.mangaCustom || favorite;
+                        const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
                         return nsfwMode ? isNSFW : !isNSFW;
-                      })
-                      .map((favorite: any) => {
-                      const mangaCustom = favorite.mangaCustom || favorite;
-                      const orgSlug = mangaCustom.organization?.slug || '';
-                      const orgBase = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
-
-                      const userHasSubscription = logged && user?.subscriptions?.some(
-                        (sub: any) => sub?.subscriptionPlan?.organizationId === mangaCustom.organization?.id && sub.active === true && sub?.subscriptionPlan?.canReadUnreleased === true
-                      ) || false;
-
-                      const chaptersWithReadStatus = (mangaCustom.chapters || []).map((chapter: any) => {
-                        const isRead = logged && user?.history?.some(
-                          (historyItem: any) => historyItem.chapterId === chapter.id && historyItem.finishedAt
-                        ) || false;
-
-                        return {
-                          id: chapter.id,
-                          number: chapter.number,
-                          title: chapter.title,
-                          releasedAt: chapter.releasedAt,
-                          chapterUrl: `${orgBase}/manga/${mangaCustom.manga?.slug || ''}/chapters/${chapter.number}`,
-                          isRead,
-                        };
-                      });
-
-                      return (
-                        <MangaCard3D
-                          key={mangaCustom.id || favorite.id}
-                          user={user}
-                          organization={mangaCustom.organization || organization}
-                          manga={{
-                            id: mangaCustom.id?.toString() || '',
-                            title: mangaCustom.title,
-                            cover: mangaCustom.imageUrl,
-                            scan: mangaCustom.organization?.name || '',
-                            scanName: mangaCustom.organization?.name || '',
-                            scanUrl: orgBase,
-                            mangaUrl: `${orgBase}/manga/${mangaCustom.manga?.slug || ''}`,
-                            status: mangaCustom.status || 'Ongoing',
-                            chapters: chaptersWithReadStatus,
-                            userHasSubscription: userHasSubscription,
-                            isNSFW: mangaCustom.isNSFW || mangaCustom.organization?.isNSFW || false,
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                  {isOwner && showAllFavorites && favoritesTotal > 6 && (
-                    <div className="mt-8 text-center">
+                      })}
+                    isOwner={!!isOwner}
+                    nsfwMode={nsfwMode}
+                    onReorder={handleReorderFavorites}
+                  />
+                  {showAllFavorites && favoritesTotal > 6 && (
+                    <div className="mt-6 text-center">
                       <button
                         onClick={() => setShowAllFavorites(false)}
                         className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-all mx-auto"
@@ -1104,6 +1168,86 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ) : (
                 <div className="text-center py-12 bg-zinc-900/40 border border-zinc-800 rounded-[32px]">
                   <p className="text-zinc-500 text-lg font-medium">{isOwner ? 'No tienes favoritos todavia' : 'No tiene favoritos todavia'}</p>
+                </div>
+              )}
+            </section>
+
+            {/* Mi Lista Section */}
+            <section>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                  {isOwner ? 'Mi' : 'Su'} <span className="text-cyan-500">Lista</span>
+                </h2>
+                {userListTotal > (isOwner ? 6 : 12) && !showAllUserList && (
+                  <button
+                    onClick={async () => {
+                      if (userList.length < userListTotal) {
+                        setLoadingMoreUserList(true);
+                        try {
+                          if (isOwner) {
+                            const result = await callAPI(`/api/user-list?limit=${userListTotal}`);
+                            if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+                              setUserList(result.items);
+                            } else if (Array.isArray(result)) {
+                              setUserList(result);
+                            }
+                          } else if (profileSlug) {
+                            const API_URL = import.meta.env['PUBLIC_API_URL'];
+                            const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=${userListTotal}`);
+                            const j = await r.json();
+                            const d = j?.data;
+                            if (d && Array.isArray(d.items)) setUserList(d.items);
+                          }
+                        } catch (error) {
+                          console.error('Error loading user list:', error);
+                        } finally {
+                          setLoadingMoreUserList(false);
+                        }
+                      }
+                      setShowAllUserList(true);
+                    }}
+                    disabled={loadingMoreUserList}
+                    className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMoreUserList ? 'Cargando...' : `Mostrar todos (${userListTotal})`} <ChevronRight size={14} />
+                  </button>
+                )}
+              </div>
+              {loadingUserList ? (
+                <div className="flex flex-col gap-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-16 bg-zinc-900/40 border border-zinc-800 rounded-2xl animate-pulse" />
+                  ))}
+                </div>
+              ) : userList.length > 0 ? (
+                <>
+                  <SortableMangaList
+                    entries={(showAllUserList ? userList : userList.slice(0, isOwner ? 6 : 12))
+                      .filter((entry: any) => {
+                        const source = entry.joint || entry.mangaCustom || entry;
+                        const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
+                        return nsfwMode ? isNSFW : !isNSFW;
+                      })}
+                    isOwner={!!isOwner}
+                    nsfwMode={nsfwMode}
+                    onReorder={handleReorderUserList}
+                  />
+                  {showAllUserList && userListTotal > 6 && (
+                    <div className="mt-6 text-center">
+                      <button
+                        onClick={() => setShowAllUserList(false)}
+                        className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-all mx-auto"
+                      >
+                        Mostrar menos <ChevronRight size={14} className="rotate-180" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12 bg-zinc-900/40 border border-zinc-800 rounded-[32px]">
+                  <p className="text-zinc-500 text-lg font-medium">
+                    {isOwner ? 'Tu lista está vacía. Agrega mangas desde su página.' : 'No tiene mangas en su lista.'}
+                  </p>
                 </div>
               )}
             </section>
