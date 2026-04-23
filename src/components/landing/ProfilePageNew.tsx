@@ -407,7 +407,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
           const API_URL = import.meta.env['PUBLIC_API_URL'];
           // Load a preview of 12 — total count comes in the response so we can show
           // a 'Mostrar todos' button if there are more.
-          const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites?limit=12`);
+          const response = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites?limit=5`);
           const result = await response.json();
           const data = result?.data;
           // New shape: { items, total }. Old shape (backward compat): bare array.
@@ -470,7 +470,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         try {
           setLoadingUserList(true);
           const API_URL = import.meta.env['PUBLIC_API_URL'];
-          const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=12`);
+          const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=10`);
           const json = await r.json();
           const data = json?.data;
           if (data && Array.isArray(data.items)) {
@@ -1096,7 +1096,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             <section>
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Favoritos</span></h2>
-                {favoritesTotal > (isOwner ? 6 : 12) && !showAllFavorites && (
+                {favoritesTotal > (isOwner ? 6 : 5) && !showAllFavorites && (
                   <button
                     onClick={async () => {
                       if (favorites.length < favoritesTotal) {
@@ -1144,7 +1144,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ) : favorites.length > 0 ? (
                 <>
                   <SortableMangaList
-                    entries={(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 12))
+                    entries={(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 5))
                       .filter((favorite: any) => {
                         const source = favorite.joint || favorite.mangaCustom || favorite;
                         const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
@@ -1178,7 +1178,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
                   {isOwner ? 'Mi' : 'Su'} <span className="text-cyan-500">Lista</span>
                 </h2>
-                {userListTotal > (isOwner ? 6 : 12) && !showAllUserList && (
+                {userListTotal > (isOwner ? 6 : 10) && !showAllUserList && (
                   <button
                     onClick={async () => {
                       if (userList.length < userListTotal) {
@@ -1222,7 +1222,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ) : userList.length > 0 ? (
                 <>
                   <SortableMangaList
-                    entries={(showAllUserList ? userList : userList.slice(0, isOwner ? 6 : 12))
+                    entries={(showAllUserList ? userList : userList.slice(0, isOwner ? 6 : 10))
                       .filter((entry: any) => {
                         const source = entry.joint || entry.mangaCustom || entry;
                         const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
