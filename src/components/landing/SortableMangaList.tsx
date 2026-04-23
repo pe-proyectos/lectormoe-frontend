@@ -51,7 +51,7 @@ function buildRow(entry: MangaListEntry, nsfwMode: boolean): RowViewModel | null
       subtitle: 'Joint',
       lastChapterLabel: latestChapter ? `Cap. ${latestChapter.number}` : null,
       isJoint: true,
-      isNSFW: !!j.isNSFW,
+      isNSFW: false, // MangaJoint has no isNSFW field — joints always public-safe
     };
   }
   // MangaCustom favorite row
