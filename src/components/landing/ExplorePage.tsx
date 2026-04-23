@@ -216,14 +216,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     }
   }, [isScanBranded, organization]);
 
-  // Fetch scans for filter
+  // Fetch scans for filter — load enough to cover the whole catalog (max 100)
   useEffect(() => {
     const fetchScans = async () => {
       try {
-        const result = await callAPI('/api/landing/scans');
-        if (Array.isArray(result)) {
-          setScans(result);
-        }
+        const result = await callAPI('/api/landing/scans?limit=100&sort=name');
+        const items = result?.items ?? result?.data?.items ?? (Array.isArray(result) ? result : []);
+        setScans(items);
       } catch (error) {
         console.error('Error fetching scans:', error);
       }

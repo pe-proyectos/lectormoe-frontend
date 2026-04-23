@@ -14,21 +14,13 @@ const SearchView: React.FC = () => {
       try {
         setLoading(true);
         const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/landing/scans`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+        const response = await fetch(`${API_URL}/api/landing/scans?limit=100&sort=name`, {
+          headers: { 'Content-Type': 'application/json' },
         });
-        
+
         const result = await response.json();
-        
-        if (result?.status === true && Array.isArray(result.data)) {
-          setScans(result.data);
-        } else {
-          console.warn('Scans response format unexpected:', result);
-          setScans([]);
-        }
+        const items = result?.data?.items ?? (Array.isArray(result?.data) ? result.data : []);
+        setScans(items);
       } catch (error) {
         console.error('Error fetching scans:', error);
         setScans([]);

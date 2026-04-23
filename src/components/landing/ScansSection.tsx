@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Users, ExternalLink, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Users, ExternalLink, ShieldCheck, AlertCircle, Eye, EyeOff, ChevronRight } from 'lucide-react';
 
 interface Scan {
   id: string; // This is the slug
@@ -22,6 +22,7 @@ interface Props {
 const ScansSection: React.FC<Props> = ({ onNavigate }) => {
   const [showNSFW, setShowNSFW] = useState(false);
   const [scans, setScans] = useState<Scan[]>([]);
+  const [totalScans, setTotalScans] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,31 +30,31 @@ const ScansSection: React.FC<Props> = ({ onNavigate }) => {
       try {
         setLoading(true);
         const API_URL = import.meta.env.PUBLIC_API_URL;
-        const response = await fetch(`${API_URL}/api/landing/scans${showNSFW ? '?includeNSFW=true' : ''}`, {
+        // Landing shows only the top 5 by followers — the full directory lives at /scans.
+        const qs = new URLSearchParams({ limit: '5', sort: 'followers' });
+        if (showNSFW) qs.set('includeNSFW', 'true');
+        const response = await fetch(`${API_URL}/api/landing/scans?${qs.toString()}`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
         });
-        
+
         const result = await response.json();
-        
-        if (result?.status === true && Array.isArray(result.data)) {
-          // Map the API response to ensure logo, banner, description and url are properly set
-          const mappedScans = result.data.map((scan: any) => ({
-            id: scan.id, // This is the slug
-            name: scan.name,
-            description: scan.description || '',
-            url: scan.url || `/${scan.id}`, // Use url if available, otherwise construct from id
-            logo: scan.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=128`, // Fallback to generated avatar
-            banner: scan.banner || null,
-            isNSFW: scan.isNSFW || false,
-            followerCount: scan.followerCount || 0,
-            genres: scan.genres || [],
-            totalMangas: scan.totalMangas || 0,
-          }));
-          setScans(mappedScans);
-        }
+        const items = result?.data?.items ?? [];
+
+        const mapped = items.map((scan: any) => ({
+          id: scan.id,
+          name: scan.name,
+          description: scan.description || '',
+          url: scan.url || `/${scan.id}`,
+          logo: scan.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=128`,
+          banner: scan.banner || null,
+          isNSFW: scan.isNSFW || false,
+          followerCount: scan.followerCount || 0,
+          genres: scan.genres || [],
+          totalMangas: scan.totalMangas || 0,
+        }));
+        setScans(mapped);
+        setTotalScans(result?.data?.total ?? mapped.length);
       } catch (error) {
         console.error('Error fetching scans:', error);
       } finally {
@@ -241,6 +242,17 @@ const ScansSection: React.FC<Props> = ({ onNavigate }) => {
             </div>
           )}
         </div>
+
+        {totalScans > filteredScans.length && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => onNavigate ? onNavigate('/scans') : window.location.href = '/scans'}
+              className="inline-flex items-center gap-3 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-black text-sm uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-cyan-500/10 active:scale-95"
+            >
+              Ver los {totalScans} scans del directorio <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

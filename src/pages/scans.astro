@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import ScansDirectoryPage from '../components/landing/ScansDirectoryPage';
+
+// @ts-ignore - showAds / nsfwMode set dynamically in middleware
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Directorio de Scans" showAds={showAds}>
+  <ScansDirectoryPage user={user} logged={logged} nsfwMode={nsfwMode} client:only="react" />
+</LandingLayout>

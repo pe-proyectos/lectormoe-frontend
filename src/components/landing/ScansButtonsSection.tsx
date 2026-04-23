@@ -22,25 +22,21 @@ const ScansButtonsSection: React.FC<Props> = ({ onNavigate, nsfwMode = false }) 
       try {
         setLoading(true);
         const API_URL = import.meta.env['PUBLIC_API_URL'];
-        const response = await fetch(`${API_URL}/api/landing/scans`, {
+        const response = await fetch(`${API_URL}/api/landing/scans?limit=10&sort=followers`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
         });
-        
+
         const result = await response.json();
-        
-        if (result?.status === true && Array.isArray(result.data)) {
-          // Map the API response to include logo
-          const mappedScans = result.data.slice(0, 10).map((scan: any) => ({
-            id: scan.id, // This is the slug
-            name: scan.name,
-            url: scan.url || `/${scan.id}`, // Use url if available, otherwise construct from id
-            logo: scan.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=32`, // Fallback to generated avatar
-          }));
-          setScans(mappedScans);
-        }
+        const items = result?.data?.items ?? [];
+
+        const mapped = items.map((scan: any) => ({
+          id: scan.id,
+          name: scan.name,
+          url: scan.url || `/${scan.id}`,
+          logo: scan.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=32`,
+        }));
+        setScans(mapped);
       } catch (error) {
         console.error('Error fetching scans:', error);
       } finally {
