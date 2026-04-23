@@ -252,7 +252,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [workedByIds, setWorkedByIds] = useState<number[]>([]);
 
   // ── URL helpers — swap between manga-custom and joint endpoints transparently ──
-  const resourceSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
+  // In joint mode the resource slug is the JOINT's own slug (e.g. 'foo-b' when the
+  // base manga slug 'foo' was already taken). Joints and their base manga share a
+  // `manga.slug` field in the payload, but that's the base manga — NOT the joint —
+  // and using it here caused all per-joint API calls to hit the wrong URL.
+  const resourceSlug = isJointMode
+    ? (mangaCustom?.slug || mangaCustom?.manga?.slug)
+    : (mangaCustom?.manga?.slug || mangaCustom?.slug);
   const resourceBase = () => isJointMode
     ? `/api/joint/${resourceSlug}`
     : `/api/manga-custom/${resourceSlug}`;
