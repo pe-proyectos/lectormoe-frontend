@@ -463,7 +463,9 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
           setStats({
             read: result.read || 0,
             toRead: result.toRead || 0,
-            favorites: favorites.length,
+            // Use the server-side total (across all orgs), not the paginated
+            // favorites array length — the profile loads only 6 by default.
+            favorites: favoritesTotal,
             accountAge: result.accountAge || 0,
             activeDaysStreak: result.activeDaysStreak || 0,
             streak: result.streak || 0,
@@ -480,7 +482,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
         setStats({
           read: 0,
           toRead: 0,
-          favorites: favorites.length,
+          favorites: favoritesTotal,
           accountAge: user.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0,
           activeDaysStreak: 0,
           streak: 0,
@@ -492,7 +494,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     };
 
     fetchStats();
-  }, [isOwner, logged, user, favorites]);
+  }, [isOwner, logged, user, favoritesTotal]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     if (!isUserPro && type === 'banner') return;
@@ -997,14 +999,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             <section>
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Favoritos</span></h2>
-                {isOwner && favorites.length > 6 && !showAllFavorites && (
+                {isOwner && favoritesTotal > 6 && !showAllFavorites && (
                   <button
                     onClick={async () => {
                       if (favorites.length < favoritesTotal) {
                         setLoadingMoreFavorites(true);
                         try {
                           const result = await callAPI(`/api/favorites?limit=${favoritesTotal}`);
-                          if (Array.isArray(result)) {
+                          if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
+                            setFavorites(result.items);
+                          } else if (Array.isArray(result)) {
                             setFavorites(result);
                           }
                         } catch (error) {
@@ -1018,7 +1022,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     disabled={loadingMoreFavorites}
                     className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loadingMoreFavorites ? 'Cargando...' : 'Mostrar todos'} <ChevronRight size={14} />
+                    {loadingMoreFavorites ? 'Cargando...' : `Mostrar todos (${favoritesTotal})`} <ChevronRight size={14} />
                   </button>
                 )}
               </div>
@@ -1086,7 +1090,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                       );
                     })}
                   </div>
-                  {isOwner && showAllFavorites && favorites.length > 6 && (
+                  {isOwner && showAllFavorites && favoritesTotal > 6 && (
                     <div className="mt-8 text-center">
                       <button
                         onClick={() => setShowAllFavorites(false)}
