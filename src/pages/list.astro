@@ -1,0 +1,16 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import UserListPage from '../components/landing/UserListPage';
+
+// @ts-ignore - middleware injected
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+
+if (!logged) {
+  return Astro.redirect('/login?redirect=/list');
+}
+---
+
+<LandingLayout title="Mi Lista" showAds={showAds}>
+  <UserListPage user={user} logged={logged} nsfwMode={nsfwMode} client:only="react" />
+</LandingLayout>

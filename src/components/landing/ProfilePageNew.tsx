@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare } from 'lucide-react';
+import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, ChevronDown, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare, ExternalLink } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
 import SortableMangaList from './SortableMangaList';
@@ -94,6 +94,33 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [loadingUserList, setLoadingUserList] = useState(true);
   const [showAllUserList, setShowAllUserList] = useState(false);
   const [loadingMoreUserList, setLoadingMoreUserList] = useState(false);
+
+  // Collapsible sections — 'Mi lista' is the only one open by default so the
+  // profile opens focused on the user's curated reading list.
+  const [openProgress, setOpenProgress] = useState(false);
+  const [openScans, setOpenScans] = useState(false);
+  const [openFavorites, setOpenFavorites] = useState(false);
+  const [openUserList, setOpenUserList] = useState(true);
+
+  // Client-side filter pills for the profile sections (type + status).
+  // These filter the already-loaded preview arrays — the full-filter UI lives on /list.
+  const [favoritesTypeFilter, setFavoritesTypeFilter] = useState<'all' | 'manga' | 'joint'>('all');
+  const [favoritesStatusFilter, setFavoritesStatusFilter] = useState<'all' | 'ongoing' | 'completed' | 'hiatus' | 'dropped'>('all');
+  const [userListTypeFilter, setUserListTypeFilter] = useState<'all' | 'manga' | 'joint'>('all');
+  const [userListStatusFilter, setUserListStatusFilter] = useState<'all' | 'ongoing' | 'completed' | 'hiatus' | 'dropped'>('all');
+
+  const applyEntryFilters = (entries: any[], typeFilter: string, statusFilter: string) => {
+    return entries.filter((e: any) => {
+      if (typeFilter === 'manga' && !e.mangaCustom) return false;
+      if (typeFilter === 'joint' && !e.joint) return false;
+      if (statusFilter !== 'all') {
+        const status = e.mangaCustom?.status;
+        // Joints have no status — keep them visible when a status filter is on
+        if (e.mangaCustom && status !== statusFilter) return false;
+      }
+      return true;
+    });
+  };
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [commentRank, setCommentRank] = useState<{ rank: number; count: number } | null>(null);
@@ -924,11 +951,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
         {/* Achievements */}
         <section className="mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+          <button
+            onClick={() => setOpenProgress(v => !v)}
+            className="w-full flex items-center justify-between mb-4 group"
+            aria-expanded={openProgress}
+          >
+            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+              <ChevronDown size={20} className={`text-zinc-500 group-hover:text-white transition-transform ${openProgress ? '' : '-rotate-90'}`} />
               <span className="text-yellow-500">Logros</span>
               {achievements.length > 0 && (
-                <span className="text-zinc-500 text-base ml-3 font-bold not-italic">
+                <span className="text-zinc-500 text-base ml-1 font-bold not-italic">
                   {achievements.filter((a: any) => a.unlocked).length}/{achievements.length}
                 </span>
               )}
@@ -936,7 +968,9 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
             <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
               <Trophy size={14} /> Progreso
             </div>
-          </div>
+          </button>
+          {openProgress && (
+          <><div className="mt-4">
           {loadingAchievements ? (
             <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
               {[...Array(12)].map((_, i) => (
@@ -986,6 +1020,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               <p className="text-zinc-500 text-sm font-medium">Los logros se desbloquean al leer, comentar y explorar</p>
             </div>
           )}
+          </div></>
+          )}
         </section>
 
         {/* Followed Scans, Favorites, Reading History */}
@@ -993,12 +1029,21 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
           <div className={`${isOwner ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-16`}>
             {/* Followed Scans Section */}
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-purple-500">Scans</span></h2>
+              <button
+                onClick={() => setOpenScans(v => !v)}
+                className="w-full flex items-center justify-between mb-4 group"
+                aria-expanded={openScans}
+              >
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                  <ChevronDown size={20} className={`text-zinc-500 group-hover:text-white transition-transform ${openScans ? '' : '-rotate-90'}`} />
+                  {isOwner ? 'Mis' : 'Sus'} <span className="text-purple-500">Scans</span>
+                </h2>
                 <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                   <Users size={14} /> {followedScans.filter(s => nsfwMode ? s.isNSFW : !s.isNSFW).length} seguido(s)
                 </div>
-              </div>
+              </button>
+              {openScans && (
+              <>
               {loadingScans ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[...Array(2)].map((_, i) => (
@@ -1090,12 +1135,37 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   <p className="text-zinc-500 text-lg font-medium">{isOwner ? 'No sigues ningun scan todavia' : 'No sigue ningun scan todavia'}</p>
                 </div>
               )}
+              </>
+              )}
             </section>
 
             {/* Favorites Section */}
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Favoritos</span></h2>
+              <button
+                onClick={() => setOpenFavorites(v => !v)}
+                className="w-full flex items-center justify-between mb-4 group"
+                aria-expanded={openFavorites}
+              >
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                  <ChevronDown size={20} className={`text-zinc-500 group-hover:text-white transition-transform ${openFavorites ? '' : '-rotate-90'}`} />
+                  {isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Favoritos</span>
+                  {favoritesTotal > 0 && <span className="text-zinc-600 text-base font-bold">({favoritesTotal})</span>}
+                </h2>
+              </button>
+              {openFavorites && (
+              <>
+              {favorites.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap mb-4">
+                  <FilterPill label="Todos" active={favoritesTypeFilter === 'all'} onClick={() => setFavoritesTypeFilter('all')} />
+                  <FilterPill label="Mangas" active={favoritesTypeFilter === 'manga'} onClick={() => setFavoritesTypeFilter('manga')} />
+                  <FilterPill label="Joints" active={favoritesTypeFilter === 'joint'} onClick={() => setFavoritesTypeFilter('joint')} />
+                  <span className="w-px h-5 bg-zinc-800 mx-1" />
+                  <FilterPill label="En curso" active={favoritesStatusFilter === 'ongoing'} onClick={() => setFavoritesStatusFilter(favoritesStatusFilter === 'ongoing' ? 'all' : 'ongoing')} />
+                  <FilterPill label="Completado" active={favoritesStatusFilter === 'completed'} onClick={() => setFavoritesStatusFilter(favoritesStatusFilter === 'completed' ? 'all' : 'completed')} />
+                  <FilterPill label="Hiatus" active={favoritesStatusFilter === 'hiatus'} onClick={() => setFavoritesStatusFilter(favoritesStatusFilter === 'hiatus' ? 'all' : 'hiatus')} />
+                </div>
+              )}
+              <div className="flex items-center justify-end mb-4">
                 {favoritesTotal > (isOwner ? 6 : 5) && !showAllFavorites && (
                   <button
                     onClick={async () => {
@@ -1133,6 +1203,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 )}
               </div>
               {loadingFavorites ? (
+              // Original loader fallthrough — rest of the original Favoritos block below
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-6 animate-pulse">
@@ -1144,12 +1215,15 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ) : favorites.length > 0 ? (
                 <>
                   <SortableMangaList
-                    entries={(showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 5))
-                      .filter((favorite: any) => {
+                    entries={applyEntryFilters(
+                      (showAllFavorites ? favorites : favorites.slice(0, isOwner ? 6 : 5)).filter((favorite: any) => {
                         const source = favorite.joint || favorite.mangaCustom || favorite;
                         const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
                         return nsfwMode ? isNSFW : !isNSFW;
-                      })}
+                      }),
+                      favoritesTypeFilter,
+                      favoritesStatusFilter,
+                    )}
                     isOwner={!!isOwner}
                     nsfwMode={nsfwMode}
                     onReorder={handleReorderFavorites}
@@ -1170,14 +1244,46 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   <p className="text-zinc-500 text-lg font-medium">{isOwner ? 'No tienes favoritos todavia' : 'No tiene favoritos todavia'}</p>
                 </div>
               )}
+              </>
+              )}
             </section>
 
             {/* Mi Lista Section */}
             <section>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+              <button
+                onClick={() => setOpenUserList(v => !v)}
+                className="w-full flex items-center justify-between mb-4 group"
+                aria-expanded={openUserList}
+              >
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                  <ChevronDown size={20} className={`text-zinc-500 group-hover:text-white transition-transform ${openUserList ? '' : '-rotate-90'}`} />
                   {isOwner ? 'Mi' : 'Su'} <span className="text-cyan-500">Lista</span>
+                  {userListTotal > 0 && <span className="text-zinc-600 text-base font-bold">({userListTotal})</span>}
                 </h2>
+                {isOwner && userListTotal > 0 && (
+                  <a
+                    href="/list"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[10px] font-black text-cyan-400 hover:text-cyan-300 uppercase tracking-widest flex items-center gap-1 transition-colors"
+                  >
+                    Ver lista completa <ExternalLink size={12} />
+                  </a>
+                )}
+              </button>
+              {openUserList && (
+              <>
+              {userList.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap mb-4">
+                  <FilterPill label="Todos" active={userListTypeFilter === 'all'} onClick={() => setUserListTypeFilter('all')} />
+                  <FilterPill label="Mangas" active={userListTypeFilter === 'manga'} onClick={() => setUserListTypeFilter('manga')} />
+                  <FilterPill label="Joints" active={userListTypeFilter === 'joint'} onClick={() => setUserListTypeFilter('joint')} />
+                  <span className="w-px h-5 bg-zinc-800 mx-1" />
+                  <FilterPill label="En curso" active={userListStatusFilter === 'ongoing'} onClick={() => setUserListStatusFilter(userListStatusFilter === 'ongoing' ? 'all' : 'ongoing')} />
+                  <FilterPill label="Completado" active={userListStatusFilter === 'completed'} onClick={() => setUserListStatusFilter(userListStatusFilter === 'completed' ? 'all' : 'completed')} />
+                  <FilterPill label="Hiatus" active={userListStatusFilter === 'hiatus'} onClick={() => setUserListStatusFilter(userListStatusFilter === 'hiatus' ? 'all' : 'hiatus')} />
+                </div>
+              )}
+              <div className="flex items-center justify-end mb-4">
                 {userListTotal > (isOwner ? 6 : 10) && !showAllUserList && (
                   <button
                     onClick={async () => {
@@ -1222,12 +1328,15 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ) : userList.length > 0 ? (
                 <>
                   <SortableMangaList
-                    entries={(showAllUserList ? userList : userList.slice(0, isOwner ? 6 : 10))
-                      .filter((entry: any) => {
+                    entries={applyEntryFilters(
+                      (showAllUserList ? userList : userList.slice(0, isOwner ? 6 : 10)).filter((entry: any) => {
                         const source = entry.joint || entry.mangaCustom || entry;
                         const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
                         return nsfwMode ? isNSFW : !isNSFW;
-                      })}
+                      }),
+                      userListTypeFilter,
+                      userListStatusFilter,
+                    )}
                     isOwner={!!isOwner}
                     nsfwMode={nsfwMode}
                     onReorder={handleReorderUserList}
@@ -1249,6 +1358,8 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     {isOwner ? 'Tu lista está vacía. Agrega mangas desde su página.' : 'No tiene mangas en su lista.'}
                   </p>
                 </div>
+              )}
+              </>
               )}
             </section>
           </div>
@@ -1582,5 +1693,18 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     </div>
   );
 };
+
+const FilterPill: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+      active
+        ? 'bg-cyan-500 text-zinc-950 shadow-lg shadow-cyan-500/10'
+        : 'bg-zinc-900/50 border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700'
+    }`}
+  >
+    {label}
+  </button>
+);
 
 export default ProfilePageNew;
