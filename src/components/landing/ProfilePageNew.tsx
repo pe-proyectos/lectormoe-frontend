@@ -1283,42 +1283,6 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   <FilterPill label="Hiatus" active={userListStatusFilter === 'hiatus'} onClick={() => setUserListStatusFilter(userListStatusFilter === 'hiatus' ? 'all' : 'hiatus')} />
                 </div>
               )}
-              <div className="flex items-center justify-end mb-4">
-                {userListTotal > (isOwner ? 6 : 10) && !showAllUserList && (
-                  <button
-                    onClick={async () => {
-                      if (userList.length < userListTotal) {
-                        setLoadingMoreUserList(true);
-                        try {
-                          if (isOwner) {
-                            const result = await callAPI(`/api/user-list?limit=${userListTotal}`);
-                            if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-                              setUserList(result.items);
-                            } else if (Array.isArray(result)) {
-                              setUserList(result);
-                            }
-                          } else if (profileSlug) {
-                            const API_URL = import.meta.env['PUBLIC_API_URL'];
-                            const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=${userListTotal}`);
-                            const j = await r.json();
-                            const d = j?.data;
-                            if (d && Array.isArray(d.items)) setUserList(d.items);
-                          }
-                        } catch (error) {
-                          console.error('Error loading user list:', error);
-                        } finally {
-                          setLoadingMoreUserList(false);
-                        }
-                      }
-                      setShowAllUserList(true);
-                    }}
-                    disabled={loadingMoreUserList}
-                    className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingMoreUserList ? 'Cargando...' : `Mostrar todos (${userListTotal})`} <ChevronRight size={14} />
-                  </button>
-                )}
-              </div>
               {loadingUserList ? (
                 <div className="flex flex-col gap-2">
                   {[...Array(4)].map((_, i) => (
@@ -1327,9 +1291,12 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 </div>
               ) : userList.length > 0 ? (
                 <>
+                  {/* Profile shows only the first 10 items. 'Ver lista completa'
+                      in the section header takes the user to /list for the full
+                      paginated view with filters, search, etc. */}
                   <SortableMangaList
                     entries={applyEntryFilters(
-                      (showAllUserList ? userList : userList.slice(0, isOwner ? 6 : 10)).filter((entry: any) => {
+                      userList.slice(0, 10).filter((entry: any) => {
                         const source = entry.joint || entry.mangaCustom || entry;
                         const isNSFW = source.isNSFW || source.organization?.isNSFW || false;
                         return nsfwMode ? isNSFW : !isNSFW;
@@ -1341,14 +1308,14 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     nsfwMode={nsfwMode}
                     onReorder={handleReorderUserList}
                   />
-                  {showAllUserList && userListTotal > 6 && (
-                    <div className="mt-6 text-center">
-                      <button
-                        onClick={() => setShowAllUserList(false)}
-                        className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-all mx-auto"
+                  {userListTotal > 10 && isOwner && (
+                    <div className="mt-4 text-center">
+                      <a
+                        href="/list"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
                       >
-                        Mostrar menos <ChevronRight size={14} className="rotate-180" />
-                      </button>
+                        Ver los {userListTotal} mangas en la vista completa <ExternalLink size={12} />
+                      </a>
                     </div>
                   )}
                 </>

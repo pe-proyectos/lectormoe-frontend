@@ -145,24 +145,25 @@ function Row({
         </div>
       </a>
 
-      {/* Title + subtitle */}
-      <a href={vm.href} className="flex-1 min-w-0 overflow-hidden">
-        <div className="flex items-center gap-2 min-w-0">
-          <h3 className={`font-bold text-sm truncate min-w-0 transition-colors ${
-            vm.isNSFW ? 'text-red-400 group-hover:text-red-300' : 'text-white group-hover:text-cyan-400'
-          }`}>
-            {vm.title}
-          </h3>
+      {/* Title + subtitle — use line-clamp + break-words so long titles wrap
+          instead of forcing the row to overflow the viewport. `truncate` sets
+          white-space: nowrap, which combined with the badges' shrink-0 was
+          overriding min-w-0 constraints on narrow screens. */}
+      <a href={vm.href} className="flex-1 min-w-0 overflow-hidden block">
+        <h3 className={`font-bold text-sm leading-snug break-words line-clamp-2 transition-colors ${
+          vm.isNSFW ? 'text-red-400 group-hover:text-red-300' : 'text-white group-hover:text-cyan-400'
+        }`}>
           {vm.isJoint && (
-            <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-[8px] font-black uppercase tracking-widest rounded flex items-center gap-1 shrink-0">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-[8px] font-black uppercase tracking-widest rounded align-middle mr-1">
               <Users size={8} /> Joint
             </span>
           )}
           {vm.isNSFW && !vm.isJoint && (
-            <span className="px-1.5 py-0.5 bg-red-500 text-zinc-950 text-[8px] font-black uppercase rounded tracking-tighter shrink-0">+18</span>
+            <span className="inline-flex items-center px-1.5 py-0.5 bg-red-500 text-zinc-950 text-[8px] font-black uppercase rounded tracking-tighter align-middle mr-1">+18</span>
           )}
-        </div>
-        <p className="text-[10px] text-zinc-500 truncate">{vm.subtitle}</p>
+          {vm.title}
+        </h3>
+        <p className="text-[10px] text-zinc-500 truncate mt-0.5">{vm.subtitle}</p>
       </a>
 
       {/* Last chapter */}
