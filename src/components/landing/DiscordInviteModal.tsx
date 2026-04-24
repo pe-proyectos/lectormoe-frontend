@@ -5,7 +5,9 @@ import { X, ExternalLink, Sparkles, Gift, Gamepad2, Users, Bell } from 'lucide-r
 // - 'forever'  → never show again
 // - ISO date string → snooze until that instant
 // Anything else (or missing) → show now
-const STORAGE_KEY = 'discord-invite-modal-v1';
+// Bumped to v2 when the giveaway announcement was added — users who had
+// dismissed v1 should still see this time-sensitive notice.
+const STORAGE_KEY = 'discord-invite-modal-v2';
 const DISCORD_INVITE = 'https://discord.gg/xJqCWAUxVt';
 const SNOOZE_MS = 60 * 60 * 1000; // 1 hour
 
@@ -70,24 +72,35 @@ const DiscordInviteModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative max-w-lg w-full bg-zinc-900 border border-zinc-800 rounded-[32px] overflow-hidden shadow-2xl">
-        {/* Subtle Discord brand gradient header */}
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-br from-indigo-500/30 via-violet-500/20 to-transparent pointer-events-none" />
-
+      <div className="relative max-w-lg w-full max-h-[92vh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-[32px] shadow-2xl">
         <button
           onClick={snooze}
           aria-label="Cerrar"
-          className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white hover:bg-zinc-800/50 rounded-xl transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-zinc-300 bg-black/40 hover:text-white hover:bg-black/60 rounded-xl transition-colors z-10 backdrop-blur"
         >
           <X size={18} />
         </button>
 
+        {/* Hero — sorteo image */}
+        <img
+          src="/images/dc.png"
+          alt="Sorteo CapibaraTraductor en Discord"
+          className="block w-full aspect-[4/3] object-cover"
+        />
+
         <div className="relative p-8 space-y-6">
-          {/* Discord logo mark */}
-          <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 127.14 96.36" fill="#818cf8" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
-            </svg>
+          {/* Giveaway callout */}
+          <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/5 p-4 flex items-start gap-3">
+            <span className="shrink-0 w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center text-yellow-300">
+              <Gift size={18} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black text-yellow-300 uppercase tracking-[0.25em] mb-1">¡Sorteo!</p>
+              <p className="text-sm text-zinc-200 leading-snug">
+                El primer sorteo arranca el <span className="font-bold text-white">lunes 27 de abril</span>. Tienes
+                {' '}<span className="font-bold text-white">24 horas</span> para entrar al Discord y votar el premio.
+              </p>
+            </div>
           </div>
 
           <div>

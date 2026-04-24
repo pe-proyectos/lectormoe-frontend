@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { MessageCircle, Eye, EyeOff, Trash2, RotateCcw, ThumbsUp, ThumbsDown, X, ArrowUpDown } from 'lucide-react';
+import { MessageCircle, Eye, EyeOff, Trash2, RotateCcw, ThumbsUp, ThumbsDown, X, ArrowUpDown, Reply, Send } from 'lucide-react';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
@@ -58,12 +58,40 @@ const getSubscriptionDays = (subscriptionDate: string) => {
   return diffDays;
 };
 
-const CommentCard = ({ comment, onHide, onDelete, onRestore, currentUser }: any) => {
+const CommentCard = ({ comment, onHide, onDelete, onRestore, onLike, onReply, currentUser }: any) => {
   const [showReplies, setShowReplies] = useState(true);
   const [showImage, setShowImage] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [replySending, setReplySending] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
 
   const isReply = comment.parentId !== null;
   const hasReplies = comment.replies && comment.replies.length > 0;
+  const isOwnComment = currentUser && comment.userId === currentUser.id;
+
+  const submitReply = async () => {
+    const text = replyText.trim();
+    if (!text || replySending) return;
+    setReplySending(true);
+    try {
+      await onReply(comment, text);
+      setReplyText('');
+      setReplyOpen(false);
+    } finally {
+      setReplySending(false);
+    }
+  };
+
+  const vote = async (like: boolean) => {
+    if (likeBusy || isOwnComment) return;
+    setLikeBusy(true);
+    try {
+      await onLike(comment.id, like);
+    } finally {
+      setLikeBusy(false);
+    }
+  };
 
   return (
     <Card className={`${isReply ? 'ml-8 border-l-4 border-l-cyan-500/30' : ''}`}>
@@ -152,17 +180,29 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, currentUser }: any)
           </div>
         )}
 
-        {/* Stats */}
-        <div className="flex items-center gap-4 text-sm text-zinc-500">
-          <span className="flex items-center gap-1">
+        {/* Stats / votes — clickable when not self-authored */}
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <button
+            type="button"
+            onClick={() => vote(true)}
+            disabled={isOwnComment || likeBusy || !!comment.deletedAt}
+            title={isOwnComment ? 'No puedes votar tu propio comentario' : 'Me gusta'}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500"
+          >
             <ThumbsUp size={14} />
             {comment.likesCount || 0}
-          </span>
-          <span className="flex items-center gap-1">
+          </button>
+          <button
+            type="button"
+            onClick={() => vote(false)}
+            disabled={isOwnComment || likeBusy || !!comment.deletedAt}
+            title={isOwnComment ? 'No puedes votar tu propio comentario' : 'No me gusta'}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500"
+          >
             <ThumbsDown size={14} />
             {comment.dislikesCount || 0}
-          </span>
-          <span>ID: {comment.identifier}</span>
+          </button>
+          <span className="ml-2">ID: {comment.identifier}</span>
         </div>
       </div>
 
@@ -170,10 +210,13 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, currentUser }: any)
       <div className="flex items-center gap-2 flex-wrap">
         {!comment.deletedAt && !comment.hiddenAt && (
           <>
+            <Button variant="primary" size="sm" onClick={() => setReplyOpen((v) => !v)}>
+              <Reply size={14} /> Responder
+            </Button>
             <Button variant="secondary" size="sm" onClick={() => onHide(comment)}>
               <EyeOff size={14} /> Ocultar
             </Button>
-            {currentUser && comment.userId === currentUser.id && (
+            {isOwnComment && (
               <Button variant="danger" size="sm" onClick={() => onDelete(comment.id)}>
                 <Trash2 size={14} /> Eliminar
               </Button>
@@ -186,6 +229,43 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, currentUser }: any)
           </Button>
         )}
       </div>
+
+      {/* Inline reply composer */}
+      {replyOpen && (
+        <div className="mt-4 p-3 rounded-lg bg-zinc-800/40 border border-zinc-700 space-y-2">
+          <Textarea
+            label={`Responder a ${comment.user?.username || 'este comentario'}`}
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder="Escribe tu respuesta..."
+            rows={3}
+          />
+          <p className="text-[11px] text-zinc-500">
+            {replyText.trim().length}/200 caracteres
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setReplyOpen(false);
+                setReplyText('');
+              }}
+              disabled={replySending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={submitReply}
+              disabled={replySending || !replyText.trim() || replyText.trim().length > 200}
+            >
+              <Send size={14} /> {replySending ? 'Enviando...' : 'Enviar'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Replies */}
       {hasReplies && showReplies && (
@@ -200,6 +280,8 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, currentUser }: any)
               onHide={onHide}
               onDelete={onDelete}
               onRestore={onRestore}
+              onLike={onLike}
+              onReply={onReply}
               currentUser={currentUser}
             />
           ))}
@@ -425,6 +507,36 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     handleRestoreComment(commentId);
   };
 
+  const handleLike = async (commentId: number, like: boolean) => {
+    try {
+      await callAPI(`/api/comment/${commentId}/like`, {
+        method: 'POST',
+        body: JSON.stringify({ like }),
+      });
+      refreshComments();
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al votar comentario');
+    }
+  };
+
+  const handleReply = async (parentComment: Comment, text: string) => {
+    try {
+      await callAPI('/api/comment', {
+        method: 'POST',
+        body: JSON.stringify({
+          identifier: parentComment.identifier,
+          comment: text,
+          parentId: parentComment.id.toString(),
+        }),
+      });
+      toast.success('Respuesta enviada');
+      refreshComments();
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al responder');
+      throw error;
+    }
+  };
+
   const uniqueIdentifiers = [...new Set(comments.map((c) => c.identifier))].sort();
 
   const stats = {
@@ -566,6 +678,8 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
               onHide={handleHide}
               onDelete={handleDelete}
               onRestore={handleRestore}
+              onLike={handleLike}
+              onReply={handleReply}
               currentUser={user}
             />
           ))}
