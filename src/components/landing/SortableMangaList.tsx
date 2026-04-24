@@ -1,5 +1,5 @@
 import React from 'react';
-import { GripVertical, BookOpen, ChevronRight, Users } from 'lucide-react';
+import { GripVertical, BookOpen, ChevronRight, Users, CheckCircle2, Circle } from 'lucide-react';
 import {
   DndContext,
   type DragEndEvent,
@@ -21,6 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 export interface MangaListEntry {
   id: number; // Favorite / UserList row id — used for reorder
   order?: number;
+  finishedAt?: string | null;
   mangaCustom?: any;
   joint?: any;
   // Convenience (built by callers for MangaCard-style entries)
@@ -79,11 +80,13 @@ function Row({
   index,
   isOwner,
   nsfwMode,
+  onToggleFinished,
 }: {
   entry: MangaListEntry;
   index: number;
   isOwner: boolean;
   nsfwMode: boolean;
+  onToggleFinished?: (entry: MangaListEntry, next: boolean) => void;
 }) {
   const {
     attributes,
@@ -173,6 +176,37 @@ function Row({
         )}
       </div>
 
+      {/* Finished / read indicator. Owner gets a clickable toggle; everyone else
+          just sees the current state. Entries without finishedAt support (e.g.
+          ad-hoc callers that don't persist it) render nothing. */}
+      {onToggleFinished ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleFinished(entry, !entry.finishedAt);
+          }}
+          className={`shrink-0 p-2 rounded-lg transition-colors ${
+            entry.finishedAt
+              ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10'
+              : 'text-zinc-600 hover:text-green-400 hover:bg-zinc-800/60'
+          }`}
+          title={entry.finishedAt ? 'Marcar como no leído' : 'Marcar como leído'}
+          aria-pressed={!!entry.finishedAt}
+        >
+          {entry.finishedAt ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+        </button>
+      ) : entry.finishedAt ? (
+        <div
+          className="shrink-0 text-green-400 p-2"
+          title="Leído"
+          aria-label="Leído"
+        >
+          <CheckCircle2 size={18} />
+        </div>
+      ) : null}
+
       {/* Chevron */}
       <a href={vm.href} className="shrink-0 text-zinc-600 group-hover:text-cyan-400 transition-colors">
         <ChevronRight size={16} />
@@ -188,9 +222,12 @@ interface Props {
   // Called when the user drops a row into a new position.
   // Receives the new ordered list of ids — callers should persist via API.
   onReorder?: (newIds: number[]) => void;
+  // Called when the user toggles the finished-reading indicator on a row.
+  // Only passed for owners; non-owners see a read-only badge.
+  onToggleFinished?: (entry: MangaListEntry, next: boolean) => void;
 }
 
-const SortableMangaList: React.FC<Props> = ({ entries, isOwner, nsfwMode = false, onReorder }) => {
+const SortableMangaList: React.FC<Props> = ({ entries, isOwner, nsfwMode = false, onReorder, onToggleFinished }) => {
   const sensors = useSensors(
     // Require 5px of movement before starting drag so clicks on the row link still work.
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -214,7 +251,14 @@ const SortableMangaList: React.FC<Props> = ({ entries, isOwner, nsfwMode = false
       <SortableContext items={entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2">
           {entries.map((entry, i) => (
-            <Row key={entry.id} entry={entry} index={i} isOwner={isOwner} nsfwMode={nsfwMode} />
+            <Row
+              key={entry.id}
+              entry={entry}
+              index={i}
+              isOwner={isOwner}
+              nsfwMode={nsfwMode}
+              onToggleFinished={isOwner ? onToggleFinished : undefined}
+            />
           ))}
         </div>
       </SortableContext>

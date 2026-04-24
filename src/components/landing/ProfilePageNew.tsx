@@ -545,6 +545,27 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     persistReorder('/api/user-list/reorder', newIds);
   };
 
+  // Toggle the 'finished reading' flag on a row. Optimistic update + PATCH.
+  // Reverts on error and logs; no blocking toast since the row UI already
+  // reflects the state and the action is low-stakes.
+  const handleToggleFinished = (kind: 'favorites' | 'user-list') => async (entry: any, next: boolean) => {
+    const listSetter = kind === 'favorites' ? setFavorites : setUserList;
+    const listValue = kind === 'favorites' ? favorites : userList;
+    const endpoint = kind === 'favorites'
+      ? `/api/favorites/${entry.id}/finished`
+      : `/api/user-list/${entry.id}/finished`;
+
+    // Optimistic
+    const now = next ? new Date().toISOString() : null;
+    listSetter(listValue.map((e: any) => e.id === entry.id ? { ...e, finishedAt: now } : e));
+    try {
+      await callAPI(endpoint, { method: 'PATCH', body: JSON.stringify({ finished: next }) });
+    } catch (e) {
+      console.error('Error toggling finished:', e);
+      listSetter(listValue); // revert
+    }
+  };
+
   // Fetch achievements
   useEffect(() => {
     if (isOwner) {
@@ -1227,6 +1248,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     isOwner={!!isOwner}
                     nsfwMode={nsfwMode}
                     onReorder={handleReorderFavorites}
+                    onToggleFinished={handleToggleFinished('favorites')}
                   />
                   {showAllFavorites && favoritesTotal > 6 && (
                     <div className="mt-6 text-center">
@@ -1260,9 +1282,9 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   {isOwner ? 'Mi' : 'Su'} <span className="text-cyan-500">Lista</span>
                   {userListTotal > 0 && <span className="text-zinc-600 text-base font-bold">({userListTotal})</span>}
                 </h2>
-                {isOwner && userListTotal > 0 && (
+                {userListTotal > 0 && (profileSlug || user?.slug) && (
                   <a
-                    href="/list"
+                    href={`/list/${profileSlug || user?.slug}`}
                     onClick={(e) => e.stopPropagation()}
                     className="text-[10px] font-black text-cyan-400 hover:text-cyan-300 uppercase tracking-widest flex items-center gap-1 transition-colors"
                   >
@@ -1307,11 +1329,12 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     isOwner={!!isOwner}
                     nsfwMode={nsfwMode}
                     onReorder={handleReorderUserList}
+                    onToggleFinished={handleToggleFinished('user-list')}
                   />
-                  {isOwner && (
+                  {(profileSlug || user?.slug) && (
                     <div className="mt-4 text-center">
                       <a
-                        href="/list"
+                        href={`/list/${profileSlug || user?.slug}`}
                         className="inline-flex items-center gap-2 px-6 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
                       >
                         {userListTotal > 10 ? `Ver los ${userListTotal} mangas en la vista completa` : 'Ver lista completa'} <ExternalLink size={12} />

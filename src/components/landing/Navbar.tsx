@@ -551,7 +551,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <UserIcon size={16} className="text-cyan-500" /> Mi perfil
                   </a>
                   <a
-                    href="/list"
+                    href={`/list/${user?.slug}`}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                   >
@@ -751,7 +751,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <UserIcon size={20} /> Mi Perfil
               </a>
               <a
-                href="/list"
+                href={`/list/${user?.slug}`}
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >

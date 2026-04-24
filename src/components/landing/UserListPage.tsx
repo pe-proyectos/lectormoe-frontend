@@ -9,6 +9,12 @@ interface Props {
   user?: any;
   logged?: boolean;
   nsfwMode?: boolean;
+  // When present, renders the list for this user slug. If the caller matches,
+  // `isOwner` lets us use the authenticated endpoint (richer filters, reorder).
+  // Otherwise we fall back to the public /api/user/profile/:slug/user-list
+  // endpoint, which is read-only.
+  profileSlug?: string;
+  isOwner?: boolean;
 }
 
 type SortKey = 'order' | 'recent' | 'title';
@@ -46,7 +52,12 @@ const writeQuery = (s: { search: string; sort: SortKey; type: TypeKey; status: S
   window.history.replaceState({}, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
 };
 
-const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
+const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profileSlug, isOwner: isOwnerProp }) => {
+  // Derive ownership client-side as a safety net (the Astro page already computed it,
+  // but the prop may be stale if navigating client-side in the future).
+  const isOwner = !!(isOwnerProp ?? (logged && user && profileSlug && user.slug === profileSlug));
+  // Non-owners can't reorder or use filters beyond what the public endpoint returns.
+  const usePublicEndpoint = !isOwner && !!profileSlug;
   const initial = useMemo(readQuery, []);
   const [search, setSearch] = useState(initial.search);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.search);
@@ -73,31 +84,68 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [debouncedSearch, sort, type, status, scan]);
 
-  // Fetch list
+  // Fetch list — owner uses authenticated endpoint (full filters + reorder);
+  // visitors use the read-only public endpoint and filter client-side.
   useEffect(() => {
-    if (!logged) return;
+    if (!profileSlug) return;
     const run = async () => {
       setLoading(true);
       try {
-        const qs = new URLSearchParams({
-          page: String(page),
-          limit: String(PAGE_SIZE),
-          sort,
-        });
-        if (debouncedSearch) qs.set('search', debouncedSearch);
-        if (type !== 'all') qs.set('type', type);
-        if (status !== 'all') qs.set('status', status);
-        if (scan) qs.set('scanSlug', scan);
+        if (usePublicEndpoint) {
+          const API_URL = import.meta.env.PUBLIC_API_URL;
+          // Pull the whole list in one go (capped at 500) — visitor filtering
+          // happens client-side so we avoid a round-trip per pill click.
+          const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=500`);
+          const json = await r.json();
+          const items = json?.data?.items ?? [];
+          const totalItems = json?.data?.total ?? items.length;
 
-        const result = await callAPI(`/api/user-list?${qs.toString()}`);
-        if (result && typeof result === 'object' && Array.isArray(result.items)) {
-          setEntries(result.items);
-          setTotal(result.total ?? 0);
-          setMaxPage(result.maxPage ?? 1);
-        } else {
-          setEntries([]);
-          setTotal(0);
-          setMaxPage(1);
+          const filtered = items.filter((e: any) => {
+            if (type === 'manga' && !e.mangaCustom) return false;
+            if (type === 'joint' && !e.joint) return false;
+            if (status !== 'all' && e.mangaCustom && e.mangaCustom.status !== status) return false;
+            if (scan && e.mangaCustom?.organization?.slug !== scan) return false;
+            if (debouncedSearch) {
+              const t = (e.mangaCustom?.title || e.joint?.title || '').toLowerCase();
+              if (!t.includes(debouncedSearch.toLowerCase())) return false;
+            }
+            return true;
+          });
+
+          // Local sort
+          if (sort === 'title') {
+            filtered.sort((a: any, b: any) => {
+              const at = (a.mangaCustom?.title || a.joint?.title || '').toLowerCase();
+              const bt = (b.mangaCustom?.title || b.joint?.title || '').toLowerCase();
+              return at.localeCompare(bt);
+            });
+          } else if (sort === 'recent') {
+            filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          }
+          // else: 'order' is already how the endpoint returns them
+
+          const pagedCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+          const start = (page - 1) * PAGE_SIZE;
+          setEntries(filtered.slice(start, start + PAGE_SIZE));
+          setTotal(debouncedSearch || type !== 'all' || status !== 'all' || scan ? filtered.length : totalItems);
+          setMaxPage(pagedCount);
+        } else if (isOwner) {
+          const qs = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sort });
+          if (debouncedSearch) qs.set('search', debouncedSearch);
+          if (type !== 'all') qs.set('type', type);
+          if (status !== 'all') qs.set('status', status);
+          if (scan) qs.set('scanSlug', scan);
+
+          const result = await callAPI(`/api/user-list?${qs.toString()}`);
+          if (result && typeof result === 'object' && Array.isArray(result.items)) {
+            setEntries(result.items);
+            setTotal(result.total ?? 0);
+            setMaxPage(result.maxPage ?? 1);
+          } else {
+            setEntries([]);
+            setTotal(0);
+            setMaxPage(1);
+          }
         }
       } catch (e) {
         console.error('Error fetching user list:', e);
@@ -110,16 +158,24 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
     };
     run();
     writeQuery({ search: debouncedSearch, sort, type, status, scan, page });
-  }, [debouncedSearch, sort, type, status, scan, page, logged]);
+  }, [debouncedSearch, sort, type, status, scan, page, profileSlug, isOwner, usePublicEndpoint]);
 
   // Populate the scan-filter dropdown from a single full pass on mount.
   // Uses limit=500 — profile lists are small and this only runs once.
   useEffect(() => {
-    if (!logged) return;
+    if (!profileSlug) return;
     (async () => {
       try {
-        const result = await callAPI('/api/user-list?limit=500');
-        const items = result?.items ?? [];
+        let items: any[] = [];
+        if (usePublicEndpoint) {
+          const API_URL = import.meta.env.PUBLIC_API_URL;
+          const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=500`);
+          const json = await r.json();
+          items = json?.data?.items ?? [];
+        } else if (isOwner) {
+          const result = await callAPI('/api/user-list?limit=500');
+          items = result?.items ?? [];
+        }
         const scans = new Map<string, string>();
         for (const it of items) {
           const org = it?.mangaCustom?.organization;
@@ -128,7 +184,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
         setAvailableScans(Array.from(scans.entries()).map(([slug, name]) => ({ slug, name })).sort((a, b) => a.name.localeCompare(b.name)));
       } catch {}
     })();
-  }, [logged]);
+  }, [profileSlug, isOwner, usePublicEndpoint]);
 
   const handleReorder = async (newIds: number[]) => {
     const byId = new Map(entries.map((e) => [e.id, e]));
@@ -137,6 +193,21 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
       await callAPI('/api/user-list/reorder', { method: 'PATCH', body: JSON.stringify({ ids: newIds }) });
     } catch (e) {
       console.error('Error saving order:', e);
+    }
+  };
+
+  const handleToggleFinished = async (entry: any, next: boolean) => {
+    const before = entries;
+    const now = next ? new Date().toISOString() : null;
+    setEntries(entries.map((e: any) => e.id === entry.id ? { ...e, finishedAt: now } : e));
+    try {
+      await callAPI(`/api/user-list/${entry.id}/finished`, {
+        method: 'PATCH',
+        body: JSON.stringify({ finished: next }),
+      });
+    } catch (e) {
+      console.error('Error toggling finished:', e);
+      setEntries(before);
     }
   };
 
@@ -169,15 +240,19 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
         <section className="border-b border-zinc-900 bg-gradient-to-b from-zinc-900/30 to-transparent">
           <div className="max-w-5xl mx-auto px-4 md:px-8 py-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
-              <Bookmark size={10} /> Biblioteca personal
+              <Bookmark size={10} /> {isOwner ? 'Biblioteca personal' : `Lista pública de @${profileSlug}`}
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">
-              Mi <span className="text-cyan-500">Lista</span>
+              {isOwner ? <>Mi <span className="text-cyan-500">Lista</span></> : <>Lista de <span className="text-cyan-500">@{profileSlug}</span></>}
             </h1>
             <p className="mt-3 text-zinc-500 max-w-2xl text-base">
               {total > 0
-                ? `${total} ${total === 1 ? 'manga guardado' : 'mangas guardados'}. Busca, filtra y reordena arrastrando.`
-                : 'Aún no tienes mangas en tu lista. Agrégalos desde la página de cada manga.'}
+                ? (isOwner
+                  ? `${total} ${total === 1 ? 'manga guardado' : 'mangas guardados'}. Busca, filtra y reordena arrastrando.`
+                  : `${total} ${total === 1 ? 'manga guardado' : 'mangas guardados'}. Busca y filtra para explorar.`)
+                : (isOwner
+                  ? 'Aún no tienes mangas en tu lista. Agrégalos desde la página de cada manga.'
+                  : 'Este usuario aún no tiene mangas en su lista.')}
             </p>
           </div>
         </section>
@@ -278,11 +353,11 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
                   const isNSFW = src.isNSFW || src.organization?.isNSFW || false;
                   return nsfwMode ? isNSFW : !isNSFW;
                 })}
-                isOwner={true}
+                isOwner={isOwner}
                 nsfwMode={nsfwMode}
-                // Reorder only makes sense on the default 'Mi orden' sort, so we disable
-                // persistence for other sorts to avoid writing a misleading order.
-                onReorder={sort === 'order' ? handleReorder : undefined}
+                // Reorder only makes sense for the owner on the default 'Mi orden' sort.
+                onReorder={isOwner && sort === 'order' ? handleReorder : undefined}
+                onToggleFinished={isOwner ? handleToggleFinished : undefined}
               />
 
               {maxPage > 1 && (
