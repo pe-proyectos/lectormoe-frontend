@@ -1,5 +1,5 @@
 import React from 'react';
-import { GripVertical, BookOpen, ChevronRight, Users, CheckCircle2, Circle } from 'lucide-react';
+import { GripVertical, BookOpen, ChevronRight, Users, CheckCircle2, Circle, Star } from 'lucide-react';
 import {
   DndContext,
   type DragEndEvent,
@@ -22,6 +22,9 @@ export interface MangaListEntry {
   id: number; // Favorite / UserList row id — used for reorder
   order?: number;
   finishedAt?: string | null;
+  // Caller-provided: whether this entry is also in the user's favorites
+  // (only relevant on the /list page where UserList + Favorite cross-references).
+  isFavorite?: boolean;
   mangaCustom?: any;
   joint?: any;
   // Convenience (built by callers for MangaCard-style entries)
@@ -81,12 +84,16 @@ function Row({
   isOwner,
   nsfwMode,
   onToggleFinished,
+  onToggleFavorite,
+  showFavoriteIndicator,
 }: {
   entry: MangaListEntry;
   index: number;
   isOwner: boolean;
   nsfwMode: boolean;
   onToggleFinished?: (entry: MangaListEntry, next: boolean) => void;
+  onToggleFavorite?: (entry: MangaListEntry, next: boolean) => void;
+  showFavoriteIndicator?: boolean;
 }) {
   const {
     attributes,
@@ -176,6 +183,35 @@ function Row({
         )}
       </div>
 
+      {/* Favorite indicator — outlined star by default, gold filled star when
+          the entry is also in the user's favorites. Owner can click to toggle;
+          non-owner just sees the state. Only rendered when the caller opts in
+          (showFavoriteIndicator), since regular favorites rows already ARE
+          favorites and don't need this marker. */}
+      {showFavoriteIndicator && onToggleFavorite ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleFavorite(entry, !entry.isFavorite);
+          }}
+          className={`shrink-0 p-2 rounded-lg transition-colors ${
+            entry.isFavorite
+              ? 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10'
+              : 'text-zinc-600 hover:text-yellow-400 hover:bg-zinc-800/60'
+          }`}
+          title={entry.isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+          aria-pressed={!!entry.isFavorite}
+        >
+          <Star size={18} fill={entry.isFavorite ? 'currentColor' : 'none'} />
+        </button>
+      ) : showFavoriteIndicator && entry.isFavorite ? (
+        <div className="shrink-0 text-yellow-400 p-2" title="En favoritos" aria-label="En favoritos">
+          <Star size={18} fill="currentColor" />
+        </div>
+      ) : null}
+
       {/* Finished / read indicator. Owner gets a clickable toggle; everyone else
           just sees the current state. Entries without finishedAt support (e.g.
           ad-hoc callers that don't persist it) render nothing. */}
@@ -225,9 +261,22 @@ interface Props {
   // Called when the user toggles the finished-reading indicator on a row.
   // Only passed for owners; non-owners see a read-only badge.
   onToggleFinished?: (entry: MangaListEntry, next: boolean) => void;
+  // Only relevant when rendering a UserList (shows whether each entry is
+  // also in the user's favorites). Pass onToggleFavorite for owners so the
+  // star is interactive.
+  showFavoriteIndicator?: boolean;
+  onToggleFavorite?: (entry: MangaListEntry, next: boolean) => void;
 }
 
-const SortableMangaList: React.FC<Props> = ({ entries, isOwner, nsfwMode = false, onReorder, onToggleFinished }) => {
+const SortableMangaList: React.FC<Props> = ({
+  entries,
+  isOwner,
+  nsfwMode = false,
+  onReorder,
+  onToggleFinished,
+  showFavoriteIndicator,
+  onToggleFavorite,
+}) => {
   const sensors = useSensors(
     // Require 5px of movement before starting drag so clicks on the row link still work.
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -258,6 +307,8 @@ const SortableMangaList: React.FC<Props> = ({ entries, isOwner, nsfwMode = false
               isOwner={isOwner}
               nsfwMode={nsfwMode}
               onToggleFinished={isOwner ? onToggleFinished : undefined}
+              showFavoriteIndicator={showFavoriteIndicator}
+              onToggleFavorite={isOwner ? onToggleFavorite : undefined}
             />
           ))}
         </div>

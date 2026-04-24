@@ -20,26 +20,41 @@ interface Props {
 type SortKey = 'order' | 'recent' | 'title';
 type TypeKey = 'all' | 'manga' | 'joint';
 type StatusKey = 'all' | 'ongoing' | 'completed' | 'hiatus' | 'dropped';
+type FinishedKey = 'all' | 'yes' | 'no';
 
 const PAGE_SIZE = 10;
 
-const readQuery = () => {
-  if (typeof window === 'undefined') return { search: '', sort: 'order' as SortKey, type: 'all' as TypeKey, status: 'all' as StatusKey, scan: '', page: 1 };
+interface FilterState {
+  search: string;
+  sort: SortKey;
+  type: TypeKey;
+  status: StatusKey;
+  scan: string;
+  finished: FinishedKey;
+  favoritesOnly: boolean;
+  page: number;
+}
+
+const readQuery = (): FilterState => {
+  if (typeof window === 'undefined') return { search: '', sort: 'order', type: 'all', status: 'all', scan: '', finished: 'all', favoritesOnly: false, page: 1 };
   const p = new URLSearchParams(window.location.search);
   const sort = p.get('sort');
   const type = p.get('type');
   const status = p.get('status');
+  const finished = p.get('finished');
   return {
     search: p.get('q') || '',
-    sort: (sort === 'recent' || sort === 'title' || sort === 'order') ? sort : 'order' as SortKey,
-    type: (type === 'manga' || type === 'joint') ? type : 'all' as TypeKey,
-    status: (status === 'ongoing' || status === 'completed' || status === 'hiatus' || status === 'dropped') ? status : 'all' as StatusKey,
+    sort: (sort === 'recent' || sort === 'title' || sort === 'order') ? sort : 'order',
+    type: (type === 'manga' || type === 'joint') ? type : 'all',
+    status: (status === 'ongoing' || status === 'completed' || status === 'hiatus' || status === 'dropped') ? status : 'all',
     scan: p.get('scan') || '',
+    finished: (finished === 'yes' || finished === 'no') ? finished : 'all',
+    favoritesOnly: p.get('favs') === '1',
     page: Math.max(1, parseInt(p.get('page') || '1', 10) || 1),
   };
 };
 
-const writeQuery = (s: { search: string; sort: SortKey; type: TypeKey; status: StatusKey; scan: string; page: number }) => {
+const writeQuery = (s: FilterState) => {
   if (typeof window === 'undefined') return;
   const p = new URLSearchParams();
   if (s.search) p.set('q', s.search);
@@ -47,6 +62,8 @@ const writeQuery = (s: { search: string; sort: SortKey; type: TypeKey; status: S
   if (s.type !== 'all') p.set('type', s.type);
   if (s.status !== 'all') p.set('status', s.status);
   if (s.scan) p.set('scan', s.scan);
+  if (s.finished !== 'all') p.set('finished', s.finished);
+  if (s.favoritesOnly) p.set('favs', '1');
   if (s.page > 1) p.set('page', String(s.page));
   const qs = p.toString();
   window.history.replaceState({}, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
@@ -65,6 +82,8 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   const [type, setType] = useState<TypeKey>(initial.type);
   const [status, setStatus] = useState<StatusKey>(initial.status);
   const [scan, setScan] = useState<string>(initial.scan);
+  const [finished, setFinished] = useState<FinishedKey>(initial.finished);
+  const [favoritesOnly, setFavoritesOnly] = useState<boolean>(initial.favoritesOnly);
   const [page, setPage] = useState(initial.page);
 
   const [entries, setEntries] = useState<any[]>([]);
@@ -75,6 +94,15 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   // Scan list for the filter dropdown — derived from whichever scans the user already has in their list.
   const [availableScans, setAvailableScans] = useState<{ slug: string; name: string }[]>([]);
 
+  // Set of "favorited" resource keys (`m:${mangaCustomId}` / `j:${jointId}`). Used to
+  // cross-reference each list entry — the star next to each row lights up when its
+  // underlying manga/joint is also in the user's favorites.
+  const [favoriteKeys, setFavoriteKeys] = useState<Set<string>>(new Set());
+  const favKey = (e: any) =>
+    e.joint ? `j:${e.joint.id || e.jointId}` :
+    e.mangaCustom ? `m:${e.mangaCustom.id || e.mangaCustomId}` :
+    (e.jointId ? `j:${e.jointId}` : (e.mangaCustomId ? `m:${e.mangaCustomId}` : null));
+
   // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -82,7 +110,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   }, [search]);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [debouncedSearch, sort, type, status, scan]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, sort, type, status, scan, finished, favoritesOnly]);
 
   // Fetch list — owner uses authenticated endpoint (full filters + reorder);
   // visitors use the read-only public endpoint and filter client-side.
@@ -98,13 +126,34 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
           const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/user-list?limit=500`);
           const json = await r.json();
           const items = json?.data?.items ?? [];
-          const totalItems = json?.data?.total ?? items.length;
+
+          // For the favoritesOnly pill on a visitor view, cross-reference against
+          // the visited user's public favorites (one shot).
+          let visitorFavKeys: Set<string> | null = null;
+          if (favoritesOnly) {
+            try {
+              const rf = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites?limit=500`);
+              const fj = await rf.json();
+              const favItems = fj?.data?.items ?? [];
+              visitorFavKeys = new Set<string>();
+              for (const f of favItems) {
+                if (f.mangaCustomId || f.mangaCustom?.id) visitorFavKeys.add(`m:${f.mangaCustomId ?? f.mangaCustom.id}`);
+                if (f.jointId || f.joint?.id) visitorFavKeys.add(`j:${f.jointId ?? f.joint.id}`);
+              }
+            } catch {}
+          }
 
           const filtered = items.filter((e: any) => {
             if (type === 'manga' && !e.mangaCustom) return false;
             if (type === 'joint' && !e.joint) return false;
             if (status !== 'all' && e.mangaCustom && e.mangaCustom.status !== status) return false;
             if (scan && e.mangaCustom?.organization?.slug !== scan) return false;
+            if (finished === 'yes' && !e.finishedAt) return false;
+            if (finished === 'no' && e.finishedAt) return false;
+            if (favoritesOnly && visitorFavKeys) {
+              const k = favKey(e);
+              if (!k || !visitorFavKeys.has(k)) return false;
+            }
             if (debouncedSearch) {
               const t = (e.mangaCustom?.title || e.joint?.title || '').toLowerCase();
               if (!t.includes(debouncedSearch.toLowerCase())) return false;
@@ -127,7 +176,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
           const pagedCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
           const start = (page - 1) * PAGE_SIZE;
           setEntries(filtered.slice(start, start + PAGE_SIZE));
-          setTotal(debouncedSearch || type !== 'all' || status !== 'all' || scan ? filtered.length : totalItems);
+          setTotal(filtered.length);
           setMaxPage(pagedCount);
         } else if (isOwner) {
           const qs = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sort });
@@ -135,6 +184,8 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
           if (type !== 'all') qs.set('type', type);
           if (status !== 'all') qs.set('status', status);
           if (scan) qs.set('scanSlug', scan);
+          if (finished !== 'all') qs.set('finished', finished);
+          if (favoritesOnly) qs.set('favoritesOnly', '1');
 
           const result = await callAPI(`/api/user-list?${qs.toString()}`);
           if (result && typeof result === 'object' && Array.isArray(result.items)) {
@@ -157,8 +208,8 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
       }
     };
     run();
-    writeQuery({ search: debouncedSearch, sort, type, status, scan, page });
-  }, [debouncedSearch, sort, type, status, scan, page, profileSlug, isOwner, usePublicEndpoint]);
+    writeQuery({ search: debouncedSearch, sort, type, status, scan, finished, favoritesOnly, page });
+  }, [debouncedSearch, sort, type, status, scan, finished, favoritesOnly, page, profileSlug, isOwner, usePublicEndpoint]);
 
   // Populate the scan-filter dropdown from a single full pass on mount.
   // Uses limit=500 — profile lists are small and this only runs once.
@@ -186,6 +237,32 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
     })();
   }, [profileSlug, isOwner, usePublicEndpoint]);
 
+  // Load all of the user's favorites once so we can light up the star on rows that
+  // are double-listed (both in their 'lista' and their favorites). Refetch when
+  // the viewed profile changes.
+  const reloadFavoriteKeys = async () => {
+    if (!profileSlug) return;
+    try {
+      let items: any[] = [];
+      if (isOwner) {
+        const result = await callAPI('/api/favorites?limit=500');
+        items = result?.items ?? [];
+      } else if (usePublicEndpoint) {
+        const API_URL = import.meta.env.PUBLIC_API_URL;
+        const r = await fetch(`${API_URL}/api/user/profile/${profileSlug}/favorites?limit=500`);
+        const json = await r.json();
+        items = json?.data?.items ?? [];
+      }
+      const s = new Set<string>();
+      for (const f of items) {
+        if (f.mangaCustomId || f.mangaCustom?.id) s.add(`m:${f.mangaCustomId ?? f.mangaCustom.id}`);
+        if (f.jointId || f.joint?.id) s.add(`j:${f.jointId ?? f.joint.id}`);
+      }
+      setFavoriteKeys(s);
+    } catch {}
+  };
+  useEffect(() => { reloadFavoriteKeys(); }, [profileSlug, isOwner, usePublicEndpoint]);
+
   const handleReorder = async (newIds: number[]) => {
     const byId = new Map(entries.map((e) => [e.id, e]));
     setEntries(newIds.map((id, i) => ({ ...byId.get(id), order: i + 1 })));
@@ -211,15 +288,42 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
     }
   };
 
+  // Toggle the manga/joint in the user's favorites (add/remove). The underlying
+  // endpoints are per-slug (not per-favorite-id), so we derive the right one.
+  const handleToggleFavorite = async (entry: any, next: boolean) => {
+    const key = favKey(entry);
+    if (!key) return;
+    const slug = entry.joint?.slug || entry.mangaCustom?.manga?.slug;
+    if (!slug) return;
+    const endpoint = entry.joint
+      ? `/api/joint/${slug}/favorite`
+      : `/api/favorites/manga-custom/${slug}`;
+
+    // Optimistic update on the cached Set
+    const before = new Set(favoriteKeys);
+    const nextSet = new Set(favoriteKeys);
+    if (next) nextSet.add(key); else nextSet.delete(key);
+    setFavoriteKeys(nextSet);
+
+    try {
+      await callAPI(endpoint, { method: next ? 'POST' : 'DELETE' });
+    } catch (e: any) {
+      console.error('Error toggling favorite:', e);
+      setFavoriteKeys(before);
+    }
+  };
+
   const clearAll = () => {
     setSearch('');
     setSort('order');
     setType('all');
+    setFinished('all');
+    setFavoritesOnly(false);
     setStatus('all');
     setScan('');
   };
 
-  const hasFilters = !!debouncedSearch || sort !== 'order' || type !== 'all' || status !== 'all' || !!scan;
+  const hasFilters = !!debouncedSearch || sort !== 'order' || type !== 'all' || status !== 'all' || !!scan || finished !== 'all' || favoritesOnly;
   const go = (p: string) => { if (typeof window !== 'undefined') window.location.href = p; };
 
   return (
@@ -298,6 +402,10 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
               <FilterPill label="Completado" active={status === 'completed'} onClick={() => setStatus('completed')} />
               <FilterPill label="Hiatus" active={status === 'hiatus'} onClick={() => setStatus('hiatus')} />
               <FilterPill label="Dropped" active={status === 'dropped'} onClick={() => setStatus('dropped')} />
+              <span className="w-px h-5 bg-zinc-800 mx-1" />
+              <FilterPill label="No leídos" active={finished === 'no'} onClick={() => setFinished(finished === 'no' ? 'all' : 'no')} />
+              <FilterPill label="Leídos" active={finished === 'yes'} onClick={() => setFinished(finished === 'yes' ? 'all' : 'yes')} />
+              <FilterPill label="★ Solo favoritos" active={favoritesOnly} onClick={() => setFavoritesOnly(v => !v)} />
               {availableScans.length > 0 && (
                 <>
                   <span className="w-px h-5 bg-zinc-800 mx-1" />
@@ -348,16 +456,23 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
           ) : (
             <>
               <SortableMangaList
-                entries={entries.filter((e: any) => {
-                  const src = e.joint || e.mangaCustom || e;
-                  const isNSFW = src.isNSFW || src.organization?.isNSFW || false;
-                  return nsfwMode ? isNSFW : !isNSFW;
-                })}
+                entries={entries
+                  .filter((e: any) => {
+                    const src = e.joint || e.mangaCustom || e;
+                    const isNSFW = src.isNSFW || src.organization?.isNSFW || false;
+                    return nsfwMode ? isNSFW : !isNSFW;
+                  })
+                  .map((e: any) => {
+                    const k = favKey(e);
+                    return { ...e, isFavorite: !!(k && favoriteKeys.has(k)) };
+                  })}
                 isOwner={isOwner}
                 nsfwMode={nsfwMode}
                 // Reorder only makes sense for the owner on the default 'Mi orden' sort.
                 onReorder={isOwner && sort === 'order' ? handleReorder : undefined}
                 onToggleFinished={isOwner ? handleToggleFinished : undefined}
+                showFavoriteIndicator
+                onToggleFavorite={isOwner ? handleToggleFavorite : undefined}
               />
 
               {maxPage > 1 && (
