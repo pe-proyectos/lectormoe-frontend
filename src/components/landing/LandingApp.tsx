@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Hero from './Hero';
 import FeaturedManga from './FeaturedManga';
+import PopularToday from './PopularToday';
 import LatestUpdates from './LatestUpdates';
 import PerOrgPopular from './PerOrgPopular';
 import ScansSection from './ScansSection';
@@ -11,7 +12,7 @@ import TopCommenters from './TopCommenters';
 import ScansButtonsSection from './ScansButtonsSection';
 import Footer from './Footer';
 import SearchView from './SearchView';
-import { Star } from 'lucide-react';
+import { Star, Flame } from 'lucide-react';
 
 interface LandingAppProps {
   user?: any;
@@ -80,8 +81,23 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false 
             {/* Scans Buttons Section */}
             <ScansButtonsSection nsfwMode={nsfwMode} onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
 
+            {/* Popular Today Section */}
+            <section className="max-w-[1600px] mx-auto px-4 md:px-8 pt-16 pb-8">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-orange-500 font-bold uppercase tracking-[0.2em] text-[10px]">
+                    <Flame size={12} fill="currentColor" /> Tendencias Globales
+                  </div>
+                  <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Populares del Día</h2>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
+                <PopularToday user={user} logged={logged} nsfwMode={nsfwMode} />
+              </div>
+            </section>
+
             {/* Featured Mangas Section */}
-            <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
+            <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-yellow-500 font-bold uppercase tracking-[0.2em] text-[10px]">
