@@ -12,6 +12,8 @@ import {
   Shield,
   Crown,
   Gift,
+  Bookmark,
+  MessageCircle,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 
@@ -549,6 +551,22 @@ const Navbar: React.FC<NavbarProps> = ({
                     <UserIcon size={16} className="text-cyan-500" /> Mi perfil
                   </a>
                   <a
+                    href="/list"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+                  >
+                    <Bookmark size={16} className="text-cyan-500" /> Mi lista
+                  </a>
+                  <a
+                    href="https://discord.gg/xJqCWAUxVt"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+                  >
+                    <MessageCircle size={16} className="text-indigo-400" /> Discord CapibaraTraductor
+                  </a>
+                  <a
                     href="/settings"
                     onClick={() => setProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
@@ -731,6 +749,22 @@ const Navbar: React.FC<NavbarProps> = ({
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >
                 <UserIcon size={20} /> Mi Perfil
+              </a>
+              <a
+                href="/list"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
+              >
+                <Bookmark size={20} /> Mi Lista
+              </a>
+              <a
+                href="https://discord.gg/xJqCWAUxVt"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center gap-4 text-indigo-400 font-bold text-lg"
+              >
+                <MessageCircle size={20} /> Discord CapibaraTraductor
               </a>
               <a
                 href="/settings"

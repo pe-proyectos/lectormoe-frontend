@@ -1308,13 +1308,13 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                     nsfwMode={nsfwMode}
                     onReorder={handleReorderUserList}
                   />
-                  {userListTotal > 10 && isOwner && (
+                  {isOwner && (
                     <div className="mt-4 text-center">
                       <a
                         href="/list"
                         className="inline-flex items-center gap-2 px-6 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all"
                       >
-                        Ver los {userListTotal} mangas en la vista completa <ExternalLink size={12} />
+                        {userListTotal > 10 ? `Ver los ${userListTotal} mangas en la vista completa` : 'Ver lista completa'} <ExternalLink size={12} />
                       </a>
                     </div>
                   )}

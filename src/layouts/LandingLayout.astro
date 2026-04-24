@@ -1,6 +1,7 @@
 ---
 // Sorteo ended — hidden until next giveaway
 // import SorteoModal from '../components/landing/SorteoModal';
+import DiscordInviteModal from '../components/landing/DiscordInviteModal';
 
 interface Props {
   title?: string;
@@ -112,6 +113,7 @@ const siteName =
   </head>
   <body>
     <slot />
+    <DiscordInviteModal client:only="react" />
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
     {/* Adsterra Social Bar - NSFW orgs only */}
