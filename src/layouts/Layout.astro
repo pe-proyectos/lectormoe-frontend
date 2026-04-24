@@ -24,7 +24,7 @@ const isDecember = new Date().getMonth() === 11;
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="description" content={description || organization?.description || "Mangas"} />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<link rel="icon" type="image/png" href={organization?.faviconUrl || "/images/faviconcaptrad.png"} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>

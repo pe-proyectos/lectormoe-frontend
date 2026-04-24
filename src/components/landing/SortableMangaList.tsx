@@ -108,7 +108,7 @@ function Row({
     <div
       ref={setNodeRef}
       style={style as React.CSSProperties}
-      className={`group flex items-center gap-4 bg-zinc-900/40 border rounded-2xl pr-4 py-2 pl-2 hover:bg-zinc-900/80 transition-colors ${
+      className={`group flex items-center gap-2 sm:gap-4 bg-zinc-900/40 border rounded-2xl pr-3 sm:pr-4 py-2 pl-2 hover:bg-zinc-900/80 transition-colors min-w-0 w-full overflow-hidden ${
         vm.isNSFW ? 'border-red-900/30 hover:border-red-500/30' : 'border-zinc-800 hover:border-cyan-500/30'
       } ${isDragging ? 'shadow-2xl' : ''}`}
     >
@@ -146,9 +146,9 @@ function Row({
       </a>
 
       {/* Title + subtitle */}
-      <a href={vm.href} className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className={`font-bold text-sm truncate transition-colors ${
+      <a href={vm.href} className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className={`font-bold text-sm truncate min-w-0 transition-colors ${
             vm.isNSFW ? 'text-red-400 group-hover:text-red-300' : 'text-white group-hover:text-cyan-400'
           }`}>
             {vm.title}

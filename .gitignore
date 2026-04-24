@@ -22,4 +22,4 @@ pnpm-debug.log*
 bun.lock
 
 # API code (for type inference only, not committed to git)
-lectormoe-api/
+lectormoe-api/Screenshot_*.jpg
