@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Bell, Loader2, CheckCheck } from 'lucide-react';
+import { Bell, Loader2, CheckCheck, MessageSquare, BookPlus, User, AlertCircle } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface NotificationItem {
@@ -11,6 +11,10 @@ interface NotificationItem {
   mangaCustomId: number | null;
   jointId: number | null;
   chapterId: number | null;
+  commentId?: number | null;
+  parentCommentId?: number | null;
+  subscriptionId?: number | null;
+  organizationId?: number | null;
   mangaCustom?: {
     id: number;
     title: string;
@@ -29,6 +33,26 @@ interface NotificationItem {
     id: number;
     number: number;
     title: string;
+  } | null;
+  comment?: {
+    id: number;
+    comment: string;
+    identifier: string;
+    user?: { username: string };
+  } | null;
+  parentComment?: {
+    id: number;
+    comment: string;
+    identifier: string;
+  } | null;
+  subscription?: {
+    id: number;
+    subscriptionPlan?: { name: string };
+  } | null;
+  organization?: {
+    id: number;
+    name: string;
+    slug: string;
   } | null;
 }
 
@@ -63,18 +87,109 @@ const formatRelative = (iso: string): string => {
   }
 };
 
-const buildChapterUrl = (n: NotificationItem): string | null => {
-  const chapterNumber = n.chapter?.number;
-  if (chapterNumber === undefined || chapterNumber === null) return null;
-  if (n.joint) {
-    return `/joint/manga/${n.joint.slug}/chapters/${chapterNumber}`;
+// Comment identifier format: `mangaSlug` or `mangaSlug_chapterNumber`. Mirrors
+// sendCommentReplyNotification's parser on the backend so links match.
+const buildCommentThreadUrl = (n: NotificationItem): string | null => {
+  if (!n.comment || !n.organization) return null;
+  const identifier = n.comment.identifier;
+  const lastUnderscore = identifier.lastIndexOf('_');
+  const orgSlug = n.organization.slug;
+  if (lastUnderscore > 0 && /^\d+$/.test(identifier.slice(lastUnderscore + 1))) {
+    const mangaSlug = identifier.slice(0, lastUnderscore);
+    const chapterNumber = identifier.slice(lastUnderscore + 1);
+    return `/${orgSlug}/manga/${mangaSlug}/chapters/${chapterNumber}`;
   }
-  if (n.mangaCustom?.organization?.slug && n.mangaCustom?.manga?.slug) {
-    const isNsfwPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/red');
-    const prefix = isNsfwPath ? '/red' : '';
-    return `${prefix}/${n.mangaCustom.organization.slug}/manga/${n.mangaCustom.manga.slug}/chapters/${chapterNumber}`;
+  return `/${orgSlug}/manga/${identifier}`;
+};
+
+const buildItemUrl = (n: NotificationItem): string | null => {
+  switch (n.type) {
+    case 'new_chapter': {
+      const chapterNumber = n.chapter?.number;
+      if (chapterNumber === undefined || chapterNumber === null) return null;
+      if (n.joint) return `/joint/manga/${n.joint.slug}/chapters/${chapterNumber}`;
+      if (n.mangaCustom?.organization?.slug && n.mangaCustom?.manga?.slug) {
+        const isNsfwPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/red');
+        const prefix = isNsfwPath ? '/red' : '';
+        return `${prefix}/${n.mangaCustom.organization.slug}/manga/${n.mangaCustom.manga.slug}/chapters/${chapterNumber}`;
+      }
+      return null;
+    }
+    case 'comment_reply':
+      return buildCommentThreadUrl(n);
+    case 'new_manga':
+      if (!n.mangaCustom?.manga?.slug) return null;
+      return `/${n.organization?.slug || n.mangaCustom.organization?.slug}/manga/${n.mangaCustom.manga.slug}`;
+    case 'new_subscriber':
+      if (!n.organization?.slug) return null;
+      return `/${n.organization.slug}/admin/subscription-plans`;
+    case 'failed_payment':
+      if (!n.organization?.slug) return null;
+      return `/${n.organization.slug}/admin/finance`;
+    default:
+      return null;
   }
-  return null;
+};
+
+const truncate = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n)}...` : s);
+
+const formatItem = (n: NotificationItem): { title: string; subtitle: string } => {
+  const rel = formatRelative(n.createdAt);
+  switch (n.type) {
+    case 'comment_reply': {
+      const replier = n.comment?.user?.username || 'Alguien';
+      const original = n.parentComment?.comment ? truncate(n.parentComment.comment, 40) : '';
+      return {
+        title: `${replier} respondió a tu comentario`,
+        subtitle: original ? `${original} · ${rel}` : rel,
+      };
+    }
+    case 'new_manga': {
+      const mangaTitle = n.mangaCustom?.title || 'Nuevo manga';
+      const orgName = n.organization?.name || n.mangaCustom?.organization?.name || '';
+      return {
+        title: `Nuevo manga: ${mangaTitle}`,
+        subtitle: orgName ? `${orgName} · ${rel}` : rel,
+      };
+    }
+    case 'new_subscriber': {
+      const orgName = n.organization?.name || '';
+      const planName = n.subscription?.subscriptionPlan?.name || 'Plan';
+      return {
+        title: `Nuevo suscriptor en ${orgName}`,
+        subtitle: `${planName} · ${rel}`,
+      };
+    }
+    case 'failed_payment': {
+      const orgName = n.organization?.name || '';
+      const subId = n.subscription?.id ?? n.subscriptionId ?? '';
+      return {
+        title: `Pago fallido en ${orgName}`,
+        subtitle: `Suscripción #${subId} · ${rel}`,
+      };
+    }
+    case 'new_chapter':
+    default: {
+      const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
+      const chapterLabel = n.chapter?.number !== undefined ? `Capítulo ${n.chapter.number}` : 'Nuevo capítulo';
+      return { title, subtitle: `${chapterLabel} · ${rel}` };
+    }
+  }
+};
+
+const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 14 }) => {
+  switch (type) {
+    case 'comment_reply':
+      return <MessageSquare size={size} className="text-cyan-400" />;
+    case 'new_manga':
+      return <BookPlus size={size} className="text-cyan-400" />;
+    case 'new_subscriber':
+      return <User size={size} className="text-cyan-400" />;
+    case 'failed_payment':
+      return <AlertCircle size={size} className="text-red-400" />;
+    default:
+      return <Bell size={size} className="text-zinc-600" />;
+  }
 };
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = 'desktop' }) => {
@@ -137,7 +252,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
   };
 
   const handleItemClick = async (n: NotificationItem) => {
-    const url = buildChapterUrl(n);
+    const url = buildItemUrl(n);
     if (!n.readAt) {
       // Optimistic update so the bell badge feels instant.
       setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, readAt: new Date().toISOString() } : p)));
@@ -227,9 +342,9 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
               <ul className="divide-y divide-zinc-800/70">
                 {items.map((n) => {
                   const cover = n.joint?.imageUrl || n.mangaCustom?.imageUrl || null;
-                  const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
-                  const chapterLabel = n.chapter?.number !== undefined ? `Capítulo ${n.chapter.number}` : 'Nuevo capítulo';
+                  const { title, subtitle } = formatItem(n);
                   const isUnread = !n.readAt;
+                  const showCover = cover && (n.type === 'new_chapter' || n.type === 'new_manga');
                   return (
                     <li key={n.id}>
                       <button
@@ -240,11 +355,11 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
                         }`}
                       >
                         <div className="relative w-10 h-14 flex-shrink-0 rounded-md overflow-hidden bg-zinc-800">
-                          {cover ? (
-                            <img src={cover} alt="" className="w-full h-full object-cover" />
+                          {showCover ? (
+                            <img src={cover!} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Bell size={14} className="text-zinc-600" />
+                              <ThumbIcon type={n.type} size={16} />
                             </div>
                           )}
                           {isUnread && (
@@ -255,8 +370,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
                           <p className={`text-sm font-bold truncate ${isUnread ? 'text-white' : 'text-zinc-400'}`}>
                             {title}
                           </p>
-                          <p className={`text-xs mt-0.5 ${isUnread ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                            {chapterLabel} <span className="text-zinc-600">·</span> {formatRelative(n.createdAt)}
+                          <p className={`text-xs mt-0.5 truncate ${isUnread ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                            {subtitle}
                           </p>
                         </div>
                       </button>
