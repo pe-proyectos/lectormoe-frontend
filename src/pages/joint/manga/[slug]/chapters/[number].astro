@@ -15,6 +15,12 @@ try {
 
 if (!chapterData) return Astro.redirect('/404');
 
+// Soft-deleted joint fallback: backend may return a redirect target to a
+// former participant's solo URL.
+if (chapterData.redirectTo) {
+  return Astro.redirect(chapterData.redirectTo, 302);
+}
+
 const { chapter, prevChapter, nextChapter, joint } = chapterData;
 
 if (!chapter || !joint) return Astro.redirect('/404');

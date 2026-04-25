@@ -20,7 +20,7 @@ const manga = mangaResult;
 
 // Si el manga pertenece a un joint, redirigir a la página del joint
 if (manga?.jointSlug) {
-  return Astro.redirect(`/joint/manga/${manga.jointSlug}`, 301);
+  return Astro.redirect(`/joint/manga/${manga.jointSlug}`, 302);
 }
 
 if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {

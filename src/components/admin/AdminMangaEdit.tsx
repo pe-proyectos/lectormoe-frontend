@@ -1463,13 +1463,93 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   };
 
   const handleDissolveJoint = async () => {
-    if (!confirm('¿Disolver el joint? Esto eliminará todos los capítulos del joint.')) return;
+    const myCount = (chapters || []).filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id).length;
+    const otherCount = (chapters || []).length - myCount;
+    const msg = `¿Disolver el joint?\nCaps a detach:\n  - tu org: ${myCount}\n  - otros miembros: ${otherCount}\nLos capítulos se moverán a cada scan que los subió.`;
+    if (!confirm(msg)) return;
     try {
       await callAPI(`/api/joint/${resourceSlug}`, { method: 'DELETE' });
       toast.success('Joint disuelto', { position: 'bottom-right' });
       window.location.href = `/${organizationSlug}/admin/joints`;
     } catch (e: any) {
       toast.error(e?.message || 'Error al disolver', { position: 'bottom-right' });
+    }
+  };
+
+  const handleLeaveJoint = async () => {
+    const myCount = (chapters || []).filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id).length;
+    const msg = `¿Salir del joint?\nVas a sacar ${myCount} capítulos uploaded por tu scan, que volverán a tu MangaCustom.`;
+    if (!confirm(msg)) return;
+    try {
+      const res = await callAPI(`/api/joint/${resourceSlug}/leave`, { method: 'POST' });
+      const moved = res?.moved ?? 0;
+      const conflicts = res?.conflicts ?? 0;
+      const auto = res?.autoDissolved ? ' Joint disuelto (último miembro).' : '';
+      toast.success(`Saliste del joint. ${moved} capítulos detached${conflicts ? `, ${conflicts} conflictos resueltos` : ''}.${auto}`, { position: 'bottom-right' });
+      window.location.href = `/${organizationSlug}/admin/joints`;
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al salir del joint', { position: 'bottom-right' });
+    }
+  };
+
+  const handlePromoteChapter = async (chapterId: number) => {
+    if (!confirm('¿Mover este capítulo al joint? Será visible bajo el joint y dejará de estar en tu scan.')) return;
+    try {
+      await callAPI(`/api/joint/${resourceSlug}/chapters/${chapterId}/promote`, { method: 'POST' });
+      toast.success('Capítulo movido al joint', { position: 'bottom-right' });
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al promover', { position: 'bottom-right' });
+    }
+  };
+
+  const handleDemoteChapter = async (chapterId: number, opts: { replace?: boolean } = {}) => {
+    try {
+      const url = `/api/joint/${resourceSlug}/chapters/${chapterId}/demote${opts.replace ? '?replace=1' : ''}`;
+      const res = await callAPI(url, { method: 'POST' });
+      if (res?.conflict) {
+        if (confirm('Tu scan ya tiene un capítulo con ese número. ¿Reemplazarlo? El existente será movido a la papelera.')) {
+          return handleDemoteChapter(chapterId, { replace: true });
+        }
+        return;
+      }
+      toast.success('Capítulo movido a tu scan', { position: 'bottom-right' });
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al demover', { position: 'bottom-right' });
+    }
+  };
+
+  const handleBulkMove = async (direction: 'promote' | 'demote', chapterIds: number[]) => {
+    if (chapterIds.length === 0) return;
+    if (!confirm(`¿Mover ${chapterIds.length} capítulos al ${direction === 'promote' ? 'joint' : 'scan'}?`)) return;
+    try {
+      const res = await callAPI(`/api/joint/${resourceSlug}/chapters/bulk-move`, {
+        method: 'POST',
+        body: JSON.stringify({ chapterIds, direction }),
+      });
+      const moved = res?.moved ?? 0;
+      const skipped = res?.skipped?.length ?? 0;
+      const confs = res?.conflicts?.length ?? 0;
+      toast.success(`Movidos: ${moved}. Omitidos: ${skipped}. Conflictos: ${confs}.`, { position: 'bottom-right' });
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error en bulk move', { position: 'bottom-right' });
+    }
+  };
+
+  const handleTransferAuthorship = async (chapterId: number, toOrganizationId: number) => {
+    if (!confirm('¿Transferir la autoría de este capítulo? Esta acción es destructiva.')) return;
+    if (!confirm('Confirma de nuevo: la autoría pasará a otra org y futuras detaches se basarán en eso.')) return;
+    try {
+      await callAPI(`/api/joint/${resourceSlug}/chapters/${chapterId}/transfer-authorship`, {
+        method: 'POST',
+        body: JSON.stringify({ toOrganizationId }),
+      });
+      toast.success('Autoría transferida', { position: 'bottom-right' });
+      await reloadResource();
+    } catch (e: any) {
+      toast.error(e?.message || 'Error al transferir autoría', { position: 'bottom-right' });
     }
   };
 
@@ -2209,14 +2289,24 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       {jointMembers.length} escáneres
                     </span>
                   </div>
-                  {isLeader && (
-                    <button
-                      onClick={handleDissolveJoint}
-                      className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black py-2 px-5 rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2"
-                    >
-                      <Trash2 size={12} /> Disolver joint
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {myMember && myMember.status === 'ACCEPTED' && (
+                      <button
+                        onClick={handleLeaveJoint}
+                        className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-black py-2 px-5 rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2"
+                      >
+                        Salir del joint
+                      </button>
+                    )}
+                    {isLeader && (
+                      <button
+                        onClick={handleDissolveJoint}
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black py-2 px-5 rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2"
+                      >
+                        <Trash2 size={12} /> Disolver joint
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -2295,6 +2385,115 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                   </table>
                 </div>
               </div>
+
+              {/* "Mis capítulos en este joint" — uploader's view per chapter */}
+              {myMember && organization && (
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] overflow-hidden shadow-2xl">
+                  <div className="p-6 border-b border-zinc-800 flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <h3 className="text-lg font-black text-white italic uppercase tracking-tighter">Mis capítulos en este joint</h3>
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">
+                        Solo capítulos uploaded por tu scan ({organization.name})
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          const ids = (chapters || [])
+                            .filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id && c.source === 'solo')
+                            .map((c: any) => c.id);
+                          handleBulkMove('promote', ids);
+                        }}
+                        className="bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-black py-2 px-4 rounded-xl text-[10px] uppercase tracking-widest"
+                      >
+                        Mover TODOS los míos al joint
+                      </button>
+                      <button
+                        onClick={() => {
+                          const ids = (chapters || [])
+                            .filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id && c.source === 'joint')
+                            .map((c: any) => c.id);
+                          handleBulkMove('demote', ids);
+                        }}
+                        className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-black py-2 px-4 rounded-xl text-[10px] uppercase tracking-widest"
+                      >
+                        Mover TODOS los míos al solo
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-zinc-950/50 border-b border-zinc-800">
+                        <tr>
+                          <th className="px-4 py-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest w-16">N°</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Título</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest w-24">Anchor</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right w-72">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/50">
+                        {(chapters || [])
+                          .filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id)
+                          .sort((a: any, b: any) => (b.number || 0) - (a.number || 0))
+                          .map((c: any) => (
+                            <tr key={c.id} className="hover:bg-zinc-800/20">
+                              <td className="px-4 py-3 text-cyan-500 font-black">#{c.number}</td>
+                              <td className="px-4 py-3 text-white">{c.title || `Capítulo ${c.number}`}</td>
+                              <td className="px-4 py-3">
+                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                                  c.source === 'joint' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-700 text-zinc-400'
+                                }`}>
+                                  {c.source === 'joint' ? 'JOINT' : 'SOLO'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {c.source === 'solo' && (
+                                    <button
+                                      onClick={() => handlePromoteChapter(c.id)}
+                                      className="px-3 py-1.5 bg-zinc-950 text-cyan-400 hover:bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                                    >
+                                      Mover al joint →
+                                    </button>
+                                  )}
+                                  {c.source === 'joint' && (
+                                    <>
+                                      <button
+                                        onClick={() => handleDemoteChapter(c.id)}
+                                        className="px-3 py-1.5 bg-zinc-950 text-amber-400 hover:bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                                      >
+                                        ← Mover al solo
+                                      </button>
+                                      <select
+                                        defaultValue=""
+                                        onChange={(e) => {
+                                          const v = parseInt(e.target.value);
+                                          if (v) handleTransferAuthorship(c.id, v);
+                                          e.currentTarget.value = '';
+                                        }}
+                                        className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-[10px] text-zinc-400"
+                                        title="Transferir autoría"
+                                      >
+                                        <option value="">Transferir autoría…</option>
+                                        {jointMembers
+                                          .filter((m: any) => m.status === 'ACCEPTED' && m.organization.id !== organization?.id)
+                                          .map((m: any) => (
+                                            <option key={m.organization.id} value={m.organization.id}>
+                                              {m.organization.name}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

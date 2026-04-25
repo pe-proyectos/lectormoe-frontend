@@ -86,6 +86,12 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
   };
 
   const handleRespond = async (jointSlug: string, accept: boolean) => {
+    if (accept) {
+      const ok = window.confirm(
+        'Si tu scan ya tiene capítulos de este manga, al aceptar serán visibles desde el joint sin moverse de tu espacio.\n\n¿Aceptar la invitación?',
+      );
+      if (!ok) return;
+    }
     try {
       await callAPI(`/api/joint/${jointSlug}/respond`, {
         method: 'PATCH',
