@@ -91,19 +91,40 @@ const formatRelative = (iso: string): string => {
   }
 };
 
-// Comment identifier format: `mangaSlug` or `mangaSlug_chapterNumber`. Mirrors
-// sendCommentReplyNotification's parser on the backend so links match.
-const buildCommentThreadUrl = (n: NotificationItem): string | null => {
-  if (!n.comment || !n.organization) return null;
+// Comment identifier formats:
+//   {mangaSlug}                          → scan top-level
+//   {mangaSlug}_{chapterNumber}          → scan chapter
+//   joint_{jointSlug}                    → joint top-level
+//   joint_{jointSlug}_{chapterNumber}    → joint chapter
+const buildCommentThreadUrl = (n: NotificationItem, nsfwMode: boolean): string | null => {
+  if (!n.comment) return null;
   const identifier = n.comment.identifier;
-  const lastUnderscore = identifier.lastIndexOf('_');
+  const commentId = n.comment.id;
+  const tail = `?commentId=${commentId}#comment-${commentId}`;
+
+  if (identifier.startsWith('joint_')) {
+    let jointSlug = identifier.slice('joint_'.length);
+    const lu = jointSlug.lastIndexOf('_');
+    let chapterNumber: string | null = null;
+    if (lu > 0 && /^\d+$/.test(jointSlug.slice(lu + 1))) {
+      chapterNumber = jointSlug.slice(lu + 1);
+      jointSlug = jointSlug.slice(0, lu);
+    }
+    return chapterNumber
+      ? `/joint/manga/${jointSlug}/chapters/${chapterNumber}${tail}`
+      : `/joint/manga/${jointSlug}${tail}`;
+  }
+
+  if (!n.organization) return null;
   const orgSlug = n.organization.slug;
+  const prefix = nsfwMode ? '/red' : '';
+  const lastUnderscore = identifier.lastIndexOf('_');
   if (lastUnderscore > 0 && /^\d+$/.test(identifier.slice(lastUnderscore + 1))) {
     const mangaSlug = identifier.slice(0, lastUnderscore);
     const chapterNumber = identifier.slice(lastUnderscore + 1);
-    return `/${orgSlug}/manga/${mangaSlug}/chapters/${chapterNumber}`;
+    return `${prefix}/${orgSlug}/manga/${mangaSlug}/chapters/${chapterNumber}${tail}`;
   }
-  return `/${orgSlug}/manga/${identifier}`;
+  return `${prefix}/${orgSlug}/manga/${identifier}${tail}`;
 };
 
 const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => {
@@ -119,7 +140,8 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
       return null;
     }
     case 'comment_reply':
-      return buildCommentThreadUrl(n);
+    case 'comment_on_owned_content':
+      return buildCommentThreadUrl(n, nsfwMode);
     case 'new_manga':
       if (!n.mangaCustom?.manga?.slug) return null;
       return `/${n.organization?.slug || n.mangaCustom.organization?.slug}/manga/${n.mangaCustom.manga.slug}`;
@@ -145,6 +167,14 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
       return {
         title: `${replier} respondió a tu comentario`,
         subtitle: original ? `${original} · ${rel}` : rel,
+      };
+    }
+    case 'comment_on_owned_content': {
+      const author = n.comment?.user?.username;
+      const body = n.comment?.comment ? truncate(n.comment.comment, 60) : '';
+      return {
+        title: author ? `Nuevo comentario de ${author}` : 'Nuevo comentario',
+        subtitle: body ? `${body} · ${rel}` : rel,
       };
     }
     case 'new_manga': {
@@ -187,6 +217,7 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
 const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 }) => {
   switch (type) {
     case 'comment_reply':
+    case 'comment_on_owned_content':
       return <MessageSquare size={size} className="text-cyan-400" />;
     case 'new_manga':
       return <BookPlus size={size} className="text-cyan-400" />;

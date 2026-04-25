@@ -13,6 +13,7 @@ interface User {
   isPrivateHistory: boolean;
   emailNotifications: boolean;
   pushNotifications: boolean;
+  notifyCommentsOnOwnedContent?: boolean;
   theme: string;
 }
 

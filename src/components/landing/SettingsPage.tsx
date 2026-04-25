@@ -12,6 +12,7 @@ interface User {
   isPrivateHistory: boolean
   emailNotifications: boolean
   pushNotifications: boolean
+  notifyCommentsOnOwnedContent?: boolean
   theme: string
 }
 
@@ -79,6 +80,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
     isPrivateHistory: user.isPrivateHistory,
     emailNotifications: user.emailNotifications,
     pushNotifications: user.pushNotifications,
+    notifyCommentsOnOwnedContent: user.notifyCommentsOnOwnedContent ?? true,
   })
 
   // Email preferences state
@@ -133,10 +135,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
     setSuccess('')
 
     try {
-      // Save master toggle
+      // Save master toggle + the in-app comment-on-owned-content opt-in.
       await callAPI(`/api/user/${user.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ emailNotifications: settingsData.emailNotifications }),
+        body: JSON.stringify({
+          emailNotifications: settingsData.emailNotifications,
+          notifyCommentsOnOwnedContent: settingsData.notifyCommentsOnOwnedContent,
+        }),
       })
 
       // Save granular preferences (only boolean fields)
@@ -263,6 +268,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                       description="Activar o desactivar todas las notificaciones"
                       value={settingsData.emailNotifications}
                       onChange={() => setSettingsData({ ...settingsData, emailNotifications: !settingsData.emailNotifications })}
+                    />
+
+                    {/* In-app preference (independent of email master toggle). */}
+                    <ToggleRow
+                      title="Comentarios en Contenido Propio"
+                      description="Notificarme cuando alguien comente en un manga, capítulo o joint que administro"
+                      value={settingsData.notifyCommentsOnOwnedContent}
+                      onChange={() => setSettingsData({ ...settingsData, notifyCommentsOnOwnedContent: !settingsData.notifyCommentsOnOwnedContent })}
                     />
 
                     {settingsData.emailNotifications && emailPrefs && (

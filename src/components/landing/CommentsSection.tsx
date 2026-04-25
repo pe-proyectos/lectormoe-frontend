@@ -151,7 +151,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   return (
-    <div className="flex gap-6 items-start group min-w-0 w-full">
+    <div
+      id={`comment-${comment.id}`}
+      className="flex gap-6 items-start group min-w-0 w-full transition-all duration-500 rounded-3xl scroll-mt-24"
+    >
       {/* Avatar */}
       <a
         href={`/profile/${comment?.user?.slug}`}
@@ -370,6 +373,35 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   useEffect(() => {
     getComments();
   }, [baseIdentifier]);
+
+  // Scroll to and highlight a specific comment when arriving via a notification
+  // link. Reads ?commentId=X (or #comment-X as fallback). Pagination isn't a
+  // concern here because the backend returns the full thread for the identifier.
+  useEffect(() => {
+    if (isLoading) return;
+    if (typeof window === 'undefined') return;
+    let targetId: string | null = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      targetId = params.get('commentId');
+    } catch {
+      // ignore — fall through to hash check
+    }
+    if (!targetId && window.location.hash.startsWith('#comment-')) {
+      targetId = window.location.hash.slice('#comment-'.length);
+    }
+    if (!targetId) return;
+
+    const el = document.getElementById(`comment-${targetId}`);
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ring-2', 'ring-cyan-400/50', 'ring-offset-2', 'ring-offset-zinc-950');
+    const t = window.setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-cyan-400/50', 'ring-offset-2', 'ring-offset-zinc-950');
+    }, 3000);
+    return () => window.clearTimeout(t);
+  }, [isLoading, comments]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
