@@ -49,12 +49,16 @@ const chapterWithNav = {
   nextChapter: nextChapter || null,
 };
 
-// Build a minimal org-like object from joint (for navbar/footer)
+// Build a minimal org-like object from joint (for navbar/footer).
+// jointMembers signals the navbar to render participant logos instead of a
+// single org branding.
 const orgFromJoint = {
   slug: `joint-${joint.slug}`,
   name: joint.title,
   logoUrl: joint.imageUrl,
   isNSFW: false,
+  jointMembers: joint.members || [],
+  jointSlug: joint.slug,
 };
 
 const ogImageUrl = chapter?.imageUrl || joint.imageUrl || joint.bannerUrl;

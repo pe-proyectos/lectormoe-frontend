@@ -394,7 +394,42 @@ const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-3 group cursor-pointer"
             onClick={onGoHome}
           >
-            {activeScan ? (
+            {activeScan?.jointMembers?.length ? (
+              <div
+                className="flex items-center gap-2 -space-x-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {activeScan.jointMembers.map((m: any) => (
+                  <a
+                    key={m.organization.id}
+                    href={`/${m.organization.slug}`}
+                    title={`${m.organization.name}${m.role === 'LEADER' ? ' (líder)' : ''}`}
+                    aria-label={m.organization.name}
+                    className="relative shrink-0 w-10 h-10 rounded-2xl overflow-hidden ring-2 ring-zinc-900 hover:ring-cyan-500 transition-all hover:-translate-y-0.5 hover:z-10 bg-zinc-800"
+                  >
+                    {m.organization.logoUrl ? (
+                      <img
+                        src={m.organization.logoUrl}
+                        alt={m.organization.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-300 text-sm font-black">
+                        {m.organization.name?.[0] ?? '?'}
+                      </div>
+                    )}
+                    {m.role === 'LEADER' && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-yellow-400 text-zinc-950 text-[8px] font-black flex items-center justify-center shadow"
+                      >
+                        ★
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            ) : activeScan ? (
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-zinc-900/50 transition-transform group-hover:scale-110">

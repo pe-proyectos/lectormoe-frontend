@@ -46,13 +46,17 @@ const mangaFromJoint = {
   jointMembers: joint.members || [],
 };
 
-// Use slug 'joint' so chapter URLs resolve to /joint/manga/{slug}/chapters/{number}
+// Synthetic org so the navbar can render this page in the contextual mode.
+// jointMembers is the signal Navbar uses to render participant logos instead
+// of the single org logo + name.
 const orgFromJoint = {
   id: 0,
   name: 'Joint',
   slug: 'joint',
   logoUrl: null,
   isPublic: true,
+  jointMembers: joint.members || [],
+  jointSlug: joint.slug,
 };
 
 const title = joint.title || joint.manga?.title || 'Joint';
