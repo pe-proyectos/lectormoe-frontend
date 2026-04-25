@@ -1,0 +1,16 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import NotificationsPage from '../components/landing/NotificationsPage';
+
+// @ts-ignore - middleware injected
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+
+if (!logged) {
+  return Astro.redirect('/login');
+}
+---
+
+<LandingLayout title="Notificaciones" showAds={showAds}>
+  <NotificationsPage user={user} logged={logged} nsfwMode={nsfwMode} client:only="react" />
+</LandingLayout>

@@ -14,8 +14,10 @@ import {
   Gift,
   Bookmark,
   MessageCircle,
+  Bell,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
+import NotificationBell from './NotificationBell';
 
 interface NavbarProps {
   // Required props
@@ -494,6 +496,8 @@ const Navbar: React.FC<NavbarProps> = ({
             {nsfwMode ? '18+' : <span className="opacity-0 group-hover/nsfw:opacity-100 transition-opacity">18+</span>}
           </button>
 
+          {logged && <NotificationBell logged={!!logged} variant="desktop" />}
+
           {logged && user && (user.username || user.email) ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -636,6 +640,8 @@ const Navbar: React.FC<NavbarProps> = ({
             {nsfwMode ? '18+' : <span className="opacity-0 group-hover/nsfw-m:opacity-100 transition-opacity">18+</span>}
           </button>
 
+          {logged && <NotificationBell logged={!!logged} variant="mobile" />}
+
           {logged && user && (
             <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500 bg-zinc-800 flex items-center justify-center">
               {user.imageUrl ? (
@@ -756,6 +762,13 @@ const Navbar: React.FC<NavbarProps> = ({
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >
                 <Bookmark size={20} /> Mi Lista
+              </a>
+              <a
+                href="/notifications"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
+              >
+                <Bell size={20} /> Notificaciones
               </a>
               <a
                 href="https://discord.gg/xJqCWAUxVt"
