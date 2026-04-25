@@ -8,13 +8,16 @@ import { getIP } from "../util/get-ip";
  * @returns true si se deben mostrar anuncios, false si no
  */
 function calculateShowAds(user: any, organization: any): boolean {
-  // Si no hay organización, no mostrar anuncios
+  // No org context (global landing, joint pages, search, scans, list, notifications, etc.):
+  // ads default to ON. The actual provider (Google vs Adsterra vs none) is decided
+  // by resolveAdsProvider in the layout, which knows about /, /red, and auth paths.
   if (!organization) {
-    return false;
+    return true;
   }
 
-  // Si la organización no tiene Google Ads habilitado, no mostrar anuncios
-  if (!organization.enableGoogleAds) {
+  // Org-level toggles still gate ads off entirely (covers orgs that opted out of
+  // every network); resolveAdsProvider then decides which provider to render.
+  if (!organization.enableGoogleAds && !organization.enableAdsterraAds) {
     return false;
   }
 

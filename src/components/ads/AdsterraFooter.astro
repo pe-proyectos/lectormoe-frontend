@@ -1,0 +1,16 @@
+---
+// Adsterra Sticky Footer / Social Bar — small unit that floats at page bottom.
+// Already loaded site-wide from LandingLayout/Layout when adsProvider is
+// 'adsterra' (see those files); use this component only if a specific page
+// wants to override the slot or render an additional one.
+
+interface Props {
+  zoneId?: string;
+}
+
+const {
+  zoneId = import.meta.env.PUBLIC_ADSTERRA_FOOTER_ZONE_ID || 'TODO',
+} = Astro.props;
+---
+
+<script is:inline src={`//pl.profitablecpmrate.com/${zoneId}/invoke.js`} />

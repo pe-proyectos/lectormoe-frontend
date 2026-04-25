@@ -2,11 +2,13 @@
 // Sorteo ended — hidden until next giveaway
 // import SorteoModal from '../components/landing/SorteoModal';
 import DiscordInviteModal from '../components/landing/DiscordInviteModal';
+import { resolveAdsProvider } from '../util/ads-provider';
 
 interface Props {
   title?: string;
   description?: string;
   organization?: any;
+  manga?: any;
   imageUrl?: string;
   showAds?: boolean;
 }
@@ -19,7 +21,19 @@ const {
   description: propDescription,
   imageUrl: propImageUrl,
   showAds = false,
+  manga: propManga,
 } = Astro.props;
+
+// Single source of truth for which ad network to render. Pages may pass a
+// `manga` prop to also gate on per-manga isNSFW. /red/* always Adsterra,
+// `/` + auth always none.
+const adsProvider = resolveAdsProvider({
+  pathname: Astro.url.pathname,
+  nsfwMode,
+  organization,
+  manga: propManga,
+  showAds,
+});
 
 // Determinar título y descripción basados en la organización o props
 const title =
@@ -54,22 +68,17 @@ const siteName =
     {/* Google AdSense meta tag - always present for verification */}
     <meta name="google-adsense-account" content="ca-pub-2799839819522052" />
 
-    {/* Ads logic:
-        - enableAds=false or no organization or user has bypass → no ads
-        - enableAds=true + isNsfw=true  → Adsterra Popunder (adult network)
-        - enableAds=true + isNsfw=false → Google AdSense
-    */}
-    {
-      showAds && organization?.isNSFW ? (
-        <script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
-      ) : showAds && !organization?.isNSFW ? (
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
-          crossorigin="anonymous"
-        />
-      ) : null
-    }
+    {/* Ad provider switch: see util/ads-provider.ts for the rule chain. */}
+    {adsProvider === 'google' && (
+      <script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
+        crossorigin="anonymous"
+      />
+    )}
+    {adsProvider === 'adsterra' && (
+      <script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
+    )}
 
     {/* Open Graph / Facebook */}
     <meta property="og:type" content="website" />
@@ -116,8 +125,8 @@ const siteName =
     <DiscordInviteModal client:only="react" />
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
-    {/* Adsterra Social Bar - NSFW orgs only */}
-    {showAds && organization?.isNSFW && (
+    {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider). */}
+    {adsProvider === 'adsterra' && (
       <script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
     )}
   </body>

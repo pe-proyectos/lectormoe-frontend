@@ -41,7 +41,8 @@ if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
 
-const showAds = showAdsFromMiddleware && !manga.isNSFW;
+// We're under /red so resolveAdsProvider will pick Adsterra; pass `manga` for completeness.
+const showAds = showAdsFromMiddleware;
 
 const userHasAccessToChapter = (chapter: any) => {
   if (!user && manga?.requireLogin === true) return false;
@@ -101,6 +102,7 @@ const ogImageUrl = chapter?.imageUrl || manga.imageUrl || manga.bannerUrl;
   imageUrl={ogImageUrl}
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
   showAds={showAds}
+  manga={manga}
 >
   <ReaderPageContainer
     language={language}

@@ -1,0 +1,45 @@
+---
+// Standard Adsterra display banner. Drop into a page where you'd otherwise
+// place an <ins class="adsbygoogle"> for SFW pages — this is the NSFW
+// counterpart. The zone id comes from PUBLIC_ADSTERRA_BANNER_ZONE_ID; the
+// embed snippet shape matches Adsterra's "JS Tag" docs.
+//
+// IMPORTANT: this only renders the iframe wrapper — the loader script lives
+// in LandingLayout.astro / Layout.astro and is gated by adsProvider==='adsterra'.
+// If adsProvider is not 'adsterra' you should not be rendering this.
+
+interface Props {
+  zoneId?: string;
+  width?: number;
+  height?: number;
+  className?: string;
+}
+
+const {
+  zoneId = import.meta.env.PUBLIC_ADSTERRA_BANNER_ZONE_ID || 'TODO',
+  width = 728,
+  height = 90,
+  className = '',
+} = Astro.props;
+---
+
+<div class={`adsterra-banner ${className}`} data-zone-id={zoneId}>
+  <script
+    is:inline
+    type="text/javascript"
+    set:html={`
+      atOptions = {
+        'key': '${zoneId}',
+        'format': 'iframe',
+        'height': ${height},
+        'width': ${width},
+        'params': {}
+      };
+    `}
+  />
+  <script
+    is:inline
+    type="text/javascript"
+    src={`//www.topcreativeformat.com/${zoneId}/invoke.js`}
+  />
+</div>

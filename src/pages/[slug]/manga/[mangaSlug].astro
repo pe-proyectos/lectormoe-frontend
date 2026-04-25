@@ -34,21 +34,22 @@ if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
 
-// No mostrar ads de Google si el manga es NSFW, aunque la organización tenga Google Ads habilitado
-// Solo mostrar ads si: la organización tiene ads habilitados Y el manga NO es NSFW
-const showAds = showAdsFromMiddleware && !manga.isNSFW;
+// Pass `manga` to the layout so resolveAdsProvider can switch to Adsterra
+// for an NSFW manga inside an otherwise-SFW org (instead of suppressing ads).
+const showAds = showAdsFromMiddleware;
 
 // Asegurar que la URL de la imagen sea absoluta para Discord embeds
 // Priorizar bannerUrl sobre imageUrl
 const absoluteImageUrl =  manga.bannerUrl || manga.imageUrl;
 ---
 
-<LandingLayout 
+<LandingLayout
   title={`${manga.title} | ${organization.name}`}
   description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
   imageUrl={absoluteImageUrl}
   organization={organization}
   showAds={showAds}
+  manga={manga}
 >
   <MangaDetailPageContainer
     manga={manga}

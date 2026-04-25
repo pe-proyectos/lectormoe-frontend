@@ -1,0 +1,25 @@
+---
+// Adsterra Native Banner (in-feed style). Use in lists/grids where you want
+// a native-feeling unit instead of a banner.
+//
+// The container id must be unique on the page; pass `id` if you render
+// multiple Native units on one page.
+
+interface Props {
+  zoneId?: string;
+  id?: string;
+}
+
+const {
+  zoneId = import.meta.env.PUBLIC_ADSTERRA_NATIVE_ZONE_ID || 'TODO',
+  id = 'container-adsterra-native',
+} = Astro.props;
+---
+
+<div id={id} data-zone-id={zoneId}></div>
+<script
+  is:inline
+  async
+  data-cfasync="false"
+  src={`//pl.profitablecpmrate.com/${zoneId}/invoke.js`}
+/>

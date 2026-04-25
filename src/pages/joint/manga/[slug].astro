@@ -3,7 +3,7 @@ import LandingLayout from '../../../layouts/LandingLayout.astro';
 import MangaDetailPageContainer from '../../../components/landing/MangaDetailPageContainer';
 
 const { slug } = Astro.params;
-const { callAPI, user } = Astro.locals as any;
+const { callAPI, user, showAds } = Astro.locals as any;
 const logged = !!user;
 
 let joint = null;
@@ -60,7 +60,7 @@ const description = joint.shortDescription || joint.description || '';
 const image = joint.imageUrl || joint.manga?.imageUrl || '';
 ---
 
-<LandingLayout title={title} description={description} imageUrl={image}>
+<LandingLayout title={title} description={description} imageUrl={image} showAds={showAds}>
   <MangaDetailPageContainer
     client:load
     manga={mangaFromJoint}

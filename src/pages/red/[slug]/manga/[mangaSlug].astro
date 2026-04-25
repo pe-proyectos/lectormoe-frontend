@@ -27,7 +27,9 @@ if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
 
-const showAds = showAdsFromMiddleware && !manga.isNSFW;
+// We're already under /red, so resolveAdsProvider will pick Adsterra anyway,
+// but pass `manga` so the per-manga isNSFW signal is also visible to the layout.
+const showAds = showAdsFromMiddleware;
 const absoluteImageUrl = manga.bannerUrl || manga.imageUrl;
 ---
 
@@ -37,6 +39,7 @@ const absoluteImageUrl = manga.bannerUrl || manga.imageUrl;
   imageUrl={absoluteImageUrl}
   organization={organization}
   showAds={showAds}
+  manga={manga}
 >
   <MangaDetailPageContainer
     manga={manga}

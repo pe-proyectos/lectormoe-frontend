@@ -44,9 +44,9 @@ if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
 
-// No mostrar ads de Google si el manga es NSFW, aunque la organización tenga Google Ads habilitado
-// Solo mostrar ads si: la organización tiene ads habilitados Y el manga NO es NSFW
-const showAds = showAdsFromMiddleware && !manga.isNSFW;
+// Pass `manga` to the layout so resolveAdsProvider can switch to Adsterra
+// for an NSFW manga inside an otherwise-SFW org.
+const showAds = showAdsFromMiddleware;
 
 // Check access but don't redirect here - let the Reader component handle it
 // This allows for better error messaging and user experience
@@ -132,6 +132,7 @@ const ogImageUrl = chapter?.imageUrl || manga.imageUrl || manga.bannerUrl;
   imageUrl={ogImageUrl}
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}
   showAds={showAds}
+  manga={manga}
 >
   <ReaderPageContainer
     language={language}

@@ -3,6 +3,7 @@ import { StickyNavbar } from "../components/StickyNavbar.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { resolveAdsProvider } from "../util/ads-provider";
 
 interface Props {
 	title?: string;
@@ -11,12 +12,21 @@ interface Props {
 	isAdmin?: boolean;
 	showAds?: boolean;
 	staticNavbar?: boolean;
+	manga?: any;
 }
 
-const { title, isAdmin, imageUrl, description, staticNavbar, showAds = false } = Astro.props;
+const { title, isAdmin, imageUrl, description, staticNavbar, showAds = false, manga: propManga } = Astro.props;
 // @ts-ignore - organizationSlug se define dinámicamente en el middleware
-const { theme, organization, userSlug, username, user, language, organizationSlug } = Astro.locals
+const { theme, organization, userSlug, username, user, language, organizationSlug, nsfwMode } = Astro.locals
 const isDecember = new Date().getMonth() === 11;
+
+const adsProvider = resolveAdsProvider({
+	pathname: Astro.url.pathname,
+	nsfwMode,
+	organization,
+	manga: propManga,
+	showAds,
+});
 ---
 
 <!doctype html>
@@ -30,14 +40,13 @@ const isDecember = new Date().getMonth() === 11;
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google AdSense meta tag - always present for verification */}
 		<meta name="google-adsense-account" content="ca-pub-2799839819522052" />
-		{/* Ads: NSFW → Adsterra Popunder | no-NSFW → Google AdSense */}
-		{
-			showAds && organization?.isNSFW ? (
-				<script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
-			) : showAds && !organization?.isNSFW ? (
-				<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052" crossorigin="anonymous" />
-			) : null
-		}
+		{/* Ad provider switch: see util/ads-provider.ts. */}
+		{adsProvider === 'google' && (
+			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052" crossorigin="anonymous" />
+		)}
+		{adsProvider === 'adsterra' && (
+			<script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
+		)}
 		{/* Metadata General */}
 		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
 		<meta name="description" content={description || organization?.description || organization?.title || "Mangas"}>
@@ -59,22 +68,6 @@ const isDecember = new Date().getMonth() === 11;
 		<meta name="twitter:image:src" content={imageUrl || organization?.bannerUrl || "/images/logocaptrad.png"}>
 		<meta property="og:locale:alternate" content="es_ES">
 		<meta name="theme-color" content="#ff1a1a">
-		{/*
-			!showAds && (
-				<script
-					type='text/javascript'
-					src='//pl23164527.highcpmgate.com/49/87/d5/4987d5265e0e4031443cf6b865192948.js'
-				></script>
-			)
-		*/}
-		{/*
-			!showAds && (
-				<script
-					type='text/javascript'
-					src='//pl23165906.highcpmgate.com/c8/8f/78/c88f78ff7be3993492ef078516302d3c.js'
-				></script>
-			)
-		*/}
 	</head>
 	<body class={isAdmin ? "bg-zinc-950" : "bg-brand-primary-content-900 text-brand-primary-50"}>
 		{
@@ -125,8 +118,8 @@ const isDecember = new Date().getMonth() === 11;
 			)
 		}
 		<ToastContainer client:only="react"theme="dark" />
-		{/* Adsterra Social Bar - NSFW orgs only */}
-		{showAds && organization?.isNSFW && (
+		{/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider). */}
+		{adsProvider === 'adsterra' && (
 			<script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
 		)}
 	</body>
