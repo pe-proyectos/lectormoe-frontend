@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface JointMangaDetailPageProps {
@@ -68,42 +68,41 @@ const JointMangaDetailPage: React.FC<JointMangaDetailPageProps> = ({ joint, user
 
           {/* Info */}
           <div className="flex-1 space-y-4 pt-32 md:pt-0">
-            {/* Joint badge */}
-            <div className="flex items-center gap-2">
-              <span className="bg-purple-500/20 text-purple-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                <Users size={12} />
-                Joint
-              </span>
+            {/* Joint participants — circular logos only, each clickable. Leader gets a small ★. */}
+            <div className="flex flex-wrap items-center gap-2">
+              {activeMembers.map((m: any) => (
+                <a
+                  key={m.organization.id}
+                  href={`/${m.organization.slug}`}
+                  title={`${m.organization.name}${m.role === 'LEADER' ? ' (líder)' : ''}`}
+                  aria-label={m.organization.name}
+                  className="relative shrink-0 w-10 h-10 rounded-full overflow-hidden ring-2 ring-zinc-800 hover:ring-cyan-500 transition-all hover:-translate-y-0.5"
+                >
+                  {m.organization.logoUrl || m.organization.imageUrl ? (
+                    <img
+                      src={m.organization.logoUrl || m.organization.imageUrl}
+                      alt={m.organization.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-300 text-sm font-black">
+                      {m.organization.name[0]}
+                    </div>
+                  )}
+                  {m.role === 'LEADER' && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-yellow-400 text-zinc-950 text-[8px] font-black flex items-center justify-center shadow"
+                    >
+                      ★
+                    </span>
+                  )}
+                </a>
+              ))}
             </div>
 
             <h1 className="text-3xl font-black text-white">{joint.title}</h1>
             <p className="text-zinc-400 text-sm leading-relaxed">{joint.shortDescription || joint.description}</p>
-
-            {/* Participating scans logos */}
-            <div className="space-y-2">
-              <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">Scans participantes</p>
-              <div className="flex flex-wrap gap-3">
-                {activeMembers.map((m: any) => (
-                  <a
-                    key={m.organization.id}
-                    href={`/${m.organization.slug}`}
-                    className="flex items-center gap-2 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl px-3 py-2 transition-colors"
-                  >
-                    {m.organization.logoUrl ? (
-                      <img src={m.organization.logoUrl} alt={m.organization.name} className="w-6 h-6 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs text-zinc-400">
-                        {m.organization.name[0]}
-                      </div>
-                    )}
-                    <span className="text-sm font-medium text-zinc-300">{m.organization.name}</span>
-                    {m.role === 'LEADER' && (
-                      <span className="text-xs text-yellow-400">★</span>
-                    )}
-                  </a>
-                ))}
-              </div>
-            </div>
 
             {/* Add to favorites */}
             <button
