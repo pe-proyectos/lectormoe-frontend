@@ -1,0 +1,15 @@
+---
+import LandingLayout from '../../../layouts/LandingLayout.astro';
+import UserListPage from '../../../components/landing/UserListPage';
+
+// @ts-ignore - middleware injected
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+const { slug } = Astro.params;
+
+const isOwner = !!(logged && user && slug && user.slug === slug);
+---
+
+<LandingLayout title={isOwner ? 'Mi Lista' : `Lista de ${slug}`} showAds={showAds}>
+  <UserListPage user={user} logged={logged} nsfwMode={nsfwMode} profileSlug={slug} isOwner={isOwner} client:only="react" />
+</LandingLayout>

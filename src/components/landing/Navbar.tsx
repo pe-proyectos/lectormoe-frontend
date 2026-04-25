@@ -352,8 +352,12 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  // Profile / list links are mirrored under /red when browsing NSFW so the
+  // user stays in the NSFW context after navigating away from a manga page.
+  const nsfwPrefix = nsfwMode ? '/red' : '';
+
   const navigateToProfile = () => {
-    window.location.href = `/profile/${user?.slug}`;
+    window.location.href = `${nsfwPrefix}/profile/${user?.slug}`;
   };
 
   const navigateTo = (path: string) => {
@@ -548,14 +552,14 @@ const Navbar: React.FC<NavbarProps> = ({
                     )}
                   </div>
                   <a
-                    href={`/profile/${user?.slug}`}
+                    href={`${nsfwPrefix}/profile/${user?.slug}`}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                   >
                     <UserIcon size={16} className="text-cyan-500" /> Mi perfil
                   </a>
                   <a
-                    href={`/list/${user?.slug}`}
+                    href={`${nsfwPrefix}/list/${user?.slug}`}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
                   >
@@ -750,14 +754,14 @@ const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
               <a
-                href={`/profile/${user?.slug}`}
+                href={`${nsfwPrefix}/profile/${user?.slug}`}
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >
                 <UserIcon size={20} /> Mi Perfil
               </a>
               <a
-                href={`/list/${user?.slug}`}
+                href={`${nsfwPrefix}/list/${user?.slug}`}
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >

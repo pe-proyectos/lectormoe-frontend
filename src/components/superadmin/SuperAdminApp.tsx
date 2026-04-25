@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import SuperadminCreateScan from '../admin/SuperadminCreateScan';
 
 const API = import.meta.env.PUBLIC_API_URL as string;
 
@@ -481,12 +482,13 @@ const ErrorMsg = ({ msg }: { msg: string }) => (
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'orgs' | 'requests';
+type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview', label: 'Vista general', icon: '📊' },
   { id: 'orgs', label: 'Organizaciones', icon: '🏢' },
   { id: 'requests', label: 'Solicitudes', icon: '📬' },
+  { id: 'create-scan', label: 'Alta de Scan', icon: '➕' },
 ];
 
 const SuperAdminApp = () => {
@@ -547,6 +549,7 @@ const SuperAdminApp = () => {
         {tab === 'overview' && <OverviewTab token={token} />}
         {tab === 'orgs' && <OrgsTab token={token} />}
         {tab === 'requests' && <RequestsTab token={token} />}
+        {tab === 'create-scan' && <SuperadminCreateScan token={token} />}
       </div>
     </div>
   );
