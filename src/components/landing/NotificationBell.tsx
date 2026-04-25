@@ -392,7 +392,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
               Marcar todas como leídas
             </button>
             <a
-              href="/notifications"
+              href={typeof window !== 'undefined' && window.location.pathname.startsWith('/red') ? '/red/notifications' : '/notifications'}
               className="text-[10px] font-black text-cyan-400 hover:text-cyan-300 uppercase tracking-widest transition-colors"
             >
               Ver todas

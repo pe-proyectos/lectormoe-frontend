@@ -768,7 +768,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Bookmark size={20} /> Mi Lista
               </a>
               <a
-                href="/notifications"
+                href={`${nsfwPrefix}/notifications`}
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
               >
