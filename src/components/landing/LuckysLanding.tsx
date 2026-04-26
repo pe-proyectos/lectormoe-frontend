@@ -197,8 +197,10 @@ const LuckysLanding: React.FC<Props> = ({ user, logged, nsfwMode }) => {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-black uppercase tracking-widest mb-6">
             <Sparkles size={14} className="animate-pulse" /> Sorteos exclusivos
           </div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter italic">
-            <span className="bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]">
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter italic leading-[1.1] overflow-visible">
+            {/* pr keeps the italic slant of the final S inside its bounding box;
+                bg-clip-text on italic glyphs otherwise crops the trailing pixels. */}
+            <span className="inline-block pr-[0.15em] bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]">
               LUCKYS
             </span>
           </h1>
