@@ -61,6 +61,9 @@ export function resolveAdsProvider({
   if (showAds === false) return 'none';
   if (NO_ADS_LANDING_PATHS.has(pathname)) return 'none';
   if (isAuthPath(pathname)) return 'none';
+  // Luckys (raffles) is an ad-free zone — paid prizes shouldn't share screen
+  // real estate with ads, and PayPal smart buttons + ad scripts collide.
+  if (pathname === '/luckys' || pathname.startsWith('/luckys/')) return 'none';
 
   const adultContext = !!(
     pathname.startsWith('/red') ||
