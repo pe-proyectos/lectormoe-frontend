@@ -327,6 +327,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       } else if (e.type === 'ticket_purchased') {
         setRaffle((r) => ({ ...r, sold: e.sold, available: e.available }));
         loadTickets(ticketsPage);
+        // Refresh comments so 🎟️N badges on existing comments by the buyer
+        // reflect their new ticket count (otherwise they stay stamped at the
+        // count they had when the comment was posted).
+        loadComments();
       } else if (e.type === 'comment') {
         setComments((prev) => [...prev, e.comment]);
       } else if (e.type === 'draw_started') {
@@ -509,7 +513,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // ─── Center column ──────────────────────────────────────────────────────────
   const nextEliminationSeconds = useMemo(() => {
     if (!drawState?.nextEliminationAt) return null;
-    const diff = Math.max(0, new Date(drawState.nextEliminationAt).getTime() - Date.now());
+    const target = new Date(drawState.nextEliminationAt).getTime();
+    // Guard against NaN (malformed ISO) and clock-skew negatives.
+    if (!Number.isFinite(target)) return null;
+    const diff = Math.max(0, target - Date.now());
     return Math.ceil(diff / 1000);
     // tick is intentional — re-evaluate every 200ms render
     // eslint-disable-next-line react-hooks/exhaustive-deps

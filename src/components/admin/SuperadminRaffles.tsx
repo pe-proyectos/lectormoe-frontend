@@ -57,6 +57,20 @@ const resolveR2Url = (key: string): string => {
   return `${baseUrl}/${key.replace(/^\//, '')}`;
 };
 
+// Converts a UTC ISO string ("2026-04-26T18:00:00.000Z") to the local
+// datetime-local input format ("YYYY-MM-DDTHH:MM") in the admin's timezone.
+// Feeding raw ISO.slice(0, 16) into <input type="datetime-local"> would
+// display the UTC clock value as if it were local — e.g. a 1pm-Lima draw
+// (stored as 18:00 UTC) would show as "06:00 PM" in the input. This helper
+// prevents that.
+const isoToLocalDatetimeInput = (iso: string | null | undefined): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 // Live multi-timezone preview for raffle draw datetimes. The input value is
 // the local time of whoever is filling the form; we show what that wall-clock
 // translates to in the LATAM markets the platform serves so the admin doesn't
@@ -304,7 +318,7 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
   const [maxTicketsPerUser, setMaxTicketsPerUser] = useState(raffle.maxTicketsPerUser);
   const [winnersCount, setWinnersCount] = useState(raffle.winnersCount ?? 1);
   const [drawType, setDrawType] = useState<'countdown' | 'max-tickets'>(raffle.drawType as any);
-  const [drawAt, setDrawAt] = useState(raffle.drawAt ? raffle.drawAt.slice(0, 16) : '');
+  const [drawAt, setDrawAt] = useState(isoToLocalDatetimeInput(raffle.drawAt));
   const [imageUrl, setImageUrl] = useState(raffle.imageUrl ?? '');
   const [bannerUrl, setBannerUrl] = useState(raffle.bannerUrl ?? '');
   const [busy, setBusy] = useState(false);
