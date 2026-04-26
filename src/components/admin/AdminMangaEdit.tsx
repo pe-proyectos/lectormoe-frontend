@@ -13,6 +13,7 @@ import { uploadFile } from '../../util/uploadFile';
 import Autocomplete from './ui/Autocomplete';
 import { AdminChapterDialog } from './AdminChapterDialog';
 import { MultiImageDropzone } from './ui/MultiImageDropzone';
+import NovelEditor from './NovelEditor';
 import { Popover, PopoverHandler, PopoverContent } from './ui/Popover';
 import { DayPicker } from 'react-day-picker';
 import { ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -341,6 +342,12 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   
   const [pages, setPages] = useState<(File | string)[]>([]);
   const [singlePageIndexes, setSinglePageIndexes] = useState<number[]>([]);
+  // For text-based chapters (novels and other writings). The upload tab swaps
+  // its UI based on whether the resolved bookType is in the writing set.
+  const [bodyMarkdown, setBodyMarkdown] = useState<string>('');
+  const WRITING_BOOK_TYPES = new Set(['novel', 'light-novel', 'book', 'short-story']);
+  const bookTypeCode = mangaCustom?.manga?.bookType?.code || (mangaCustom as any)?.bookType?.code || null;
+  const isWriting = WRITING_BOOK_TYPES.has(bookTypeCode);
 
   const [chapters, setChapters] = useState<any[]>([]);
   const [chaptersLoading, setChaptersLoading] = useState(false);
@@ -701,6 +708,18 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       // Preload the joint worked-by selector from the chapter
       if (isJointMode) {
         setWorkedByIds((chapter.workedByOrganizations || []).map((o: any) => o.id));
+      }
+
+      // For writings, load bodyMarkdown from the chapter and skip the pages fetch.
+      if (isWriting) {
+        setBodyMarkdown(chapter.bodyMarkdown || '');
+        setPages([]);
+        setSinglePageIndexes([]);
+        setIsEditingChapter(true);
+        setEditingChapterNumber(chapter.number);
+        setActiveTab('upload');
+        setLoading(false);
+        return;
       }
 
       // Cargar páginas del capítulo
@@ -1282,8 +1301,17 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   };
 
   const handleSaveChapter = async () => {
-    if (!newChapter.number || pages.length === 0) {
-      toast.error('Completa el número de capítulo y sube al menos una página');
+    if (!newChapter.number) {
+      toast.error('Completa el número de capítulo');
+      return;
+    }
+    if (isWriting) {
+      if (!bodyMarkdown.trim()) {
+        toast.error('Escribe el contenido del capítulo');
+        return;
+      }
+    } else if (pages.length === 0) {
+      toast.error('Sube al menos una página');
       return;
     }
 
@@ -1294,8 +1322,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     let imageKey: string | null = null;
     
     try {
-      // Contar archivos a subir (páginas + miniatura si es File)
-      const pagesToUpload = pages.filter(page => page instanceof File).length;
+      // Writings don't have per-page images, only the thumbnail can be a file.
+      const pagesToUpload = isWriting ? 0 : pages.filter(page => page instanceof File).length;
       const thumbnailToUpload = newChapter.thumbnail instanceof File ? 1 : 0;
       const filesToUpload = pagesToUpload + thumbnailToUpload;
 
@@ -1322,19 +1350,21 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           imageKey = newChapter.thumbnail;
         }
 
-        // Upload pages that are new files (secuencialmente para actualizar contador)
-        for (const page of pages) {
-          if (page instanceof File) {
-            uploadedCount++;
-            toast.update(toastId, { 
-              render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
-              position: "bottom-right"
-            });
-            const key = await uploadFile(page, undefined, 'chapters');
-            pageKeys.push(key);
-          } else if (typeof page === 'string') {
-            // Si es un string (fileKey o URL), mantenerlo como está
-            pageKeys.push(page);
+        if (!isWriting) {
+          // Upload pages that are new files (secuencialmente para actualizar contador)
+          for (const page of pages) {
+            if (page instanceof File) {
+              uploadedCount++;
+              toast.update(toastId, {
+                render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+                position: "bottom-right"
+              });
+              const key = await uploadFile(page, undefined, 'chapters');
+              pageKeys.push(key);
+            } else if (typeof page === 'string') {
+              // Si es un string (fileKey o URL), mantenerlo como está
+              pageKeys.push(page);
+            }
           }
         }
 
@@ -1370,8 +1400,9 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
               : (newChapter.releaseDate
                   ? localDatetimeStringToUTC(newChapter.releaseDate)
                   : new Date().toISOString()),
-            pages: pageKeys,
-            singlePages: singlePageIndexes,
+            pages: isWriting ? [] : pageKeys,
+            singlePages: isWriting ? [] : singlePageIndexes,
+            ...(isWriting ? { bodyMarkdown } : {}),
             ...(imageKey ? { image: imageKey } : {}),
             isUnreleased: newChapter.isUnreleased || false,
             ...(isJointMode ? { workedByOrganizationIds: workedByIds } : {}),
@@ -1791,15 +1822,18 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                 {/* Form Column */}
                 <div className="lg:col-span-8 space-y-8">
                   
-                  {/* PÁGINAS */}
+                  {/* PÁGINAS / CONTENIDO (writing chapters use NovelEditor instead of pages) */}
                   <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 space-y-6">
                     <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
                       <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Layers size={16} className="text-cyan-500" /> Páginas
+                        <Layers size={16} className="text-cyan-500" /> {isWriting ? 'Contenido' : 'Páginas'}
                       </h3>
-                      <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Máximo 25MB por archivo</span>
+                      <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{isWriting ? 'Markdown · texto' : 'Máximo 25MB por archivo'}</span>
                     </div>
-                    
+
+                    {isWriting ? (
+                      <NovelEditor value={bodyMarkdown} onChange={setBodyMarkdown} />
+                    ) : (<>
                     {/* MultiImageDropzone */}
                     <MultiImageDropzone
                       onDrop={handlePagesUpload}
@@ -2061,6 +2095,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                 )}
               </div>
                     </div>
+                  </>)}
                   </div>
                 </div>
 
