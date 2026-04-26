@@ -15,8 +15,14 @@ export function AdminMangaCustomDialog({
   setOpen,
   mangaCustom,
   setMangaCustom,
+  contentKind = 'manga',
 }) {
   const _ = getTranslator(language);
+  const isWriting = contentKind === 'writing';
+  // Spanish singular/plural pair used to override the manga-centric default
+  // copy when the dialog is opened from the writings admin grid.
+  const labelOne = isWriting ? 'Novela' : 'Manga';
+  const labelOneLower = isWriting ? 'novela' : 'manga';
 
   // dialog
   const [loading, setLoading] = useState(true);
@@ -94,7 +100,7 @@ export function AdminMangaCustomDialog({
 
   const refreshMangaProfile = () => {
     setLoading(true);
-    callAPI(`/api/manga/autocomplete`)
+    callAPI(`/api/manga/autocomplete?contentKind=${contentKind}`)
       .then((result) => setMangas(result))
       .catch((error) => toast.error(error?.message))
       .finally(() => setLoading(false));
@@ -248,7 +254,7 @@ export function AdminMangaCustomDialog({
       <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col">
         <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
-            {mangaCustom?.title || _("create_manga")}
+            {mangaCustom?.title || `Crear ${labelOneLower}`}
           </h2>
           <button
             type="button"
@@ -265,7 +271,7 @@ export function AdminMangaCustomDialog({
         {!mangaCustom && (
           <>
             <label className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-              {_("manga_profile")}
+              Perfil de {labelOneLower}
             </label>
             <div className="flex">
               <div className="grow">
@@ -296,7 +302,7 @@ export function AdminMangaCustomDialog({
                       {option.title}
                     </li>
                   )}
-                  label={_("choose_manga_profile")}
+                  label={`Elige un perfil de ${labelOneLower}`}
                   value={mangaProfile}
                   onChange={(event, newValue) => setMangaProfile(newValue)}
                 />
@@ -326,6 +332,7 @@ export function AdminMangaCustomDialog({
                   language={language}
                   open={isCreateMangaProfileDialogOpen}
                   setOpen={setIsCreateMangaProfileDialogOpen}
+                  contentKind={contentKind}
                 />
               </div>
             </div>

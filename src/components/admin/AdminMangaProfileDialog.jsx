@@ -9,8 +9,12 @@ import Input from "./ui/Input";
 import Textarea from "./ui/Textarea";
 import Button from "./ui/Button";
 
-export function AdminMangaProfileDialog({ language, open, setOpen }) {
+const WRITING_CODES = ['novel', 'light-novel', 'book', 'short-story'];
+
+export function AdminMangaProfileDialog({ language, open, setOpen, contentKind = 'manga' }) {
   const _ = getTranslator(language);
+  const isWriting = contentKind === 'writing';
+  const labelOneLower = isWriting ? 'novela' : 'manga';
 
   // dialog
   const [loading, setLoading] = useState(true);
@@ -39,9 +43,16 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
 
   useEffect(() => {
     callAPI(`/api/book_type`)
-      .then((result) => setBookTypes(result))
+      .then((result) => {
+        // Filter book types so the create-profile dialog inside the writings
+        // grid only offers writing types and vice-versa.
+        const filtered = isWriting
+          ? result.filter((bt) => WRITING_CODES.includes(bt.code))
+          : result.filter((bt) => !WRITING_CODES.includes(bt.code));
+        setBookTypes(filtered);
+      })
       .catch((error) => toast.error(error?.message));
-  }, []);
+  }, [isWriting]);
 
   useEffect(() => {
     if (!isCreateAuthorDialogOpen) refreshAuthors();
@@ -97,7 +108,7 @@ export function AdminMangaProfileDialog({ language, open, setOpen }) {
       <Modal
         isOpen={open}
         onClose={() => setOpen(false)}
-        title={_("create_manga_profile")}
+        title={`Crear perfil de ${labelOneLower}`}
         size="md"
       >
         <div className="flex flex-col gap-6">

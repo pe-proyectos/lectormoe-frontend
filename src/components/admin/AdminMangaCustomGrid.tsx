@@ -23,6 +23,13 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   organizationSlug,
   contentKind = 'manga',
 }) => {
+  const isWriting = contentKind === 'writing';
+  // User-facing copy varies by content kind. Singular/plural pair only — labels
+  // were intentionally chosen to match the Spanish UI ("Novela"/"Novelas").
+  const labelOne = isWriting ? 'Novela' : 'Manga';
+  const labelMany = isWriting ? 'Novelas' : 'Mangas';
+  const labelOneLower = isWriting ? 'novela' : 'manga';
+  const labelManyLower = isWriting ? 'novelas' : 'mangas';
   const [loading, setLoading] = useState(true);
   const [mangaList, setMangaList] = useState<any[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
@@ -144,6 +151,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
         mangaCustom={selectedManga}
         setMangaCustom={setSelectedManga}
         subscriptionPlans={subscriptionPlans}
+        contentKind={contentKind}
       />
 
       {/* Header */}
@@ -158,13 +166,13 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
             className="w-full sm:w-auto"
           >
             <Plus size={18} className="sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Agregar Manga</span>
+            <span className="text-sm sm:text-base">Agregar {labelOne}</span>
           </Button>
 
           <form onSubmit={handleSearchSubmit} className="relative w-full sm:max-w-md">
             <Input
               type="text"
-              placeholder="Buscar manga..."
+              placeholder={`Buscar ${labelOneLower}...`}
               value={searchTerm}
               onChange={handleSearchChange}
               className="pr-10 text-sm sm:text-base"
@@ -191,7 +199,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
             </span>
             {' de '}
             <span className="font-bold text-white">{total}</span>
-            {' mangas'}
+            {` ${labelManyLower}`}
           </div>
         )}
       </Card>
@@ -201,7 +209,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
         <div className="flex items-center justify-center py-12 sm:py-16 md:py-20">
           <div className="flex flex-col items-center gap-3 sm:gap-4">
             <Loader2 size={40} className="sm:w-12 sm:h-12 text-cyan-500 animate-spin" />
-            <span className="text-sm sm:text-base text-zinc-400 font-medium">Cargando mangas...</span>
+            <span className="text-sm sm:text-base text-zinc-400 font-medium">Cargando {labelManyLower}...</span>
           </div>
         </div>
       )}
@@ -215,12 +223,12 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-black text-white mb-1 sm:mb-2">
-                No se encontraron mangas
+                No se encontraron {labelManyLower}
               </h3>
               <p className="text-sm sm:text-base text-zinc-400 px-4">
                 {searchTerm
                   ? 'Intenta con otros términos de búsqueda'
-                  : 'Comienza agregando tu primer manga'}
+                  : `Comienza agregando tu primera ${labelOneLower}`}
               </p>
             </div>
           </div>
