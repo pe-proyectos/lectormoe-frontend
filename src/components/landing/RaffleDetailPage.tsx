@@ -1,13 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Sparkles, Ticket, Trophy, Clock, Users, Send, Plus, Minus, AlertTriangle, Loader2,
+  Sparkles, Ticket, Trophy, Clock, Users, Send, Plus, Minus, AlertTriangle, Loader2, Skull,
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { callAPI } from '../../util/callApi';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
-interface Winner { ticketNumber: string; userSlug: string; userUsername: string; userImageUrl: string | null }
+interface Winner {
+  ticketNumber: string;
+  userSlug: string;
+  userUsername: string;
+  userImageUrl: string | null;
+  comment?: string | null;
+}
 
 interface ViewerDiscord { linked: boolean; verified: boolean; reason?: string }
 
@@ -23,18 +29,18 @@ interface Raffle {
   minTickets: number;
   maxTickets: number;
   maxTicketsPerUser: number;
+  winnersCount: number;
+  eliminationIntervalMs: number;
   drawType: 'countdown' | 'max-tickets';
   drawAt: string | null;
   status: string;
   cancelReason: string | null;
-  revealStartedAt: string | null;
-  revealOrder: number[] | null;
-  revealDigits: string | null;
   sold: number;
   available: number;
   userTicketCount: number;
   winner: Winner | null;
-  viewer?: { discord?: ViewerDiscord };
+  winners: Winner[] | null;
+  viewer?: { discord?: ViewerDiscord; canParticipate?: boolean; blockReason?: string | null };
   createdAt: string;
 }
 
@@ -59,7 +65,33 @@ interface TicketRow {
   userUsername: string;
   userImageUrl: string | null;
   comment: string | null;
+  eliminatedAt: string | null;
+  eliminationOrder: number | null;
   createdAt: string;
+}
+
+interface EliminatedEntry {
+  number: string;
+  userSlug: string;
+  userUsername: string;
+  userImageUrl: string | null;
+  comment: string | null;
+  eliminationOrder: number;
+}
+
+interface DrawState {
+  status: string;
+  totalTickets: number;
+  eliminatedCount: number;
+  remainingCount: number;
+  winnersCount: number;
+  eliminationsRemaining: number;
+  eliminationIntervalMs: number;
+  lastEliminationAt: string | null;
+  nextEliminationAt: string | null;
+  lastEliminated: EliminatedEntry | null;
+  recentEliminated: EliminatedEntry[];
+  winners: Winner[] | null;
 }
 
 interface Props {
@@ -90,60 +122,7 @@ const useCountdown = (target: string | null) => {
   return `${seconds}s`;
 };
 
-// 5-digit reveal animation. Digits start as `_`. The slot at revealOrder[i]
-// flips at revealStartedAt + i*5s, locally computed so all clients land in sync.
-const RevealAnimation: React.FC<{
-  startedAt: string;
-  order: number[];
-  digits: string;
-  done: boolean;
-}> = ({ startedAt, order, digits, done }) => {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (done) return;
-    const id = setInterval(() => setNow(Date.now()), 200);
-    return () => clearInterval(id);
-  }, [done]);
-
-  const start = new Date(startedAt).getTime();
-  const elapsed = Math.max(0, now - start);
-  const slots = ['_', '_', '_', '_', '_'];
-  for (let i = 0; i < 5; i++) {
-    const slotIdx = order[i];
-    const revealAt = i * 5000;
-    if (done || elapsed >= revealAt + 5000) {
-      slots[slotIdx] = digits[slotIdx];
-    } else if (elapsed >= revealAt) {
-      // mid-spin: pick a fast cycling digit
-      slots[slotIdx] = String(Math.floor(Math.random() * 10));
-    }
-  }
-
-  return (
-    <div className="flex items-center justify-center gap-2 md:gap-4">
-      {slots.map((d, i) => {
-        const revealed = d !== '_' && (done || elapsed >= (order.indexOf(i) * 5000) + 5000);
-        return (
-          <div
-            key={i}
-            className={`relative w-14 h-20 md:w-20 md:h-28 rounded-2xl border-2 flex items-center justify-center text-3xl md:text-5xl font-black tabular-nums transition-all ${
-              revealed
-                ? 'bg-yellow-400 text-zinc-950 border-yellow-300 shadow-lg shadow-yellow-500/40 scale-110'
-                : d === '_'
-                ? 'bg-zinc-900 text-zinc-700 border-zinc-800'
-                : 'bg-zinc-800 text-yellow-200 border-yellow-500/40 animate-pulse'
-            }`}
-          >
-            {d}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 const linkifyMentions = (text: string) => {
-  // @username → cyan link to /profile/{username}. No autocomplete.
   const parts: React.ReactNode[] = [];
   const regex = /@(\w+)/g;
   let last = 0;
@@ -184,18 +163,19 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   const [buyBusy, setBuyBusy] = useState(false);
   const [buyError, setBuyError] = useState('');
 
+  const [drawState, setDrawState] = useState<DrawState | null>(null);
+  const [tick, setTick] = useState(0);
+
   const countdown = useCountdown(raffle.drawType === 'countdown' ? raffle.drawAt : null);
   const isFree = raffle.ticketPrice === 0;
   const drawingDone = raffle.status === 'completed';
   const drawingNow = raffle.status === 'drawing';
 
-  // Hard-cap how many we let the user try to buy in one go.
   const maxBuy = Math.max(0, Math.min(
     raffle.maxTicketsPerUser - raffle.userTicketCount,
     raffle.available,
   ));
 
-  // ─── Initial loads ──────────────────────────────────────────────────────────
   const loadTickets = async (page = 1) => {
     setTicketsLoading(true);
     try {
@@ -219,7 +199,54 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     }
   };
 
+  const refetchRaffle = async () => {
+    try {
+      const data = await callAPI(`/api/raffle/${raffle.slug}`);
+      if (data) setRaffle(data as Raffle);
+    } catch (err) {
+      // ignore
+    }
+  };
+
   useEffect(() => { loadTickets(1); loadComments(); /* eslint-disable-next-line */ }, [raffle.slug]);
+
+  // ─── Draw-state polling: source of truth during 'drawing' ────────────────────
+  useEffect(() => {
+    if (raffle.status !== 'drawing') return;
+    let cancelled = false;
+    let stopped = false;
+    const poll = async () => {
+      if (cancelled || stopped) return;
+      try {
+        const data = await callAPI(`/api/raffle/${raffle.slug}/draw-state`);
+        if (cancelled) return;
+        if (data) {
+          setDrawState(data as DrawState);
+          if ((data as DrawState).status === 'completed') {
+            stopped = true;
+            // Pull the full detail for winners + status flip + ticket badges.
+            await refetchRaffle();
+            await loadTickets(1);
+          } else if ((data as DrawState).status === 'cancelled') {
+            stopped = true;
+            await refetchRaffle();
+          }
+        }
+      } catch (_e) { /* swallow — try again next tick */ }
+    };
+    poll();
+    const id = window.setInterval(poll, 1000);
+    return () => { cancelled = true; window.clearInterval(id); };
+    // eslint-disable-next-line
+  }, [raffle.slug, raffle.status]);
+
+  // 200ms re-render driver so the "Próxima eliminación en Xs" countdown ticks
+  // smoothly between server polls without re-firing fetches.
+  useEffect(() => {
+    if (raffle.status !== 'drawing') return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 200);
+    return () => window.clearInterval(id);
+  }, [raffle.status]);
 
   // ─── SSE with exp backoff ───────────────────────────────────────────────────
   useEffect(() => {
@@ -246,6 +273,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       };
     };
 
+    const pollDrawStateNow = async () => {
+      try {
+        const data = await callAPI(`/api/raffle/${raffle.slug}/draw-state`);
+        if (data) setDrawState(data as DrawState);
+      } catch (_e) { /* ignore */ }
+    };
+
     const handleEvent = (e: any) => {
       if (e.type === 'snapshot') {
         setRaffle((r) => ({
@@ -253,10 +287,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           status: e.raffle.status,
           sold: e.raffle.sold,
           available: e.raffle.available,
-          revealStartedAt: e.raffle.revealStartedAt,
-          revealOrder: e.raffle.revealOrder,
-          revealDigits: e.raffle.revealDigits,
+          winnersCount: e.raffle.winnersCount ?? r.winnersCount,
+          eliminationIntervalMs: e.raffle.eliminationIntervalMs ?? r.eliminationIntervalMs,
           winner: e.raffle.winner,
+          winners: e.raffle.winners ?? r.winners,
           userTicketCount: e.raffle.viewerTicketsCount ?? r.userTicketCount,
         }));
       } else if (e.type === 'ticket_purchased') {
@@ -265,15 +299,21 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       } else if (e.type === 'comment') {
         setComments((prev) => [...prev, e.comment]);
       } else if (e.type === 'draw_started') {
+        setRaffle((r) => ({ ...r, status: 'drawing' }));
+        // SSE is just a hint — kick the polling loop immediately.
+        pollDrawStateNow();
+      } else if (e.type === 'elimination') {
+        // Hint to poll immediately so we update faster than the 1s tick.
+        pollDrawStateNow();
+      } else if (e.type === 'draw_completed') {
         setRaffle((r) => ({
           ...r,
-          status: 'drawing',
-          revealStartedAt: e.revealStartedAt,
-          revealOrder: e.revealOrder,
-          revealDigits: e.revealDigits,
+          status: 'completed',
+          winners: e.winners ?? r.winners,
+          winner: (e.winners && e.winners[0]) ?? r.winner,
         }));
-      } else if (e.type === 'draw_completed') {
-        setRaffle((r) => ({ ...r, status: 'completed', winner: e.winner }));
+        refetchRaffle();
+        loadTickets(1);
       } else if (e.type === 'cancelled') {
         setRaffle((r) => ({ ...r, status: 'cancelled', cancelReason: e.reason }));
       }
@@ -285,8 +325,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   }, [raffle.slug]);
 
   // Belt-and-suspenders: 1s polling for new comments. SSE through reverse
-  // proxies (Coolify/Cloudflare) sometimes drops or buffers events; polling
-  // catches anything the stream missed. We dedupe by id.
+  // proxies sometimes drops events; polling catches anything the stream missed.
   useEffect(() => {
     let cancelled = false;
     const poll = async () => {
@@ -302,15 +341,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             return [...prev, ...incoming];
           });
         }
-      } catch (_e) { /* swallow — try again next tick */ }
+      } catch (_e) { /* swallow */ }
     };
     const id = window.setInterval(poll, 1000);
     return () => { cancelled = true; window.clearInterval(id); };
     // eslint-disable-next-line
   }, [raffle.slug, comments]);
 
-  // Track whether the user was at the bottom of the chat before re-render so
-  // we don't yank them up when a new comment arrives.
   useEffect(() => {
     const el = commentsScrollRef.current;
     if (!el) return;
@@ -328,7 +365,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     if (el) el.scrollTop = el.scrollHeight;
   }, [comments]);
 
-  // ─── Comment posting ────────────────────────────────────────────────────────
   const submitComment = async () => {
     const body = commentDraft.trim();
     if (!body || commentBusy) return;
@@ -339,17 +375,14 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         method: 'POST',
         body: JSON.stringify({ body }),
       });
-      // SSE delivers the broadcast; clear local draft.
       setCommentDraft('');
     } catch (err: any) {
-      // surface inline lightly
       console.error(err);
     } finally {
       setCommentBusy(false);
     }
   };
 
-  // ─── Free purchase ──────────────────────────────────────────────────────────
   const buyFree = async () => {
     if (!logged) { window.location.href = '/login'; return; }
     setBuyError('');
@@ -442,7 +475,15 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     </div>
   );
 
-  // ─── Center column: countdown / reveal / winner ─────────────────────────────
+  // ─── Center column ──────────────────────────────────────────────────────────
+  const nextEliminationSeconds = useMemo(() => {
+    if (!drawState?.nextEliminationAt) return null;
+    const diff = Math.max(0, new Date(drawState.nextEliminationAt).getTime() - Date.now());
+    return Math.ceil(diff / 1000);
+    // tick is intentional — re-evaluate every 200ms render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawState?.nextEliminationAt, tick]);
+
   const Center = (
     <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[400px]">
       {raffle.status === 'active' && raffle.drawType === 'countdown' && (
@@ -458,6 +499,11 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               {new Date(raffle.drawAt).toLocaleString('es-ES')}
             </p>
           )}
+          {raffle.winnersCount > 1 && (
+            <p className="mt-4 text-amber-300 text-xs font-bold uppercase tracking-widest">
+              Sorteo de {raffle.winnersCount} ganadores
+            </p>
+          )}
         </>
       )}
       {raffle.status === 'active' && raffle.drawType === 'max-tickets' && (
@@ -469,41 +515,159 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             {raffle.sold}<span className="text-zinc-700">/{raffle.maxTickets}</span>
           </div>
           <p className="text-zinc-400 text-sm mt-4">Se sortea al alcanzar {raffle.maxTickets} tickets.</p>
+          {raffle.winnersCount > 1 && (
+            <p className="mt-3 text-amber-300 text-xs font-bold uppercase tracking-widest">
+              Sorteo de {raffle.winnersCount} ganadores
+            </p>
+          )}
         </>
       )}
-      {drawingNow && raffle.revealStartedAt && raffle.revealOrder && raffle.revealDigits && (
-        <>
-          <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-4 animate-pulse flex items-center gap-2">
-            <Sparkles size={14} className="animate-pulse" /> Sorteando ganador
-          </div>
-          <RevealAnimation
-            startedAt={raffle.revealStartedAt}
-            order={raffle.revealOrder}
-            digits={raffle.revealDigits}
-            done={false}
-          />
-        </>
-      )}
-      {drawingDone && raffle.winner && (
-        <>
-          <div className="text-emerald-400 text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-            <Trophy size={14} /> Ganador
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            {raffle.winner.userImageUrl ? (
-              <img src={raffle.winner.userImageUrl} alt="" className="w-20 h-20 rounded-full object-cover ring-4 ring-yellow-400 shadow-2xl shadow-yellow-500/40" />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-yellow-400 flex items-center justify-center text-zinc-950 text-2xl font-black ring-4 ring-yellow-300">
-                {raffle.winner.userUsername?.[0]?.toUpperCase() ?? '?'}
+
+      {drawingNow && (
+        <div className="w-full max-w-xl space-y-5">
+          <div className="text-center">
+            <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
+              <Sparkles size={14} className="animate-pulse" /> Torneo de eliminación en vivo
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
+                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Eliminaciones restantes</p>
+                <p className="mt-1 text-4xl font-black text-white tabular-nums">
+                  {drawState?.eliminationsRemaining ?? '—'}
+                </p>
               </div>
-            )}
-            <a href={`/profile/${raffle.winner.userSlug}`} className="text-xl font-black text-white hover:text-yellow-400 transition-colors">
-              {raffle.winner.userUsername}
-            </a>
-            <div className="text-3xl font-black text-yellow-400 tabular-nums">#{raffle.winner.ticketNumber}</div>
+              <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
+                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Próxima eliminación</p>
+                <p className="mt-1 text-4xl font-black text-amber-300 tabular-nums">
+                  {nextEliminationSeconds !== null ? `${nextEliminationSeconds}s` : '—'}
+                </p>
+              </div>
+            </div>
           </div>
-        </>
+
+          {drawState?.lastEliminated && (
+            <div className="bg-red-500/5 border border-red-500/30 rounded-2xl p-5">
+              <p className="text-red-400 text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Skull size={12} /> Eliminado
+              </p>
+              <div className="flex items-center gap-4">
+                {drawState.lastEliminated.userImageUrl ? (
+                  <img
+                    src={drawState.lastEliminated.userImageUrl}
+                    alt=""
+                    className="w-14 h-14 rounded-full object-cover ring-2 ring-red-500/40 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center text-red-300 text-xl font-black flex-shrink-0">
+                    {drawState.lastEliminated.userUsername?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl font-black text-red-300 tabular-nums">
+                      #{drawState.lastEliminated.number}
+                    </span>
+                    <a
+                      href={`/profile/${drawState.lastEliminated.userSlug}`}
+                      className="text-xl font-black text-white hover:text-red-300 transition-colors truncate"
+                    >
+                      {drawState.lastEliminated.userUsername}
+                    </a>
+                  </div>
+                  {drawState.lastEliminated.comment && (
+                    <p className="mt-1 text-zinc-400 text-sm italic truncate">
+                      &ldquo;{drawState.lastEliminated.comment}&rdquo;
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {drawState && drawState.recentEliminated.length > 0 && (
+            <div>
+              <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">
+                Últimas eliminaciones
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {drawState.recentEliminated.map((e) => (
+                  <div
+                    key={`elim-${e.eliminationOrder}`}
+                    className="flex flex-col items-center gap-1"
+                    title={`@${e.userUsername}${e.comment ? ` — "${e.comment}"` : ''}`}
+                  >
+                    {e.userImageUrl ? (
+                      <img
+                        src={e.userImageUrl}
+                        alt=""
+                        className="w-10 h-10 rounded-full object-cover ring-1 ring-red-500/30 grayscale opacity-80"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 ring-1 ring-red-500/30">
+                        {e.userUsername?.[0]?.toUpperCase() ?? '?'}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-black text-zinc-400 tabular-nums">#{e.number}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
+
+      {drawingDone && (
+        <div className="w-full max-w-xl space-y-4">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 text-zinc-950 text-xs font-black uppercase tracking-widest">
+              <Trophy size={14} />
+              {raffle.winners && raffle.winners.length > 1 ? 'Ganadores' : 'Ganador'}
+            </div>
+          </div>
+          <div className="space-y-3">
+            {(raffle.winners ?? (raffle.winner ? [raffle.winner] : [])).map((w, idx) => (
+              <div
+                key={`w-${w.ticketNumber}-${idx}`}
+                className="bg-gradient-to-r from-yellow-500/10 via-amber-400/5 to-transparent border border-yellow-500/30 rounded-2xl p-4 flex items-center gap-4"
+              >
+                {w.userImageUrl ? (
+                  <img
+                    src={w.userImageUrl}
+                    alt=""
+                    className="w-14 h-14 rounded-full object-cover ring-2 ring-yellow-400 shadow-lg shadow-yellow-500/30 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-yellow-400 flex items-center justify-center text-zinc-950 text-xl font-black ring-2 ring-yellow-300 flex-shrink-0">
+                    {w.userUsername?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-2xl font-black text-yellow-400 tabular-nums">
+                      #{w.ticketNumber}
+                    </span>
+                    <a
+                      href={`/profile/${w.userSlug}`}
+                      className="text-lg font-black text-white hover:text-yellow-400 transition-colors truncate"
+                    >
+                      {w.userUsername}
+                    </a>
+                  </div>
+                  {w.comment && (
+                    <p className="mt-1 text-zinc-400 text-sm italic truncate">
+                      &ldquo;{w.comment}&rdquo;
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+            {(!raffle.winners || raffle.winners.length === 0) && !raffle.winner && (
+              <p className="text-center text-zinc-500 text-sm italic">Sin ganadores registrados.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {raffle.status === 'cancelled' && (
         <>
           <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -515,12 +679,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     </div>
   );
 
-  // ─── Left sidebar with purchase ─────────────────────────────────────────────
+  // ─── Sidebar ────────────────────────────────────────────────────────────────
   const purchaseDisabled = raffle.status !== 'active' || maxBuy <= 0;
 
   const discord = raffle.viewer?.discord;
-  // Phase 1 gate: only need to be logged + email-verified. Discord is shown as
-  // an optional badge but doesn't block participation.
   const needsLogin = !logged;
   const canParticipate = !!raffle.viewer?.canParticipate;
   const blockReason = raffle.viewer?.blockReason;
@@ -553,8 +715,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           <p className="text-white font-black text-base tabular-nums">{raffle.sold}/{raffle.maxTickets}</p>
         </div>
         <div className="bg-zinc-900 rounded-xl p-3">
-          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Máx. por usuario</p>
-          <p className="text-white font-black text-base tabular-nums">{raffle.maxTicketsPerUser}</p>
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Ganadores</p>
+          <p className="text-white font-black text-base tabular-nums">{raffle.winnersCount}</p>
         </div>
         <div className="bg-zinc-900 rounded-xl p-3">
           <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Tienes</p>
@@ -564,9 +726,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
 
       {raffle.status === 'active' && (
         <>
-          {/* Comment input only when there's at least 1 ticket left to buy.
-              Skipping it when the user already hit their cap or the raffle sold
-              out keeps the sidebar focused on the actual buy CTA below. */}
           {maxBuy > 0 && (
             <div>
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Comentario opcional</label>
@@ -632,7 +791,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             </a>
           )}
 
-          {/* Discord badge — purely informational. Not a blocker. */}
           {!purchaseDisabled && logged && !needsEmailVerify && discord && !discord.linked && (
             <a
               href="/settings#discord"
@@ -710,6 +868,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     </div>
   );
 
+  // Set of surviving ticket numbers (5-padded) for the trophy badge in the
+  // tickets table.
+  const survivingNumbers = useMemo(() => {
+    if (!raffle.winners) return new Set<string>();
+    return new Set(raffle.winners.map((w) => w.ticketNumber));
+  }, [raffle.winners]);
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar
@@ -724,7 +889,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         onGoSearch={() => { window.location.href = '/search'; }}
       />
 
-      {/* Banner */}
       <div className="relative pt-20 h-64 md:h-80 overflow-hidden bg-gradient-to-br from-amber-500/10 via-zinc-950 to-zinc-950">
         {raffle.bannerUrl && (
           <img src={raffle.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
@@ -745,7 +909,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           <div className="lg:col-span-3">{Chat}</div>
         </div>
 
-        {/* Tickets list */}
         <div className="mt-12">
           <div className="flex items-center gap-3 mb-6">
             <Users size={18} className="text-cyan-400" />
@@ -764,6 +927,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-zinc-500 text-left bg-zinc-900/40">
+                      <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Estado</th>
                       <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Ticket</th>
                       <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Usuario</th>
                       <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Comentario</th>
@@ -771,27 +935,49 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                     </tr>
                   </thead>
                   <tbody>
-                    {tickets.map((t) => (
-                      <tr key={t.id} className="border-t border-zinc-800 hover:bg-zinc-900/40 transition-colors">
-                        <td className="px-4 py-3 font-black text-yellow-400 tabular-nums">#{t.number}</td>
-                        <td className="px-4 py-3">
-                          <a href={`/profile/${t.userSlug}`} className="flex items-center gap-2 hover:text-cyan-400">
-                            {t.userImageUrl ? (
-                              <img src={t.userImageUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
-                            ) : (
-                              <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">
-                                {t.userUsername?.[0]?.toUpperCase() ?? '?'}
-                              </div>
+                    {tickets.map((t) => {
+                      const isEliminated = !!t.eliminatedAt;
+                      const isWinner = drawingDone && survivingNumbers.has(t.number);
+                      return (
+                        <tr
+                          key={t.id}
+                          className={`border-t border-zinc-800 hover:bg-zinc-900/40 transition-colors ${
+                            isEliminated ? 'bg-red-500/10 border-l-2 border-l-red-500/50' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            {isWinner && <span title="Ganador" className="text-lg">🏆</span>}
+                            {isEliminated && (
+                              <span title={`Eliminado #${t.eliminationOrder ?? '?'}`} className="text-red-400 text-[10px] font-black uppercase tracking-widest">
+                                Out #{t.eliminationOrder ?? '?'}
+                              </span>
                             )}
-                            <span className="font-bold text-white">{t.userUsername}</span>
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 text-zinc-400 max-w-md truncate">{t.comment ?? '—'}</td>
-                        <td className="px-4 py-3 text-zinc-500 text-xs whitespace-nowrap">
-                          {new Date(t.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                        </td>
-                      </tr>
-                    ))}
+                            {!isWinner && !isEliminated && (
+                              <span className="text-zinc-600 text-[10px]">—</span>
+                            )}
+                          </td>
+                          <td className={`px-4 py-3 font-black tabular-nums ${isEliminated ? 'text-zinc-500 line-through' : 'text-yellow-400'}`}>
+                            #{t.number}
+                          </td>
+                          <td className="px-4 py-3">
+                            <a href={`/profile/${t.userSlug}`} className={`flex items-center gap-2 hover:text-cyan-400 ${isEliminated ? 'opacity-60' : ''}`}>
+                              {t.userImageUrl ? (
+                                <img src={t.userImageUrl} alt="" className={`w-7 h-7 rounded-full object-cover ${isEliminated ? 'grayscale' : ''}`} />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">
+                                  {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                                </div>
+                              )}
+                              <span className="font-bold text-white">{t.userUsername}</span>
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-400 max-w-md truncate">{t.comment ?? '—'}</td>
+                          <td className="px-4 py-3 text-zinc-500 text-xs whitespace-nowrap">
+                            {new Date(t.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

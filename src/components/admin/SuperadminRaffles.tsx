@@ -15,6 +15,8 @@ interface RaffleAdmin {
   minTickets: number;
   maxTickets: number;
   maxTicketsPerUser: number;
+  winnersCount: number;
+  eliminationIntervalMs: number;
   drawType: string;
   drawAt: string | null;
   status: string;
@@ -43,6 +45,17 @@ const saFetch = async (path: string, token: string, options?: RequestInit) => {
 
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+// uploadFile returns the R2 object key (e.g. "tenants/superadmin/raffles/foo.png").
+// We need an absolute URL — when PUBLIC_R2_PUBLIC_URL is unset we fall back to the
+// production R2 host so admins editing in any environment still get loadable
+// <img src> values instead of relative paths.
+const R2_FALLBACK_BASE = 'https://r2.capibaratraductor.com';
+const resolveR2Url = (key: string): string => {
+  if (/^https?:\/\//i.test(key)) return key;
+  const baseUrl = (import.meta.env.PUBLIC_R2_PUBLIC_URL || R2_FALLBACK_BASE).replace(/\/$/, '');
+  return `${baseUrl}/${key.replace(/^\//, '')}`;
+};
 
 // Live multi-timezone preview for raffle draw datetimes. The input value is
 // the local time of whoever is filling the form; we show what that wall-clock
@@ -131,6 +144,7 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
   const [minTickets, setMinTickets] = useState(1);
   const [maxTickets, setMaxTickets] = useState(50);
   const [maxTicketsPerUser, setMaxTicketsPerUser] = useState(5);
+  const [winnersCount, setWinnersCount] = useState(1);
   const [drawType, setDrawType] = useState<'countdown' | 'max-tickets'>('countdown');
   const [drawAt, setDrawAt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -139,12 +153,17 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
   const [error, setError] = useState('');
 
   useEffect(() => { if (!slugTouched) setSlug(slugify(title)); }, [title, slugTouched]);
+  // Clamp winnersCount to a valid range whenever maxTickets changes so we
+  // never submit a value the backend will reject.
+  const winnersMax = Math.max(1, Math.min(maxTickets - 1, 100));
+  useEffect(() => {
+    if (winnersCount > winnersMax) setWinnersCount(winnersMax);
+  }, [winnersMax, winnersCount]);
 
   const handleFileUpload = async (file: File, target: 'image' | 'banner') => {
     try {
       const key = await uploadFile(file, undefined, 'raffles');
-      const baseUrl = (import.meta.env.PUBLIC_R2_PUBLIC_URL || '').replace(/\/$/, '');
-      const fullUrl = baseUrl ? `${baseUrl}/${key}` : key;
+      const fullUrl = resolveR2Url(key);
       if (target === 'image') setImageUrl(fullUrl);
       else setBannerUrl(fullUrl);
     } catch (err: any) {
@@ -169,6 +188,7 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
           minTickets,
           maxTickets,
           maxTicketsPerUser,
+          winnersCount,
           drawType,
           drawAt: drawType === 'countdown' && drawAt ? new Date(drawAt).toISOString() : null,
         }),
@@ -235,6 +255,18 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
             <input type="number" min="1" value={maxTicketsPerUser} onChange={(e) => setMaxTicketsPerUser(parseInt(e.target.value) || 1)} className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
             <p className="text-[10px] text-zinc-500 mt-1">Cuántos tickets puede comprar una misma persona.</p>
           </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Cantidad de ganadores</label>
+            <input
+              type="number"
+              min="1"
+              max={winnersMax}
+              value={winnersCount}
+              onChange={(e) => setWinnersCount(Math.max(1, Math.min(winnersMax, parseInt(e.target.value) || 1)))}
+              className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white"
+            />
+            <p className="text-[10px] text-zinc-500 mt-1">Cuántos tickets sobreviven después de la ronda de eliminación. Mínimo 1.</p>
+          </div>
           {drawType === 'countdown' && (
             <div className="col-span-2">
               <DateTimeFriendly value={drawAt} onChange={setDrawAt} />
@@ -263,10 +295,6 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
 };
 
 const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: () => void; token: string }> = ({ raffle, onClose, onSaved, token }) => {
-  // Once tickets exist the backend rejects mutations to economic fields
-  // (price, min/max, drawType, drawAt). Surface that constraint as a banner
-  // and lock the inputs so the FE matches what the API will accept.
-  const ticketsExist = raffle.sold > 0;
   const [title, setTitle] = useState(raffle.title);
   const [description, setDescription] = useState(raffle.description ?? '');
   const [ticketPrice, setTicketPrice] = useState(raffle.ticketPrice);
@@ -274,6 +302,7 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
   const [minTickets, setMinTickets] = useState(raffle.minTickets);
   const [maxTickets, setMaxTickets] = useState(raffle.maxTickets);
   const [maxTicketsPerUser, setMaxTicketsPerUser] = useState(raffle.maxTicketsPerUser);
+  const [winnersCount, setWinnersCount] = useState(raffle.winnersCount ?? 1);
   const [drawType, setDrawType] = useState<'countdown' | 'max-tickets'>(raffle.drawType as any);
   const [drawAt, setDrawAt] = useState(raffle.drawAt ? raffle.drawAt.slice(0, 16) : '');
   const [imageUrl, setImageUrl] = useState(raffle.imageUrl ?? '');
@@ -284,8 +313,7 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
   const handleFileUpload = async (file: File, target: 'image' | 'banner') => {
     try {
       const key = await uploadFile(file, undefined, 'raffles');
-      const baseUrl = (import.meta.env.PUBLIC_R2_PUBLIC_URL || '').replace(/\/$/, '');
-      const fullUrl = baseUrl ? `${baseUrl}/${key}` : key;
+      const fullUrl = resolveR2Url(key);
       if (target === 'image') setImageUrl(fullUrl);
       else setBannerUrl(fullUrl);
     } catch (err: any) {
@@ -297,26 +325,22 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
     setError('');
     setBusy(true);
     try {
-      // When tickets exist, only send the cosmetic subset to avoid 422 from
-      // the backend's immutability check.
-      const body: any = ticketsExist
-        ? { description: description || null, imageUrl: imageUrl || null, bannerUrl: bannerUrl || null }
-        : {
-            title,
-            description: description || null,
-            imageUrl: imageUrl || null,
-            bannerUrl: bannerUrl || null,
-            ticketPrice,
-            currency,
-            minTickets,
-            maxTickets,
-            maxTicketsPerUser,
-            drawType,
-            drawAt: drawType === 'countdown' && drawAt ? new Date(drawAt).toISOString() : null,
-          };
       await saFetch(`/api/superadmin/raffles/${raffle.slug}`, token, {
         method: 'PATCH',
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          title,
+          description: description || null,
+          imageUrl: imageUrl || null,
+          bannerUrl: bannerUrl || null,
+          ticketPrice,
+          currency,
+          minTickets,
+          maxTickets,
+          maxTicketsPerUser,
+          winnersCount,
+          drawType,
+          drawAt: drawType === 'countdown' && drawAt ? new Date(drawAt).toISOString() : null,
+        }),
       });
       onSaved();
       onClose();
@@ -332,16 +356,16 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-black text-white mb-1">Editar sorteo</h2>
         <p className="text-zinc-500 text-xs mb-4 font-mono">/{raffle.slug}</p>
-        {ticketsExist && (
-          <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs">
-            Hay {raffle.sold} ticket(s) vendido(s). Solo puedes editar descripción, portada y banner.
+        {raffle.sold > 0 && (
+          <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-200 text-xs">
+            Hay {raffle.sold} ticket(s) vendido(s). Como superadmin puedes editar todo igual — cambios económicos (precio, máximos, fecha) afectan a compradores existentes, así que ten cuidado.
           </div>
         )}
         {error && <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <label className="text-xs text-zinc-400 font-bold">Título</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div className="col-span-2">
             <label className="text-xs text-zinc-400 font-bold">Descripción</label>
@@ -349,34 +373,46 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Precio del ticket</label>
-            <input type="number" step="0.01" min="0" value={ticketPrice} onChange={(e) => setTicketPrice(parseFloat(e.target.value) || 0)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+            <input type="number" step="0.01" min="0" value={ticketPrice} onChange={(e) => setTicketPrice(parseFloat(e.target.value) || 0)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Moneda</label>
-            <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono disabled:opacity-50" />
+            <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono" />
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Mín. tickets</label>
-            <input type="number" min="1" value={minTickets} onChange={(e) => setMinTickets(parseInt(e.target.value) || 1)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+            <input type="number" min="1" value={minTickets} onChange={(e) => setMinTickets(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Máx. tickets</label>
-            <input type="number" min="1" max="99999" value={maxTickets} onChange={(e) => setMaxTickets(parseInt(e.target.value) || 1)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+            <input type="number" min="1" max="99999" value={maxTickets} onChange={(e) => setMaxTickets(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Máx. por usuario</label>
-            <input type="number" min="1" value={maxTicketsPerUser} onChange={(e) => setMaxTicketsPerUser(parseInt(e.target.value) || 1)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+            <input type="number" min="1" value={maxTicketsPerUser} onChange={(e) => setMaxTicketsPerUser(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Cantidad de ganadores</label>
+            <input
+              type="number"
+              min="1"
+              max={Math.max(1, Math.min(maxTickets - 1, 100))}
+              value={winnersCount}
+              onChange={(e) => setWinnersCount(parseInt(e.target.value) || 1)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white"
+            />
+            <p className="text-[10px] text-zinc-500 mt-1">Cuántos tickets sobreviven después de la ronda de eliminación. Mínimo 1.</p>
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Tipo de sorteo</label>
-            <select value={drawType} onChange={(e) => setDrawType(e.target.value as any)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50">
+            <select value={drawType} onChange={(e) => setDrawType(e.target.value as any)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white">
               <option value="countdown">Cuenta atrás</option>
               <option value="max-tickets">Al llenar</option>
             </select>
           </div>
           {drawType === 'countdown' && (
             <div className="col-span-2">
-              <DateTimeFriendly value={drawAt} onChange={setDrawAt} disabled={ticketsExist} />
+              <DateTimeFriendly value={drawAt} onChange={setDrawAt} />
             </div>
           )}
           <div>
