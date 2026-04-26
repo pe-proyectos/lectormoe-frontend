@@ -23,6 +23,14 @@ const manga = await callAPI(`/api/manga-custom/${mangaSlug}`);
 if (!manga || manga?.status === false) {
   return Astro.redirect("/404");
 }
+
+// Reinforce that writings live on their own URL hierarchy: redirect novels to
+// /admin/writings/<slug> so the editor UI matches what the user expects.
+const _data = manga.data || manga;
+const _code = _data?.manga?.bookType?.code;
+if (_code && new Set(['novel', 'light-novel', 'book', 'short-story']).has(_code)) {
+  return Astro.redirect(`/${organizationSlug}/admin/writings/${mangaSlug}`, 302);
+}
 ---
 
 <AdminLayout title={_("admin_manga_title")} page="mangas" organizationSlug={organizationSlug}>
@@ -30,7 +38,7 @@ if (!manga || manga?.status === false) {
     language={language}
     initialMangaCustom={manga.data || manga}
     organizationSlug={organizationSlug}
-    client:load
+    client:only="react"
   />
 </AdminLayout>
 

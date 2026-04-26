@@ -244,6 +244,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
                 key={manga.id || manga.slug}
                 language={language}
                 mangaCustom={manga}
+                contentKind={contentKind}
                 onClick={handleCardClick}
                 organizationSlug={organizationSlug}
               />

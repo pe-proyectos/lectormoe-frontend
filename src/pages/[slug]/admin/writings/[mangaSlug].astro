@@ -1,0 +1,37 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import AdminMangaEdit from "../../../../components/admin/AdminMangaEdit";
+
+// @ts-ignore - organization se define dinámicamente en el middleware
+const { language, organization, user, organizationSlug, callAPI } = Astro.locals;
+const logged = !!user;
+const { mangaSlug } = Astro.params;
+
+if (!organization) return Astro.redirect("/404");
+if (!logged) return Astro.redirect(`/${organizationSlug}/login`);
+
+const manga = await callAPI(`/api/manga-custom/${mangaSlug}`);
+
+if (!manga || manga?.status === false) {
+  return Astro.redirect("/404");
+}
+
+// Defensive: if the user lands here via /admin/writings/<slug> but the manga
+// is NOT a writing, redirect to the canonical /admin/mangas URL so the right
+// admin UI loads (and vice-versa from the mangas page would also redirect).
+const data = manga.data || manga;
+const code = data?.manga?.bookType?.code;
+const WRITING = new Set(['novel', 'light-novel', 'book', 'short-story']);
+if (code && !WRITING.has(code)) {
+  return Astro.redirect(`/${organizationSlug}/admin/mangas/${mangaSlug}`, 302);
+}
+---
+
+<AdminLayout title="Editar novela" page="writings" organizationSlug={organizationSlug}>
+  <AdminMangaEdit
+    language={language}
+    initialMangaCustom={data}
+    organizationSlug={organizationSlug}
+    client:only="react"
+  />
+</AdminLayout>

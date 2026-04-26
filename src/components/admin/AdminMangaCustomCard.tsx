@@ -14,12 +14,16 @@ interface AdminMangaCustomCardProps {
   };
   onClick: (mangaCustom: any) => void;
   organizationSlug: string;
+  // 'writing' routes the card to /admin/writings/[slug] so the whole writings
+  // surface stays under its own URL hierarchy.
+  contentKind?: 'manga' | 'writing';
 }
 
 const AdminMangaCustomCard: React.FC<AdminMangaCustomCardProps> = ({
   mangaCustom,
   onClick,
   organizationSlug,
+  contentKind = 'manga',
 }) => {
   // Función helper para obtener el slug del manga (puede estar en diferentes lugares)
   const getMangaSlug = (manga: any): string | undefined => {
@@ -27,8 +31,9 @@ const AdminMangaCustomCard: React.FC<AdminMangaCustomCardProps> = ({
   };
 
   const mangaSlug = getMangaSlug(mangaCustom);
-  const mangaUrl = mangaSlug 
-    ? `/${organizationSlug}/admin/mangas/${mangaSlug}`
+  const adminSection = contentKind === 'writing' ? 'writings' : 'mangas';
+  const mangaUrl = mangaSlug
+    ? `/${organizationSlug}/admin/${adminSection}/${mangaSlug}`
     : '#';
 
   return (
