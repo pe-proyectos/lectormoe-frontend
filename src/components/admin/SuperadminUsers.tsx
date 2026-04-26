@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Search, MailCheck, MailX, Send, Loader2, RotateCcw } from 'lucide-react';
+import { Search, MailCheck, MailX, Send, Loader2, RotateCcw, EyeOff } from 'lucide-react';
 
 const API = import.meta.env.PUBLIC_API_URL as string;
 
@@ -10,6 +10,7 @@ interface UserRow {
   slug: string | null;
   imageUrl: string | null;
   emailVerified: boolean;
+  hideAds: boolean;
   createdAt: string;
 }
 
@@ -78,6 +79,24 @@ const SuperadminUsers: React.FC<{ token: string }> = ({ token }) => {
     }, 300);
     return () => window.clearTimeout(t);
   }, [searchInput, search]);
+
+  const toggleHideAds = async (userId: number, next: boolean) => {
+    setItems((prev) => prev.map((u) => (u.id === userId ? { ...u, hideAds: next } : u)));
+    try {
+      const res = await fetch(`${API}/api/superadmin/users/${userId}/hide-ads`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hideAds: next }),
+      });
+      const json = await res.json();
+      if (!json.status) throw new Error(json.message ?? 'Error');
+      setFeedback({ kind: 'ok', msg: `hideAds ${next ? 'activado' : 'desactivado'}` });
+    } catch (e: any) {
+      // rollback on failure
+      setItems((prev) => prev.map((u) => (u.id === userId ? { ...u, hideAds: !next } : u)));
+      setFeedback({ kind: 'err', msg: e?.message ?? 'Error actualizando hideAds' });
+    }
+  };
 
   const resend = async (userId: number, email: string) => {
     setResendingId(userId);
@@ -161,19 +180,20 @@ const SuperadminUsers: React.FC<{ token: string }> = ({ token }) => {
                 <th className="text-left px-4 py-3 hidden md:table-cell">Email</th>
                 <th className="text-left px-4 py-3 hidden lg:table-cell">Registro</th>
                 <th className="text-left px-4 py-3">Estado</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">No ads</th>
                 <th className="text-right px-4 py-3">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
               {loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
                     <Loader2 size={20} className="inline animate-spin text-cyan-400" />
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
                     No se encontraron usuarios
                   </td>
                 </tr>
@@ -204,6 +224,16 @@ const SuperadminUsers: React.FC<{ token: string }> = ({ token }) => {
                         <MailX size={11} /> Pendiente
                       </span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <button
+                      type="button"
+                      onClick={() => toggleHideAds(u.id, !u.hideAds)}
+                      title={u.hideAds ? 'Sin anuncios (override global)' : 'Activar override sin anuncios'}
+                      className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${u.hideAds ? 'bg-purple-500' : 'bg-zinc-800'}`}
+                    >
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${u.hideAds ? 'right-1' : 'left-1'}`} />
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {u.emailVerified ? (

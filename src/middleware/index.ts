@@ -8,6 +8,10 @@ import { getIP } from "../util/get-ip";
  * @returns true si se deben mostrar anuncios, false si no
  */
 function calculateShowAds(user: any, organization: any): boolean {
+  // GLOBAL OVERRIDE: User.hideAds is the platform-wide opt-out (admins,
+  // giveaway prizes). Trumps everything; works across every page.
+  if (user?.hideAds === true) return false;
+
   // CROSS-ORG: any active subscription anywhere on the platform suppresses ads
   // everywhere. /api/auth/check returns ALL active subs regardless of which org
   // the page belongs to, so a single check covers all surfaces (per-org pages,
