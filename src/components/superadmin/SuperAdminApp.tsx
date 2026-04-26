@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SuperadminCreateScan from '../admin/SuperadminCreateScan';
 import SuperadminUsers from '../admin/SuperadminUsers';
+import SuperadminSubscriptions from '../admin/SuperadminSubscriptions';
 
 const API = import.meta.env.PUBLIC_API_URL as string;
 
@@ -483,12 +484,13 @@ const ErrorMsg = ({ msg }: { msg: string }) => (
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users';
+type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview', label: 'Vista general', icon: '📊' },
   { id: 'orgs', label: 'Organizaciones', icon: '🏢' },
   { id: 'users', label: 'Usuarios', icon: '👥' },
+  { id: 'subscriptions', label: 'Suscripciones', icon: '💳' },
   { id: 'requests', label: 'Solicitudes', icon: '📬' },
   { id: 'create-scan', label: 'Alta de Scan', icon: '➕' },
 ];
@@ -553,6 +555,7 @@ const SuperAdminApp = () => {
         {tab === 'requests' && <RequestsTab token={token} />}
         {tab === 'create-scan' && <SuperadminCreateScan token={token} />}
         {tab === 'users' && <SuperadminUsers token={token} />}
+        {tab === 'subscriptions' && <SuperadminSubscriptions token={token} />}
       </div>
     </div>
   );
