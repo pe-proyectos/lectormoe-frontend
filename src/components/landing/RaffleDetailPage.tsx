@@ -47,6 +47,7 @@ interface Comment {
   userUsername: string;
   userImageUrl: string | null;
   isTicketHolder: boolean;
+  ticketCount?: number;
   body: string;
   createdAt: string;
 }
@@ -283,6 +284,31 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     // eslint-disable-next-line
   }, [raffle.slug]);
 
+  // Belt-and-suspenders: 1s polling for new comments. SSE through reverse
+  // proxies (Coolify/Cloudflare) sometimes drops or buffers events; polling
+  // catches anything the stream missed. We dedupe by id.
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const lastId = comments.length > 0 ? comments[comments.length - 1].id : 0;
+        const data = await callAPI(`/api/raffle/${raffle.slug}/comments?after=${lastId}&limit=50`);
+        if (cancelled) return;
+        if (Array.isArray(data) && data.length > 0) {
+          setComments((prev) => {
+            const seen = new Set(prev.map((c) => c.id));
+            const incoming = (data as Comment[]).filter((c) => !seen.has(c.id));
+            if (incoming.length === 0) return prev;
+            return [...prev, ...incoming];
+          });
+        }
+      } catch (_e) { /* swallow — try again next tick */ }
+    };
+    const id = window.setInterval(poll, 1000);
+    return () => { cancelled = true; window.clearInterval(id); };
+    // eslint-disable-next-line
+  }, [raffle.slug, comments]);
+
   // Track whether the user was at the bottom of the chat before re-render so
   // we don't yank them up when a new comment arrives.
   useEffect(() => {
@@ -385,6 +411,11 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               >
                 {c.userUsername}
               </a>
+              {c.isTicketHolder && c.ticketCount && c.ticketCount > 0 && (
+                <span className="ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[9px] font-black tabular-nums" title={`${c.ticketCount} ticket(s)`}>
+                  🎟️{c.ticketCount}
+                </span>
+              )}
               <span className="text-zinc-200 ml-1.5 break-words">{linkifyMentions(c.body)}</span>
             </div>
           </div>
@@ -533,15 +564,20 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
 
       {raffle.status === 'active' && (
         <>
-          <div>
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Comentario opcional</label>
-            <input
-              value={buyComment}
-              onChange={(e) => setBuyComment(e.target.value.slice(0, 500))}
-              placeholder="Mensaje al comprar el ticket"
-              className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500/60"
-            />
-          </div>
+          {/* Comment input only when there's at least 1 ticket left to buy.
+              Skipping it when the user already hit their cap or the raffle sold
+              out keeps the sidebar focused on the actual buy CTA below. */}
+          {maxBuy > 0 && (
+            <div>
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Comentario opcional</label>
+              <input
+                value={buyComment}
+                onChange={(e) => setBuyComment(e.target.value.slice(0, 500))}
+                placeholder="Mensaje al comprar el ticket"
+                className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500/60"
+              />
+            </div>
+          )}
 
           {maxBuy > 0 && (
             <div>
