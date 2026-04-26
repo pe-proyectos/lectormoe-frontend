@@ -95,6 +95,12 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
       href: `/${organizationSlug}/admin/mangas`,
     },
     {
+      id: 'writings',
+      label: 'Novelas',
+      icon: BookOpen,
+      href: `/${organizationSlug}/admin/writings`,
+    },
+    {
       id: 'users',
       label: 'Usuarios',
       icon: Users,

@@ -356,6 +356,13 @@ const Navbar: React.FC<NavbarProps> = ({
   // user stays in the NSFW context after navigating away from a manga page.
   const nsfwPrefix = nsfwMode ? '/red' : '';
 
+  // The writings/mangas toggle: when on a /writings page, expose "Mangas"
+  // back to the main landing; otherwise expose "Novelas" to the writings landing.
+  const isOnWritings = typeof window !== 'undefined' && window.location.pathname.startsWith(nsfwPrefix + '/writings');
+  const altContentLink = isOnWritings
+    ? { label: 'Mangas', href: nsfwMode ? '/red' : '/' }
+    : { label: 'Novelas', href: nsfwMode ? '/red/writings' : '/writings' };
+
   const navigateToProfile = () => {
     window.location.href = `${nsfwPrefix}/profile/${user?.slug}`;
   };
@@ -495,10 +502,10 @@ const Navbar: React.FC<NavbarProps> = ({
           </a>
 
           <a
-            href={nsfwMode ? '/red/writings' : '/writings'}
+            href={altContentLink.href}
             className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
           >
-            <Bookmark size={16} /> Novelas
+            <Bookmark size={16} /> {altContentLink.label}
           </a>
 
           {/* Sorteo ended — hidden until next giveaway
@@ -734,11 +741,11 @@ const Navbar: React.FC<NavbarProps> = ({
             <Search size={20} /> Catálogo
           </a>
           <a
-            href={nsfwMode ? '/red/writings' : '/writings'}
+            href={altContentLink.href}
             onClick={() => setMobileMenuOpen(false)}
             className="text-xl font-bold flex items-center gap-4 text-zinc-100"
           >
-            <Bookmark size={20} /> Novelas
+            <Bookmark size={20} /> {altContentLink.label}
           </a>
           {/* Sorteo ended — hidden until next giveaway
           <button

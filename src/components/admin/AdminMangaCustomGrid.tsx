@@ -12,12 +12,16 @@ interface AdminMangaCustomGridProps {
   organization: any;
   language?: string;
   organizationSlug: string;
+  // When 'writing' the grid only lists novel/light-novel/book/short-story.
+  // When 'manga' (default) it excludes those four — keeps the legacy /admin/mangas page focused on image content.
+  contentKind?: 'manga' | 'writing';
 }
 
 const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   organization,
   language,
   organizationSlug,
+  contentKind = 'manga',
 }) => {
   const [loading, setLoading] = useState(true);
   const [mangaList, setMangaList] = useState<any[]>([]);
@@ -42,7 +46,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   useEffect(() => {
     refreshMangaProfile();
     refreshSubscriptionPlans();
-  }, [page, debouncedSearchTerm]);
+  }, [page, debouncedSearchTerm, contentKind]);
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -75,6 +79,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
       page: page.toString(),
       order: 'latest',
       limit: '20',
+      contentKind,
     });
 
     if (debouncedSearchTerm.trim()) {
