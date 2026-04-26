@@ -1,0 +1,46 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import ScanLanding from "../../components/landing/ScanLanding";
+
+// @ts-ignore
+const { language, callAPI, user, showAds } = Astro.locals;
+const { slug } = Astro.params;
+const logged = !!user;
+
+if (!slug) {
+  return Astro.redirect('/404');
+}
+
+// Resolve organization manually since /writings is a reserved route — the
+// middleware skips the auto org-check.
+let organization;
+try {
+  const API_URL = import.meta.env.PUBLIC_API_URL || "";
+  const checkUrl = API_URL
+    ? `${API_URL}/api/organization/check?slug=${slug}`
+    : new URL(`/api/organization/check?slug=${slug}`, Astro.request.url).toString();
+  const res = await fetch(checkUrl, { headers: { 'Content-Type': 'application/json' } });
+  const json = await res.json();
+  if (!res.ok || json?.status === false) return Astro.redirect('/404');
+  organization = json?.data || json;
+} catch (e) {
+  return Astro.redirect('/404');
+}
+
+if (!organization) return Astro.redirect('/404');
+
+if (organization?.isNSFW) {
+  return Astro.redirect(`/red/writings/${slug}`);
+}
+---
+
+<LandingLayout showAds={showAds} title={`Novelas y libros | ${organization.name}`}>
+  <ScanLanding
+    organization={organization}
+    user={user}
+    logged={logged}
+    nsfwMode={false}
+    contentKind="writing"
+    client:only="react"
+  />
+</LandingLayout>

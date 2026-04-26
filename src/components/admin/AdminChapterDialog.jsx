@@ -8,9 +8,12 @@ import Switch from './ui/Switch';
 import Card from './ui/Card';
 import { ImageDropzone } from '../ImageDropzone';
 import { MultiImageDropzone } from './ui/MultiImageDropzone';
+import NovelEditor from './NovelEditor';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from "../../util/translate";
 import { uploadFile } from "../../util/uploadFile";
+
+const WRITING_BOOK_TYPES = new Set(['novel', 'light-novel', 'book', 'short-story']);
 
 export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapter }) {
     const _ = getTranslator(language);
@@ -37,6 +40,11 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
     const [pages, setPages] = useState([]);
     const [singlePageIndexes, setSinglePageIndexes] = useState([]);
     const [dragId, setDragId] = useState(null);
+    const [bodyMarkdown, setBodyMarkdown] = useState(chapter?.bodyMarkdown || '');
+
+    // bookType.code is what tells us whether this chapter is markdown-text or images.
+    const bookTypeCode = mangaCustom?.manga?.bookType?.code || mangaCustom?.bookType?.code;
+    const isWriting = WRITING_BOOK_TYPES.has(bookTypeCode);
 
     const handleDrag = (ev) => {
         // Obtener el índice desde el id de la imagen
@@ -112,11 +120,17 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             setNumber(chapter.number);
             setReleasedAt(new Date(chapter.releasedAt));
             setChapterImageFile(chapter.imageUrl);
+            setBodyMarkdown(chapter.bodyMarkdown || '');
+            if (isWriting) {
+                setPages([]);
+                setSinglePageIndexes([]);
+                setLoading(false);
+                return;
+            }
             setLoading(true);
             callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}/pages`)
                 .then(chapterPages => {
                     setPages(chapterPages);
-                    // Inicializar los índices de páginas simples
                     const initialSinglePageIndexes = chapterPages
                         .map((page, index) => page.isSinglePage ? index : null)
                         .filter(index => index !== null);
@@ -134,9 +148,10 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
             setChapterImageFile(null);
             setPages([]);
             setSinglePageIndexes([]);
+            setBodyMarkdown('');
             setLoading(false);
         }
-    }, [chapter, mangaCustom]);
+    }, [chapter, mangaCustom, isWriting]);
 
     const handleSubmit = async () => {
         if (!title) {
@@ -150,13 +165,15 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         // Declarar variables fuera del bloque try para que estén disponibles en todo el scope
         let imageKey = chapterImageFile;
         const pageKeys = [];
-        
+
         try {
-            // Contar archivos a subir
-            const filesToUpload = [
-                chapterImageFile instanceof File,
-                ...pages.map(page => page instanceof File)
-            ].filter(Boolean).length;
+            // For writings we skip the multi-image upload entirely.
+            const filesToUpload = isWriting
+                ? (chapterImageFile instanceof File ? 1 : 0)
+                : [
+                    chapterImageFile instanceof File,
+                    ...pages.map(page => page instanceof File)
+                ].filter(Boolean).length;
 
             let toastId = null;
             let uploadedCount = 0;
@@ -178,22 +195,22 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                     imageKey = await uploadFile(chapterImageFile, undefined, 'chapters');
                 }
 
-                // Upload pages that are new files (secuencialmente para actualizar contador)
-                for (const page of pages) {
-                    if (page instanceof File) {
-                        uploadedCount++;
-                        toast.update(toastId, { 
-                            render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
-                            position: "bottom-right"
-                        });
-                        const key = await uploadFile(page, undefined, 'chapters');
-                        pageKeys.push(key);
-                    } else if (page?.imageUrl) {
-                        // Si ya tiene imageUrl (páginas existentes), mantener la URL completa
-                        pageKeys.push(page.imageUrl);
-                    } else {
-                        // Si es un string (fileKey o URL), mantenerlo como está
-                        pageKeys.push(page);
+                // Skip the per-page upload loop for writing chapters.
+                if (!isWriting) {
+                    for (const page of pages) {
+                        if (page instanceof File) {
+                            uploadedCount++;
+                            toast.update(toastId, {
+                                render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
+                                position: "bottom-right"
+                            });
+                            const key = await uploadFile(page, undefined, 'chapters');
+                            pageKeys.push(key);
+                        } else if (page?.imageUrl) {
+                            pageKeys.push(page.imageUrl);
+                        } else {
+                            pageKeys.push(page);
+                        }
                     }
                 }
 
@@ -224,8 +241,10 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                         number,
                         releasedAt: releasedAt.toISOString(),
                         image: imageKey,
-                        pages: pageKeys,
-                        singlePages: singlePageIndexes,
+                        // For writings we send empty pages and the markdown body instead.
+                        pages: isWriting ? [] : pageKeys,
+                        singlePages: isWriting ? [] : singlePageIndexes,
+                        ...(isWriting ? { bodyMarkdown } : {}),
                     }),
                 }
             );
@@ -305,6 +324,19 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                         </div>
                     </div>
                     <div className="flex-1 flex flex-col gap-4 min-w-0">
+                        {isWriting ? (
+                            <>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                                    Contenido
+                                </h3>
+                                <NovelEditor
+                                    value={bodyMarkdown}
+                                    onChange={setBodyMarkdown}
+                                    disabled={loading}
+                                />
+                            </>
+                        ) : (
+                          <>
                         <h3 className="text-lg font-black text-white uppercase tracking-tight">
                             {_("pages")}
                         </h3>
@@ -394,6 +426,8 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                 </Card>
                             ))}
                         </div>
+                          </>
+                        )}
                     </div>
                     </div>
 

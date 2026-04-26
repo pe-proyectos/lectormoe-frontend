@@ -9,9 +9,10 @@ interface FeaturedMangaProps {
   logged?: boolean;
   organization?: any;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
 }
 
-const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organization, nsfwMode = false }) => {
+const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organization, nsfwMode = false, contentKind }) => {
   const [featuredManga, setFeaturedManga] = useState<Manga[]>(FEATURED_MANGA);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +20,8 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
     const fetchFeaturedManga = async () => {
       try {
         setLoading(true);
-        const result = await callAPI(`/api/landing/featured-manga?limit=5&nsfw=${nsfwMode}`);
+        const ckParam = contentKind ? `&contentKind=${contentKind}` : '';
+        const result = await callAPI(`/api/landing/featured-manga?limit=5&nsfw=${nsfwMode}${ckParam}`);
 
         if (Array.isArray(result)) {
           setFeaturedManga(result);
@@ -34,7 +36,7 @@ const FeaturedManga: React.FC<FeaturedMangaProps> = ({ user, logged, organizatio
     };
 
     fetchFeaturedManga();
-  }, []);
+  }, [nsfwMode, contentKind]);
 
   if (loading) {
     return (

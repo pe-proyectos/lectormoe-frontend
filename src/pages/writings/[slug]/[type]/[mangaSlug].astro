@@ -1,0 +1,76 @@
+---
+import LandingLayout from "../../../../layouts/LandingLayout.astro";
+import MangaDetailPageContainer from "../../../../components/landing/MangaDetailPageContainer";
+
+// @ts-ignore
+const { language, user, showAds } = Astro.locals;
+const { slug, type, mangaSlug } = Astro.params;
+const logged = !!user;
+
+const ALLOWED_TYPES = new Set(['novel', 'light-novel', 'book', 'short-story']);
+if (!slug || !mangaSlug || !type || !ALLOWED_TYPES.has(type)) {
+  return Astro.redirect('/404');
+}
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "";
+
+// Resolve org via the standard endpoint.
+let organization;
+try {
+  const checkUrl = API_URL
+    ? `${API_URL}/api/organization/check?slug=${slug}`
+    : new URL(`/api/organization/check?slug=${slug}`, Astro.request.url).toString();
+  const res = await fetch(checkUrl, { headers: { 'Content-Type': 'application/json' } });
+  const json = await res.json();
+  if (!res.ok || json?.status === false) return Astro.redirect('/404');
+  organization = json?.data || json;
+} catch (e) { return Astro.redirect('/404'); }
+if (!organization) return Astro.redirect('/404');
+if (organization?.isNSFW) return Astro.redirect(`/red/writings/${slug}/${type}/${mangaSlug}`);
+
+// Fetch the MangaCustom by slug, scoped to this org.
+let manga;
+try {
+  const mangaUrl = `${API_URL}/api/manga-custom/${mangaSlug}`;
+  const res = await fetch(mangaUrl, {
+    headers: { 'Content-Type': 'application/json', 'x-organization': organization.slug },
+  });
+  const json = await res.json();
+  if (!res.ok || json?.status === false) return Astro.redirect('/404');
+  manga = json?.data || json;
+} catch (e) { return Astro.redirect('/404'); }
+if (!manga || !manga.manga?.slug) return Astro.redirect('/404');
+
+// Validate the type segment matches the manga's bookType code; redirect to canonical otherwise.
+const actualBookTypeCode = manga.manga?.bookType?.code;
+if (actualBookTypeCode && actualBookTypeCode !== type) {
+  if (['novel', 'light-novel', 'book', 'short-story'].includes(actualBookTypeCode)) {
+    return Astro.redirect(`/writings/${slug}/${actualBookTypeCode}/${mangaSlug}`, 301);
+  }
+  // Not a writing — redirect back to the manga URL.
+  return Astro.redirect(`/${slug}/manga/${mangaSlug}`, 301);
+}
+
+const absoluteImageUrl = manga.bannerUrl || manga.imageUrl;
+---
+
+<LandingLayout
+  title={`${manga.title} | ${organization.name}`}
+  description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
+  imageUrl={absoluteImageUrl}
+  organization={organization}
+  showAds={showAds}
+  manga={manga}
+>
+  <MangaDetailPageContainer
+    manga={manga}
+    organization={organization}
+    user={user}
+    logged={logged}
+    language={language}
+    nsfwMode={false}
+    contentKind="writing"
+    writingType={type}
+    client:load
+  />
+</LandingLayout>

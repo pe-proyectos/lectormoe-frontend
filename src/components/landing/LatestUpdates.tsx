@@ -7,9 +7,12 @@ interface LatestUpdatesProps {
   user?: any;
   logged?: boolean;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
 }
 
-const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = false }) => {
+const WRITING_TYPES = new Set(['novel', 'light-novel', 'book', 'short-story']);
+
+const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = false, contentKind }) => {
   const [mangas, setMangas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,26 +20,46 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
     const fetchLatest = async () => {
       try {
         setLoading(true);
+        // The list endpoint uses ?type=<bookType.code>; for writings we still
+        // want the union (all 4 codes). Without server-side OR support we just
+        // ask the server unfiltered then filter client-side. Limit is generous.
         const result = await callAPI(`/api/manga-custom?order=latest&limit=30&nsfw=${nsfwMode}`);
         if (result && typeof result === 'object' && Array.isArray(result.items)) {
-          setMangas(result.items.map((m: any) => {
+          let items = result.items;
+          if (contentKind === 'writing') {
+            items = items.filter((m: any) => WRITING_TYPES.has(m?.manga?.bookType?.code));
+          } else if (contentKind === 'manga') {
+            items = items.filter((m: any) => !WRITING_TYPES.has(m?.manga?.bookType?.code));
+          }
+          setMangas(items.map((m: any) => {
             const orgSlug = m.organization?.slug;
             const mangaSlug = m.manga?.slug || m.slug || m.id;
+            const code = m?.manga?.bookType?.code;
+            const isWritingItem = WRITING_TYPES.has(code);
             const urlPrefix = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
+            const writingsPrefix = nsfwMode ? `/red/writings/${orgSlug}` : `/writings/${orgSlug}`;
+            const detailUrl = isWritingItem
+              ? `${writingsPrefix}/${code}/${mangaSlug}`
+              : `${urlPrefix}/manga/${mangaSlug}`;
             return {
               id: mangaSlug,
               title: m.title,
               cover: m.imageUrl || '',
               scanName: m.organization?.name || '',
               scanUrl: orgSlug ? `/${orgSlug}` : '',
-              mangaUrl: orgSlug && mangaSlug ? `${urlPrefix}/manga/${mangaSlug}` : undefined,
+              mangaUrl: orgSlug && mangaSlug ? detailUrl : undefined,
               status: m.status || 'Ongoing',
               chapters: (m.chapters || []).map((ch: any) => ({
                 ...ch,
-                chapterUrl: orgSlug && mangaSlug ? `${urlPrefix}/manga/${mangaSlug}/chapters/${ch.number}` : '#',
+                chapterUrl: orgSlug && mangaSlug
+                  ? (isWritingItem
+                    ? `${detailUrl}/chapter/${ch.number}`
+                    : `${urlPrefix}/manga/${mangaSlug}/chapters/${ch.number}`)
+                  : '#',
               })),
               organizationId: m.organization?.id,
               isNSFW: m.isNSFW || m.organization?.isNSFW || false,
+              contentKind: isWritingItem ? 'writing' : 'manga',
               userHasSubscription: logged && user?.subscriptions?.some(
                 (sub: any) => sub?.subscriptionPlan?.organizationId === m.organization?.id
               ) || false,
@@ -50,7 +73,7 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
       }
     };
     fetchLatest();
-  }, [nsfwMode]);
+  }, [nsfwMode, contentKind]);
 
   if (loading) {
     return (

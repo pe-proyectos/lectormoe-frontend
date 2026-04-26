@@ -8,9 +8,10 @@ interface PopularTodayProps {
   logged?: boolean;
   organization?: any;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
 }
 
-const PopularToday: React.FC<PopularTodayProps> = ({ user, logged, organization, nsfwMode = false }) => {
+const PopularToday: React.FC<PopularTodayProps> = ({ user, logged, organization, nsfwMode = false, contentKind }) => {
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +19,8 @@ const PopularToday: React.FC<PopularTodayProps> = ({ user, logged, organization,
     const fetch = async () => {
       try {
         setLoading(true);
-        const result = await callAPI(`/api/landing/popular-today?limit=5&nsfw=${nsfwMode}`);
+        const ckParam = contentKind ? `&contentKind=${contentKind}` : '';
+        const result = await callAPI(`/api/landing/popular-today?limit=5&nsfw=${nsfwMode}${ckParam}`);
         if (Array.isArray(result)) setMangas(result);
       } catch (error) {
         console.error('Error fetching popular today:', error);
@@ -27,7 +29,7 @@ const PopularToday: React.FC<PopularTodayProps> = ({ user, logged, organization,
       }
     };
     fetch();
-  }, [nsfwMode]);
+  }, [nsfwMode, contentKind]);
 
   if (loading) {
     return (

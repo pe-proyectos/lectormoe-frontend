@@ -18,9 +18,10 @@ interface LandingAppProps {
   user?: any;
   logged?: boolean;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
 }
 
-const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false }) => {
+const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false, contentKind = 'manga' }) => {
   const [currentPath, setCurrentPath] = useState(typeof window !== 'undefined' ? window.location.pathname : '/');
 
   useEffect(() => {
@@ -50,7 +51,8 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false 
   const openUserRegistration = () => navigateTo('/register'); // Para usuarios
   const openLogin = () => navigateTo('/login');
 
-  const isHome = nsfwMode || currentPath === '/';
+  const isWritings = contentKind === 'writing';
+  const isHome = nsfwMode || currentPath === '/' || currentPath === '/writings' || currentPath === '/red/writings';
   const isScans = currentPath === '/scans';
   const isSearch = currentPath === '/search';
 
@@ -71,15 +73,28 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false 
       <main>
         {isHome && (
           <>
-            <Hero
-              onExplore={() => navigateTo('/scans')}
-              user={user}
-              logged={logged}
-              nsfwMode={nsfwMode}
-            />
-            
+            {isWritings ? (
+              <section className="max-w-[1600px] mx-auto px-4 md:px-8 pt-32 pb-12 text-center">
+                <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase text-white">
+                  Novelas y libros
+                </h1>
+                <p className="mt-4 text-zinc-400 max-w-2xl mx-auto text-sm md:text-base">
+                  Explora capítulos en formato texto: novelas, novelas ligeras, libros y cuentos.
+                </p>
+              </section>
+            ) : (
+              <Hero
+                onExplore={() => navigateTo('/scans')}
+                user={user}
+                logged={logged}
+                nsfwMode={nsfwMode}
+              />
+            )}
+
             {/* Scans Buttons Section */}
-            <ScansButtonsSection nsfwMode={nsfwMode} onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+            {!isWritings && (
+              <ScansButtonsSection nsfwMode={nsfwMode} onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+            )}
 
             {/* Popular Today Section */}
             <section className="max-w-[1600px] mx-auto px-4 md:px-8 pt-16 pb-8">
@@ -92,7 +107,7 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false 
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
-                <PopularToday user={user} logged={logged} nsfwMode={nsfwMode} />
+                <PopularToday user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
               </div>
             </section>
 
@@ -107,20 +122,24 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false 
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
-                <FeaturedManga user={user} logged={logged} nsfwMode={nsfwMode} />
+                <FeaturedManga user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
               </div>
             </section>
-            
 
 
-            <LatestUpdates user={user} logged={logged} nsfwMode={nsfwMode} />
 
-            <div className="grid md:grid-cols-2 gap-0">
-              <TopReaders />
-              <TopCommenters />
-            </div>
+            <LatestUpdates user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 
-            <ScansSection onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+            {!isWritings && (
+              <div className="grid md:grid-cols-2 gap-0">
+                <TopReaders />
+                <TopCommenters />
+              </div>
+            )}
+
+            {!isWritings && (
+              <ScansSection onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+            )}
           </>
         )}
         

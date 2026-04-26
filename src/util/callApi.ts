@@ -43,7 +43,7 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
         // Determinar si estamos en la landing page
         const pathSegments = window.location.pathname.split('/').filter(Boolean);
         const firstSegment = pathSegments[0] || '';
-        const reservedRoutes = ['admin', 'login', 'register', 'logout', '404', '500', 'forgot', 'search', 'scans', 'subscriptions', 'organizations', 'manga', 'profile', 'joint', 'joints', 'list', 'notifications'];
+        const reservedRoutes = ['admin', 'login', 'register', 'logout', '404', '500', 'forgot', 'search', 'scans', 'subscriptions', 'organizations', 'manga', 'profile', 'joint', 'joints', 'list', 'notifications', 'writings'];
         // Si el segundo segmento es 'login' o 'register', entonces el primero es un slug de organización
         const isOrgLoginPage = pathSegments.length === 2 && (pathSegments[1] === 'login' || pathSegments[1] === 'register');
         const isLandingPage = window.location.pathname === '/' || (firstSegment && reservedRoutes.includes(firstSegment) && !isOrgLoginPage);

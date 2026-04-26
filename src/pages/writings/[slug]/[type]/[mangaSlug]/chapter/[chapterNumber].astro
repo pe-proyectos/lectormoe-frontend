@@ -1,0 +1,69 @@
+---
+import LandingLayout from "../../../../../../layouts/LandingLayout.astro";
+import NovelReaderContainer from "../../../../../../components/landing/NovelReaderContainer";
+
+// @ts-ignore
+const { user, showAds } = Astro.locals;
+const { slug, type, mangaSlug, chapterNumber } = Astro.params;
+const logged = !!user;
+
+const ALLOWED_TYPES = new Set(['novel', 'light-novel', 'book', 'short-story']);
+if (!slug || !mangaSlug || !chapterNumber || !type || !ALLOWED_TYPES.has(type)) {
+  return Astro.redirect('/404');
+}
+
+const API_URL = import.meta.env.PUBLIC_API_URL || "";
+
+let organization;
+try {
+  const checkUrl = `${API_URL}/api/organization/check?slug=${slug}`;
+  const res = await fetch(checkUrl, { headers: { 'Content-Type': 'application/json' } });
+  const json = await res.json();
+  if (!res.ok || json?.status === false) return Astro.redirect('/404');
+  organization = json?.data || json;
+} catch (e) { return Astro.redirect('/404'); }
+if (!organization) return Astro.redirect('/404');
+if (organization?.isNSFW) return Astro.redirect(`/red/writings/${slug}/${type}/${mangaSlug}/chapter/${chapterNumber}`);
+
+let manga, chapter;
+try {
+  const headers = { 'Content-Type': 'application/json', 'x-organization': organization.slug };
+  const [mRes, cRes] = await Promise.all([
+    fetch(`${API_URL}/api/manga-custom/${mangaSlug}`, { headers }),
+    fetch(`${API_URL}/api/manga-custom/${mangaSlug}/chapter/${chapterNumber}`, { headers }),
+  ]);
+  const mJson = await mRes.json();
+  const cJson = await cRes.json();
+  if (!mRes.ok || mJson?.status === false) return Astro.redirect('/404');
+  if (!cRes.ok || cJson?.status === false) return Astro.redirect('/404');
+  manga = mJson?.data || mJson;
+  chapter = cJson?.data || cJson;
+} catch (e) { return Astro.redirect('/404'); }
+
+if (!manga || !chapter) return Astro.redirect('/404');
+
+const actualBookTypeCode = manga.manga?.bookType?.code;
+if (actualBookTypeCode && actualBookTypeCode !== type) {
+  if (['novel', 'light-novel', 'book', 'short-story'].includes(actualBookTypeCode)) {
+    return Astro.redirect(`/writings/${slug}/${actualBookTypeCode}/${mangaSlug}/chapter/${chapterNumber}`, 301);
+  }
+  return Astro.redirect(`/${slug}/manga/${mangaSlug}/chapters/${chapterNumber}`, 301);
+}
+---
+
+<LandingLayout
+  title={`${chapter.title} - ${manga.title} #${chapter.number}`}
+  showAds={showAds}
+  manga={manga}
+>
+  <NovelReaderContainer
+    manga={manga}
+    chapter={chapter}
+    organization={organization}
+    user={user}
+    logged={logged}
+    nsfwMode={false}
+    type={type}
+    client:load
+  />
+</LandingLayout>

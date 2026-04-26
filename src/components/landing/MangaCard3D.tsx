@@ -35,6 +35,7 @@ interface Manga {
   subscriptionPlansCanReadUnreleased?: Array<{ id: number; name: string }>;
   subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
   isNSFW?: boolean;
+  contentKind?: 'manga' | 'writing';
 }
 
 interface Props {
@@ -302,6 +303,15 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
             <div className="absolute top-3 right-3 z-10">
               <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${manga.status.toLowerCase() === 'ongoing' ? 'bg-green-500 text-zinc-950' : 'bg-cyan-500 text-zinc-950'}`}>
                 {translateStatus(manga.status)}
+              </span>
+            </div>
+          )}
+
+          {/* Writing kind badge */}
+          {manga.contentKind === 'writing' && (
+            <div className="absolute top-9 right-3 z-10">
+              <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-purple-600 text-white flex items-center gap-1">
+                <Book size={10} /> Novela
               </span>
             </div>
           )}

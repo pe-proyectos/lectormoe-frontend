@@ -17,13 +17,17 @@ interface ScanLandingProps {
   user?: any;
   logged?: boolean;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
 }
+
+const WRITING_TYPES = new Set(['novel', 'light-novel', 'book', 'short-story']);
 
 const ScanLanding: React.FC<ScanLandingProps> = ({
   organization,
   user,
   logged,
   nsfwMode = false,
+  contentKind = 'manga',
 }) => {
   // Get user permissions for the current organization
   const userPermissions = user?.permissions?.find(
@@ -51,8 +55,13 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         )) ||
       false;
 
+    const code = m?.manga?.bookType?.code;
+    const isWritingItem = WRITING_TYPES.has(code);
+    const writingsPrefix = nsfwMode ? `/red/writings/${organization?.slug}` : `/writings/${organization?.slug}`;
+    const detailBase = isWritingItem ? `${writingsPrefix}/${code}` : `${orgPrefix}/manga`;
+    const chapterPathSegment = isWritingItem ? 'chapter' : 'chapters';
+
     // Check if user has read each chapter
-    // El API devuelve 'chapters' (no 'lastChapters'), así que usamos 'chapters' con fallback a 'lastChapters' para compatibilidad
     const chaptersWithReadStatus = (m.chapters || m.lastChapters || []).map(
       (chapter: any) => {
         const isRead =
@@ -63,7 +72,6 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
             )) ||
           false;
 
-        // El slug está en m.manga.slug (relación anidada del mangaCustom)
         const mangaSlug = m.manga?.slug || m.slug || m.id;
 
         return {
@@ -72,17 +80,16 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
           title: chapter.title,
           releasedAt: chapter.releasedAt,
           chapterUrl: mangaSlug && mangaSlug !== 'undefined'
-            ? `${orgPrefix}/manga/${mangaSlug}/chapters/${chapter.number}`
+            ? `${detailBase}/${mangaSlug}/${chapterPathSegment}/${chapter.number}`
             : '#',
           isRead,
         };
       }
     );
 
-    // El slug está en m.manga.slug (relación anidada del mangaCustom)
     const mangaSlug = m.manga?.slug || m.slug || m.id;
     const mangaUrl = mangaSlug && mangaSlug !== 'undefined'
-      ? `${orgPrefix}/manga/${mangaSlug}`
+      ? `${detailBase}/${mangaSlug}`
       : undefined;
 
     return {
@@ -116,18 +123,28 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
       try {
         // Fetch all data in parallel
         const nsfwParam = nsfwMode ? '&nsfw=true' : '&nsfw=false';
+        // For writings landing we over-fetch and post-filter — the list endpoint
+        // accepts a single ?type, but writings is the union of 4 types.
+        const fetchLimit = contentKind === 'writing' ? 50 : 18;
         const [heroResult, topThreeResult, popularResult, recentResult] =
           await Promise.allSettled([
-            callAPI(`/api/manga-custom?order=latest&limit=5${nsfwParam}`),
-            callAPI(`/api/manga-custom?order=featured&limit=3${nsfwParam}`),
-            callAPI(`/api/manga-custom?order=popular&limit=9${nsfwParam}`),
-            callAPI(`/api/manga-custom?order=latest&limit=18${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=latest&limit=${contentKind === 'writing' ? 30 : 5}${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=featured&limit=${contentKind === 'writing' ? 30 : 3}${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=popular&limit=${contentKind === 'writing' ? 30 : 9}${nsfwParam}`),
+            callAPI(`/api/manga-custom?order=latest&limit=${fetchLimit}${nsfwParam}`),
           ]);
+
+        const filterByKind = (items: any[]) =>
+          contentKind === 'writing'
+            ? items.filter((m) => WRITING_TYPES.has(m?.manga?.bookType?.code))
+            : contentKind === 'manga'
+            ? items.filter((m) => !WRITING_TYPES.has(m?.manga?.bookType?.code))
+            : items;
 
         // Process hero mangas
         if (heroResult.status === "fulfilled" && heroResult.value && typeof heroResult.value === 'object' && !Array.isArray(heroResult.value) && Array.isArray(heroResult.value.items)) {
           setFeaturedMangas(
-            heroResult.value.items.map((m: any) => {
+            filterByKind(heroResult.value.items).slice(0, 5).map((m: any) => {
               const mangaSlug = m.manga?.slug || m.slug || m.id;
               return {
                 id: mangaSlug,
@@ -147,7 +164,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         // Process top three mangas
         if (topThreeResult.status === "fulfilled" && topThreeResult.value && typeof topThreeResult.value === 'object' && !Array.isArray(topThreeResult.value) && Array.isArray(topThreeResult.value.items)) {
           setTopThreeMangas(
-            topThreeResult.value.items.map((m: any) => {
+            filterByKind(topThreeResult.value.items).slice(0, 3).map((m: any) => {
               const mangaSlug = m.manga?.slug || m.slug || m.id;
               return {
                 id: mangaSlug,
@@ -170,7 +187,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         // Process popular mangas
         if (popularResult.status === "fulfilled" && popularResult.value && typeof popularResult.value === 'object' && !Array.isArray(popularResult.value) && Array.isArray(popularResult.value.items)) {
           setPopular24h(
-            popularResult.value.items.map((m: any) => mapMangaData(m))
+            filterByKind(popularResult.value.items).slice(0, 9).map((m: any) => mapMangaData(m))
           );
         } else if (popularResult.status === "rejected") {
           console.error("Error fetching popular mangas:", popularResult.reason);
@@ -179,7 +196,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         // Process recent updates
         if (recentResult.status === "fulfilled" && recentResult.value && typeof recentResult.value === 'object' && !Array.isArray(recentResult.value) && Array.isArray(recentResult.value.items)) {
           setRecentUpdates(
-            recentResult.value.items.map((m: any) => mapMangaData(m))
+            filterByKind(recentResult.value.items).slice(0, 18).map((m: any) => mapMangaData(m))
           );
         } else if (recentResult.status === "rejected") {
           console.error("Error fetching recent mangas:", recentResult.reason);
@@ -196,7 +213,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
     };
 
     fetchAllMangas();
-  }, [organization, logged, user]);
+  }, [organization, logged, user, nsfwMode, contentKind]);
 
   const subUrl = `${orgPrefix}/subscriptions`;
   const exploreUrl = organization?.slug ? `${orgPrefix}/search` : (nsfwMode ? `/red/search` : `/search`);

@@ -494,6 +494,13 @@ const Navbar: React.FC<NavbarProps> = ({
             <Search size={16} /> Catálogo
           </a>
 
+          <a
+            href={nsfwMode ? '/red/writings' : '/writings'}
+            className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
+          >
+            <Bookmark size={16} /> Novelas
+          </a>
+
           {/* Sorteo ended — hidden until next giveaway
           <button
             onClick={() => window.dispatchEvent(new Event('open-sorteo-modal'))}
@@ -725,6 +732,13 @@ const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Search size={20} /> Catálogo
+          </a>
+          <a
+            href={nsfwMode ? '/red/writings' : '/writings'}
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-xl font-bold flex items-center gap-4 text-zinc-100"
+          >
+            <Bookmark size={20} /> Novelas
           </a>
           {/* Sorteo ended — hidden until next giveaway
           <button

@@ -1,0 +1,12 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import LandingApp from "../../components/landing/LandingApp.tsx";
+
+// @ts-ignore
+const { user, showAds } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout showAds={showAds} title="Novelas y libros +18 | CapibaraTraductor">
+  <LandingApp client:only="react" user={user} logged={logged} nsfwMode={true} contentKind="writing" />
+</LandingLayout>

@@ -66,6 +66,8 @@ interface MangaDetailPageProps {
   user?: any;
   logged?: boolean;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
+  writingType?: string;
 }
 
 const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
@@ -74,7 +76,17 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   user,
   logged,
   nsfwMode = false,
+  contentKind = 'manga',
+  writingType,
 }) => {
+  // Routing helpers — text chapters live under /writings/<org>/<type>/<slug>/chapter/<n>
+  // while image chapters live under /<org>/manga/<slug>/chapters/<n>.
+  const isWriting = contentKind === 'writing';
+  const writingsPrefix = nsfwMode ? `/red/writings/${organization?.slug || ''}` : `/writings/${organization?.slug || ''}`;
+  const detailBase = isWriting && writingType
+    ? `${writingsPrefix}/${writingType}`
+    : (nsfwMode ? `/red/${organization?.slug || ''}/manga` : `/${organization?.slug || ''}/manga`);
+  const chapterPathSegment = isWriting ? 'chapter' : 'chapters';
   // El slug está en manga.manga.slug (relación anidada del mangaCustom)
   const mangaSlug = (manga as any)?.manga?.slug || manga.slug;
 
@@ -746,13 +758,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       const history = getChapterHistory(chapter.number);
       if (history && !history.finishedAt && history.pageNumber) {
         return organization?.slug
-          ? `${orgBase}/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`
+          ? `${detailBase}/${mangaSlug}/${chapterPathSegment}/${chapter.number}?page=${history.pageNumber}`
           : `/manga/${mangaSlug}/chapters/${chapter.number}?page=${history.pageNumber}`;
       }
     }
 
     return organization?.slug
-      ? `${orgBase}/manga/${mangaSlug}/chapters/${chapter.number}`
+      ? `${detailBase}/${mangaSlug}/${chapterPathSegment}/${chapter.number}`
       : `/manga/${mangaSlug}/chapters/${chapter.number}`;
   };
 
@@ -760,7 +772,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const generateShareUrl = (chapterNumber: number): string => {
     const baseUrl = window.location.origin;
     const chapterUrl = organization?.slug
-      ? `/${organization.slug}/manga/${mangaSlug}/chapters/${chapterNumber}`
+      ? (isWriting && writingType
+        ? `${writingsPrefix}/${writingType}/${mangaSlug}/chapter/${chapterNumber}`
+        : `/${organization.slug}/manga/${mangaSlug}/chapters/${chapterNumber}`)
       : `/manga/${mangaSlug}/chapters/${chapterNumber}`;
     
     if (user?.slug) {

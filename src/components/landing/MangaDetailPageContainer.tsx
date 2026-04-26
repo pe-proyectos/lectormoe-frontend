@@ -18,6 +18,8 @@ interface MangaDetailPageContainerProps {
   logged?: boolean;
   language?: string;
   nsfwMode?: boolean;
+  contentKind?: 'manga' | 'writing';
+  writingType?: string;
 }
 
 const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
@@ -26,6 +28,8 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
   user,
   logged,
   nsfwMode = false,
+  contentKind = 'manga',
+  writingType,
 }) => {
   const navigateTo = (path: string) => {
     if (typeof window !== 'undefined') {
@@ -58,6 +62,8 @@ const MangaDetailPageContainer: React.FC<MangaDetailPageContainerProps> = ({
         user={user}
         logged={logged}
         nsfwMode={nsfwMode}
+        contentKind={contentKind}
+        writingType={writingType}
       />
 
       <Footer
