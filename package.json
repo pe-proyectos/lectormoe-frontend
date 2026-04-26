@@ -35,6 +35,7 @@
     "@nivo/pie": "^0.99.0",
     "@nivo/treemap": "^0.99.0",
     "@nurodev/astro-bun": "^2.1.2",
+    "@paypal/react-paypal-js": "^9.1.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@tiptap/extension-link": "^3.22.4",
     "@tiptap/extension-text-align": "^3.22.4",

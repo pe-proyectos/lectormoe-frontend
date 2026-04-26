@@ -1,0 +1,37 @@
+---
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import RaffleDetailPage from '../../components/landing/RaffleDetailPage';
+
+// @ts-ignore - middleware injected
+const { user, callAPI, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+const { slug } = Astro.params;
+
+let raffle: any = null;
+try {
+  raffle = await callAPI(`/api/raffle/${slug}`);
+} catch (err) {
+  raffle = null;
+}
+
+if (!raffle) {
+  return Astro.redirect('/404');
+}
+
+const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID || '';
+---
+
+<LandingLayout
+  title={`${raffle.title} | Luckys`}
+  description={raffle.description ?? `Sorteo: ${raffle.title}`}
+  showAds={showAds}
+>
+  <RaffleDetailPage
+    raffle={raffle}
+    user={user}
+    logged={logged}
+    nsfwMode={nsfwMode}
+    paypalClientId={paypalClientId}
+    client:only="react"
+  />
+</LandingLayout>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle, Ticket, Trophy, RotateCcw, Wallet } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
 
 interface User {
@@ -435,6 +435,199 @@ const MySubscriptionsSection: React.FC = () => {
   )
 }
 
+interface RaffleTicketRow {
+  id: number
+  number: string
+  comment: string | null
+  amountPaid: number
+  refundedAt: string | null
+  createdAt: string
+  isWinner: boolean
+  raffle: {
+    slug: string
+    title: string
+    imageUrl: string | null
+    status: string
+    ticketPrice: number
+    currency: string
+    drawType: string
+    drawAt: string | null
+    maxTickets: number
+  }
+}
+
+interface RaffleRefundRow {
+  id: number
+  ticketNumber: string
+  amount: number
+  currency: string
+  paypalRefundId: string | null
+  status: string
+  failureReason: string | null
+  createdAt: string
+  raffle: { slug: string; title: string; imageUrl: string | null }
+}
+
+const MyRafflesSection: React.FC = () => {
+  const [tickets, setTickets] = useState<RaffleTicketRow[] | null>(null)
+  const [refunds, setRefunds] = useState<RaffleRefundRow[] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [openTickets, setOpenTickets] = useState(true)
+  const [openPast, setOpenPast] = useState(false)
+  const [openRefunds, setOpenRefunds] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [t, r] = await Promise.all([
+          callAPI('/api/raffle/me/tickets'),
+          callAPI('/api/raffle/me/refunds'),
+        ])
+        setTickets(Array.isArray(t) ? t : [])
+        setRefunds(Array.isArray(r) ? r : [])
+      } catch (err: any) {
+        setError(err?.message || 'No se pudieron cargar tus sorteos.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  const active = (tickets ?? []).filter((t) => t.raffle.status === 'active' || t.raffle.status === 'drawing')
+  const past = (tickets ?? []).filter((t) => t.raffle.status === 'completed' || t.raffle.status === 'cancelled')
+
+  const TicketRow: React.FC<{ t: RaffleTicketRow }> = ({ t }) => (
+    <a
+      href={`/luckys/${t.raffle.slug}`}
+      className="flex items-center gap-3 p-3 bg-zinc-900/40 border border-zinc-800 rounded-2xl hover:border-yellow-500/40 transition-colors"
+    >
+      {t.raffle.imageUrl ? (
+        <img src={t.raffle.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+      ) : (
+        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 flex-shrink-0">🎟️</div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-white font-bold text-sm truncate">{t.raffle.title}</p>
+        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+          #{t.number} · {t.amountPaid > 0 ? formatMoney(t.amountPaid, t.raffle.currency) : 'GRATIS'}
+        </p>
+      </div>
+      {t.isWinner && (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-400 text-zinc-950 text-[10px] font-black uppercase tracking-widest">
+          <Trophy size={10} /> Ganador
+        </span>
+      )}
+      {t.refundedAt && (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
+          <RotateCcw size={10} /> Reembolsado
+        </span>
+      )}
+    </a>
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Ticket size={16} className="text-yellow-400" />
+        <h3 className="text-sm font-black text-white uppercase tracking-wider">Mis sorteos</h3>
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 size={20} className="text-yellow-500 animate-spin" />
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs">{error}</div>
+      )}
+
+      {!loading && !error && tickets && tickets.length === 0 && refunds?.length === 0 && (
+        <div className="p-6 bg-zinc-950 border border-dashed border-zinc-800 rounded-[32px]">
+          <p className="text-zinc-400 text-sm">
+            No has participado en ningún sorteo. <a href="/luckys" className="text-yellow-400 font-bold hover:underline">Mira los activos</a>.
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          <button
+            onClick={() => setOpenTickets((v) => !v)}
+            className="w-full flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-zinc-700"
+          >
+            <span className="text-white font-bold text-sm flex items-center gap-2">
+              <Ticket size={14} className="text-emerald-400" /> Tickets activos ({active.length})
+            </span>
+            {openTickets ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {openTickets && (
+            <div className="space-y-2">
+              {active.length === 0 && <p className="text-zinc-500 text-xs italic px-2">Sin tickets activos.</p>}
+              {active.map((t) => <TicketRow key={t.id} t={t} />)}
+            </div>
+          )}
+
+          <button
+            onClick={() => setOpenPast((v) => !v)}
+            className="w-full flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-zinc-700"
+          >
+            <span className="text-white font-bold text-sm flex items-center gap-2">
+              <Trophy size={14} className="text-amber-400" /> Tickets pasados ({past.length})
+            </span>
+            {openPast ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {openPast && (
+            <div className="space-y-2">
+              {past.length === 0 && <p className="text-zinc-500 text-xs italic px-2">Sin historial.</p>}
+              {past.map((t) => <TicketRow key={t.id} t={t} />)}
+            </div>
+          )}
+
+          <button
+            onClick={() => setOpenRefunds((v) => !v)}
+            className="w-full flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-zinc-700"
+          >
+            <span className="text-white font-bold text-sm flex items-center gap-2">
+              <RotateCcw size={14} className="text-cyan-400" /> Reembolsos ({refunds?.length ?? 0})
+            </span>
+            {openRefunds ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {openRefunds && (
+            <div className="space-y-2">
+              {(!refunds || refunds.length === 0) && <p className="text-zinc-500 text-xs italic px-2">Sin reembolsos.</p>}
+              {refunds && refunds.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 p-3 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+                  {r.raffle.imageUrl ? (
+                    <img src={r.raffle.imageUrl} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-500">🎟️</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-bold truncate">{r.raffle.title}</p>
+                    <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
+                      #{r.ticketNumber} · {formatMoney(r.amount, r.currency)} · {formatDateShort(r.createdAt)}
+                    </p>
+                    {r.paypalRefundId && <p className="text-[10px] text-zinc-600 font-mono truncate">{r.paypalRefundId}</p>}
+                    {r.failureReason && <p className="text-[10px] text-red-400">{r.failureReason}</p>}
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${
+                    r.status === 'completed' ? 'bg-emerald-500/20 text-emerald-300' :
+                    r.status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                    'bg-zinc-800 text-zinc-400'
+                  }`}>{r.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizationSlug, isStaff = false }) => {
   const [activeTab, setActiveTab] = useState('account')
   const [isLoading, setIsLoading] = useState(false)
@@ -600,8 +793,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-zinc-800">
+                <div className="pt-6 border-t border-zinc-800 space-y-10">
+                  <div className="flex items-center gap-2">
+                    <Wallet size={18} className="text-cyan-500" />
+                    <h2 className="text-lg font-black text-white uppercase tracking-tight">Facturación</h2>
+                  </div>
                   <MySubscriptionsSection />
+                  <div className="pt-6 border-t border-zinc-800/60">
+                    <MyRafflesSection />
+                  </div>
                 </div>
               </div>
             )}

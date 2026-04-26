@@ -15,6 +15,7 @@ import {
   Bookmark,
   MessageCircle,
   Bell,
+  Sparkles,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
@@ -508,6 +509,14 @@ const Navbar: React.FC<NavbarProps> = ({
             <Bookmark size={16} /> {altContentLink.label}
           </a>
 
+          <a
+            href="/luckys"
+            className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-yellow-400 to-amber-500 text-zinc-950 text-xs font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:shadow-yellow-400/60 transition-all"
+          >
+            <Sparkles size={14} className="animate-pulse" /> Luckys
+            <span className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-yellow-300/70 animate-pulse" />
+          </a>
+
           {/* Sorteo ended — hidden until next giveaway
           <button
             onClick={() => window.dispatchEvent(new Event('open-sorteo-modal'))}
@@ -746,6 +755,13 @@ const Navbar: React.FC<NavbarProps> = ({
             className="text-xl font-bold flex items-center gap-4 text-zinc-100"
           >
             <Bookmark size={20} /> {altContentLink.label}
+          </a>
+          <a
+            href="/luckys"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-xl font-black flex items-center gap-4 text-yellow-400 uppercase tracking-widest"
+          >
+            <Sparkles size={20} className="animate-pulse" /> Luckys
           </a>
           {/* Sorteo ended — hidden until next giveaway
           <button

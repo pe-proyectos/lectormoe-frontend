@@ -1,0 +1,16 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import LuckysLanding from '../components/landing/LuckysLanding';
+
+// @ts-ignore - middleware injected
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout
+  title="Luckys | Sorteos en CapibaraTraductor"
+  description="Sorteos exclusivos para la comunidad de CapibaraTraductor."
+  showAds={showAds}
+>
+  <LuckysLanding user={user} logged={logged} nsfwMode={nsfwMode} client:only="react" />
+</LandingLayout>
