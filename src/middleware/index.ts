@@ -8,6 +8,17 @@ import { getIP } from "../util/get-ip";
  * @returns true si se deben mostrar anuncios, false si no
  */
 function calculateShowAds(user: any, organization: any): boolean {
+  // CROSS-ORG: any active subscription anywhere on the platform suppresses ads
+  // everywhere. /api/auth/check returns ALL active subs regardless of which org
+  // the page belongs to, so a single check covers all surfaces (per-org pages,
+  // global landing, joints, search, /writings, etc.).
+  // Other plan benefits (canDownload, canReadUnreleased, in-app hideAds badge,
+  // subscriber-only chapter access) remain org-scoped through their own checks.
+  if (user?.subscriptions && Array.isArray(user.subscriptions)) {
+    const hasAnyActiveSub = user.subscriptions.some((sub: any) => sub?.active === true);
+    if (hasAnyActiveSub) return false;
+  }
+
   // No org context (global landing, joint pages, search, scans, list, notifications, etc.):
   // ads default to ON. The actual provider (Google vs Adsterra vs none) is decided
   // by resolveAdsProvider in the layout, which knows about /, /red, and auth paths.
@@ -26,20 +37,8 @@ function calculateShowAds(user: any, organization: any): boolean {
     return true;
   }
 
-  // Verificar suscripciones activas con hideAds
-  // El API ya filtra por active: true y organizationId, así que todas las suscripciones aquí ya cumplen esos criterios
-  if (user.subscriptions && Array.isArray(user.subscriptions)) {
-    const activeSubscription = user.subscriptions.find(
-      (sub: any) =>
-        sub.subscriptionPlan?.hideAds === true &&
-        sub.subscriptionPlan?.organizationId === organization.id,
-    );
-    if (activeSubscription) {
-      return false;
-    }
-  }
-
-  // Verificar permisos con hideAds de la organización actual
+  // Verificar permisos con hideAds de la organización actual (org-scoped:
+  // un mod de scan A no oculta ads cuando navega scan B).
   if (user.permissions && Array.isArray(user.permissions)) {
     const hasHideAds = user.permissions.some(
       (perm: any) =>
