@@ -102,6 +102,13 @@ interface Props {
   paypalClientId: string;
 }
 
+// Joins parts as natural Spanish prose: "A, B, C y D" / "A y B" / "A".
+const joinEs = (parts: string[]): string => {
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
+};
+
 const useCountdown = (target: string | null) => {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -116,10 +123,34 @@ const useCountdown = (target: string | null) => {
   const hours = Math.floor((diff % 86_400_000) / 3_600_000);
   const minutes = Math.floor((diff % 3_600_000) / 60_000);
   const seconds = Math.floor((diff % 60_000) / 1000);
-  if (days > 0) return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-  if (minutes > 0) return `${minutes}m ${seconds}s`;
-  return `${seconds}s`;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} ${days === 1 ? 'día' : 'días'}`);
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hora' : 'horas'}`);
+  if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`);
+  // Always show seconds when there's no minute/hour/day component, otherwise
+  // include them too so the counter visibly ticks instead of feeling frozen.
+  if (parts.length === 0 || seconds > 0 || (days === 0 && hours === 0)) {
+    parts.push(`${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`);
+  }
+  return joinEs(parts);
+};
+
+const formatRaffleDateLong = (iso: string): string => {
+  try {
+    const formatted = new Intl.DateTimeFormat('es', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(iso));
+    // Capitalise first letter (Intl returns "lunes 5 de mayo de 2025, 15:30").
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  } catch {
+    return iso;
+  }
 };
 
 const linkifyMentions = (text: string) => {
@@ -489,14 +520,14 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       {raffle.status === 'active' && raffle.drawType === 'countdown' && (
         <>
           <div className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-            <Clock size={14} className="text-amber-400" /> Próximo sorteo
+            <Clock size={14} className="text-amber-400" /> El sorteo comienza en
           </div>
-          <div className="text-5xl md:text-6xl font-black text-white tabular-nums tracking-tighter">
+          <div className="text-3xl md:text-5xl font-black text-white tracking-tight text-center leading-tight">
             {countdown ?? '—'}
           </div>
           {raffle.drawAt && (
-            <p className="text-zinc-500 text-xs mt-3">
-              {new Date(raffle.drawAt).toLocaleString('es-ES')}
+            <p className="text-zinc-500 text-xs mt-3 text-center">
+              {formatRaffleDateLong(raffle.drawAt)}
             </p>
           )}
           {raffle.winnersCount > 1 && (
