@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle, Ticket, Trophy, RotateCcw, Wallet } from 'lucide-react'
+import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle, Ticket, Trophy, RotateCcw, Wallet, Link2, Unlink, RefreshCw, Check, X } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
 
 interface User {
@@ -14,6 +14,11 @@ interface User {
   pushNotifications: boolean
   notifyCommentsOnOwnedContent?: boolean
   theme: string
+  discordId?: string | null
+  discordUsername?: string | null
+  discordAvatar?: string | null
+  discordVerifiedAt?: string | null
+  discordLastCheckAt?: string | null
 }
 
 interface EmailPreferences {
@@ -628,6 +633,195 @@ const MyRafflesSection: React.FC = () => {
   )
 }
 
+const DISCORD_INVITE = 'https://discord.gg/xJqCWAUxVt'
+
+const discordAvatarUrl = (discordId?: string | null, avatar?: string | null) => {
+  if (discordId && avatar) return `https://cdn.discordapp.com/avatars/${discordId}/${avatar}.png`
+  return 'https://cdn.discordapp.com/embed/avatars/0.png'
+}
+
+const timeAgo = (iso?: string | null): string => {
+  if (!iso) return '—'
+  const t = new Date(iso).getTime()
+  if (Number.isNaN(t)) return '—'
+  const diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000))
+  if (diffSec < 60) return `hace ${diffSec}s`
+  if (diffSec < 3600) return `hace ${Math.floor(diffSec / 60)}min`
+  if (diffSec < 86400) return `hace ${Math.floor(diffSec / 3600)}h`
+  return `hace ${Math.floor(diffSec / 86400)}d`
+}
+
+const DiscordSection: React.FC<{ user: User }> = ({ user }) => {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [verifyMsg, setVerifyMsg] = useState<string | null>(null)
+  const [linked, setLinked] = useState<boolean>(!!user.discordId)
+  const [profile, setProfile] = useState({
+    discordId: user.discordId ?? null,
+    discordUsername: user.discordUsername ?? null,
+    discordAvatar: user.discordAvatar ?? null,
+    discordVerifiedAt: user.discordVerifiedAt ?? null,
+    discordLastCheckAt: user.discordLastCheckAt ?? null,
+  })
+  // Surface the ?discord=... toast that the API callback redirects to.
+  const [toast, setToast] = useState<{ kind: 'ok' | 'error' | 'join-required' | 'conflict'; text: string } | null>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('discord')
+    if (!status) return
+    if (status === 'ok') setToast({ kind: 'ok', text: '¡Discord vinculado correctamente!' })
+    else if (status === 'join-required') setToast({ kind: 'join-required', text: 'Únete primero al servidor de CapibaraTraductor y vuelve a intentar.' })
+    else if (status === 'conflict') setToast({ kind: 'conflict', text: 'Esa cuenta de Discord ya está vinculada a otro usuario.' })
+    else setToast({ kind: 'error', text: `No pudimos vincular tu Discord (${params.get('reason') || 'desconocido'}).` })
+    // strip the param so the toast doesn't reappear on refresh
+    params.delete('discord')
+    params.delete('reason')
+    const newQs = params.toString()
+    const newUrl = window.location.pathname + (newQs ? `?${newQs}` : '') + window.location.hash
+    window.history.replaceState({}, '', newUrl)
+  }, [])
+
+  const startLink = async () => {
+    setBusy(true); setError(null)
+    try {
+      const data = await callAPI('/api/discord/oauth-url')
+      if (data?.url) window.location.href = data.url
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo iniciar la vinculación.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const reverify = async () => {
+    setBusy(true); setError(null); setVerifyMsg(null)
+    try {
+      const data = await callAPI('/api/discord/verify', { method: 'POST' })
+      if (data?.verified) {
+        setVerifyMsg('✓ Sigues en el server')
+        setProfile((p) => ({ ...p, discordLastCheckAt: new Date().toISOString() }))
+      } else if (data?.reason === 'not-linked') {
+        setVerifyMsg('No tienes Discord vinculado.')
+        setLinked(false)
+      } else {
+        setVerifyMsg(`✗ Ya no estás en el server, únete: ${DISCORD_INVITE}`)
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error al verificar.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const unlink = async () => {
+    if (typeof window !== 'undefined' && !window.confirm('¿Desvincular tu cuenta de Discord?')) return
+    setBusy(true); setError(null)
+    try {
+      await callAPI('/api/discord/me', { method: 'DELETE' })
+      setLinked(false)
+      setProfile({ discordId: null, discordUsername: null, discordAvatar: null, discordVerifiedAt: null, discordLastCheckAt: null })
+      setVerifyMsg(null)
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo desvincular.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div id="discord" className="space-y-4">
+      <div className="flex items-center gap-2">
+        <MessageSquare size={16} className="text-indigo-400" />
+        <h3 className="text-sm font-black text-white uppercase tracking-wider">Discord</h3>
+      </div>
+
+      {toast && (
+        <div className={`p-4 rounded-2xl text-xs border ${
+          toast.kind === 'ok' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' :
+          toast.kind === 'join-required' ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' :
+          toast.kind === 'conflict' ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' :
+          'bg-red-500/10 border-red-500/20 text-red-300'
+        }`}>
+          {toast.text}
+          {toast.kind === 'join-required' && (
+            <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="ml-2 underline font-bold">Abrir invitación</a>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs">{error}</div>
+      )}
+
+      {!linked && (
+        <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[32px] space-y-4">
+          <div>
+            <p className="text-white font-bold text-sm">Vincula tu Discord para participar en sorteos</p>
+            <p className="text-zinc-500 text-xs mt-1">
+              Necesitas estar en el servidor de CapibaraTraductor para comprar tickets de Luckys.
+            </p>
+          </div>
+          <button
+            onClick={startLink}
+            disabled={busy}
+            className="flex items-center gap-2 bg-indigo-500 text-white px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-400 transition-colors disabled:opacity-50"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+            Vincular cuenta de Discord
+          </button>
+        </div>
+      )}
+
+      {linked && (
+        <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[32px] space-y-4">
+          <div className="flex items-center gap-3">
+            <img
+              src={discordAvatarUrl(profile.discordId, profile.discordAvatar)}
+              alt=""
+              className="w-12 h-12 rounded-full object-cover border border-zinc-800"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-sm truncate">@{profile.discordUsername || 'discord'}</p>
+              <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1">
+                Vinculado el {profile.discordVerifiedAt ? new Date(profile.discordVerifiedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+              </p>
+              <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-0.5">
+                Verificado: {timeAgo(profile.discordLastCheckAt)}
+              </p>
+            </div>
+          </div>
+
+          {verifyMsg && (
+            <div className={`p-3 rounded-xl text-xs ${verifyMsg.startsWith('✓') ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-200'}`}>
+              {verifyMsg}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={reverify}
+              disabled={busy}
+              className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-indigo-500 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              Volver a verificar
+            </button>
+            <button
+              onClick={unlink}
+              disabled={busy}
+              className="flex items-center gap-2 bg-transparent border border-red-500/40 hover:border-red-500 text-red-400 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50"
+            >
+              <Unlink size={12} /> Desvincular
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizationSlug, isStaff = false }) => {
   const [activeTab, setActiveTab] = useState('account')
   const [isLoading, setIsLoading] = useState(false)
@@ -791,6 +985,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                       )}
                     </div>
                   </div>
+                </div>
+
+                <div className="pt-6 border-t border-zinc-800">
+                  <DiscordSection user={user} />
                 </div>
 
                 <div className="pt-6 border-t border-zinc-800 space-y-10">

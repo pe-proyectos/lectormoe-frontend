@@ -44,6 +44,69 @@ const saFetch = async (path: string, token: string, options?: RequestInit) => {
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+// Live multi-timezone preview for raffle draw datetimes. The input value is
+// the local time of whoever is filling the form; we show what that wall-clock
+// translates to in the LATAM markets the platform serves so the admin doesn't
+// accidentally schedule the draw for 3am in Buenos Aires.
+const TZ_PREVIEWS: Array<{ label: string; tz: string }> = [
+  { label: 'Argentina', tz: 'America/Argentina/Buenos_Aires' },
+  { label: 'Chile',     tz: 'America/Santiago' },
+  { label: 'Perú',      tz: 'America/Lima' },
+  { label: 'México',    tz: 'America/Mexico_City' },
+];
+
+const formatInTz = (iso: string, tz: string): string => {
+  try {
+    return new Intl.DateTimeFormat('es', {
+      timeZone: tz,
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(iso));
+  } catch {
+    return '—';
+  }
+};
+
+const DateTimeFriendly: React.FC<{
+  value: string;
+  onChange: (next: string) => void;
+  disabled?: boolean;
+  label?: string;
+  hint?: string;
+}> = ({ value, onChange, disabled, label = 'Fecha y hora del sorteo', hint = 'Hora local de tu dispositivo. Abajo te mostramos cómo se ve en otras zonas.' }) => {
+  // value is the datetime-local string ("YYYY-MM-DDTHH:MM"). Browsers interpret
+  // this as local time when constructing a Date, which is exactly what we want
+  // for the per-TZ preview below.
+  const previewIso = value ? new Date(value).toISOString() : '';
+  return (
+    <div>
+      <label className="text-xs text-zinc-400 font-bold">{label}</label>
+      <input
+        type="datetime-local"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50"
+      />
+      {hint && <p className="text-[10px] text-zinc-500 mt-1">{hint}</p>}
+      {value && (
+        <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px]">
+          {TZ_PREVIEWS.map((tz) => (
+            <div key={tz.tz} className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-md">
+              <span className="text-zinc-500 font-bold">{tz.label}</span>
+              <span className="text-zinc-200 font-mono">{formatInTz(previewIso, tz.tz)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const colors: Record<string, string> = {
     active: 'bg-green-500/20 text-green-400',
@@ -126,57 +189,64 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
         {error && <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="text-xs text-zinc-400 font-bold">Título</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+            <label className="text-xs text-zinc-400 font-bold">Nombre del sorteo</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: Suscripción Premium 1 año" className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div className="col-span-2">
-            <label className="text-xs text-zinc-400 font-bold">Slug</label>
-            <input value={slug} onChange={(e) => { setSlug(e.target.value); setSlugTouched(true); }} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono" />
+            <label className="text-xs text-zinc-400 font-bold">URL del sorteo</label>
+            <div className="flex items-center mt-1">
+              <span className="px-3 py-2 bg-zinc-900 border border-r-0 border-zinc-800 rounded-l-lg text-xs text-zinc-500 font-mono">/luckys/</span>
+              <input value={slug} onChange={(e) => { setSlug(e.target.value); setSlugTouched(true); }} className="flex-1 bg-zinc-950 border border-zinc-800 rounded-r-lg px-3 py-2 text-sm text-white font-mono" />
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-1">Se autocompleta a partir del nombre. Edítalo si quieres.</p>
           </div>
           <div className="col-span-2">
             <label className="text-xs text-zinc-400 font-bold">Descripción</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Cuenta de qué se trata el premio, condiciones, etc." className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div>
-            <label className="text-xs text-zinc-400 font-bold">Precio del ticket (0 = gratis)</label>
-            <input type="number" step="0.01" min="0" value={ticketPrice} onChange={(e) => setTicketPrice(parseFloat(e.target.value) || 0)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400 font-bold">Moneda</label>
-            <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono" />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400 font-bold">Mín. tickets</label>
-            <input type="number" min="1" value={minTickets} onChange={(e) => setMinTickets(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400 font-bold">Máx. tickets (≤ 99999)</label>
-            <input type="number" min="1" max="99999" value={maxTickets} onChange={(e) => setMaxTickets(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
-          </div>
-          <div>
-            <label className="text-xs text-zinc-400 font-bold">Máx. por usuario</label>
-            <input type="number" min="1" value={maxTicketsPerUser} onChange={(e) => setMaxTicketsPerUser(parseInt(e.target.value) || 1)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+            <label className="text-xs text-zinc-400 font-bold">Precio por ticket</label>
+            <div className="flex items-center mt-1">
+              <input type="number" step="0.01" min="0" value={ticketPrice} onChange={(e) => setTicketPrice(parseFloat(e.target.value) || 0)} className="flex-1 bg-zinc-950 border border-r-0 border-zinc-800 rounded-l-lg px-3 py-2 text-sm text-white" />
+              <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} className="w-16 bg-zinc-900 border border-zinc-800 rounded-r-lg px-2 py-2 text-sm text-white font-mono text-center" />
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-1">{ticketPrice === 0 ? '🎁 Sorteo gratis (sin pago)' : `${ticketPrice.toFixed(2)} ${currency} por cada ticket`}</p>
           </div>
           <div>
             <label className="text-xs text-zinc-400 font-bold">Tipo de sorteo</label>
-            <select value={drawType} onChange={(e) => setDrawType(e.target.value as any)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="countdown">Cuenta atrás</option>
-              <option value="max-tickets">Al llenar</option>
+            <select value={drawType} onChange={(e) => setDrawType(e.target.value as any)} className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="countdown">Por fecha límite</option>
+              <option value="max-tickets">Cuando se vendan todos los tickets</option>
             </select>
+            <p className="text-[10px] text-zinc-500 mt-1">{drawType === 'countdown' ? 'Se sortea automáticamente en la fecha que elijas.' : 'Se sortea apenas se llene el cupo máximo.'}</p>
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Mínimo para que se realice</label>
+            <input type="number" min="1" value={minTickets} onChange={(e) => setMinTickets(parseInt(e.target.value) || 1)} className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+            <p className="text-[10px] text-zinc-500 mt-1">Si no se vende este mínimo, se cancela y se reembolsa.</p>
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Máximo total de tickets</label>
+            <input type="number" min="1" max="99999" value={maxTickets} onChange={(e) => setMaxTickets(parseInt(e.target.value) || 1)} className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+            <p className="text-[10px] text-zinc-500 mt-1">Cupo total de la rifa. Hasta 99,999.</p>
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Máximo por usuario</label>
+            <input type="number" min="1" value={maxTicketsPerUser} onChange={(e) => setMaxTicketsPerUser(parseInt(e.target.value) || 1)} className="w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+            <p className="text-[10px] text-zinc-500 mt-1">Cuántos tickets puede comprar una misma persona.</p>
           </div>
           {drawType === 'countdown' && (
             <div className="col-span-2">
-              <label className="text-xs text-zinc-400 font-bold">Fecha del sorteo</label>
-              <input type="datetime-local" value={drawAt} onChange={(e) => setDrawAt(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+              <DateTimeFriendly value={drawAt} onChange={setDrawAt} />
             </div>
           )}
           <div>
-            <label className="text-xs text-zinc-400 font-bold">Imagen (cover)</label>
+            <label className="text-xs text-zinc-400 font-bold">Imagen (portada)</label>
             <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'image')} className="w-full text-xs text-zinc-400" />
             {imageUrl && <p className="text-[10px] text-emerald-400 mt-1 truncate">✓ {imageUrl}</p>}
           </div>
           <div>
-            <label className="text-xs text-zinc-400 font-bold">Banner</label>
+            <label className="text-xs text-zinc-400 font-bold">Imagen (banner)</label>
             <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'banner')} className="w-full text-xs text-zinc-400" />
             {bannerUrl && <p className="text-[10px] text-emerald-400 mt-1 truncate">✓ {bannerUrl}</p>}
           </div>
@@ -192,11 +262,151 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
   );
 };
 
+const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: () => void; token: string }> = ({ raffle, onClose, onSaved, token }) => {
+  // Once tickets exist the backend rejects mutations to economic fields
+  // (price, min/max, drawType, drawAt). Surface that constraint as a banner
+  // and lock the inputs so the FE matches what the API will accept.
+  const ticketsExist = raffle.sold > 0;
+  const [title, setTitle] = useState(raffle.title);
+  const [description, setDescription] = useState(raffle.description ?? '');
+  const [ticketPrice, setTicketPrice] = useState(raffle.ticketPrice);
+  const [currency, setCurrency] = useState(raffle.currency);
+  const [minTickets, setMinTickets] = useState(raffle.minTickets);
+  const [maxTickets, setMaxTickets] = useState(raffle.maxTickets);
+  const [maxTicketsPerUser, setMaxTicketsPerUser] = useState(raffle.maxTicketsPerUser);
+  const [drawType, setDrawType] = useState<'countdown' | 'max-tickets'>(raffle.drawType as any);
+  const [drawAt, setDrawAt] = useState(raffle.drawAt ? raffle.drawAt.slice(0, 16) : '');
+  const [imageUrl, setImageUrl] = useState(raffle.imageUrl ?? '');
+  const [bannerUrl, setBannerUrl] = useState(raffle.bannerUrl ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleFileUpload = async (file: File, target: 'image' | 'banner') => {
+    try {
+      const key = await uploadFile(file, undefined, 'raffles');
+      const baseUrl = (import.meta.env.PUBLIC_R2_PUBLIC_URL || '').replace(/\/$/, '');
+      const fullUrl = baseUrl ? `${baseUrl}/${key}` : key;
+      if (target === 'image') setImageUrl(fullUrl);
+      else setBannerUrl(fullUrl);
+    } catch (err: any) {
+      setError(err?.message || 'Error al subir el archivo.');
+    }
+  };
+
+  const submit = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      // When tickets exist, only send the cosmetic subset to avoid 422 from
+      // the backend's immutability check.
+      const body: any = ticketsExist
+        ? { description: description || null, imageUrl: imageUrl || null, bannerUrl: bannerUrl || null }
+        : {
+            title,
+            description: description || null,
+            imageUrl: imageUrl || null,
+            bannerUrl: bannerUrl || null,
+            ticketPrice,
+            currency,
+            minTickets,
+            maxTickets,
+            maxTicketsPerUser,
+            drawType,
+            drawAt: drawType === 'countdown' && drawAt ? new Date(drawAt).toISOString() : null,
+          };
+      await saFetch(`/api/superadmin/raffles/${raffle.slug}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'Error al guardar.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-black text-white mb-1">Editar sorteo</h2>
+        <p className="text-zinc-500 text-xs mb-4 font-mono">/{raffle.slug}</p>
+        {ticketsExist && (
+          <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs">
+            Hay {raffle.sold} ticket(s) vendido(s). Solo puedes editar descripción, portada y banner.
+          </div>
+        )}
+        {error && <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <label className="text-xs text-zinc-400 font-bold">Título</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs text-zinc-400 font-bold">Descripción</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Precio del ticket</label>
+            <input type="number" step="0.01" min="0" value={ticketPrice} onChange={(e) => setTicketPrice(parseFloat(e.target.value) || 0)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Moneda</label>
+            <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white font-mono disabled:opacity-50" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Mín. tickets</label>
+            <input type="number" min="1" value={minTickets} onChange={(e) => setMinTickets(parseInt(e.target.value) || 1)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Máx. tickets</label>
+            <input type="number" min="1" max="99999" value={maxTickets} onChange={(e) => setMaxTickets(parseInt(e.target.value) || 1)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Máx. por usuario</label>
+            <input type="number" min="1" value={maxTicketsPerUser} onChange={(e) => setMaxTicketsPerUser(parseInt(e.target.value) || 1)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50" />
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Tipo de sorteo</label>
+            <select value={drawType} onChange={(e) => setDrawType(e.target.value as any)} disabled={ticketsExist} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white disabled:opacity-50">
+              <option value="countdown">Cuenta atrás</option>
+              <option value="max-tickets">Al llenar</option>
+            </select>
+          </div>
+          {drawType === 'countdown' && (
+            <div className="col-span-2">
+              <DateTimeFriendly value={drawAt} onChange={setDrawAt} disabled={ticketsExist} />
+            </div>
+          )}
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Imagen (cover)</label>
+            <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'image')} className="w-full text-xs text-zinc-400" />
+            {imageUrl && <p className="text-[10px] text-emerald-400 mt-1 truncate">✓ {imageUrl}</p>}
+          </div>
+          <div>
+            <label className="text-xs text-zinc-400 font-bold">Banner</label>
+            <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'banner')} className="w-full text-xs text-zinc-400" />
+            {bannerUrl && <p className="text-[10px] text-emerald-400 mt-1 truncate">✓ {bannerUrl}</p>}
+          </div>
+        </div>
+        <div className="mt-5 flex gap-2 justify-end">
+          <button onClick={onClose} className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-bold hover:bg-zinc-700">Cancelar</button>
+          <button onClick={submit} disabled={busy || !title} className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-bold hover:bg-violet-500 disabled:opacity-50">
+            {busy ? 'Guardando...' : 'Guardar cambios'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SuperadminRaffles: React.FC<Props> = ({ token }) => {
   const [raffles, setRaffles] = useState<RaffleAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<RaffleAdmin | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'active' | 'completed' | 'all'>('all');
 
@@ -322,6 +532,7 @@ const SuperadminRaffles: React.FC<Props> = ({ token }) => {
                     <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
+                        <button onClick={() => setEditing(r)} disabled={busyId !== null} className="px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded text-[10px] font-black uppercase hover:bg-cyan-500/30 disabled:opacity-50">Editar</button>
                         {r.status === 'active' && (
                           <>
                             <button onClick={() => triggerDraw(r.slug)} disabled={busyId !== null} className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded text-[10px] font-black uppercase hover:bg-yellow-500/30 disabled:opacity-50">Sortear</button>
@@ -342,6 +553,7 @@ const SuperadminRaffles: React.FC<Props> = ({ token }) => {
       )}
 
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={load} token={token} />}
+      {editing && <EditModal raffle={editing} onClose={() => setEditing(null)} onSaved={load} token={token} />}
     </div>
   );
 };

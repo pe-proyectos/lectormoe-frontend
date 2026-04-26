@@ -9,6 +9,8 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 interface Winner { ticketNumber: string; userSlug: string; userUsername: string; userImageUrl: string | null }
 
+interface ViewerDiscord { linked: boolean; verified: boolean; reason?: string }
+
 interface Raffle {
   id: number;
   slug: string;
@@ -32,8 +34,11 @@ interface Raffle {
   available: number;
   userTicketCount: number;
   winner: Winner | null;
+  viewer?: { discord?: ViewerDiscord };
   createdAt: string;
 }
+
+const DISCORD_INVITE = 'https://discord.gg/xJqCWAUxVt';
 
 interface Comment {
   id: number;
@@ -482,6 +487,14 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // ─── Left sidebar with purchase ─────────────────────────────────────────────
   const purchaseDisabled = raffle.status !== 'active' || maxBuy <= 0;
 
+  const discord = raffle.viewer?.discord;
+  // Phase 1 gate: only need to be logged + email-verified. Discord is shown as
+  // an optional badge but doesn't block participation.
+  const needsLogin = !logged;
+  const canParticipate = !!raffle.viewer?.canParticipate;
+  const blockReason = raffle.viewer?.blockReason;
+  const needsEmailVerify = logged && !canParticipate && blockReason === 'email-not-verified';
+
   const Sidebar = (
     <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 space-y-5">
       <div className="aspect-square w-full rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center">
@@ -565,7 +578,35 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             <p className="text-zinc-500 text-xs text-center italic">No quedan tickets disponibles.</p>
           )}
 
-          {!purchaseDisabled && isFree && (
+          {!purchaseDisabled && needsLogin && (
+            <a
+              href="/login"
+              className="block text-center w-full bg-yellow-400 text-zinc-950 px-4 py-3 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-yellow-300"
+            >
+              Inicia sesión para participar
+            </a>
+          )}
+
+          {!purchaseDisabled && needsEmailVerify && (
+            <a
+              href="/settings"
+              className="block text-center w-full bg-orange-500 text-zinc-950 px-4 py-3 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-400 transition-colors"
+            >
+              Verifica tu correo para participar
+            </a>
+          )}
+
+          {/* Discord badge — purely informational. Not a blocker. */}
+          {!purchaseDisabled && logged && !needsEmailVerify && discord && !discord.linked && (
+            <a
+              href="/settings#discord"
+              className="block text-center w-full bg-zinc-900 hover:bg-zinc-800 border border-indigo-500/30 text-indigo-300 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-colors"
+            >
+              Vincula tu Discord (opcional)
+            </a>
+          )}
+
+          {!purchaseDisabled && isFree && !needsLogin && !needsEmailVerify && (
             <button
               onClick={buyFree}
               disabled={buyBusy}
@@ -576,7 +617,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             </button>
           )}
 
-          {!purchaseDisabled && !isFree && logged && paypalClientId && (
+          {!purchaseDisabled && !isFree && logged && !needsEmailVerify && paypalClientId && (
             <PayPalScriptProvider options={{ clientId: paypalClientId, currency: raffle.currency, intent: 'capture' }}>
               <PayPalButtons
                 style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
@@ -628,14 +669,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             </PayPalScriptProvider>
           )}
 
-          {!purchaseDisabled && !isFree && !logged && (
-            <a
-              href="/login"
-              className="block text-center w-full bg-yellow-400 text-zinc-950 px-4 py-3 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-yellow-300"
-            >
-              Inicia sesión para comprar
-            </a>
-          )}
         </>
       )}
     </div>
