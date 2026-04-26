@@ -53,10 +53,18 @@ export const callAPI = async (url: string, fetchOptions?: Partial<RequestInit> &
 
         if (firstSegment === 'red' && pathSegments.length > 1) {
             // /red/{slug}/... → usar el segundo segmento como org
-            const actualSlug = pathSegments[1];
-            if (!reservedRoutes.includes(actualSlug)) {
-                orgDomain = actualSlug;
+            // /red/writings/{slug}/... → usar el tercer segmento como org
+            if (pathSegments[1] === 'writings' && pathSegments.length > 2) {
+                const actualSlug = pathSegments[2];
+                if (!reservedRoutes.includes(actualSlug)) orgDomain = actualSlug;
+            } else {
+                const actualSlug = pathSegments[1];
+                if (!reservedRoutes.includes(actualSlug)) orgDomain = actualSlug;
             }
+        } else if (firstSegment === 'writings' && pathSegments.length > 1) {
+            // /writings/{slug}/... → usar el segundo segmento como org
+            const actualSlug = pathSegments[1];
+            if (!reservedRoutes.includes(actualSlug)) orgDomain = actualSlug;
         } else if (!isLandingPage) {
             // Si estamos en una página de organización, extraer slug del path
             if (firstSegment && !reservedRoutes.includes(firstSegment)) {
