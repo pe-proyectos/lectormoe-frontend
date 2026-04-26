@@ -537,9 +537,11 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const minimapContainerRef = useRef<HTMLDivElement>(null);
   const scrollRafRef = useRef<number | null>(null);
 
-  // Cargar capítulos cuando se cambia al tab de capítulos
+  // Cargar capítulos cuando se cambia al tab de capítulos.
+  // También al entrar al upload tab — necesitamos los caps para sugerir
+  // el siguiente número por defecto.
   useEffect(() => {
-    if (activeTab === 'chapters' && chapters.length === 0) {
+    if ((activeTab === 'chapters' || activeTab === 'upload') && chapters.length === 0) {
       loadChapters();
     }
     // Limpiar estado de edición si se cambia a otro tab que no sea upload
@@ -556,8 +558,36 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       });
       setPages([]);
       setSinglePageIndexes([]);
+      setBodyMarkdown('');
     }
   }, [activeTab]);
+
+  // Pre-fill chapter number/title with the next sensible default whenever the
+  // user is about to create (NOT edit) a chapter and chapters are loaded.
+  // Picks max(existing.number) + 1, rounded up so we don't suggest 70.5 → 71.5.
+  useEffect(() => {
+    if (isEditingChapter) return;
+    if (newChapter.number && newChapter.title) return;
+    const maxN = chapters.reduce((m: number, c: any) => Math.max(m, Number(c?.number) || 0), 0);
+    const next = Math.floor(maxN) + 1;
+    setNewChapter((prev) => ({
+      ...prev,
+      number: prev.number || String(next),
+      title: prev.title || `Capítulo ${next}`,
+    }));
+  }, [chapters, isEditingChapter]);
+
+  // Writings have only one sensible read-direction (continuous text) and never
+  // contain adult content (separate +18 system would mean a different surface).
+  // Force these whenever isWriting flips on or the form data drifts.
+  useEffect(() => {
+    if (!isWriting) return;
+    setFormData((prev) => {
+      const needsUpdate = prev.workType !== 'text' || prev.isNSFW;
+      if (!needsUpdate) return prev;
+      return { ...prev, workType: 'text', isNSFW: false };
+    });
+  }, [isWriting]);
 
   // Update form data when initial resource changes
   useEffect(() => {
@@ -1425,12 +1455,12 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         });
         setPages([]);
         setSinglePageIndexes([]);
+        setBodyMarkdown('');
         setIsEditingChapter(false);
         setEditingChapterNumber(null);
-        // Recargar capítulos
-        if (activeTab === 'chapters') {
-          loadChapters();
-        }
+        // Recargar capítulos — esto refresca chapters[] y el useEffect de
+        // defaults pre-rellena el siguiente número/título automáticamente.
+        loadChapters();
       }
     } catch (error: any) {
       toast.error(error?.message || 'Error al crear el capítulo');
@@ -2673,17 +2703,24 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     </select>
                   </div>
 
-                  {/* Tipo de obra */}
+                  {/* Tipo de lectura — for writings only 'text' makes sense, so we lock it. */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Tipo de obra</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Tipo de lectura</label>
                     <select
                       value={formData.workType}
                       onChange={(e) => setFormData({...formData, workType: e.target.value})}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:border-cyan-500 transition-all outline-none"
+                      disabled={isWriting}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:border-cyan-500 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      <option value="manga">Manga (derecha → izquierda)</option>
-                      <option value="manwha">Manwha (scroll vertical)</option>
-                      <option value="comic">Comic (izquierda → derecha)</option>
+                      {isWriting ? (
+                        <option value="text">Texto (lectura continua)</option>
+                      ) : (
+                        <>
+                          <option value="manga">Manga (derecha → izquierda)</option>
+                          <option value="manwha">Manwha (scroll vertical)</option>
+                          <option value="comic">Comic (izquierda → derecha)</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -2732,10 +2769,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                   {/* Toggles — manga only (joints don't have these flags) */}
                   {!isJointMode && (
                   <div className="space-y-6 pt-4 border-t border-zinc-800">
-                    {/* Manga con simul release */}
+                    {/* Simul release */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Manga con simul release</span>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{isWriting ? 'Novela con simul release' : 'Manga con simul release'}</span>
                         <div 
                           onClick={() => setFormData({...formData, isSimulRelease: !formData.isSimulRelease})}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isSimulRelease ? 'bg-cyan-500' : 'bg-zinc-800'}`}
@@ -2744,15 +2781,16 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         </div>
                       </div>
                       <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
-                        Informa a los usuarios que este manga se publicará simultáneamente con su lanzamiento de pais origen
+                        Informa a los usuarios que esto se publicará simultáneamente con su lanzamiento de país origen
                       </p>
                     </div>
 
-                    {/* Manga +18 */}
+                    {/* +18 — hidden for writings (no NSFW writings surface yet) */}
+                    {!isWriting && (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Manga +18</span>
-                        <div 
+                        <div
                           onClick={() => setFormData({...formData, isNSFW: !formData.isNSFW})}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isNSFW ? 'bg-red-500' : 'bg-zinc-800'}`}
                         >
@@ -2763,6 +2801,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         Si se activa, este manga contendrá contenido para adultos y será marcado como +18
                       </p>
                     </div>
+                    )}
 
                     {/* Requiere inicio de sesión */}
                     <div className="space-y-3">

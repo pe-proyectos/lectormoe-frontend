@@ -163,9 +163,9 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
   };
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-zinc-800 bg-zinc-950/50">
+    <div className="bg-zinc-900 rounded-2xl border border-zinc-800">
+      {/* Toolbar — sticky so it stays reachable while scrolling long chapters */}
+      <div className="sticky top-0 z-20 flex flex-wrap items-center gap-1 p-2 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur rounded-t-2xl">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Negrita (Ctrl+B)">
           <Bold size={16} />
         </ToolbarButton>
@@ -237,8 +237,8 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         )}
       </div>
 
-      {/* Footer: uploaders + char count + source toggle */}
-      <div className="flex flex-wrap items-center gap-3 p-3 border-t border-zinc-800 bg-zinc-950/50">
+      {/* Footer — also sticky so .docx/.md uploaders stay reachable */}
+      <div className="sticky bottom-0 z-20 flex flex-wrap items-center gap-3 p-3 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur rounded-b-2xl">
         <button
           type="button"
           onClick={() => docxInputRef.current?.click()}
