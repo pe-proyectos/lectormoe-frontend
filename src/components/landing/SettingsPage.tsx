@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare } from 'lucide-react'
+import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
 
 interface User {
@@ -68,6 +68,372 @@ const ToggleRow: React.FC<{
     {!disabled && <Toggle value={value} onChange={onChange} />}
   </div>
 )
+
+interface UserSubscription {
+  id: number
+  status: string
+  active: boolean
+  startDate: string | null
+  endDate: string | null
+  nextPayment: string | null
+  lastPayment: string | null
+  lastAmount: number | null
+  cycleExecutions: number
+  failedPaymentsCount: number
+  paypalSubscriptionId: string
+  subscriptionPlan: {
+    id: number
+    name: string
+    price: number
+    currency: string
+    interval: string
+    organization: {
+      id: number
+      slug: string
+      name: string
+      logoUrl: string | null
+    }
+  }
+}
+
+interface SubscriptionPayment {
+  id: number | string
+  transactionDate: string | null
+  beforeFeesAmount: number
+  amount: number
+  currency: string
+  status: string
+  transactionId: string | null
+  source?: 'db' | 'paypal'
+}
+
+const formatDateLong = (iso: string | null): string => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const formatDateShort = (iso: string | null): string => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+}
+
+const formatMoney = (amount: number | null | undefined, currency: string = 'USD'): string => {
+  if (amount == null || Number.isNaN(amount)) return '—'
+  return `$${amount.toFixed(2)} ${currency}`
+}
+
+const intervalLabel = (interval: string): string => {
+  switch (interval) {
+    case 'DAY': return 'día'
+    case 'WEEK': return 'semana'
+    case 'MONTH': return 'mes'
+    case 'YEAR': return 'año'
+    default: return interval.toLowerCase()
+  }
+}
+
+const StatusBadge: React.FC<{ status: string; failed: number }> = ({ status, failed }) => {
+  const upper = (status || '').toUpperCase()
+  const isSuspendedByFailed = upper === 'SUSPENDED' || (failed > 0 && upper !== 'ACTIVE' && upper !== 'CANCELLED')
+
+  if (upper === 'ACTIVE') {
+    return <span className="text-[10px] font-black text-green-500 bg-green-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Activa</span>
+  }
+  if (upper === 'CANCELLED' || upper === 'EXPIRED') {
+    return <span className="text-[10px] font-black text-zinc-400 bg-zinc-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Cancelada</span>
+  }
+  if (isSuspendedByFailed && upper === 'SUSPENDED' && failed > 0) {
+    return <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Suspendida</span>
+  }
+  if (upper === 'SUSPENDED') {
+    return <span className="text-[10px] font-black text-cyan-300 bg-cyan-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Pausada</span>
+  }
+  return <span className="text-[10px] font-black text-zinc-400 bg-zinc-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">{status || 'Desconocido'}</span>
+}
+
+const SubscriptionCard: React.FC<{
+  sub: UserSubscription
+  payments: SubscriptionPayment[] | null
+  paymentsLoading: boolean
+  paymentsError: string | null
+  expanded: boolean
+  onToggleExpand: () => void
+  onPause: () => void
+  onResume: () => void
+  busy: boolean
+}> = ({ sub, payments, paymentsLoading, paymentsError, expanded, onToggleExpand, onPause, onResume, busy }) => {
+  const status = (sub.status || '').toUpperCase()
+  const isCancelled = status === 'CANCELLED' || status === 'EXPIRED'
+  const isPaused = status === 'SUSPENDED' && sub.failedPaymentsCount === 0
+  const isFailedSuspended = status === 'SUSPENDED' && sub.failedPaymentsCount > 0
+  const canPause = status === 'ACTIVE'
+  const canResume = isPaused || isFailedSuspended
+  const org = sub.subscriptionPlan.organization
+
+  return (
+    <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[32px] space-y-4">
+      <div className="flex items-start gap-4">
+        {org.logoUrl ? (
+          <img src={org.logoUrl} alt={org.name} className="w-14 h-14 rounded-2xl object-cover border border-zinc-800 flex-shrink-0" />
+        ) : (
+          <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
+            <CreditCard size={20} className="text-zinc-600" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-white font-bold text-sm truncate">{org.name}</p>
+            <StatusBadge status={sub.status} failed={sub.failedPaymentsCount} />
+          </div>
+          <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1">
+            {sub.subscriptionPlan.name} · ${sub.subscriptionPlan.price.toFixed(2)} {sub.subscriptionPlan.currency}/{intervalLabel(sub.subscriptionPlan.interval)}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3 text-xs">
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-4 py-3">
+          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">Próximo cobro</p>
+          <p className="text-white font-medium">
+            {isCancelled ? '—' : formatDateLong(sub.nextPayment)}
+          </p>
+        </div>
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-4 py-3">
+          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">Último pago</p>
+          <p className="text-white font-medium">
+            {sub.lastPayment
+              ? `${formatMoney(sub.lastAmount, sub.subscriptionPlan.currency)} el ${formatDateShort(sub.lastPayment)}`
+              : '—'}
+          </p>
+        </div>
+      </div>
+
+      {isFailedSuspended && (
+        <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+          <AlertTriangle size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-amber-300 text-[11px] leading-relaxed">
+            Tu pago falló {sub.failedPaymentsCount} {sub.failedPaymentsCount === 1 ? 'vez' : 'veces'}. Revisa tu método de pago en PayPal.
+          </p>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 flex-wrap">
+        {isCancelled && (
+          <span className="text-[10px] font-bold text-zinc-500 italic">Cancelada — no puede reactivarse</span>
+        )}
+        {canPause && (
+          <button
+            onClick={onPause}
+            disabled={busy}
+            className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-cyan-500 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Pause size={12} /> Pausar
+          </button>
+        )}
+        {canResume && (
+          <button
+            onClick={onResume}
+            disabled={busy}
+            className="flex items-center gap-2 bg-cyan-500 text-zinc-950 hover:bg-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Play size={12} /> Reanudar
+          </button>
+        )}
+        <button
+          onClick={onToggleExpand}
+          className="flex items-center gap-2 bg-transparent border border-zinc-800 hover:border-zinc-600 text-zinc-300 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors ml-auto"
+        >
+          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Ver pagos
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="pt-4 border-t border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-300">
+          {paymentsLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="text-cyan-500 animate-spin" />
+            </div>
+          )}
+          {paymentsError && (
+            <p className="text-red-400 text-xs">{paymentsError}</p>
+          )}
+          {!paymentsLoading && !paymentsError && payments && payments.length === 0 && (
+            <p className="text-zinc-500 text-xs italic">Aún no hay pagos registrados.</p>
+          )}
+          {!paymentsLoading && !paymentsError && payments && payments.length > 0 && (
+            <div className="overflow-x-auto -mx-2">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-zinc-500 text-left">
+                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Fecha</th>
+                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Monto bruto</th>
+                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Comisiones</th>
+                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Neto al scan</th>
+                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Estado</th>
+                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">ID</th>
+                  </tr>
+                </thead>
+                <tbody className="text-zinc-300">
+                  {payments.map((p) => {
+                    const fees = p.beforeFeesAmount - p.amount
+                    return (
+                      <tr key={p.id} className="border-t border-zinc-800/60">
+                        <td className="px-2 py-2 whitespace-nowrap">{formatDateShort(p.transactionDate)}</td>
+                        <td className="px-2 py-2 whitespace-nowrap">{formatMoney(p.beforeFeesAmount, p.currency)}</td>
+                        <td className="px-2 py-2 whitespace-nowrap text-zinc-500">{formatMoney(fees, p.currency)}</td>
+                        <td className="px-2 py-2 whitespace-nowrap text-white font-medium">{formatMoney(p.amount, p.currency)}</td>
+                        <td className="px-2 py-2 whitespace-nowrap">
+                          <span className="text-[9px] font-black uppercase tracking-wider">{p.status}</span>
+                          {p.source === 'paypal' && (
+                            <span className="ml-1 text-[8px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">Pendiente</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2 text-zinc-500 truncate max-w-[120px]" title={p.transactionId ?? ''}>
+                          {p.transactionId ?? '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const MySubscriptionsSection: React.FC = () => {
+  const [subs, setSubs] = useState<UserSubscription[] | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const [paymentsCache, setPaymentsCache] = useState<Record<number, SubscriptionPayment[]>>({})
+  const [paymentsLoading, setPaymentsLoading] = useState<Record<number, boolean>>({})
+  const [paymentsErrors, setPaymentsErrors] = useState<Record<number, string>>({})
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const loadSubs = async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const data = await callAPI('/api/subscription/me')
+      setSubs(Array.isArray(data) ? data : [])
+    } catch (err: any) {
+      setLoadError(err?.message || 'No se pudieron cargar tus suscripciones.')
+      setSubs([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadSubs() }, [])
+
+  const togglePayments = async (subId: number) => {
+    const willExpand = !expanded[subId]
+    setExpanded((prev) => ({ ...prev, [subId]: willExpand }))
+    if (willExpand && !paymentsCache[subId]) {
+      setPaymentsLoading((prev) => ({ ...prev, [subId]: true }))
+      setPaymentsErrors((prev) => { const n = { ...prev }; delete n[subId]; return n })
+      try {
+        const data = await callAPI(`/api/subscription/me/${subId}/payments`)
+        setPaymentsCache((prev) => ({ ...prev, [subId]: Array.isArray(data) ? data : [] }))
+      } catch (err: any) {
+        setPaymentsErrors((prev) => ({ ...prev, [subId]: err?.message || 'No se pudieron cargar los pagos.' }))
+      } finally {
+        setPaymentsLoading((prev) => ({ ...prev, [subId]: false }))
+      }
+    }
+  }
+
+  const setActive = async (subId: number, active: boolean) => {
+    setBusyId(subId)
+    setActionError(null)
+    try {
+      await callAPI(`/api/subscription/me/${subId}/active`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active }),
+      })
+      await loadSubs()
+    } catch (err: any) {
+      setActionError(err?.message || 'No se pudo actualizar la suscripción.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handlePause = (sub: UserSubscription) => {
+    const ok = typeof window !== 'undefined' && window.confirm(
+      `¿Pausar tu suscripción a ${sub.subscriptionPlan.organization.name}? PayPal dejará de cobrarte. Puedes reactivarla cuando quieras.`,
+    )
+    if (!ok) return
+    setActive(sub.id, false)
+  }
+
+  const handleResume = (sub: UserSubscription) => {
+    setActive(sub.id, true)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <CreditCard size={16} className="text-cyan-500" />
+        <h3 className="text-sm font-black text-white uppercase tracking-wider">Mis suscripciones</h3>
+      </div>
+
+      {actionError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs">
+          {actionError}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={24} className="text-cyan-500 animate-spin" />
+        </div>
+      )}
+
+      {!loading && loadError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs">
+          {loadError}
+        </div>
+      )}
+
+      {!loading && !loadError && subs && subs.length === 0 && (
+        <div className="p-6 bg-zinc-950 border border-dashed border-zinc-800 rounded-[32px]">
+          <p className="text-zinc-400 text-sm">
+            No tienes suscripciones activas. Suscríbete a un scan para apoyar a tus traductores favoritos.
+          </p>
+        </div>
+      )}
+
+      {!loading && !loadError && subs && subs.length > 0 && (
+        <div className="space-y-3">
+          {subs.map((sub) => (
+            <SubscriptionCard
+              key={sub.id}
+              sub={sub}
+              payments={paymentsCache[sub.id] ?? null}
+              paymentsLoading={!!paymentsLoading[sub.id]}
+              paymentsError={paymentsErrors[sub.id] ?? null}
+              expanded={!!expanded[sub.id]}
+              onToggleExpand={() => togglePayments(sub.id)}
+              onPause={() => handlePause(sub)}
+              onResume={() => handleResume(sub)}
+              busy={busyId === sub.id}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizationSlug, isStaff = false }) => {
   const [activeTab, setActiveTab] = useState('account')
@@ -232,6 +598,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                       )}
                     </div>
                   </div>
+                </div>
+
+                <div className="pt-6 border-t border-zinc-800">
+                  <MySubscriptionsSection />
                 </div>
               </div>
             )}
