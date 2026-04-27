@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Sparkles, Ticket, Trophy, Clock, Users, Send, Plus, Minus, AlertTriangle, Loader2, Skull,
+  Sparkles, Ticket, Trophy, Clock, Users, Send, Plus, Minus, AlertTriangle, Loader2, Skull, Wind,
 } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -70,17 +70,20 @@ interface TicketRow {
   createdAt: string;
 }
 
-interface EliminatedEntry {
+interface AliveTicket {
+  id: number;
   number: string;
+  rawNumber: number;
   userSlug: string;
   userUsername: string;
   userImageUrl: string | null;
-  comment: string | null;
-  eliminationOrder: number;
+  horseSteps: number;
+  blownAt: string | null;
 }
 
 interface DrawState {
   status: string;
+  phase: 'phase1' | 'phase2' | 'phase3_intro' | 'phase3' | null;
   totalTickets: number;
   eliminatedCount: number;
   remainingCount: number;
@@ -89,9 +92,29 @@ interface DrawState {
   eliminationIntervalMs: number;
   lastEliminationAt: string | null;
   nextEliminationAt: string | null;
-  lastEliminated: EliminatedEntry | null;
-  recentEliminated: EliminatedEntry[];
+  // Phase 2
+  lightState: 'red' | 'green' | null;
+  nextWindAt: string | null;
+  nextLightChangeAt: string | null;
+  // Phase 3
+  phase3StartsAt: string | null;
+  nextHorseAdvanceAt: string | null;
+  nextHorseEliminationAt: string | null;
+  lastPlace: AliveTicket | null;
+  // Roster (phase 2 grid + phase 3 columns)
+  aliveTickets: AliveTicket[];
   winners: Winner[] | null;
+}
+
+interface MyTicket {
+  id: number;
+  number: string;
+  comment: string | null;
+  refunded: boolean;
+  eliminated: boolean;
+  eliminationOrder: number | null;
+  isWinner: boolean;
+  alive: boolean;
 }
 
 interface Props {
@@ -197,6 +220,16 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [tick, setTick] = useState(0);
 
+  // Viewer's own tickets in this raffle (alive / eliminated / winner).
+  const [myTickets, setMyTickets] = useState<MyTicket[]>([]);
+
+  // Phase 2 transient state — when a wind_gust event arrives, we mark the
+  // affected tickets as "blowing" for ~1.2s so the FE can animate them with
+  // a translate/shake. After the timeout the set clears and the next polling
+  // cycle reflects whether they were eliminated (red light) or remain alive.
+  const [blowingIds, setBlowingIds] = useState<Set<number>>(() => new Set());
+  const [redKilledIds, setRedKilledIds] = useState<Set<number>>(() => new Set());
+
   const countdown = useCountdown(raffle.drawType === 'countdown' ? raffle.drawAt : null);
   const isFree = raffle.ticketPrice === 0;
   const drawingDone = raffle.status === 'completed';
@@ -230,6 +263,16 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     }
   };
 
+  const loadMyTickets = async () => {
+    if (!logged) { setMyTickets([]); return; }
+    try {
+      const data = await callAPI(`/api/raffle/${raffle.slug}/my-tickets`);
+      setMyTickets(Array.isArray(data) ? data : []);
+    } catch (err) {
+      // ignore — strip just won't render
+    }
+  };
+
   const refetchRaffle = async () => {
     try {
       const data = await callAPI(`/api/raffle/${raffle.slug}`);
@@ -239,7 +282,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     }
   };
 
-  useEffect(() => { loadTickets(1); loadComments(); /* eslint-disable-next-line */ }, [raffle.slug]);
+  useEffect(() => { loadTickets(1); loadComments(); loadMyTickets(); /* eslint-disable-next-line */ }, [raffle.slug]);
 
   // ─── Draw-state polling: source of truth during 'drawing' ────────────────────
   useEffect(() => {
@@ -331,6 +374,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         // reflect their new ticket count (otherwise they stay stamped at the
         // count they had when the comment was posted).
         loadComments();
+        loadMyTickets();
       } else if (e.type === 'comment') {
         setComments((prev) => [...prev, e.comment]);
       } else if (e.type === 'draw_started') {
@@ -338,8 +382,54 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         // SSE is just a hint — kick the polling loop immediately.
         pollDrawStateNow();
       } else if (e.type === 'elimination') {
-        // Hint to poll immediately so we update faster than the 1s tick.
         pollDrawStateNow();
+        loadMyTickets();
+      } else if (e.type === 'phase_started') {
+        pollDrawStateNow();
+      } else if (e.type === 'wind_gust') {
+        // Mark blown tickets so the FE can animate them. If the gust hit
+        // during red light, also mark them as red-killed so the X overlay
+        // sticks for the brief window before they drop off the alive list.
+        const ids: number[] = Array.isArray(e.ticketIds) ? e.ticketIds : [];
+        const killed: number[] = Array.isArray(e.eliminatedTicketIds) ? e.eliminatedTicketIds : [];
+        setBlowingIds((prev) => {
+          const next = new Set(prev);
+          for (const id of ids) next.add(id);
+          return next;
+        });
+        if (killed.length > 0) {
+          setRedKilledIds((prev) => {
+            const next = new Set(prev);
+            for (const id of killed) next.add(id);
+            return next;
+          });
+        }
+        // Clear blowing animation after 1.2s; clear killed mark after 2s.
+        setTimeout(() => {
+          setBlowingIds((prev) => {
+            const next = new Set(prev);
+            for (const id of ids) next.delete(id);
+            return next;
+          });
+        }, 1200);
+        if (killed.length > 0) {
+          setTimeout(() => {
+            setRedKilledIds((prev) => {
+              const next = new Set(prev);
+              for (const id of killed) next.delete(id);
+              return next;
+            });
+            loadMyTickets();
+          }, 2000);
+        }
+        pollDrawStateNow();
+      } else if (e.type === 'light_change') {
+        pollDrawStateNow();
+      } else if (e.type === 'horse_advance') {
+        pollDrawStateNow();
+      } else if (e.type === 'horse_elimination') {
+        pollDrawStateNow();
+        loadMyTickets();
       } else if (e.type === 'draw_completed') {
         setRaffle((r) => ({
           ...r,
@@ -349,8 +439,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         }));
         refetchRaffle();
         loadTickets(1);
+        loadMyTickets();
       } else if (e.type === 'cancelled') {
         setRaffle((r) => ({ ...r, status: 'cancelled', cancelReason: e.reason }));
+        loadMyTickets();
       }
     };
 
@@ -511,19 +603,301 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   );
 
   // ─── Center column ──────────────────────────────────────────────────────────
-  const nextEliminationSeconds = useMemo(() => {
-    if (!drawState?.nextEliminationAt) return null;
-    const target = new Date(drawState.nextEliminationAt).getTime();
-    // Guard against NaN (malformed ISO) and clock-skew negatives.
+  // Helper: ISO → seconds remaining (clamped at 0; null if invalid/missing).
+  const secondsUntil = (iso: string | null | undefined): number | null => {
+    if (!iso) return null;
+    const target = new Date(iso).getTime();
     if (!Number.isFinite(target)) return null;
-    const diff = Math.max(0, target - Date.now());
-    return Math.ceil(diff / 1000);
-    // tick is intentional — re-evaluate every 200ms render
+    return Math.max(0, Math.ceil((target - Date.now()) / 1000));
+  };
+
+  const nextEliminationSeconds = useMemo(
+    () => secondsUntil(drawState?.nextEliminationAt),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawState?.nextEliminationAt, tick]);
+    [drawState?.nextEliminationAt, tick],
+  );
+  const nextWindSeconds = useMemo(
+    () => secondsUntil(drawState?.nextWindAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.nextWindAt, tick],
+  );
+  const nextLightSeconds = useMemo(
+    () => secondsUntil(drawState?.nextLightChangeAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.nextLightChangeAt, tick],
+  );
+  const phase3IntroSeconds = useMemo(
+    () => secondsUntil(drawState?.phase3StartsAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.phase3StartsAt, tick],
+  );
+  const nextHorseAdvanceSeconds = useMemo(
+    () => secondsUntil(drawState?.nextHorseAdvanceAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.nextHorseAdvanceAt, tick],
+  );
+  const nextHorseEliminationSeconds = useMemo(
+    () => secondsUntil(drawState?.nextHorseEliminationAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.nextHorseEliminationAt, tick],
+  );
+
+  // Viewer's own tickets in this raffle, color-coded by status. Renders nothing
+  // for logged-out viewers or when the user has no tickets.
+  const MyTicketsRow = logged && myTickets.length > 0 ? (
+    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+      <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-1">
+        <Ticket size={12} /> Mis tickets ({myTickets.length})
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {myTickets.map((t) => {
+          const cls = t.refunded
+            ? 'bg-zinc-900 border-zinc-700 text-zinc-500 line-through'
+            : t.isWinner
+            ? 'bg-emerald-500/15 border-emerald-400 text-emerald-200 shadow-emerald-400/30 shadow-md'
+            : t.eliminated
+            ? 'bg-red-500/15 border-red-400 text-red-300 grayscale opacity-80'
+            : 'bg-cyan-500/15 border-cyan-400 text-cyan-200';
+          const label = t.refunded
+            ? 'Reembolsado'
+            : t.isWinner
+            ? '¡Ganador!'
+            : t.eliminated
+            ? 'Eliminado'
+            : 'En juego';
+          return (
+            <div
+              key={`mt-${t.id}`}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-black tabular-nums ${cls}`}
+              title={label}
+            >
+              #{t.number}
+              <span className="ml-1.5 text-[9px] uppercase font-black tracking-widest opacity-80">{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
+  // Phase 1 / pre-phase fallback view (used when drawing started but the
+  // tournament is in classic per-tick eliminations).
+  const Phase1View = (
+    <div className="w-full max-w-xl space-y-5">
+      <div className="text-center">
+        <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
+          <Sparkles size={14} className="animate-pulse" /> Fase 1 · Eliminación rápida
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
+            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Tickets vivos</p>
+            <p className="mt-1 text-4xl font-black text-white tabular-nums">
+              {drawState?.remainingCount ?? '—'}
+            </p>
+          </div>
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
+            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Próxima eliminación</p>
+            <p className="mt-1 text-4xl font-black text-amber-300 tabular-nums">
+              {nextEliminationSeconds !== null ? `${nextEliminationSeconds}s` : '—'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Phase 2 — Squid Game grid with parallel wind + light timers.
+  const Phase2View = (
+    <div className="w-full space-y-4">
+      <div className="text-center">
+        <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
+          <Wind size={14} /> Fase 2 · Luz Roja, Luz Verde
+        </div>
+        <div className="grid grid-cols-2 gap-3 max-w-xl mx-auto">
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-center gap-1">
+              <Wind size={10} /> Próxima ráfaga
+            </p>
+            <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+              {nextWindSeconds !== null ? `${nextWindSeconds}s` : '—'}
+            </p>
+          </div>
+          <div
+            className={`border rounded-2xl p-3 ${
+              drawState?.lightState === 'red'
+                ? 'bg-red-500/15 border-red-500/50'
+                : 'bg-emerald-500/15 border-emerald-500/40'
+            }`}
+          >
+            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
+              Luz {drawState?.lightState === 'red' ? 'roja' : 'verde'} · cambia en
+            </p>
+            <p
+              className={`mt-1 text-3xl font-black tabular-nums text-center ${
+                drawState?.lightState === 'red' ? 'text-red-300' : 'text-emerald-300'
+              }`}
+            >
+              {nextLightSeconds !== null ? `${nextLightSeconds}s` : '—'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of all alive ticket holders */}
+      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 gap-2">
+        {drawState?.aliveTickets?.map((t) => {
+          const blowing = blowingIds.has(t.id);
+          const killed = redKilledIds.has(t.id);
+          return (
+            <div
+              key={`p2-${t.id}`}
+              className={`relative flex flex-col items-center gap-1 transition-transform duration-700 ${
+                blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''
+              }`}
+              title={`@${t.userUsername} · #${t.number}`}
+              style={blowing ? { transform: `translate(${(Math.random() * 40 - 20).toFixed(0)}px, ${(Math.random() * 30 - 10).toFixed(0)}px) rotate(${(Math.random() * 30 - 15).toFixed(0)}deg)` } : undefined}
+            >
+              {t.userImageUrl ? (
+                <img
+                  src={t.userImageUrl}
+                  alt=""
+                  className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover ring-1 ${
+                    killed ? 'ring-red-500 grayscale opacity-60' : 'ring-zinc-700'
+                  }`}
+                />
+              ) : (
+                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-1 ${killed ? 'ring-red-500 grayscale opacity-60' : 'ring-zinc-700'}`}>
+                  {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              )}
+              <span className="text-[9px] font-mono font-bold text-zinc-400 tabular-nums">#{t.number}</span>
+              {killed && (
+                <span className="absolute inset-0 flex items-center justify-center text-3xl font-black text-red-500 pointer-events-none drop-shadow-lg">✕</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-center text-[10px] text-zinc-500 italic">
+        Quedan {drawState?.remainingCount ?? '—'} tickets · siguen hasta llegar a 10
+      </p>
+    </div>
+  );
+
+  // Phase 3 intro — 30s lobby before the horse race.
+  const Phase3IntroView = (
+    <div className="w-full max-w-xl space-y-5 text-center">
+      <div className="text-amber-300 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+        🐎 Fase final · La carrera de caballos
+      </div>
+      <div className="bg-zinc-900/70 border border-amber-500/30 rounded-2xl p-6">
+        <p className="text-[11px] text-zinc-500 font-black uppercase tracking-widest">La carrera empieza en</p>
+        <p className="mt-2 text-6xl font-black text-amber-300 tabular-nums">
+          {phase3IntroSeconds !== null ? `${phase3IntroSeconds}s` : '—'}
+        </p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2">
+        {drawState?.aliveTickets?.map((t) => (
+          <div key={`p3i-${t.id}`} className="flex flex-col items-center gap-1">
+            {t.userImageUrl ? (
+              <img src={t.userImageUrl} alt="" className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400/60" />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 text-base font-black ring-2 ring-amber-400/60">
+                {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+              </div>
+            )}
+            <span className="text-[10px] font-mono font-bold text-amber-200 tabular-nums">#{t.number}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Phase 3 — vertical horse race. Track auto-scales so the trailing ticket
+  // always sits at the top and the leader is offset down by their relative
+  // step gap.
+  const Phase3View = (() => {
+    const alive = drawState?.aliveTickets ?? [];
+    const minSteps = alive.length > 0 ? Math.min(...alive.map((t) => t.horseSteps)) : 0;
+    const maxSteps = alive.length > 0 ? Math.max(...alive.map((t) => t.horseSteps)) : 0;
+    const range = Math.max(1, maxSteps - minSteps);
+    const trackHeight = 240;
+    // Auto-scale the per-step pixel size so the visible delta fits in the
+    // track without horizontal overflow as the race progresses.
+    const stepHeight = Math.min(20, trackHeight / range);
+    return (
+      <div className="w-full space-y-4">
+        <div className="text-center">
+          <div className="text-amber-300 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
+            🐎 Carrera de caballos en vivo
+          </div>
+          <div className="grid grid-cols-2 gap-3 max-w-xl mx-auto">
+            <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próximo avance</p>
+              <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+                {nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}
+              </p>
+            </div>
+            <div className="bg-zinc-900/70 border border-red-500/30 rounded-2xl p-3">
+              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
+              <p className="mt-1 text-2xl font-black text-red-300 tabular-nums text-center">
+                {nextHorseEliminationSeconds !== null ? `${nextHorseEliminationSeconds}s` : '—'}
+                {drawState?.lastPlace && (
+                  <span className="ml-1 text-base text-zinc-400">#{drawState.lastPlace.number}</span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative bg-gradient-to-b from-zinc-900/40 to-zinc-950 border border-zinc-800 rounded-2xl p-3 overflow-hidden">
+          <div className="flex justify-around items-start" style={{ minHeight: trackHeight + 80 }}>
+            {alive.map((t) => {
+              const offsetTop = (t.horseSteps - minSteps) * stepHeight;
+              const isLast = drawState?.lastPlace?.id === t.id;
+              return (
+                <div key={`p3-${t.id}`} className="flex flex-col items-center" style={{ width: '10%' }}>
+                  {/* Ticket number above */}
+                  <span className={`text-[10px] font-mono font-bold tabular-nums mb-1 ${isLast ? 'text-red-400' : 'text-amber-200'}`}>
+                    #{t.number}
+                  </span>
+                  {/* Avatar */}
+                  {t.userImageUrl ? (
+                    <img
+                      src={t.userImageUrl}
+                      alt=""
+                      className={`w-9 h-9 rounded-full object-cover ring-2 transition-all duration-700 ${isLast ? 'ring-red-500' : 'ring-amber-400/60'}`}
+                      style={{ transform: `translateY(${offsetTop}px)` }}
+                    />
+                  ) : (
+                    <div
+                      className={`w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-200 text-sm font-black ring-2 transition-all duration-700 ${isLast ? 'ring-red-500' : 'ring-amber-400/60'}`}
+                      style={{ transform: `translateY(${offsetTop}px)` }}
+                    >
+                      {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                  )}
+                  {/* Horse */}
+                  <span
+                    className="text-2xl mt-0.5 transition-all duration-700"
+                    style={{ transform: `translateY(${offsetTop}px)` }}
+                  >
+                    🐎
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <p className="text-center text-[10px] text-zinc-500 italic">
+          El líder está más abajo · cada 15s se elimina al de último lugar
+        </p>
+      </div>
+    );
+  })();
 
   const Center = (
-    <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[400px]">
+    <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[400px]">
       {raffle.status === 'active' && raffle.drawType === 'countdown' && (
         <>
           <div className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -561,98 +935,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         </>
       )}
 
-      {drawingNow && (
-        <div className="w-full max-w-xl space-y-5">
-          <div className="text-center">
-            <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
-              <Sparkles size={14} className="animate-pulse" /> Torneo de eliminación en vivo
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
-                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Eliminaciones restantes</p>
-                <p className="mt-1 text-4xl font-black text-white tabular-nums">
-                  {drawState?.eliminationsRemaining ?? '—'}
-                </p>
-              </div>
-              <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
-                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Próxima eliminación</p>
-                <p className="mt-1 text-4xl font-black text-amber-300 tabular-nums">
-                  {nextEliminationSeconds !== null ? `${nextEliminationSeconds}s` : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {drawState?.lastEliminated && (
-            <div className="bg-red-500/5 border border-red-500/30 rounded-2xl p-5">
-              <p className="text-red-400 text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-                <Skull size={12} /> Eliminado
-              </p>
-              <div className="flex items-center gap-4">
-                {drawState.lastEliminated.userImageUrl ? (
-                  <img
-                    src={drawState.lastEliminated.userImageUrl}
-                    alt=""
-                    className="w-14 h-14 rounded-full object-cover ring-2 ring-red-500/40 flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center text-red-300 text-xl font-black flex-shrink-0">
-                    {drawState.lastEliminated.userUsername?.[0]?.toUpperCase() ?? '?'}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-3xl font-black text-red-300 tabular-nums">
-                      #{drawState.lastEliminated.number}
-                    </span>
-                    <a
-                      href={`/profile/${drawState.lastEliminated.userSlug}`}
-                      className="text-xl font-black text-white hover:text-red-300 transition-colors truncate"
-                    >
-                      {drawState.lastEliminated.userUsername}
-                    </a>
-                  </div>
-                  {drawState.lastEliminated.comment && (
-                    <p className="mt-1 text-zinc-400 text-sm italic truncate">
-                      &ldquo;{drawState.lastEliminated.comment}&rdquo;
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {drawState && drawState.recentEliminated.length > 0 && (
-            <div>
-              <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">
-                Últimas eliminaciones
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {drawState.recentEliminated.map((e) => (
-                  <div
-                    key={`elim-${e.eliminationOrder}`}
-                    className="flex flex-col items-center gap-1"
-                    title={`@${e.userUsername}${e.comment ? ` — "${e.comment}"` : ''}`}
-                  >
-                    {e.userImageUrl ? (
-                      <img
-                        src={e.userImageUrl}
-                        alt=""
-                        className="w-10 h-10 rounded-full object-cover ring-1 ring-red-500/30 grayscale opacity-80"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 ring-1 ring-red-500/30">
-                        {e.userUsername?.[0]?.toUpperCase() ?? '?'}
-                      </div>
-                    )}
-                    <span className="text-[10px] font-black text-zinc-400 tabular-nums">#{e.number}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {drawingNow && drawState?.phase === 'phase2' && Phase2View}
+      {drawingNow && drawState?.phase === 'phase3_intro' && Phase3IntroView}
+      {drawingNow && drawState?.phase === 'phase3' && Phase3View}
+      {drawingNow && (drawState?.phase === 'phase1' || !drawState?.phase) && Phase1View}
 
       {drawingDone && (
         <div className="w-full max-w-xl space-y-4">
@@ -915,6 +1201,17 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
 
   return (
     <div className="min-h-screen bg-zinc-950">
+      {/* One-off keyframes for the phase-2 wind-gust animation. Tailwind
+          arbitrary `animate-[name_…]` references it by name. */}
+      <style>{`
+        @keyframes wind-blow {
+          0%   { transform: translate(0, 0) rotate(0); }
+          25%  { transform: translate(-20px, -8px) rotate(-12deg); }
+          50%  { transform: translate(20px, 6px) rotate(10deg); }
+          75%  { transform: translate(-10px, -4px) rotate(-6deg); }
+          100% { transform: translate(0, 0) rotate(0); }
+        }
+      `}</style>
       <Navbar
         activeView=""
         user={user}
@@ -943,7 +1240,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-3">{Sidebar}</div>
-          <div className="lg:col-span-6">{Center}</div>
+          <div className="lg:col-span-6 space-y-4">
+            {Center}
+            {MyTicketsRow}
+          </div>
           <div className="lg:col-span-3">{Chat}</div>
         </div>
 
