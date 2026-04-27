@@ -245,10 +245,11 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // surface the whole roster with real-time elimination state. Cap at 1000
   // (matches the controller); for larger raffles we'd need to paginate
   // again, but the elimination tournament typically tops out under that.
-  const loadTickets = async (_page = 1) => {
-    // Don't flip the loading flag on background polls — it would flash the
-    // spinner over the table every 3 seconds.
-    if (tickets.length === 0) setTicketsLoading(true);
+  //
+  // `silent` skips the loading flag for background polls — otherwise the 3s
+  // poll flashes a spinner over the table every cycle (causes layout shift).
+  const loadTickets = async (silent = false) => {
+    if (!silent) setTicketsLoading(true);
     try {
       const data = await callAPI(`/api/raffle/${raffle.slug}/tickets?page=1&limit=1000`);
       setTickets(data?.items ?? []);
@@ -257,7 +258,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     } catch (err) {
       // ignore
     } finally {
-      setTicketsLoading(false);
+      if (!silent) setTicketsLoading(false);
     }
   };
 
@@ -289,7 +290,14 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     }
   };
 
-  useEffect(() => { loadTickets(1); loadComments(); loadMyTickets(); /* eslint-disable-next-line */ }, [raffle.slug]);
+  useEffect(() => {
+    loadTickets(false);
+    loadComments();
+    loadMyTickets();
+    // Re-run on login state change too so a viewer who logs in mid-session
+    // immediately gets their "Mis tickets" strip populated.
+    // eslint-disable-next-line
+  }, [raffle.slug, logged]);
 
   // ─── Draw-state polling: source of truth during 'drawing' ────────────────────
   useEffect(() => {
@@ -462,11 +470,12 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   }, [raffle.slug]);
 
   // 3s polling for the participants table so eliminations show up in
-  // real-time even if SSE drops. Pulls the full roster (no pagination).
+  // real-time even if SSE drops. Silent fetch — keeps the table on screen
+  // and only swaps the row data so no layout shift.
   useEffect(() => {
     let cancelled = false;
     const id = window.setInterval(() => {
-      if (!cancelled) loadTickets(1);
+      if (!cancelled) loadTickets(true);
     }, 3000);
     return () => { cancelled = true; window.clearInterval(id); };
     // eslint-disable-next-line
@@ -549,7 +558,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       }));
       setBuyComment('');
       setBuyCount(1);
-      loadTickets(1);
+      loadTickets(true);
+      loadMyTickets();
     } catch (err: any) {
       setBuyError(err?.message || 'Error al obtener el ticket.');
     } finally {
@@ -559,7 +569,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
 
   // ─── Right-side chat block ──────────────────────────────────────────────────
   const Chat = (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col h-[600px]">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col h-[600px] lg:h-full lg:min-h-[600px]">
       <div className="flex items-center gap-2 mb-3 pb-3 border-b border-zinc-800">
         <Sparkles size={14} className="text-yellow-400" />
         <h3 className="text-xs font-black text-white uppercase tracking-widest">Chat en vivo</h3>
@@ -908,7 +918,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   })();
 
   const Center = (
-    <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[400px]">
+    <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[400px] h-full">
       {raffle.status === 'active' && raffle.drawType === 'countdown' && (
         <>
           <div className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -1024,7 +1034,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   const needsEmailVerify = logged && !canParticipate && blockReason === 'email-not-verified';
 
   const Sidebar = (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 space-y-5">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 space-y-5 h-full">
       <div className="aspect-square w-full rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center">
         {raffle.imageUrl ? (
           <img src={raffle.imageUrl} alt={raffle.title} className="w-full h-full object-cover" />
@@ -1222,7 +1232,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                     }));
                     setBuyComment('');
                     setBuyCount(1);
-                    loadTickets(1);
+                    loadTickets(true);
+                    loadMyTickets();
                   } catch (err: any) {
                     setBuyError(err?.message || 'No se pudo confirmar el ticket.');
                   } finally {
@@ -1288,10 +1299,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-3">{Sidebar}</div>
-          <div className="lg:col-span-6">{Center}</div>
-          <div className="lg:col-span-3">{Chat}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-stretch">
+          <div className="lg:col-span-3 lg:h-full">{Sidebar}</div>
+          <div className="lg:col-span-6 lg:h-full">{Center}</div>
+          <div className="lg:col-span-3 lg:h-full">{Chat}</div>
         </div>
 
         <div className="mt-12">
