@@ -118,6 +118,12 @@ interface DrawState {
   nextHorseEliminationAt: string | null;
   lastPlace: AliveTicket | null;
   isFinaleStretch?: boolean;
+  phase1Bombs?: {
+    bombTicketIds: number[];
+    explodeCount: number;
+    placedAt: string;
+    fuseMs: number;
+  } | null;
   intervals?: {
     phase1Ms: number;
     phase2WindMs: number;
@@ -290,9 +296,23 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   const [blowingIds, setBlowingIds] = useState<Set<number>>(() => new Set());
   const [redKilledIds, setRedKilledIds] = useState<Set<number>>(() => new Set());
   // Phase 1 / 3 explosion animation — ticket id added on elimination event,
-  // removed after ~1.5s (poll fetches the updated alive list during that
-  // window so the avatar disappears from the grid as the explosion ends).
+  // removed after ~2.5s (matches the keyframe duration so the avatar
+  // settles into "dead" styling without snapping).
   const [popExitIds, setPopExitIds] = useState<Set<number>>(() => new Set());
+
+  // Phase 1 bomb-round state.
+  //   bombArmedIds: tickets currently ticking with bomb emoji + shake.
+  //                 Populated by phase1_bombs_placed; cleared on _exploded.
+  //   smokeIds:     tickets that survived the round (bomb fizzled into smoke).
+  //                 Held briefly so the smoke puff animation finishes.
+  //   bombsPlacedAt: ISO timestamp of when the current round started, used
+  //                  to drive the depleting fuse bar.
+  //   bombFuseMs:   how long the fuse runs (default 5000 from server).
+  const [bombArmedIds, setBombArmedIds] = useState<Set<number>>(() => new Set());
+  const [smokeIds, setSmokeIds] = useState<Set<number>>(() => new Set());
+  const [bombsPlacedAt, setBombsPlacedAt] = useState<string | null>(null);
+  const [bombFuseMs, setBombFuseMs] = useState<number>(5000);
+  const [bombExplodeCount, setBombExplodeCount] = useState<number>(5);
 
   // Phase-change splash overlay: shows the phase title + rules for 3s when
   // a phase_started event arrives. Adds a beat of drama between transitions.
@@ -419,6 +439,26 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           // as the backend flips status, regardless of whether draw_started
           // ever reached the FE.
           setRaffle((r) => (ds.status !== r.status ? { ...r, status: ds.status } : r));
+          // Hydrate phase-1 bomb state from the snapshot. If we joined
+          // mid-round we need to render the ticking bombs even though the
+          // SSE phase1_bombs_placed event already fired before we connected.
+          if (ds.phase1Bombs && ds.phase1Bombs.bombTicketIds.length > 0) {
+            const ids = new Set(ds.phase1Bombs.bombTicketIds);
+            setBombArmedIds((prev) => {
+              if (prev.size === ids.size) {
+                let same = true;
+                for (const id of ids) if (!prev.has(id)) { same = false; break; }
+                if (same) return prev;
+              }
+              return ids;
+            });
+            setBombsPlacedAt(ds.phase1Bombs.placedAt);
+            setBombFuseMs(ds.phase1Bombs.fuseMs);
+            setBombExplodeCount(ds.phase1Bombs.explodeCount);
+          } else if (bombArmedIds.size > 0) {
+            setBombArmedIds(new Set());
+            setBombsPlacedAt(null);
+          }
           if (ds.status === 'completed') {
             stopped = true;
             // Pull the full detail for winners + status flip + ticket badges.
@@ -544,7 +584,42 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           setPhaseSplash(e.phase);
           setTimeout(() => setPhaseSplash(null), 3500);
         }
+        // Clear phase-1 bomb leftovers on phase change.
+        setBombArmedIds(new Set());
+        setSmokeIds(new Set());
+        setBombsPlacedAt(null);
         pollDrawStateNow();
+      } else if (e.type === 'phase1_bombs_placed') {
+        const ids: number[] = Array.isArray(e.bombTicketIds) ? e.bombTicketIds : [];
+        setBombArmedIds(new Set(ids));
+        setBombsPlacedAt(new Date().toISOString());
+        setBombFuseMs(typeof e.fuseMs === 'number' ? e.fuseMs : 5000);
+        setBombExplodeCount(typeof e.explodeCount === 'number' ? e.explodeCount : 5);
+      } else if (e.type === 'phase1_bombs_exploded') {
+        const exploded: number[] = Array.isArray(e.explodedTicketIds) ? e.explodedTicketIds : [];
+        const smoke: number[] = Array.isArray(e.smokeTicketIds) ? e.smokeTicketIds : [];
+        // Pop the explosion animation on the actually-eliminated tickets.
+        setPopExitIds((prev) => {
+          const n = new Set(prev);
+          for (const id of exploded) n.add(id);
+          return n;
+        });
+        setTimeout(() => {
+          setPopExitIds((prev) => {
+            const n = new Set(prev);
+            for (const id of exploded) n.delete(id);
+            return n;
+          });
+        }, 2500);
+        // Smoke puff for the survivors of the round (bombs that fizzled).
+        setSmokeIds(new Set(smoke));
+        setTimeout(() => setSmokeIds(new Set()), 1800);
+        // Clear the armed-bomb visuals — they've now resolved one way or another.
+        setBombArmedIds(new Set());
+        setBombsPlacedAt(null);
+        pollDrawStateNow();
+        loadMyTickets();
+        loadComments();
       } else if (e.type === 'wind_gust') {
         // Mark blown tickets so the FE can animate them. If the gust hit
         // during red light, also mark them as red-killed so the X overlay
@@ -874,6 +949,27 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     return `${m}m ${s.toString().padStart(2, '0')}s`;
   };
 
+  // Fuse countdown for phase-1 bombs: shows the seconds remaining from a
+  // wall-clock placed-at + duration anchor. Stays visually at "0s" once the
+  // fuse hits zero, until the explosion event clears bombArmedIds — gives
+  // the user a beat of "any moment now…" tension.
+  const BombFuseCountdown: React.FC<{ placedAt: string | null; fuseMs: number; tick: number }> = ({ placedAt, fuseMs }) => {
+    if (!placedAt) return <span className="text-2xl font-black text-amber-300 tabular-nums">—</span>;
+    const elapsed = Date.now() - new Date(placedAt).getTime();
+    const remainingMs = Math.max(0, fuseMs - elapsed);
+    const remainingS = Math.ceil(remainingMs / 1000);
+    const danger = remainingMs <= 1500;
+    return (
+      <span className={`font-black tabular-nums tracking-tighter transition-all ${
+        danger
+          ? 'text-red-400 text-4xl animate-pulse drop-shadow-[0_0_8px_rgba(248,113,113,0.9)]'
+          : 'text-amber-300 text-3xl'
+      }`}>
+        {remainingS}s
+      </span>
+    );
+  };
+
   // Dramatic countdown: red + pulse + visual zoom when ≤3s. Uses CSS scale
   // transform (NOT a font-size change) so the slot it occupies in the layout
   // stays exactly the same and doesn't push other elements around.
@@ -1033,36 +1129,57 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           const popping = popExitIds.has(t.id);
           const blowing = blowingIds.has(t.id);
           const killed = redKilledIds.has(t.id);
-          const ringCls = killed || isEliminated ? 'ring-red-500/60' : 'ring-zinc-700';
+          const armed = bombArmedIds.has(t.id);
+          const smoking = smokeIds.has(t.id);
+          const ringCls = killed || isEliminated
+            ? 'ring-red-500/60'
+            : armed
+            ? 'ring-amber-400'
+            : 'ring-zinc-700';
           const fadedCls = (isEliminated || killed) && !popping ? 'grayscale opacity-50' : '';
+          // Armed bombs shake (tick-tack), increasing intensity as the
+          // fuse approaches zero. We use one 0.6s shake cycle that loops
+          // — visually "buzzing" the ticket.
+          const shakeCls = armed && !popping ? 'animate-[bomb-tick_0.6s_ease-in-out_infinite]' : '';
           return (
             <div
               key={`grid-${t.id}`}
               className={`relative flex flex-col items-center gap-0.5 ${
                 popping ? 'animate-[ticket-explode_2.5s_ease-out_forwards] z-10' : ''
-              } ${blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''}`}
-              title={`@${t.userUsername} · #${t.number}${isEliminated ? ' · eliminado' : ''}`}
+              } ${blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''} ${shakeCls}`}
+              title={`@${t.userUsername} · #${t.number}${isEliminated ? ' · eliminado' : armed ? ' · ¡bomba!' : ''}`}
             >
               {t.userImageUrl ? (
                 <img
                   src={t.userImageUrl}
                   alt=""
-                  className={`${sizeCls} rounded-full object-cover ring-2 ${ringCls} ${fadedCls}`}
+                  className={`${sizeCls} rounded-full object-cover ring-2 ${ringCls} ${fadedCls} ${armed ? 'shadow-[0_0_10px_rgba(252,211,77,0.6)]' : ''}`}
                 />
               ) : (
-                <div className={`${sizeCls} rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-2 ${ringCls} ${fadedCls}`}>
+                <div className={`${sizeCls} rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-2 ${ringCls} ${fadedCls} ${armed ? 'shadow-[0_0_10px_rgba(252,211,77,0.6)]' : ''}`}>
                   {t.userUsername?.[0]?.toUpperCase() ?? '?'}
                 </div>
               )}
-              <span className={`text-[9px] font-mono font-bold tabular-nums leading-none ${isEliminated ? 'text-zinc-600 line-through' : 'text-zinc-400'}`}>
+              <span className={`text-[9px] font-mono font-bold tabular-nums leading-none ${isEliminated ? 'text-zinc-600 line-through' : armed ? 'text-amber-300' : 'text-zinc-400'}`}>
                 #{t.number}
               </span>
+              {/* Bomb emoji overlay during the fuse */}
+              {armed && !popping && (
+                <span className="absolute -top-1.5 -right-1.5 text-base pointer-events-none drop-shadow-md">
+                  💣
+                </span>
+              )}
               {popping && (
                 <span className="absolute inset-0 flex items-center justify-center text-3xl pointer-events-none drop-shadow-lg">
                   💥
                 </span>
               )}
-              {(killed || (isEliminated && !popping)) && (
+              {smoking && !popping && (
+                <span className="absolute inset-0 flex items-center justify-center text-2xl pointer-events-none animate-[smoke-puff_1.8s_ease-out_forwards]">
+                  💨
+                </span>
+              )}
+              {(killed || (isEliminated && !popping && !smoking)) && (
                 <span className="absolute top-0 inset-x-0 flex items-center justify-center text-2xl font-black text-red-500 pointer-events-none drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]">✕</span>
               )}
             </div>
@@ -1084,15 +1201,39 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             : ''
         }`}
       />
+      {/* Phase 1 timing card — driven by the bomb round. While bombs are
+          armed we show the fuse countdown ticking from fuseMs to 0; when
+          the round resolves we briefly show a "smoke clearing" message
+          before the next round arms. */}
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-24 flex flex-col gap-1.5">
-          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
-          <DramaticCountdown seconds={nextEliminationSeconds} />
-          <TimedProgressBar
-            durationMs={drawState?.intervals?.phase1Ms}
-            anchor={drawState?.lastEliminationAt}
-            color="bg-amber-400"
-          />
+        <div className={`border rounded-2xl p-3 h-24 flex flex-col gap-1 transition-colors duration-300 ${
+          bombArmedIds.size > 0
+            ? 'bg-amber-500/10 border-amber-500/50'
+            : 'bg-zinc-900/70 border-zinc-800'
+        }`}>
+          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
+            {bombArmedIds.size > 0
+              ? `💣 ${bombArmedIds.size} bombas · ${bombExplodeCount} explotan`
+              : smokeIds.size > 0
+              ? '💨 humo despejándose…'
+              : 'Próxima ronda'}
+          </p>
+          <div className="flex-1 flex items-center justify-center">
+            {bombArmedIds.size > 0 ? (
+              <BombFuseCountdown placedAt={bombsPlacedAt} fuseMs={bombFuseMs} tick={tick} />
+            ) : (
+              <span className="text-2xl font-black text-cyan-300 tabular-nums">
+                {smokeIds.size > 0 ? 'pronto…' : '…'}
+              </span>
+            )}
+          </div>
+          {bombArmedIds.size > 0 && bombsPlacedAt && (
+            <TimedProgressBar
+              durationMs={bombFuseMs}
+              anchor={bombsPlacedAt}
+              color="bg-amber-400"
+            />
+          )}
         </div>
         <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-24 flex flex-col justify-between">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Fase termina aprox en</p>
@@ -1765,6 +1906,23 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           40%  { transform: scale(1.25); }
           100% { transform: scale(1); }
         }
+        @keyframes bomb-tick {
+          /* Fast jittery shake — cumulative tension while the fuse burns. */
+          0%   { transform: translate(0, 0) rotate(0); }
+          15%  { transform: translate(-1px, 1px) rotate(-2deg); }
+          30%  { transform: translate(2px, -1px) rotate(2deg); }
+          45%  { transform: translate(-2px, 0) rotate(-3deg); }
+          60%  { transform: translate(1px, 2px) rotate(2deg); }
+          75%  { transform: translate(-1px, -1px) rotate(-2deg); }
+          100% { transform: translate(0, 0) rotate(0); }
+        }
+        @keyframes smoke-puff {
+          /* Bomb fizzled — white smoke rises and fades. */
+          0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+          15%  { transform: translateY(-4px) scale(0.9); opacity: 0.85; }
+          50%  { transform: translateY(-14px) scale(1.2); opacity: 0.9; }
+          100% { transform: translateY(-30px) scale(1.6); opacity: 0; }
+        }
       `}</style>
       <Navbar
         activeView=""
@@ -1820,7 +1978,22 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                   </tr>
                 </thead>
                 <tbody>
-                  {tickets.map((t) => {
+                  {/* Sort: winner first, then alive (by ticket number), then
+                      eliminated with most-recent-out at the top. */}
+                  {[...tickets].sort((a, b) => {
+                    const aWinner = drawingDone && survivingNumbers.has(a.number);
+                    const bWinner = drawingDone && survivingNumbers.has(b.number);
+                    if (aWinner !== bWinner) return aWinner ? -1 : 1;
+                    const aOut = !!a.eliminatedAt;
+                    const bOut = !!b.eliminatedAt;
+                    if (aOut !== bOut) return aOut ? 1 : -1;
+                    if (aOut && bOut) {
+                      // Most recent elimination first (highest order on top).
+                      return (b.eliminationOrder ?? 0) - (a.eliminationOrder ?? 0);
+                    }
+                    // Both alive — by ticket number ascending.
+                    return a.number.localeCompare(b.number);
+                  }).map((t) => {
                       const isEliminated = !!t.eliminatedAt;
                       const isWinner = drawingDone && survivingNumbers.has(t.number);
                       return (
