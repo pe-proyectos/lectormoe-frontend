@@ -378,8 +378,15 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   }, [raffle.slug, logged]);
 
   // ─── Draw-state polling: source of truth during 'drawing' ────────────────────
+  // Also fires when status='active' but drawAt has passed — that's the window
+  // where the cron is about to / has just fired executeDraw, and we want to
+  // catch the active→drawing transition even if the SSE draw_started event
+  // got dropped (CloudFlare idle-timeout, brief network hiccup, etc.).
   useEffect(() => {
-    if (raffle.status !== 'drawing') return;
+    const drawAtPassed = !!raffle.drawAt && new Date(raffle.drawAt).getTime() <= Date.now();
+    const shouldPoll = raffle.status === 'drawing'
+      || (raffle.status === 'active' && drawAtPassed);
+    if (!shouldPoll) return;
     let cancelled = false;
     let stopped = false;
     const poll = async () => {
@@ -388,8 +395,14 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         const data = await callAPI(`/api/raffle/${raffle.slug}/draw-state`);
         if (cancelled) return;
         if (data) {
-          setDrawState(data as DrawState);
-          if ((data as DrawState).status === 'completed') {
+          const ds = data as DrawState;
+          setDrawState(ds);
+          // Sync raffle.status from the draw-state if they diverge — covers
+          // the missed-SSE case so we transition into the phase view as soon
+          // as the backend flips status, regardless of whether draw_started
+          // ever reached the FE.
+          setRaffle((r) => (ds.status !== r.status ? { ...r, status: ds.status } : r));
+          if (ds.status === 'completed') {
             stopped = true;
             // Pull the full detail for winners + status flip + ticket badges.
             await refetchRaffle();
@@ -405,7 +418,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     const id = window.setInterval(poll, 1000);
     return () => { cancelled = true; window.clearInterval(id); };
     // eslint-disable-next-line
-  }, [raffle.slug, raffle.status]);
+  }, [raffle.slug, raffle.status, raffle.drawAt]);
 
   // 200ms re-render driver so the "Próxima eliminación en Xs" countdown ticks
   // smoothly between server polls without re-firing fetches.
@@ -414,6 +427,27 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     const id = window.setInterval(() => setTick((t) => t + 1), 200);
     return () => window.clearInterval(id);
   }, [raffle.status]);
+
+  // When status='active' and drawAt is in the future, schedule a one-shot
+  // refetchRaffle() shortly after drawAt is supposed to pass — protects
+  // against the case where the page sits open across the cron tick and the
+  // SSE draw_started event was never delivered. Once status flips, the
+  // drawState polling effect above takes over.
+  useEffect(() => {
+    if (raffle.status !== 'active' || !raffle.drawAt) return;
+    const ms = new Date(raffle.drawAt).getTime() - Date.now();
+    if (ms < 0) {
+      // drawAt already passed — poll the raffle endpoint every 5s until the
+      // status changes (the cron has up to 60s of jitter).
+      const id = window.setInterval(refetchRaffle, 5000);
+      return () => window.clearInterval(id);
+    }
+    // Schedule the first refetch 3s after drawAt so the cron has time to
+    // claim and broadcast.
+    const id = window.setTimeout(refetchRaffle, ms + 3000);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line
+  }, [raffle.slug, raffle.status, raffle.drawAt]);
 
   // ─── SSE with exp backoff ───────────────────────────────────────────────────
   useEffect(() => {
@@ -814,19 +848,22 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     return `${m}m ${s.toString().padStart(2, '0')}s`;
   };
 
-  // Dramatic countdown: red + pulse + scale-up when ≤3s. Used for the
-  // critical "next elimination" type counters so viewers feel the tension.
+  // Dramatic countdown: red + pulse + visual zoom when ≤3s. Uses CSS scale
+  // transform (NOT a font-size change) so the slot it occupies in the layout
+  // stays exactly the same and doesn't push other elements around.
   const DramaticCountdown: React.FC<{ seconds: number | null; dangerThreshold?: number }> = ({ seconds, dangerThreshold = 3 }) => {
     const inDanger = seconds !== null && seconds <= dangerThreshold && seconds > 0;
     return (
-      <span
-        className={`font-black tabular-nums tracking-tighter transition-all duration-300 ${
-          inDanger
-            ? 'text-red-400 text-5xl animate-pulse drop-shadow-[0_0_8px_rgba(248,113,113,0.8)]'
-            : 'text-amber-300 text-3xl'
-        }`}
-      >
-        {seconds !== null ? `${seconds}s` : '—'}
+      <span className="inline-block relative w-full text-center" style={{ height: '2.25rem' /* 36px reserved for 3xl text */ }}>
+        <span
+          className={`absolute inset-0 flex items-center justify-center font-black tabular-nums tracking-tighter text-3xl transition-all duration-300 origin-center ${
+            inDanger
+              ? 'text-red-400 animate-pulse drop-shadow-[0_0_8px_rgba(248,113,113,0.9)] scale-150'
+              : 'text-amber-300 scale-100'
+          }`}
+        >
+          {seconds !== null ? `${seconds}s` : '—'}
+        </span>
       </span>
     );
   };
@@ -857,43 +894,50 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     />
   ) : null;
 
-  // Shared "ya cayeron" strip — appears across every phase so the user has
-  // a continuous record of who's been knocked out, not just who fell in
-  // the current phase.
-  const RecentEliminatedStrip = drawState?.recentEliminated && drawState.recentEliminated.length > 0 ? (
-    <div className="w-full">
+  // Shared "ya cayeron" strip — ALWAYS rendered (with empty-state placeholder
+  // when nothing's happened yet) so the layout doesn't shift the moment the
+  // first elimination arrives. Reserves a fixed min-height matching its
+  // populated form.
+  const RecentEliminatedStrip = (
+    <div className="w-full" style={{ minHeight: '5rem' }}>
       <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-1">
-        <Skull size={10} /> Últimos eliminados ({drawState.recentEliminated.length}{drawState.eliminatedCount > drawState.recentEliminated.length ? ` de ${drawState.eliminatedCount}` : ''})
+        <Skull size={10} /> Últimos eliminados
+        {drawState?.eliminatedCount ? ` (${Math.min(10, drawState.eliminatedCount)} de ${drawState.eliminatedCount})` : ''}
       </p>
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {drawState.recentEliminated.map((e) => (
-          <div
-            key={`recent-${e.id}`}
-            className="flex-shrink-0 flex flex-col items-center gap-0.5 w-12"
-            title={`#${e.eliminationOrder} · @${e.userUsername} · ticket #${e.number}`}
-          >
-            <div className="relative">
-              {e.userImageUrl ? (
-                <img src={e.userImageUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-red-500/40 grayscale opacity-70" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-1 ring-red-500/40">
-                  {e.userUsername?.[0]?.toUpperCase() ?? '?'}
-                </div>
-              )}
-              <span className="absolute -top-1 -right-1 px-1 py-0 rounded-full bg-red-500 text-white text-[8px] font-black tabular-nums leading-tight">
-                {e.eliminationOrder}°
+      {drawState?.recentEliminated && drawState.recentEliminated.length > 0 ? (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {drawState.recentEliminated.map((e) => (
+            <div
+              key={`recent-${e.id}`}
+              className="flex-shrink-0 flex flex-col items-center gap-0.5 w-12"
+              title={`#${e.eliminationOrder} · @${e.userUsername} · ticket #${e.number}`}
+            >
+              <div className="relative">
+                {e.userImageUrl ? (
+                  <img src={e.userImageUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-red-500/40 grayscale opacity-70" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-1 ring-red-500/40">
+                    {e.userUsername?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                )}
+                <span className="absolute -top-1 -right-1 px-1 py-0 rounded-full bg-red-500 text-white text-[8px] font-black tabular-nums leading-tight">
+                  {e.eliminationOrder}°
+                </span>
+              </div>
+              <span className="text-[9px] font-mono font-bold text-zinc-500 tabular-nums leading-none">
+                #{e.number}
               </span>
             </div>
-            <span className="text-[9px] font-mono font-bold text-zinc-500 tabular-nums leading-none">
-              #{e.number}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[10px] text-zinc-600 italic">Aún nadie ha caído.</p>
+      )}
     </div>
-  ) : null;
+  );
 
-  // Shared phase header with title + eliminated/total + progress bar.
+  // Shared phase header. Subtitle slot reserves a 2-line min-height so
+  // copy of different lengths doesn't push the rest of the column up/down.
   const PhaseHeader: React.FC<{ icon: React.ReactNode; title: string; subtitle?: string }> = ({ icon, title, subtitle }) => {
     const total = drawState?.totalTickets ?? 0;
     const eliminated = drawState?.eliminatedCount ?? 0;
@@ -904,9 +948,9 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         <div className="text-yellow-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 animate-pulse">
           {icon} {title}
         </div>
-        {subtitle && (
-          <p className="text-zinc-400 text-[11px] mt-1">{subtitle}</p>
-        )}
+        <p className="text-zinc-400 text-[11px] mt-1 leading-tight" style={{ minHeight: '2.6rem' }}>
+          {subtitle ?? ''}
+        </p>
         <div className="mt-3 max-w-md mx-auto">
           <div className="flex items-baseline justify-between text-[10px] font-black uppercase tracking-widest mb-1">
             <span className="text-emerald-300 tabular-nums">{remaining} vivos</span>
@@ -923,43 +967,56 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     );
   };
 
-  // Helper: render a ticket avatar with phase-1/3 explosion animation.
-  const renderAliveAvatar = (t: AliveTicket, opts?: { size?: 'sm' | 'md'; ring?: string }) => {
-    const popping = popExitIds.has(t.id);
-    const blowing = blowingIds.has(t.id);
-    const killed = redKilledIds.has(t.id);
-    const sizeCls = opts?.size === 'md' ? 'w-11 h-11 sm:w-12 sm:h-12' : 'w-9 h-9 sm:w-10 sm:h-10';
-    const ringCls = killed ? 'ring-red-500' : (opts?.ring ?? 'ring-zinc-700');
+  // Renders the FULL ticket grid (alive + eliminated) for phases 1 and 2.
+  // Critical anti-shift design: every ticket stays in the DOM at its initial
+  // grid slot — eliminated ones just get grayscale + ✕ overlay. This means
+  // surviving avatars never reflow when a neighbour gets knocked out.
+  const renderFullTicketGrid = (size: 'sm' | 'md' = 'sm') => {
+    // Sort once by ticket number so the order is stable across re-renders.
+    const sorted = [...tickets].sort((a, b) => a.number.localeCompare(b.number));
+    const sizeCls = size === 'md' ? 'w-11 h-11 sm:w-12 sm:h-12' : 'w-9 h-9 sm:w-10 sm:h-10';
     return (
-      <div
-        key={`alive-${t.id}`}
-        className={`relative flex flex-col items-center gap-0.5 ${
-          popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''
-        } ${blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''}`}
-        title={`@${t.userUsername} · #${t.number}`}
-      >
-        {t.userImageUrl ? (
-          <img
-            src={t.userImageUrl}
-            alt=""
-            className={`${sizeCls} rounded-full object-cover ring-2 ${ringCls} ${killed ? 'grayscale opacity-60' : ''}`}
-          />
-        ) : (
-          <div className={`${sizeCls} rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-2 ${ringCls} ${killed ? 'grayscale opacity-60' : ''}`}>
-            {t.userUsername?.[0]?.toUpperCase() ?? '?'}
-          </div>
-        )}
-        <span className="text-[9px] font-mono font-bold text-zinc-400 tabular-nums leading-none">
-          #{t.number}
-        </span>
-        {popping && (
-          <span className="absolute inset-0 flex items-center justify-center text-3xl pointer-events-none drop-shadow-lg">
-            💥
-          </span>
-        )}
-        {killed && !popping && (
-          <span className="absolute inset-0 flex items-center justify-center text-3xl font-black text-red-500 pointer-events-none drop-shadow-lg">✕</span>
-        )}
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 content-start">
+        {sorted.map((t) => {
+          const isEliminated = !!t.eliminatedAt;
+          const popping = popExitIds.has(t.id);
+          const blowing = blowingIds.has(t.id);
+          const killed = redKilledIds.has(t.id);
+          const ringCls = killed || isEliminated ? 'ring-red-500/60' : 'ring-zinc-700';
+          const fadedCls = (isEliminated || killed) && !popping ? 'grayscale opacity-50' : '';
+          return (
+            <div
+              key={`grid-${t.id}`}
+              className={`relative flex flex-col items-center gap-0.5 ${
+                popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''
+              } ${blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''}`}
+              title={`@${t.userUsername} · #${t.number}${isEliminated ? ' · eliminado' : ''}`}
+            >
+              {t.userImageUrl ? (
+                <img
+                  src={t.userImageUrl}
+                  alt=""
+                  className={`${sizeCls} rounded-full object-cover ring-2 ${ringCls} ${fadedCls}`}
+                />
+              ) : (
+                <div className={`${sizeCls} rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-2 ${ringCls} ${fadedCls}`}>
+                  {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              )}
+              <span className={`text-[9px] font-mono font-bold tabular-nums leading-none ${isEliminated ? 'text-zinc-600 line-through' : 'text-zinc-400'}`}>
+                #{t.number}
+              </span>
+              {popping && (
+                <span className="absolute inset-0 flex items-center justify-center text-3xl pointer-events-none drop-shadow-lg">
+                  💥
+                </span>
+              )}
+              {(killed || (isEliminated && !popping)) && (
+                <span className="absolute top-0 inset-x-0 flex items-center justify-center text-2xl font-black text-red-500 pointer-events-none drop-shadow-[0_0_4px_rgba(0,0,0,0.8)]">✕</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -977,22 +1034,18 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         }`}
       />
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
-          <p className="mt-1 text-center">
-            <DramaticCountdown seconds={nextEliminationSeconds} />
-          </p>
+          <DramaticCountdown seconds={nextEliminationSeconds} />
         </div>
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Fase termina aprox en</p>
-          <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+          <p className="text-3xl font-black text-cyan-300 tabular-nums text-center">
             {formatCountdown(phaseEndsApproxSeconds)}
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
-        {drawState?.aliveTickets?.map((t) => renderAliveAvatar(t))}
-      </div>
+      {renderFullTicketGrid('sm')}
       {RecentEliminatedStrip}
     </div>
   );
@@ -1010,16 +1063,14 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         }`}
       />
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-center gap-1">
             <Wind size={10} /> Próxima ráfaga
           </p>
-          <p className="mt-1 text-center">
-            <DramaticCountdown seconds={nextWindSeconds} />
-          </p>
+          <DramaticCountdown seconds={nextWindSeconds} />
         </div>
         <div
-          className={`border rounded-2xl p-3 ${
+          className={`border rounded-2xl p-3 h-20 flex flex-col justify-between transition-colors duration-500 ${
             drawState?.lightState === 'red'
               ? 'bg-red-500/15 border-red-500/50'
               : 'bg-emerald-500/15 border-emerald-500/40'
@@ -1029,7 +1080,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             Luz {drawState?.lightState === 'red' ? 'ROJA' : 'VERDE'} · cambia en
           </p>
           <p
-            className={`mt-1 text-3xl font-black tabular-nums text-center ${
+            className={`text-3xl font-black tabular-nums text-center ${
               drawState?.lightState === 'red' ? 'text-red-300' : 'text-emerald-300'
             }`}
           >
@@ -1037,9 +1088,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
-        {drawState?.aliveTickets?.map((t) => renderAliveAvatar(t, { size: 'md' }))}
-      </div>
+      {renderFullTicketGrid('md')}
       {RecentEliminatedStrip}
     </div>
   );
@@ -1103,13 +1152,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           }`}
         />
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
             <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próximo avance</p>
-            <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+            <p className="text-3xl font-black text-cyan-300 tabular-nums text-center">
               {nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}
             </p>
           </div>
-          <div className={`border rounded-2xl p-3 transition-all duration-500 ${
+          <div className={`border rounded-2xl p-3 h-20 flex flex-col justify-between transition-all duration-500 ${
             drawState?.isFinaleStretch
               ? 'bg-red-500/20 border-red-500/60 shadow-lg shadow-red-500/40'
               : 'bg-zinc-900/70 border-red-500/30'
@@ -1120,9 +1169,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                 <span className="ml-1 text-red-400">#{drawState.lastPlace.number}</span>
               )}
             </p>
-            <p className="mt-1 text-center">
-              <DramaticCountdown seconds={nextHorseEliminationSeconds} />
-            </p>
+            <DramaticCountdown seconds={nextHorseEliminationSeconds} />
           </div>
         </div>
         {drawState?.isFinaleStretch && (
