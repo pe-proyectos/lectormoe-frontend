@@ -1080,8 +1080,16 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   };
 
   // Format comment date (more detailed)
-  const firstChapter = manga.chapters?.sort((a, b) => a.number - b.number)?.[0];
-  const lastChapter = manga.chapters?.sort((a, b) => b.number - a.number)?.[0];
+  // Use non-mutating sort: Array.prototype.sort() mutates in place, so the
+  // line for `firstChapter` was leaving manga.chapters in ascending order
+  // BEFORE the next render of the chapter list — could subtly desync the
+  // displayed order from chapterGroups (which expects descending).
+  const firstChapter = manga.chapters
+    ? [...manga.chapters].sort((a, b) => a.number - b.number)[0]
+    : undefined;
+  const lastChapter = manga.chapters
+    ? [...manga.chapters].sort((a, b) => b.number - a.number)[0]
+    : undefined;
   const currentChapters = chapterGroups[selectedChapterGroup]?.chapters || [];
 
   return (
