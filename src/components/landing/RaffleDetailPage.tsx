@@ -82,6 +82,16 @@ interface AliveTicket {
   blownAt: string | null;
 }
 
+interface RecentEliminatedEntry {
+  id: number;
+  number: string;
+  rawNumber: number;
+  userSlug: string;
+  userUsername: string;
+  userImageUrl: string | null;
+  eliminationOrder: number;
+}
+
 interface DrawState {
   status: string;
   phase: 'phase1' | 'phase2' | 'phase3_intro' | 'phase3' | null;
@@ -90,6 +100,8 @@ interface DrawState {
   remainingCount: number;
   winnersCount: number;
   eliminationsRemaining: number;
+  eliminationsUntilNextPhase: number | null;
+  phaseEndsApproxAt: string | null;
   eliminationIntervalMs: number;
   lastEliminationAt: string | null;
   nextEliminationAt: string | null;
@@ -102,8 +114,9 @@ interface DrawState {
   nextHorseAdvanceAt: string | null;
   nextHorseEliminationAt: string | null;
   lastPlace: AliveTicket | null;
-  // Roster (phase 2 grid + phase 3 columns)
+  // Rosters
   aliveTickets: AliveTicket[];
+  recentEliminated: RecentEliminatedEntry[];
   winners: Winner[] | null;
 }
 
@@ -230,6 +243,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // cycle reflects whether they were eliminated (red light) or remain alive.
   const [blowingIds, setBlowingIds] = useState<Set<number>>(() => new Set());
   const [redKilledIds, setRedKilledIds] = useState<Set<number>>(() => new Set());
+  // Phase 1 / 3 explosion animation — ticket id added on elimination event,
+  // removed after ~1.5s (poll fetches the updated alive list during that
+  // window so the avatar disappears from the grid as the explosion ends).
+  const [popExitIds, setPopExitIds] = useState<Set<number>>(() => new Set());
 
   const countdown = useCountdown(raffle.drawType === 'countdown' ? raffle.drawAt : null);
   const isFree = raffle.ticketPrice === 0;
@@ -421,6 +438,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         // SSE is just a hint — kick the polling loop immediately.
         pollDrawStateNow();
       } else if (e.type === 'elimination') {
+        if (typeof e.ticketId === 'number') {
+          const id = e.ticketId;
+          setPopExitIds((prev) => new Set(prev).add(id));
+          setTimeout(() => {
+            setPopExitIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+          }, 1500);
+        }
         pollDrawStateNow();
         loadMyTickets();
         loadComments();
@@ -469,6 +493,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       } else if (e.type === 'horse_advance') {
         pollDrawStateNow();
       } else if (e.type === 'horse_elimination') {
+        if (typeof e.ticketId === 'number') {
+          const id = e.ticketId;
+          setPopExitIds((prev) => new Set(prev).add(id));
+          setTimeout(() => {
+            setPopExitIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+          }, 1500);
+        }
         pollDrawStateNow();
         loadMyTickets();
         loadComments();
@@ -724,137 +755,240 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [drawState?.nextHorseEliminationAt, tick],
   );
-
-  // Phase 1 / pre-phase fallback view (used when drawing started but the
-  // tournament is in classic per-tick eliminations).
-  const Phase1View = (
-    <div className="w-full max-w-xl space-y-5">
-      <div className="text-center">
-        <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
-          <Sparkles size={14} className="animate-pulse" /> Fase 1 · Eliminación rápida
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
-            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Tickets vivos</p>
-            <p className="mt-1 text-4xl font-black text-white tabular-nums">
-              {drawState?.remainingCount ?? '—'}
-            </p>
-          </div>
-          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4">
-            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Próxima eliminación</p>
-            <p className="mt-1 text-4xl font-black text-amber-300 tabular-nums">
-              {nextEliminationSeconds !== null ? `${nextEliminationSeconds}s` : '—'}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+  const phaseEndsApproxSeconds = useMemo(
+    () => secondsUntil(drawState?.phaseEndsApproxAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.phaseEndsApproxAt, tick],
   );
 
-  // Phase 2 — Squid Game grid with parallel wind + light timers.
-  const Phase2View = (
-    <div className="w-full space-y-4">
-      <div className="text-center">
-        <div className="text-yellow-400 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
-          <Wind size={14} /> Fase 2 · Luz Roja, Luz Verde
-        </div>
-        <div className="grid grid-cols-2 gap-3 max-w-xl mx-auto">
-          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
-            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-center gap-1">
-              <Wind size={10} /> Próxima ráfaga
-            </p>
-            <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
-              {nextWindSeconds !== null ? `${nextWindSeconds}s` : '—'}
-            </p>
-          </div>
-          <div
-            className={`border rounded-2xl p-3 ${
-              drawState?.lightState === 'red'
-                ? 'bg-red-500/15 border-red-500/50'
-                : 'bg-emerald-500/15 border-emerald-500/40'
-            }`}
-          >
-            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
-              Luz {drawState?.lightState === 'red' ? 'roja' : 'verde'} · cambia en
-            </p>
-            <p
-              className={`mt-1 text-3xl font-black tabular-nums text-center ${
-                drawState?.lightState === 'red' ? 'text-red-300' : 'text-emerald-300'
-              }`}
-            >
-              {nextLightSeconds !== null ? `${nextLightSeconds}s` : '—'}
-            </p>
-          </div>
-        </div>
-      </div>
+  // Format "Xm Ys" / "Ys" for short countdowns (sub-1h).
+  const formatCountdown = (sec: number | null): string => {
+    if (sec === null) return '—';
+    if (sec < 60) return `${sec}s`;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
+  };
 
-      {/* Grid of all alive ticket holders */}
-      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 gap-2">
-        {drawState?.aliveTickets?.map((t) => {
-          const blowing = blowingIds.has(t.id);
-          const killed = redKilledIds.has(t.id);
-          return (
-            <div
-              key={`p2-${t.id}`}
-              className={`relative flex flex-col items-center gap-1 transition-transform duration-700 ${
-                blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''
-              }`}
-              title={`@${t.userUsername} · #${t.number}`}
-              style={blowing ? { transform: `translate(${(Math.random() * 40 - 20).toFixed(0)}px, ${(Math.random() * 30 - 10).toFixed(0)}px) rotate(${(Math.random() * 30 - 15).toFixed(0)}deg)` } : undefined}
-            >
-              {t.userImageUrl ? (
-                <img
-                  src={t.userImageUrl}
-                  alt=""
-                  className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover ring-1 ${
-                    killed ? 'ring-red-500 grayscale opacity-60' : 'ring-zinc-700'
-                  }`}
-                />
+  // Shared "ya cayeron" strip — appears across every phase so the user has
+  // a continuous record of who's been knocked out, not just who fell in
+  // the current phase.
+  const RecentEliminatedStrip = drawState?.recentEliminated && drawState.recentEliminated.length > 0 ? (
+    <div className="w-full">
+      <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-1">
+        <Skull size={10} /> Últimos eliminados ({drawState.recentEliminated.length}{drawState.eliminatedCount > drawState.recentEliminated.length ? ` de ${drawState.eliminatedCount}` : ''})
+      </p>
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        {drawState.recentEliminated.map((e) => (
+          <div
+            key={`recent-${e.id}`}
+            className="flex-shrink-0 flex flex-col items-center gap-0.5 w-12"
+            title={`#${e.eliminationOrder} · @${e.userUsername} · ticket #${e.number}`}
+          >
+            <div className="relative">
+              {e.userImageUrl ? (
+                <img src={e.userImageUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-red-500/40 grayscale opacity-70" />
               ) : (
-                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-1 ${killed ? 'ring-red-500 grayscale opacity-60' : 'ring-zinc-700'}`}>
-                  {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-1 ring-red-500/40">
+                  {e.userUsername?.[0]?.toUpperCase() ?? '?'}
                 </div>
               )}
-              <span className="text-[9px] font-mono font-bold text-zinc-400 tabular-nums">#{t.number}</span>
-              {killed && (
-                <span className="absolute inset-0 flex items-center justify-center text-3xl font-black text-red-500 pointer-events-none drop-shadow-lg">✕</span>
-              )}
+              <span className="absolute -top-1 -right-1 px-1 py-0 rounded-full bg-red-500 text-white text-[8px] font-black tabular-nums leading-tight">
+                {e.eliminationOrder}°
+              </span>
             </div>
-          );
-        })}
+            <span className="text-[9px] font-mono font-bold text-zinc-500 tabular-nums leading-none">
+              #{e.number}
+            </span>
+          </div>
+        ))}
       </div>
-      <p className="text-center text-[10px] text-zinc-500 italic">
-        Quedan {drawState?.remainingCount ?? '—'} tickets · siguen hasta llegar a 10
-      </p>
+    </div>
+  ) : null;
+
+  // Shared phase header with title + eliminated/total + progress bar.
+  const PhaseHeader: React.FC<{ icon: React.ReactNode; title: string; subtitle?: string }> = ({ icon, title, subtitle }) => {
+    const total = drawState?.totalTickets ?? 0;
+    const eliminated = drawState?.eliminatedCount ?? 0;
+    const remaining = drawState?.remainingCount ?? 0;
+    const pct = total > 0 ? Math.round((eliminated / total) * 100) : 0;
+    return (
+      <div className="w-full text-center mb-4">
+        <div className="text-yellow-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 animate-pulse">
+          {icon} {title}
+        </div>
+        {subtitle && (
+          <p className="text-zinc-400 text-[11px] mt-1">{subtitle}</p>
+        )}
+        <div className="mt-3 max-w-md mx-auto">
+          <div className="flex items-baseline justify-between text-[10px] font-black uppercase tracking-widest mb-1">
+            <span className="text-emerald-300 tabular-nums">{remaining} vivos</span>
+            <span className="text-zinc-500 tabular-nums">{eliminated} de {total} eliminados</span>
+          </div>
+          <div className="h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-red-500 to-amber-500 transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper: render a ticket avatar with phase-1/3 explosion animation.
+  const renderAliveAvatar = (t: AliveTicket, opts?: { size?: 'sm' | 'md'; ring?: string }) => {
+    const popping = popExitIds.has(t.id);
+    const blowing = blowingIds.has(t.id);
+    const killed = redKilledIds.has(t.id);
+    const sizeCls = opts?.size === 'md' ? 'w-11 h-11 sm:w-12 sm:h-12' : 'w-9 h-9 sm:w-10 sm:h-10';
+    const ringCls = killed ? 'ring-red-500' : (opts?.ring ?? 'ring-zinc-700');
+    return (
+      <div
+        key={`alive-${t.id}`}
+        className={`relative flex flex-col items-center gap-0.5 ${
+          popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''
+        } ${blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''}`}
+        title={`@${t.userUsername} · #${t.number}`}
+      >
+        {t.userImageUrl ? (
+          <img
+            src={t.userImageUrl}
+            alt=""
+            className={`${sizeCls} rounded-full object-cover ring-2 ${ringCls} ${killed ? 'grayscale opacity-60' : ''}`}
+          />
+        ) : (
+          <div className={`${sizeCls} rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-2 ${ringCls} ${killed ? 'grayscale opacity-60' : ''}`}>
+            {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+          </div>
+        )}
+        <span className="text-[9px] font-mono font-bold text-zinc-400 tabular-nums leading-none">
+          #{t.number}
+        </span>
+        {popping && (
+          <span className="absolute inset-0 flex items-center justify-center text-3xl pointer-events-none drop-shadow-lg">
+            💥
+          </span>
+        )}
+        {killed && !popping && (
+          <span className="absolute inset-0 flex items-center justify-center text-3xl font-black text-red-500 pointer-events-none drop-shadow-lg">✕</span>
+        )}
+      </div>
+    );
+  };
+
+  // ─── Phase 1: avatar grid + explosion animation + recent eliminated ─────
+  const Phase1View = (
+    <div className="w-full space-y-4">
+      <PhaseHeader
+        icon={<Sparkles size={14} />}
+        title="Fase 1 · Eliminación rápida"
+        subtitle={`Eliminamos uno al azar cada 5 segundos hasta que queden 30. ${
+          drawState?.eliminationsUntilNextPhase != null
+            ? `Faltan ${drawState.eliminationsUntilNextPhase} para la fase 2.`
+            : ''
+        }`}
+      />
+      <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
+          <p className="mt-1 text-3xl font-black text-amber-300 tabular-nums text-center">
+            {nextEliminationSeconds !== null ? `${nextEliminationSeconds}s` : '—'}
+          </p>
+        </div>
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Fase termina aprox en</p>
+          <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+            {formatCountdown(phaseEndsApproxSeconds)}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+        {drawState?.aliveTickets?.map((t) => renderAliveAvatar(t))}
+      </div>
+      {RecentEliminatedStrip}
     </div>
   );
 
-  // Phase 3 intro — 30s lobby before the horse race.
-  const Phase3IntroView = (
-    <div className="w-full max-w-xl space-y-5 text-center">
-      <div className="text-amber-300 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-        🐎 Fase final · La carrera de caballos
+  // ─── Phase 2: Squid-Game wind + lights ────────────────────────────────
+  const Phase2View = (
+    <div className="w-full space-y-4">
+      <PhaseHeader
+        icon={<Wind size={14} />}
+        title="Fase 2 · Luz Roja, Luz Verde"
+        subtitle={`Cada 3s una ráfaga sopla 5 tickets al azar; los movidos durante luz ROJA quedan eliminados. ${
+          drawState?.eliminationsUntilNextPhase != null
+            ? `Faltan ${drawState.eliminationsUntilNextPhase} para la fase final.`
+            : ''
+        }`}
+      />
+      <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-center gap-1">
+            <Wind size={10} /> Próxima ráfaga
+          </p>
+          <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+            {nextWindSeconds !== null ? `${nextWindSeconds}s` : '—'}
+          </p>
+        </div>
+        <div
+          className={`border rounded-2xl p-3 ${
+            drawState?.lightState === 'red'
+              ? 'bg-red-500/15 border-red-500/50'
+              : 'bg-emerald-500/15 border-emerald-500/40'
+          }`}
+        >
+          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
+            Luz {drawState?.lightState === 'red' ? 'ROJA' : 'VERDE'} · cambia en
+          </p>
+          <p
+            className={`mt-1 text-3xl font-black tabular-nums text-center ${
+              drawState?.lightState === 'red' ? 'text-red-300' : 'text-emerald-300'
+            }`}
+          >
+            {nextLightSeconds !== null ? `${nextLightSeconds}s` : '—'}
+          </p>
+        </div>
       </div>
-      <div className="bg-zinc-900/70 border border-amber-500/30 rounded-2xl p-6">
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+        {drawState?.aliveTickets?.map((t) => renderAliveAvatar(t, { size: 'md' }))}
+      </div>
+      {RecentEliminatedStrip}
+    </div>
+  );
+
+  // ─── Phase 3 intro: 30s lobby ────────────────────────────────────────
+  const Phase3IntroView = (
+    <div className="w-full space-y-5 text-center">
+      <PhaseHeader
+        icon={<>🐎</>}
+        title="Fase final · La carrera de caballos"
+        subtitle={`Quedan ${drawState?.remainingCount ?? 0} finalistas. Cuando empiece la carrera cada caballo avanzará 1-3 pasos al azar cada 3s y cada 15s se elimina al de último lugar.`}
+      />
+      <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 border border-amber-500/30 rounded-2xl p-6 max-w-md mx-auto">
         <p className="text-[11px] text-zinc-500 font-black uppercase tracking-widest">La carrera empieza en</p>
         <p className="mt-2 text-6xl font-black text-amber-300 tabular-nums">
           {phase3IntroSeconds !== null ? `${phase3IntroSeconds}s` : '—'}
         </p>
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        {drawState?.aliveTickets?.map((t) => (
-          <div key={`p3i-${t.id}`} className="flex flex-col items-center gap-1">
-            {t.userImageUrl ? (
-              <img src={t.userImageUrl} alt="" className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400/60" />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 text-base font-black ring-2 ring-amber-400/60">
-                {t.userUsername?.[0]?.toUpperCase() ?? '?'}
-              </div>
-            )}
-            <span className="text-[10px] font-mono font-bold text-amber-200 tabular-nums">#{t.number}</span>
-          </div>
-        ))}
+      <div>
+        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">Finalistas</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {drawState?.aliveTickets?.map((t) => (
+            <div key={`p3i-${t.id}`} className="flex flex-col items-center gap-1">
+              {t.userImageUrl ? (
+                <img src={t.userImageUrl} alt="" className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-400/60" />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 text-base font-black ring-2 ring-amber-400/60">
+                  {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              )}
+              <span className="text-[10px] font-mono font-bold text-amber-200 tabular-nums">#{t.number}</span>
+            </div>
+          ))}
+        </div>
       </div>
+      {RecentEliminatedStrip}
     </div>
   );
 
@@ -872,26 +1006,32 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     const stepHeight = Math.min(20, trackHeight / range);
     return (
       <div className="w-full space-y-4">
-        <div className="text-center">
-          <div className="text-amber-300 text-xs font-black uppercase tracking-widest mb-3 animate-pulse flex items-center justify-center gap-2">
-            🐎 Carrera de caballos en vivo
+        <PhaseHeader
+          icon={<>🐎</>}
+          title="Fase final · Carrera de caballos"
+          subtitle={`Cada 3s todos avanzan 1-3 pasos. Cada 15s el último cae. ${
+            drawState?.eliminationsUntilNextPhase != null
+              ? `Faltan ${drawState.eliminationsUntilNextPhase} eliminaciones para el ganador.`
+              : ''
+          }`}
+        />
+        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
+            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próximo avance</p>
+            <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
+              {nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 max-w-xl mx-auto">
-            <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
-              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próximo avance</p>
-              <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
-                {nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}
-              </p>
-            </div>
-            <div className="bg-zinc-900/70 border border-red-500/30 rounded-2xl p-3">
-              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
-              <p className="mt-1 text-2xl font-black text-red-300 tabular-nums text-center">
-                {nextHorseEliminationSeconds !== null ? `${nextHorseEliminationSeconds}s` : '—'}
-                {drawState?.lastPlace && (
-                  <span className="ml-1 text-base text-zinc-400">#{drawState.lastPlace.number}</span>
-                )}
-              </p>
-            </div>
+          <div className="bg-zinc-900/70 border border-red-500/30 rounded-2xl p-3">
+            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
+              Próxima eliminación
+              {drawState?.lastPlace && (
+                <span className="ml-1 text-red-400">#{drawState.lastPlace.number}</span>
+              )}
+            </p>
+            <p className="mt-1 text-3xl font-black text-red-300 tabular-nums text-center">
+              {nextHorseEliminationSeconds !== null ? `${nextHorseEliminationSeconds}s` : '—'}
+            </p>
           </div>
         </div>
 
@@ -900,13 +1040,12 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             {alive.map((t) => {
               const offsetTop = (t.horseSteps - minSteps) * stepHeight;
               const isLast = drawState?.lastPlace?.id === t.id;
+              const popping = popExitIds.has(t.id);
               return (
-                <div key={`p3-${t.id}`} className="flex flex-col items-center" style={{ width: '10%' }}>
-                  {/* Ticket number above */}
+                <div key={`p3-${t.id}`} className={`flex flex-col items-center ${popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''}`} style={{ width: '10%' }}>
                   <span className={`text-[10px] font-mono font-bold tabular-nums mb-1 ${isLast ? 'text-red-400' : 'text-amber-200'}`}>
                     #{t.number}
                   </span>
-                  {/* Avatar */}
                   {t.userImageUrl ? (
                     <img
                       src={t.userImageUrl}
@@ -922,7 +1061,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                       {t.userUsername?.[0]?.toUpperCase() ?? '?'}
                     </div>
                   )}
-                  {/* Horse */}
                   <span
                     className="text-2xl mt-0.5 transition-all duration-700"
                     style={{ transform: `translateY(${offsetTop}px)` }}
@@ -935,8 +1073,9 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           </div>
         </div>
         <p className="text-center text-[10px] text-zinc-500 italic">
-          El líder está más abajo · cada 15s se elimina al de último lugar
+          El líder va más abajo · el último de la carrera cae cada 15s
         </p>
+        {RecentEliminatedStrip}
       </div>
     );
   })();
@@ -1295,6 +1434,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           50%  { transform: translate(20px, 6px) rotate(10deg); }
           75%  { transform: translate(-10px, -4px) rotate(-6deg); }
           100% { transform: translate(0, 0) rotate(0); }
+        }
+        @keyframes ticket-explode {
+          0%   { transform: scale(1); opacity: 1; filter: brightness(1) drop-shadow(0 0 0 rgba(248,113,113,0)); }
+          25%  { transform: scale(1.3); opacity: 1; filter: brightness(1.8) drop-shadow(0 0 12px rgba(248,113,113,0.9)); }
+          55%  { transform: scale(1.5) rotate(8deg); opacity: 0.9; filter: brightness(2) drop-shadow(0 0 18px rgba(248,113,113,1)); }
+          85%  { transform: scale(0.6) rotate(-12deg); opacity: 0.4; filter: brightness(1.2); }
+          100% { transform: scale(0); opacity: 0; }
         }
       `}</style>
       <Navbar
