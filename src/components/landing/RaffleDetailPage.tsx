@@ -95,7 +95,7 @@ interface RecentEliminatedEntry {
 
 interface DrawState {
   status: string;
-  phase: 'phase1' | 'phase2' | 'phase3_intro' | 'phase3' | null;
+  phase: 'phase1' | 'phase2_intro' | 'phase2' | 'phase3_intro' | 'phase3' | null;
   totalTickets: number;
   eliminatedCount: number;
   remainingCount: number;
@@ -110,8 +110,10 @@ interface DrawState {
   lightState: 'red' | 'green' | null;
   nextWindAt: string | null;
   nextLightChangeAt: string | null;
-  // Phase 3
+  // Phase 3 / shared lobby
   phase3StartsAt: string | null;
+  phaseIntroEndsAt: string | null;
+  phase3StartedAt: string | null;
   nextHorseAdvanceAt: string | null;
   nextHorseEliminationAt: string | null;
   lastPlace: AliveTicket | null;
@@ -134,9 +136,15 @@ interface DrawState {
 const PHASE_SPLASH: Record<string, { title: string; subtitle: string; emoji: string; gradient: string }> = {
   phase1: {
     title: 'Fase 1 · Eliminación rápida',
-    subtitle: 'Cada 5 segundos cae uno al azar. Hasta 30 sobrevivientes.',
+    subtitle: 'Cada 4 segundos cae uno al azar. Hasta 30 sobrevivientes.',
     emoji: '⚡',
     gradient: 'from-amber-500/30 via-zinc-950 to-amber-500/30',
+  },
+  phase2_intro: {
+    title: 'Sobrevivientes · Pausa de 60 segundos',
+    subtitle: 'La fase 2 empieza pronto. Quedan los 30 más afortunados.',
+    emoji: '⏳',
+    gradient: 'from-cyan-500/30 via-zinc-950 to-cyan-500/30',
   },
   phase2: {
     title: 'Fase 2 · Luz Roja, Luz Verde',
@@ -145,14 +153,14 @@ const PHASE_SPLASH: Record<string, { title: string; subtitle: string; emoji: str
     gradient: 'from-red-500/30 via-zinc-950 to-emerald-500/30',
   },
   phase3_intro: {
-    title: 'Fase final',
-    subtitle: 'La carrera de caballos está por empezar.',
+    title: 'Finalistas · Pausa de 60 segundos',
+    subtitle: 'La carrera de caballos está por empezar. Quedan los 10 más fuertes.',
     emoji: '🐎',
     gradient: 'from-amber-400/30 via-zinc-950 to-amber-400/30',
   },
   phase3: {
     title: 'Fase 3 · ¡Que comience la carrera!',
-    subtitle: 'Cada 3s avanzan 1-3 pasos. Cada 15s cae el último.',
+    subtitle: 'Cada 3s avanzan 1-3 pasos. Cada 12s cae el último.',
     emoji: '🏁',
     gradient: 'from-amber-400/30 via-amber-500/20 to-amber-400/30',
   },
@@ -521,9 +529,12 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         if (typeof e.ticketId === 'number') {
           const id = e.ticketId;
           setPopExitIds((prev) => new Set(prev).add(id));
+          // Hold the explosion animation full 2.5s so it doesn't get cut
+          // off when the next poll redraws the grid with the now-eliminated
+          // ticket marked.
           setTimeout(() => {
             setPopExitIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
-          }, 1500);
+          }, 2500);
         }
         pollDrawStateNow();
         loadMyTickets();
@@ -585,7 +596,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           setPopExitIds((prev) => new Set(prev).add(id));
           setTimeout(() => {
             setPopExitIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
-          }, 1500);
+          }, 2500);
         }
         pollDrawStateNow();
         loadMyTickets();
@@ -832,6 +843,12 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [drawState?.phase3StartsAt, tick],
   );
+  // Shared by phase2_intro AND phase3_intro — same timestamp slot.
+  const phaseIntroSeconds = useMemo(
+    () => secondsUntil(drawState?.phaseIntroEndsAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawState?.phaseIntroEndsAt, tick],
+  );
   const nextHorseAdvanceSeconds = useMemo(
     () => secondsUntil(drawState?.nextHorseAdvanceAt),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1022,7 +1039,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             <div
               key={`grid-${t.id}`}
               className={`relative flex flex-col items-center gap-0.5 ${
-                popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''
+                popping ? 'animate-[ticket-explode_2.5s_ease-out_forwards] z-10' : ''
               } ${blowing ? 'animate-[wind-blow_1.2s_ease-out]' : ''}`}
               title={`@${t.userUsername} · #${t.number}${isEliminated ? ' · eliminado' : ''}`}
             >
@@ -1147,7 +1164,43 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     </div>
   );
 
-  // ─── Phase 3 intro: 30s lobby ────────────────────────────────────────
+  // ─── Phase 2 intro: 60s lobby (sobrevivientes de fase 1) ────────────
+  const Phase2IntroView = (
+    <div className="w-full space-y-5 text-center">
+      <PhaseHeader
+        icon={<>⏳</>}
+        title="Sobrevivientes de la fase 1"
+        subtitle="Pausa de 60 segundos antes de que empiece la fase 2: Luz Roja, Luz Verde."
+      />
+      <div className="bg-gradient-to-r from-cyan-500/10 via-cyan-400/10 to-cyan-500/10 border border-cyan-500/30 rounded-2xl p-6 max-w-md mx-auto">
+        <p className="text-[11px] text-zinc-500 font-black uppercase tracking-widest">La fase 2 empieza en</p>
+        <p className="mt-2 text-6xl font-black text-cyan-300 tabular-nums">
+          {phaseIntroSeconds !== null ? `${phaseIntroSeconds}s` : '—'}
+        </p>
+      </div>
+      <div>
+        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2">
+          {drawState?.aliveTickets?.length ?? 0} sobrevivientes
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {drawState?.aliveTickets?.map((t) => (
+            <div key={`p2i-${t.id}`} className="flex flex-col items-center gap-1">
+              {t.userImageUrl ? (
+                <img src={t.userImageUrl} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-400/60" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-300 text-sm font-black ring-2 ring-cyan-400/60">
+                  {t.userUsername?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              )}
+              <span className="text-[10px] font-mono font-bold text-cyan-200 tabular-nums">#{t.number}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── Phase 3 intro: 60s lobby ────────────────────────────────────────
   const Phase3IntroView = (
     <div className="w-full space-y-5 text-center">
       <PhaseHeader
@@ -1158,7 +1211,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-amber-500/10 border border-amber-500/30 rounded-2xl p-6 max-w-md mx-auto">
         <p className="text-[11px] text-zinc-500 font-black uppercase tracking-widest">La carrera empieza en</p>
         <p className="mt-2 text-6xl font-black text-amber-300 tabular-nums">
-          {phase3IntroSeconds !== null ? `${phase3IntroSeconds}s` : '—'}
+          {(phaseIntroSeconds ?? phase3IntroSeconds) !== null ? `${phaseIntroSeconds ?? phase3IntroSeconds}s` : '—'}
         </p>
       </div>
       <div>
@@ -1185,11 +1238,23 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // always sits at the top and the leader is offset down by their relative
   // step gap.
   const Phase3View = (() => {
-    // Use the FULL tickets list as the column source so eliminated horses
-    // stay in their column at their final step count (greyed out, no
-    // motion). This keeps the column count stable — surviving horses never
-    // shift sideways when a neighbour falls.
-    const allP3 = [...tickets].sort((a, b) => a.number.localeCompare(b.number));
+    // Only the PHASE 3 finalists belong in the column grid: tickets that
+    // were alive when phase 3 started (and may now be eliminated within
+    // phase 3). Without this filter we'd render all 99 columns smashed
+    // together, including the 89 already eliminated in phases 1 + 2.
+    //
+    // A ticket belongs to phase 3 iff:
+    //   not eliminated, OR eliminated AFTER phase3StartedAt
+    const phase3StartMs = drawState?.phase3StartedAt
+      ? new Date(drawState.phase3StartedAt).getTime()
+      : null;
+    const allP3 = [...tickets]
+      .filter((t) => {
+        if (!t.eliminatedAt) return true;
+        if (!phase3StartMs) return false; // can't tell yet — exclude phase 1/2 dead
+        return new Date(t.eliminatedAt).getTime() >= phase3StartMs;
+      })
+      .sort((a, b) => a.number.localeCompare(b.number));
     const aliveSteps = allP3.filter((t) => !t.eliminatedAt).map((t) => t.horseSteps);
     const minSteps = aliveSteps.length > 0 ? Math.min(...aliveSteps) : 0;
     const maxSteps = aliveSteps.length > 0 ? Math.max(...aliveSteps) : 0;
@@ -1264,7 +1329,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                 ? 'text-red-400'
                 : 'text-amber-200';
               return (
-                <div key={`p3-${t.id}`} className={`flex flex-col items-center ${popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''}`} style={{ width: colWidth }}>
+                <div key={`p3-${t.id}`} className={`flex flex-col items-center ${popping ? 'animate-[ticket-explode_2.5s_ease-out_forwards] z-10' : ''}`} style={{ width: colWidth }}>
                   <span className={`text-[10px] font-mono font-bold tabular-nums leading-none mb-0.5 ${numberCls}`}>
                     #{t.number}
                   </span>
@@ -1350,6 +1415,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         </>
       )}
 
+      {drawingNow && drawState?.phase === 'phase2_intro' && Phase2IntroView}
       {drawingNow && drawState?.phase === 'phase2' && Phase2View}
       {drawingNow && drawState?.phase === 'phase3_intro' && Phase3IntroView}
       {drawingNow && drawState?.phase === 'phase3' && Phase3View}
@@ -1667,11 +1733,16 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           100% { transform: translate(0, 0) rotate(0); }
         }
         @keyframes ticket-explode {
+          /* Builds slowly, peaks dramatically, then settles into a frozen
+             "dead" state (still visible, greyscale, dim) so the avatar
+             never disappears mid-animation. After the keyframe ends the
+             eliminated styling kicks in seamlessly. */
           0%   { transform: scale(1); opacity: 1; filter: brightness(1) drop-shadow(0 0 0 rgba(248,113,113,0)); }
-          25%  { transform: scale(1.3); opacity: 1; filter: brightness(1.8) drop-shadow(0 0 12px rgba(248,113,113,0.9)); }
-          55%  { transform: scale(1.5) rotate(8deg); opacity: 0.9; filter: brightness(2) drop-shadow(0 0 18px rgba(248,113,113,1)); }
-          85%  { transform: scale(0.6) rotate(-12deg); opacity: 0.4; filter: brightness(1.2); }
-          100% { transform: scale(0); opacity: 0; }
+          15%  { transform: scale(1.45); opacity: 1; filter: brightness(2) drop-shadow(0 0 14px rgba(248,113,113,0.95)); }
+          35%  { transform: scale(1.7) rotate(10deg); opacity: 1; filter: brightness(2.4) drop-shadow(0 0 24px rgba(248,113,113,1)); }
+          55%  { transform: scale(1.5) rotate(-12deg); opacity: 0.95; filter: brightness(1.8) drop-shadow(0 0 18px rgba(248,113,113,0.8)); }
+          75%  { transform: scale(1.2) rotate(6deg); opacity: 0.8; filter: brightness(1.3); }
+          100% { transform: scale(1); opacity: 0.6; filter: grayscale(1) brightness(0.7); }
         }
         @keyframes splash-fade {
           0%   { opacity: 0; transform: scale(0.85); }
