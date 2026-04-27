@@ -122,7 +122,8 @@ const siteName =
   </head>
   <body>
     <slot />
-    <DiscordInviteModal client:only="react" />
+    {/* Discord invite modal — hidden site-wide. Component preserved for re-enable. */}
+    {/* <DiscordInviteModal client:only="react" /> */}
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
     {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider). */}
