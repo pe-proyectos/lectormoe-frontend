@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Menu,
   X,
@@ -19,6 +19,85 @@ import {
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
+
+// Active-raffle summary that drives the Luckys button styling. We highlight
+// the navbar entry only when there's at least one active raffle, and overlay
+// real-time badges (countdown + sold/max) for whichever raffle is "ending
+// soonest". Countdown raffles win priority over max-tickets raffles per the
+// product spec — countdowns have a hard deadline, max-tickets is open-ended.
+type LuckysRaffle = {
+  slug: string;
+  drawType: 'countdown' | 'max-tickets';
+  drawAt: string | null;
+  status: string;
+  sold: number;
+  maxTickets: number;
+};
+
+const useLuckysSummary = () => {
+  const [active, setActive] = useState<LuckysRaffle[]>([]);
+  const [tick, setTick] = useState(0);
+
+  // Fetch on mount and refresh every 60s — frequent enough that a sold/max
+  // change shows up reasonably fast without hammering the API on every nav.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await callAPI('/api/raffle?status=active');
+        if (cancelled) return;
+        const items = Array.isArray(res?.items) ? res.items : [];
+        setActive(items);
+      } catch { /* ignore — nav stays in inactive state */ }
+    };
+    load();
+    const id = window.setInterval(load, 60_000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, []);
+
+  // 1s tick drives the countdown re-render WITHOUT re-fetching. Only runs
+  // when there's actually something to count.
+  useEffect(() => {
+    if (active.length === 0) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [active.length]);
+
+  const primary = useMemo<LuckysRaffle | null>(() => {
+    if (active.length === 0) return null;
+    const now = Date.now();
+    // Countdown raffles with a future drawAt — pick the soonest.
+    const countdown = active
+      .filter((r) => r.drawType === 'countdown' && r.drawAt && new Date(r.drawAt).getTime() > now)
+      .sort((a, b) => new Date(a.drawAt!).getTime() - new Date(b.drawAt!).getTime());
+    if (countdown.length > 0) return countdown[0];
+    // Otherwise pick the most-filled max-tickets raffle (closest to drawing).
+    const maxTickets = active
+      .filter((r) => r.drawType === 'max-tickets')
+      .sort((a, b) => b.sold / Math.max(1, b.maxTickets) - a.sold / Math.max(1, a.maxTickets));
+    return maxTickets[0] ?? active[0] ?? null;
+  }, [active]);
+
+  const countdownLabel = useMemo<string | null>(() => {
+    if (!primary || primary.drawType !== 'countdown' || !primary.drawAt) return null;
+    const diff = new Date(primary.drawAt).getTime() - Date.now();
+    if (!Number.isFinite(diff) || diff <= 0) return '00:00:00';
+    const totalH = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    const s = Math.floor((diff % 60_000) / 1000);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    // Past 99h, switch to "Xd HH:MM" so the badge stays narrow enough to fit.
+    if (totalH >= 100) {
+      const d = Math.floor(totalH / 24);
+      return `${d}d ${pad(totalH - d * 24)}:${pad(m)}`;
+    }
+    return `${pad(totalH)}:${pad(m)}:${pad(s)}`;
+    // tick is the heartbeat — re-evaluate every 1s
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primary, tick]);
+
+  return { hasActive: active.length > 0 && primary !== null, primary, countdownLabel };
+};
 
 interface NavbarProps {
   // Required props
@@ -65,6 +144,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState(initialUser);
   const [logged, setLogged] = useState(initialLogged);
+  const luckys = useLuckysSummary();
   
   // Get user permissions for the current organization
   // Try to get permissions from user object, or fetch them if not available
@@ -509,13 +589,32 @@ const Navbar: React.FC<NavbarProps> = ({
             <Bookmark size={16} /> {altContentLink.label}
           </a>
 
-          <a
-            href="/luckys"
-            className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-yellow-400 to-amber-500 text-zinc-950 text-xs font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:shadow-yellow-400/60 transition-all"
-          >
-            <Sparkles size={14} className="animate-pulse" /> Luckys
-            <span className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-yellow-300/70 animate-pulse" />
-          </a>
+          {luckys.hasActive ? (
+            <a
+              href="/luckys"
+              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-yellow-400 to-amber-500 text-zinc-950 text-xs font-black uppercase tracking-widest shadow-lg shadow-yellow-500/30 hover:shadow-yellow-400/60 transition-all animate-pulse"
+            >
+              <Sparkles size={14} /> Luckys
+              <span className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-yellow-300/70 animate-pulse" />
+              {luckys.countdownLabel && (
+                <span className="pointer-events-none absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-zinc-950 border border-yellow-300 text-[9px] font-mono font-bold text-yellow-200 tabular-nums shadow-md">
+                  {luckys.countdownLabel}
+                </span>
+              )}
+              {luckys.primary && (
+                <span className="pointer-events-none absolute -bottom-2 -right-2 px-1.5 py-0.5 rounded-full bg-zinc-950 border border-yellow-300 text-[9px] font-mono font-bold text-yellow-200 tabular-nums shadow-md">
+                  {luckys.primary.sold}/{luckys.primary.maxTickets}
+                </span>
+              )}
+            </a>
+          ) : (
+            <a
+              href="/luckys"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 text-xs font-black uppercase tracking-widest hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+            >
+              <Sparkles size={14} /> Luckys
+            </a>
+          )}
 
           {/* Sorteo ended — hidden until next giveaway
           <button
@@ -759,9 +858,25 @@ const Navbar: React.FC<NavbarProps> = ({
           <a
             href="/luckys"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-xl font-black flex items-center gap-4 text-yellow-400 uppercase tracking-widest"
+            className={`text-xl font-black flex items-center gap-4 uppercase tracking-widest ${
+              luckys.hasActive ? 'text-yellow-400 animate-pulse' : 'text-zinc-500'
+            }`}
           >
-            <Sparkles size={20} className="animate-pulse" /> Luckys
+            <Sparkles size={20} /> Luckys
+            {luckys.hasActive && (
+              <span className="ml-auto flex flex-col items-end gap-0.5">
+                {luckys.countdownLabel && (
+                  <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-yellow-400 text-[11px] font-mono font-bold text-yellow-200 tabular-nums">
+                    {luckys.countdownLabel}
+                  </span>
+                )}
+                {luckys.primary && (
+                  <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-yellow-400 text-[11px] font-mono font-bold text-yellow-200 tabular-nums">
+                    {luckys.primary.sold}/{luckys.primary.maxTickets}
+                  </span>
+                )}
+              </span>
+            )}
           </a>
           {/* Sorteo ended — hidden until next giveaway
           <button
