@@ -252,9 +252,33 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     if (!silent) setTicketsLoading(true);
     try {
       const data = await callAPI(`/api/raffle/${raffle.slug}/tickets?page=1&limit=1000`);
-      setTickets(data?.items ?? []);
-      setTicketsTotal(data?.total ?? 0);
-      setTicketsPage(1);
+      const items = data?.items;
+      if (Array.isArray(items)) {
+        setTickets((prev) => {
+          // Defensive: ignore an empty silent response when we already had
+          // rows on screen — a transient API hiccup or in-flight race
+          // shouldn't blink the whole table away. If the previous render
+          // had data, keep it until a future poll confirms it's gone.
+          if (silent && items.length === 0 && prev.length > 0) return prev;
+          // Skip the state update entirely when nothing changed — same
+          // length, same ids in same positions, same elimination state.
+          // Avoids re-rendering 99 rows on every 3s tick.
+          if (prev.length === items.length) {
+            let identical = true;
+            for (let i = 0; i < prev.length; i++) {
+              if (
+                prev[i].id !== items[i].id ||
+                prev[i].eliminatedAt !== items[i].eliminatedAt ||
+                prev[i].eliminationOrder !== items[i].eliminationOrder
+              ) { identical = false; break; }
+            }
+            if (identical) return prev;
+          }
+          return items;
+        });
+        setTicketsTotal(data?.total ?? 0);
+        setTicketsPage(1);
+      }
     } catch (err) {
       // ignore
     } finally {
@@ -1312,26 +1336,22 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
             <span className="text-zinc-500 text-sm">({ticketsTotal})</span>
           </div>
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden">
-            {ticketsLoading && (
-              <div className="p-8 flex justify-center"><Loader2 size={20} className="text-zinc-500 animate-spin" /></div>
-            )}
-            {!ticketsLoading && tickets.length === 0 && (
-              <p className="p-8 text-center text-zinc-500 text-sm">Sin participantes aún.</p>
-            )}
-            {!ticketsLoading && tickets.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-zinc-500 text-left bg-zinc-900/40">
-                      <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Estado</th>
-                      <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Ticket</th>
-                      <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Usuario</th>
-                      <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Comentario</th>
-                      <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tickets.map((t) => {
+            {/* Table is ALWAYS mounted — no remount on poll. Empty state and
+                loader render INSIDE the wrapper, not as siblings of the
+                table, so React never has to unmount/remount the rows. */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-zinc-500 text-left bg-zinc-900/40">
+                    <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Estado</th>
+                    <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Ticket</th>
+                    <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Usuario</th>
+                    <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Comentario</th>
+                    <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tickets.map((t) => {
                       const isEliminated = !!t.eliminatedAt;
                       const isWinner = drawingDone && survivingNumbers.has(t.number);
                       return (
@@ -1374,9 +1394,18 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
+                </tbody>
+              </table>
+            </div>
+            {tickets.length === 0 && ticketsLoading && (
+              <div className="p-8 flex justify-center border-t border-zinc-800">
+                <Loader2 size={20} className="text-zinc-500 animate-spin" />
               </div>
+            )}
+            {tickets.length === 0 && !ticketsLoading && (
+              <p className="p-8 text-center text-zinc-500 text-sm border-t border-zinc-800">
+                Sin participantes aún.
+              </p>
             )}
           </div>
           {ticketsTotal > 1000 && (
