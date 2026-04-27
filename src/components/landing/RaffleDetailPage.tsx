@@ -54,6 +54,7 @@ interface Comment {
   userImageUrl: string | null;
   isTicketHolder: boolean;
   ticketCount?: number;
+  aliveTicketCount?: number;
   body: string;
   createdAt: string;
 }
@@ -240,13 +241,19 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     raffle.available,
   ));
 
-  const loadTickets = async (page = 1) => {
-    setTicketsLoading(true);
+  // Single-page load: pull every ticket in one request so the table can
+  // surface the whole roster with real-time elimination state. Cap at 1000
+  // (matches the controller); for larger raffles we'd need to paginate
+  // again, but the elimination tournament typically tops out under that.
+  const loadTickets = async (_page = 1) => {
+    // Don't flip the loading flag on background polls — it would flash the
+    // spinner over the table every 3 seconds.
+    if (tickets.length === 0) setTicketsLoading(true);
     try {
-      const data = await callAPI(`/api/raffle/${raffle.slug}/tickets?page=${page}&limit=30`);
+      const data = await callAPI(`/api/raffle/${raffle.slug}/tickets?page=1&limit=1000`);
       setTickets(data?.items ?? []);
       setTicketsTotal(data?.total ?? 0);
-      setTicketsPage(page);
+      setTicketsPage(1);
     } catch (err) {
       // ignore
     } finally {
@@ -384,6 +391,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       } else if (e.type === 'elimination') {
         pollDrawStateNow();
         loadMyTickets();
+        loadComments();
       } else if (e.type === 'phase_started') {
         pollDrawStateNow();
       } else if (e.type === 'wind_gust') {
@@ -420,6 +428,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               return next;
             });
             loadMyTickets();
+            loadComments();
           }, 2000);
         }
         pollDrawStateNow();
@@ -430,6 +439,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       } else if (e.type === 'horse_elimination') {
         pollDrawStateNow();
         loadMyTickets();
+        loadComments();
       } else if (e.type === 'draw_completed') {
         setRaffle((r) => ({
           ...r,
@@ -448,6 +458,17 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
 
     connect();
     return () => { stopped = true; es?.close(); };
+    // eslint-disable-next-line
+  }, [raffle.slug]);
+
+  // 3s polling for the participants table so eliminations show up in
+  // real-time even if SSE drops. Pulls the full roster (no pagination).
+  useEffect(() => {
+    let cancelled = false;
+    const id = window.setInterval(() => {
+      if (!cancelled) loadTickets(1);
+    }, 3000);
+    return () => { cancelled = true; window.clearInterval(id); };
     // eslint-disable-next-line
   }, [raffle.slug]);
 
@@ -548,38 +569,66 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         {comments.length === 0 && (
           <p className="text-zinc-600 text-xs italic text-center mt-4">Sé el primero en comentar.</p>
         )}
-        {comments.map((c) => (
-          <div
-            key={c.id}
-            className={`flex gap-2 px-2 py-1.5 rounded-lg text-[12px] leading-snug ${
-              c.isTicketHolder
-                ? 'bg-cyan-500/8 border-l-2 border-cyan-500/40'
+        {comments.map((c) => {
+          // Three states for the badge based on (alive, total) ticket counts:
+          //   total=0      → no badge (regular comment)
+          //   alive>0      → blue: still in the draw
+          //   alive=0      → red: had tickets but all eliminated
+          const total = c.ticketCount ?? 0;
+          const alive = c.aliveTicketCount ?? total; // back-compat: assume alive when field absent
+          const stillIn = total > 0 && alive > 0;
+          const allOut = total > 0 && alive === 0;
+          const badgeText = total === 0
+            ? null
+            : alive === total
+            ? `${total}`
+            : `${alive}/${total}`;
+          return (
+            <div
+              key={c.id}
+              className={`flex gap-2 px-2 py-1.5 rounded-lg text-[12px] leading-snug ${
+                stillIn ? 'bg-cyan-500/8 border-l-2 border-cyan-500/40'
+                : allOut ? 'bg-red-500/5 border-l-2 border-red-500/30'
                 : ''
-            }`}
-          >
-            {c.userImageUrl ? (
-              <img src={c.userImageUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-300 flex-shrink-0">
-                {c.userUsername?.[0]?.toUpperCase() ?? '?'}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <a
-                href={`/profile/${c.userSlug}`}
-                className={`text-[11px] font-black ${c.isTicketHolder ? 'text-cyan-300' : 'text-zinc-300'} hover:underline`}
-              >
-                {c.userUsername}
-              </a>
-              {c.isTicketHolder && c.ticketCount && c.ticketCount > 0 && (
-                <span className="ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[9px] font-black tabular-nums" title={`${c.ticketCount} ticket(s)`}>
-                  🎟️{c.ticketCount}
-                </span>
+              }`}
+            >
+              {c.userImageUrl ? (
+                <img src={c.userImageUrl} alt="" className={`w-6 h-6 rounded-full object-cover flex-shrink-0 ${allOut ? 'grayscale opacity-70' : ''}`} />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-300 flex-shrink-0">
+                  {c.userUsername?.[0]?.toUpperCase() ?? '?'}
+                </div>
               )}
-              <span className="text-zinc-200 ml-1.5 break-words">{linkifyMentions(c.body)}</span>
+              <div className="min-w-0 flex-1">
+                <a
+                  href={`/profile/${c.userSlug}`}
+                  className={`text-[11px] font-black ${
+                    stillIn ? 'text-cyan-300' : allOut ? 'text-red-400' : 'text-zinc-300'
+                  } hover:underline`}
+                >
+                  {c.userUsername}
+                </a>
+                {badgeText && (
+                  <span
+                    className={`ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black tabular-nums ${
+                      stillIn ? 'bg-cyan-500/20 text-cyan-300' : 'bg-red-500/20 text-red-300'
+                    }`}
+                    title={
+                      stillIn
+                        ? `${alive} de ${total} ticket(s) en juego`
+                        : `${total} ticket(s), todos eliminados`
+                    }
+                  >
+                    {badgeText} 🎟️
+                  </span>
+                )}
+                <span className={`ml-1.5 break-words ${allOut ? 'text-zinc-400' : 'text-zinc-200'}`}>
+                  {linkifyMentions(c.body)}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="mt-3 pt-3 border-t border-zinc-800 flex gap-2">
         <input
@@ -641,44 +690,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [drawState?.nextHorseEliminationAt, tick],
   );
-
-  // Viewer's own tickets in this raffle, color-coded by status. Renders nothing
-  // for logged-out viewers or when the user has no tickets.
-  const MyTicketsRow = logged && myTickets.length > 0 ? (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
-      <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-1">
-        <Ticket size={12} /> Mis tickets ({myTickets.length})
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {myTickets.map((t) => {
-          const cls = t.refunded
-            ? 'bg-zinc-900 border-zinc-700 text-zinc-500 line-through'
-            : t.isWinner
-            ? 'bg-emerald-500/15 border-emerald-400 text-emerald-200 shadow-emerald-400/30 shadow-md'
-            : t.eliminated
-            ? 'bg-red-500/15 border-red-400 text-red-300 grayscale opacity-80'
-            : 'bg-cyan-500/15 border-cyan-400 text-cyan-200';
-          const label = t.refunded
-            ? 'Reembolsado'
-            : t.isWinner
-            ? '¡Ganador!'
-            : t.eliminated
-            ? 'Eliminado'
-            : 'En juego';
-          return (
-            <div
-              key={`mt-${t.id}`}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-black tabular-nums ${cls}`}
-              title={label}
-            >
-              #{t.number}
-              <span className="ml-1.5 text-[9px] uppercase font-black tracking-widest opacity-80">{label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  ) : null;
 
   // Phase 1 / pre-phase fallback view (used when drawing started but the
   // tournament is in classic per-tick eliminations).
@@ -1048,6 +1059,45 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         </div>
       </div>
 
+      {/* Viewer's own tickets, color-coded by status. Lives here in the
+          sidebar so the user always sees their own state alongside the
+          raffle stats, regardless of which phase the center column is
+          showing. */}
+      {logged && myTickets.length > 0 && (
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-3">
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-1">
+            <Ticket size={11} /> Mis tickets ({myTickets.length})
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {myTickets.map((t) => {
+              const cls = t.refunded
+                ? 'bg-zinc-900 border-zinc-700 text-zinc-500 line-through'
+                : t.isWinner
+                ? 'bg-emerald-500/15 border-emerald-400 text-emerald-200 shadow-emerald-400/30 shadow-md'
+                : t.eliminated
+                ? 'bg-red-500/15 border-red-400 text-red-300 grayscale opacity-80'
+                : 'bg-cyan-500/15 border-cyan-400 text-cyan-200';
+              const label = t.refunded
+                ? 'Reembolsado'
+                : t.isWinner
+                ? '¡Ganador!'
+                : t.eliminated
+                ? 'Eliminado'
+                : 'En juego';
+              return (
+                <div
+                  key={`mt-${t.id}`}
+                  className={`px-2 py-1 rounded-lg border text-[11px] font-mono font-black tabular-nums ${cls}`}
+                  title={label}
+                >
+                  #{t.number}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {raffle.status === 'active' && (
         <>
           {maxBuy > 0 && (
@@ -1240,10 +1290,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-3">{Sidebar}</div>
-          <div className="lg:col-span-6 space-y-4">
-            {Center}
-            {MyTicketsRow}
-          </div>
+          <div className="lg:col-span-6">{Center}</div>
           <div className="lg:col-span-3">{Chat}</div>
         </div>
 
@@ -1321,26 +1368,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               </div>
             )}
           </div>
-          {ticketsTotal > 30 && (
-            <div className="mt-4 flex justify-center gap-2">
-              <button
-                onClick={() => loadTickets(Math.max(1, ticketsPage - 1))}
-                disabled={ticketsPage <= 1 || ticketsLoading}
-                className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-300 disabled:opacity-30"
-              >
-                Anterior
-              </button>
-              <span className="px-4 py-2 text-xs text-zinc-400">
-                Página {ticketsPage} de {Math.ceil(ticketsTotal / 30)}
-              </span>
-              <button
-                onClick={() => loadTickets(ticketsPage + 1)}
-                disabled={ticketsPage >= Math.ceil(ticketsTotal / 30) || ticketsLoading}
-                className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-bold text-zinc-300 disabled:opacity-30"
-              >
-                Siguiente
-              </button>
-            </div>
+          {ticketsTotal > 1000 && (
+            <p className="mt-3 text-center text-[11px] text-zinc-500 italic">
+              Mostrando los primeros 1000 tickets de {ticketsTotal}.
+            </p>
           )}
         </div>
       </div>
