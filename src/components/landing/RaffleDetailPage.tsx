@@ -114,11 +114,41 @@ interface DrawState {
   nextHorseAdvanceAt: string | null;
   nextHorseEliminationAt: string | null;
   lastPlace: AliveTicket | null;
+  isFinaleStretch?: boolean;
   // Rosters
   aliveTickets: AliveTicket[];
   recentEliminated: RecentEliminatedEntry[];
   winners: Winner[] | null;
 }
+
+// Splash banner content per phase. Drives the 3s overlay that introduces
+// each phase so viewers understand the rules before the action starts.
+const PHASE_SPLASH: Record<string, { title: string; subtitle: string; emoji: string; gradient: string }> = {
+  phase1: {
+    title: 'Fase 1 · Eliminación rápida',
+    subtitle: 'Cada 5 segundos cae uno al azar. Hasta 30 sobrevivientes.',
+    emoji: '⚡',
+    gradient: 'from-amber-500/30 via-zinc-950 to-amber-500/30',
+  },
+  phase2: {
+    title: 'Fase 2 · Luz Roja, Luz Verde',
+    subtitle: 'Cada 3s una ráfaga sopla 5 tickets. Los movidos durante luz ROJA caen.',
+    emoji: '🚦',
+    gradient: 'from-red-500/30 via-zinc-950 to-emerald-500/30',
+  },
+  phase3_intro: {
+    title: 'Fase final',
+    subtitle: 'La carrera de caballos está por empezar.',
+    emoji: '🐎',
+    gradient: 'from-amber-400/30 via-zinc-950 to-amber-400/30',
+  },
+  phase3: {
+    title: 'Fase 3 · ¡Que comience la carrera!',
+    subtitle: 'Cada 3s avanzan 1-3 pasos. Cada 15s cae el último.',
+    emoji: '🏁',
+    gradient: 'from-amber-400/30 via-amber-500/20 to-amber-400/30',
+  },
+};
 
 interface MyTicket {
   id: number;
@@ -247,6 +277,13 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // removed after ~1.5s (poll fetches the updated alive list during that
   // window so the avatar disappears from the grid as the explosion ends).
   const [popExitIds, setPopExitIds] = useState<Set<number>>(() => new Set());
+
+  // Phase-change splash overlay: shows the phase title + rules for 3s when
+  // a phase_started event arrives. Adds a beat of drama between transitions.
+  const [phaseSplash, setPhaseSplash] = useState<string | null>(null);
+  // Light-change flash overlay (phase 2): brief tinted full-card overlay
+  // when the light flips so viewers can't miss it.
+  const [lightFlash, setLightFlash] = useState<'red' | 'green' | null>(null);
 
   const countdown = useCountdown(raffle.drawType === 'countdown' ? raffle.drawAt : null);
   const isFree = raffle.ticketPrice === 0;
@@ -449,6 +486,10 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         loadMyTickets();
         loadComments();
       } else if (e.type === 'phase_started') {
+        if (typeof e.phase === 'string' && PHASE_SPLASH[e.phase]) {
+          setPhaseSplash(e.phase);
+          setTimeout(() => setPhaseSplash(null), 3500);
+        }
         pollDrawStateNow();
       } else if (e.type === 'wind_gust') {
         // Mark blown tickets so the FE can animate them. If the gust hit
@@ -489,6 +530,9 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         }
         pollDrawStateNow();
       } else if (e.type === 'light_change') {
+        const next: 'red' | 'green' = e.lightState === 'red' ? 'red' : 'green';
+        setLightFlash(next);
+        setTimeout(() => setLightFlash(null), 700);
         pollDrawStateNow();
       } else if (e.type === 'horse_advance') {
         pollDrawStateNow();
@@ -770,6 +814,49 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     return `${m}m ${s.toString().padStart(2, '0')}s`;
   };
 
+  // Dramatic countdown: red + pulse + scale-up when ≤3s. Used for the
+  // critical "next elimination" type counters so viewers feel the tension.
+  const DramaticCountdown: React.FC<{ seconds: number | null; dangerThreshold?: number }> = ({ seconds, dangerThreshold = 3 }) => {
+    const inDanger = seconds !== null && seconds <= dangerThreshold && seconds > 0;
+    return (
+      <span
+        className={`font-black tabular-nums tracking-tighter transition-all duration-300 ${
+          inDanger
+            ? 'text-red-400 text-5xl animate-pulse drop-shadow-[0_0_8px_rgba(248,113,113,0.8)]'
+            : 'text-amber-300 text-3xl'
+        }`}
+      >
+        {seconds !== null ? `${seconds}s` : '—'}
+      </span>
+    );
+  };
+
+  // Phase splash overlay — fades in / scales the rules card for 3s on every
+  // phase transition. Sits absolutely on top of the Center column.
+  const PhaseSplash = phaseSplash ? (
+    <div className="absolute inset-0 z-30 flex items-center justify-center rounded-3xl overflow-hidden pointer-events-none animate-[splash-fade_3.5s_ease-in-out_forwards]">
+      <div className={`absolute inset-0 bg-gradient-to-br ${PHASE_SPLASH[phaseSplash].gradient} backdrop-blur-sm`} />
+      <div className="relative text-center px-6">
+        <div className="text-7xl mb-2">{PHASE_SPLASH[phaseSplash].emoji}</div>
+        <h3 className="text-2xl md:text-4xl font-black text-white tracking-tighter uppercase">
+          {PHASE_SPLASH[phaseSplash].title}
+        </h3>
+        <p className="mt-2 text-zinc-300 text-sm md:text-base max-w-md mx-auto">
+          {PHASE_SPLASH[phaseSplash].subtitle}
+        </p>
+      </div>
+    </div>
+  ) : null;
+
+  // Light-change flash — quick full-card tint that fades out.
+  const LightFlash = lightFlash ? (
+    <div
+      className={`absolute inset-0 z-20 rounded-3xl pointer-events-none animate-[flash-fade_0.7s_ease-out_forwards] ${
+        lightFlash === 'red' ? 'bg-red-500/40' : 'bg-emerald-500/40'
+      }`}
+    />
+  ) : null;
+
   // Shared "ya cayeron" strip — appears across every phase so the user has
   // a continuous record of who's been knocked out, not just who fell in
   // the current phase.
@@ -892,8 +979,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
         <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
-          <p className="mt-1 text-3xl font-black text-amber-300 tabular-nums text-center">
-            {nextEliminationSeconds !== null ? `${nextEliminationSeconds}s` : '—'}
+          <p className="mt-1 text-center">
+            <DramaticCountdown seconds={nextEliminationSeconds} />
           </p>
         </div>
         <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3">
@@ -927,8 +1014,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-center gap-1">
             <Wind size={10} /> Próxima ráfaga
           </p>
-          <p className="mt-1 text-3xl font-black text-cyan-300 tabular-nums text-center">
-            {nextWindSeconds !== null ? `${nextWindSeconds}s` : '—'}
+          <p className="mt-1 text-center">
+            <DramaticCountdown seconds={nextWindSeconds} />
           </p>
         </div>
         <div
@@ -1022,18 +1109,29 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               {nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}
             </p>
           </div>
-          <div className="bg-zinc-900/70 border border-red-500/30 rounded-2xl p-3">
+          <div className={`border rounded-2xl p-3 transition-all duration-500 ${
+            drawState?.isFinaleStretch
+              ? 'bg-red-500/20 border-red-500/60 shadow-lg shadow-red-500/40'
+              : 'bg-zinc-900/70 border-red-500/30'
+          }`}>
             <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
               Próxima eliminación
               {drawState?.lastPlace && (
                 <span className="ml-1 text-red-400">#{drawState.lastPlace.number}</span>
               )}
             </p>
-            <p className="mt-1 text-3xl font-black text-red-300 tabular-nums text-center">
-              {nextHorseEliminationSeconds !== null ? `${nextHorseEliminationSeconds}s` : '—'}
+            <p className="mt-1 text-center">
+              <DramaticCountdown seconds={nextHorseEliminationSeconds} />
             </p>
           </div>
         </div>
+        {drawState?.isFinaleStretch && (
+          <div className="text-center -mt-2">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-red-500 text-zinc-950 text-xs font-black uppercase tracking-widest animate-pulse">
+              🔥 Recta final 🔥
+            </span>
+          </div>
+        )}
 
         <div className="relative bg-gradient-to-b from-zinc-900/40 to-zinc-950 border border-zinc-800 rounded-2xl p-3 overflow-hidden">
           <div className="flex justify-around items-start" style={{ minHeight: trackHeight + 80 }}>
@@ -1081,7 +1179,9 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   })();
 
   const Center = (
-    <div className="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[400px] h-full">
+    <div className="relative bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[400px] h-full overflow-hidden">
+      {LightFlash}
+      {PhaseSplash}
       {raffle.status === 'active' && raffle.drawType === 'countdown' && (
         <>
           <div className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -1441,6 +1541,18 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           55%  { transform: scale(1.5) rotate(8deg); opacity: 0.9; filter: brightness(2) drop-shadow(0 0 18px rgba(248,113,113,1)); }
           85%  { transform: scale(0.6) rotate(-12deg); opacity: 0.4; filter: brightness(1.2); }
           100% { transform: scale(0); opacity: 0; }
+        }
+        @keyframes splash-fade {
+          0%   { opacity: 0; transform: scale(0.85); }
+          12%  { opacity: 1; transform: scale(1.02); }
+          18%  { opacity: 1; transform: scale(1); }
+          82%  { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.05); }
+        }
+        @keyframes flash-fade {
+          0%   { opacity: 0.95; }
+          40%  { opacity: 0.7; }
+          100% { opacity: 0; }
         }
       `}</style>
       <Navbar
