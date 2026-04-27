@@ -68,6 +68,7 @@ interface TicketRow {
   comment: string | null;
   eliminatedAt: string | null;
   eliminationOrder: number | null;
+  horseSteps: number;
   createdAt: string;
 }
 
@@ -115,6 +116,13 @@ interface DrawState {
   nextHorseEliminationAt: string | null;
   lastPlace: AliveTicket | null;
   isFinaleStretch?: boolean;
+  intervals?: {
+    phase1Ms: number;
+    phase2WindMs: number;
+    phase2LightMs: number;
+    phase3AdvanceMs: number;
+    phase3EliminationMs: number;
+  };
   // Rosters
   aliveTickets: AliveTicket[];
   recentEliminated: RecentEliminatedEntry[];
@@ -323,7 +331,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               if (
                 prev[i].id !== items[i].id ||
                 prev[i].eliminatedAt !== items[i].eliminatedAt ||
-                prev[i].eliminationOrder !== items[i].eliminationOrder
+                prev[i].eliminationOrder !== items[i].eliminationOrder ||
+                prev[i].horseSteps !== items[i].horseSteps
               ) { identical = false; break; }
             }
             if (identical) return prev;
@@ -894,6 +903,31 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     />
   ) : null;
 
+  // Depleting progress bar for the secondary cyclic counters (wind cycle,
+  // light cycle, horse-advance interval). The CSS keyframe linearly drains
+  // width 100% → 0% over the interval. We restart the animation by changing
+  // the `key` prop whenever the cycle anchor (lastEventAt) updates, which
+  // remounts the bar — no JS tick loop needed, GPU-cheap, no layout shift.
+  const TimedProgressBar: React.FC<{
+    durationMs: number | undefined;
+    anchor: string | null | undefined;
+    color: string;
+  }> = ({ durationMs, anchor, color }) => {
+    const ms = durationMs && durationMs > 0 ? durationMs : 1000;
+    return (
+      <div className="relative w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+        <div
+          key={`${anchor ?? 'init'}-${ms}`}
+          className={`absolute inset-y-0 left-0 ${color}`}
+          style={{
+            width: '100%',
+            animation: `progress-deplete ${ms}ms linear forwards`,
+          }}
+        />
+      </div>
+    );
+  };
+
   // Shared "ya cayeron" strip — ALWAYS rendered (with empty-state placeholder
   // when nothing's happened yet) so the layout doesn't shift the moment the
   // first elimination arrives. Reserves a fixed min-height matching its
@@ -1034,11 +1068,16 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         }`}
       />
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-24 flex flex-col gap-1.5">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próxima eliminación</p>
           <DramaticCountdown seconds={nextEliminationSeconds} />
+          <TimedProgressBar
+            durationMs={drawState?.intervals?.phase1Ms}
+            anchor={drawState?.lastEliminationAt}
+            color="bg-amber-400"
+          />
         </div>
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-24 flex flex-col justify-between">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Fase termina aprox en</p>
           <p className="text-3xl font-black text-cyan-300 tabular-nums text-center">
             {formatCountdown(phaseEndsApproxSeconds)}
@@ -1046,7 +1085,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         </div>
       </div>
       {renderFullTicketGrid('sm')}
-      {RecentEliminatedStrip}
     </div>
   );
 
@@ -1063,33 +1101,49 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         }`}
       />
       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-24 flex flex-col gap-1.5">
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest flex items-center justify-center gap-1">
             <Wind size={10} /> Próxima ráfaga
           </p>
-          <DramaticCountdown seconds={nextWindSeconds} />
+          <div className="flex-1 flex items-center justify-center">
+            <span className="text-2xl font-black text-cyan-300 tabular-nums">{nextWindSeconds !== null ? `${nextWindSeconds}s` : '—'}</span>
+          </div>
+          <TimedProgressBar
+            durationMs={drawState?.intervals?.phase2WindMs}
+            anchor={drawState?.lastWindAt}
+            color="bg-cyan-400"
+          />
         </div>
         <div
-          className={`border rounded-2xl p-3 h-20 flex flex-col justify-between transition-colors duration-500 ${
+          className={`border rounded-2xl p-3 h-24 flex flex-col gap-1.5 transition-colors duration-500 ${
             drawState?.lightState === 'red'
               ? 'bg-red-500/15 border-red-500/50'
               : 'bg-emerald-500/15 border-emerald-500/40'
           }`}
         >
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">
-            Luz {drawState?.lightState === 'red' ? 'ROJA' : 'VERDE'} · cambia en
+            Luz {drawState?.lightState === 'red' ? 'ROJA' : 'VERDE'}
           </p>
-          <p
-            className={`text-3xl font-black tabular-nums text-center ${
-              drawState?.lightState === 'red' ? 'text-red-300' : 'text-emerald-300'
-            }`}
-          >
-            {nextLightSeconds !== null ? `${nextLightSeconds}s` : '—'}
-          </p>
+          <div className="flex-1 flex items-center justify-center gap-2">
+            <span className={`text-2xl ${drawState?.lightState === 'red' ? 'animate-pulse' : ''}`}>
+              {drawState?.lightState === 'red' ? '🔴' : '🟢'}
+            </span>
+            <span
+              className={`text-2xl font-black tabular-nums ${
+                drawState?.lightState === 'red' ? 'text-red-300' : 'text-emerald-300'
+              }`}
+            >
+              {nextLightSeconds !== null ? `${nextLightSeconds}s` : '—'}
+            </span>
+          </div>
+          <TimedProgressBar
+            durationMs={drawState?.intervals?.phase2LightMs}
+            anchor={drawState?.lastLightChangeAt}
+            color={drawState?.lightState === 'red' ? 'bg-red-400' : 'bg-emerald-400'}
+          />
         </div>
       </div>
       {renderFullTicketGrid('md')}
-      {RecentEliminatedStrip}
     </div>
   );
 
@@ -1124,7 +1178,6 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           ))}
         </div>
       </div>
-      {RecentEliminatedStrip}
     </div>
   );
 
@@ -1132,33 +1185,42 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   // always sits at the top and the leader is offset down by their relative
   // step gap.
   const Phase3View = (() => {
-    const alive = drawState?.aliveTickets ?? [];
-    const minSteps = alive.length > 0 ? Math.min(...alive.map((t) => t.horseSteps)) : 0;
-    const maxSteps = alive.length > 0 ? Math.max(...alive.map((t) => t.horseSteps)) : 0;
+    // Use the FULL tickets list as the column source so eliminated horses
+    // stay in their column at their final step count (greyed out, no
+    // motion). This keeps the column count stable — surviving horses never
+    // shift sideways when a neighbour falls.
+    const allP3 = [...tickets].sort((a, b) => a.number.localeCompare(b.number));
+    const aliveSteps = allP3.filter((t) => !t.eliminatedAt).map((t) => t.horseSteps);
+    const minSteps = aliveSteps.length > 0 ? Math.min(...aliveSteps) : 0;
+    const maxSteps = aliveSteps.length > 0 ? Math.max(...aliveSteps) : 0;
     const range = Math.max(1, maxSteps - minSteps);
     const trackHeight = 240;
-    // Auto-scale the per-step pixel size so the visible delta fits in the
-    // track without horizontal overflow as the race progresses.
     const stepHeight = Math.min(20, trackHeight / range);
+    const colWidth = allP3.length > 0 ? `${100 / allP3.length}%` : '10%';
     return (
       <div className="w-full space-y-4">
         <PhaseHeader
           icon={<>🐎</>}
           title="Fase final · Carrera de caballos"
-          subtitle={`Cada 3s todos avanzan 1-3 pasos. Cada 15s el último cae. ${
+          subtitle={`Cada ~3s todos avanzan 1-3 pasos. Cada ~12s el último cae. ${
             drawState?.eliminationsUntilNextPhase != null
               ? `Faltan ${drawState.eliminationsUntilNextPhase} eliminaciones para el ganador.`
               : ''
           }`}
         />
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-20 flex flex-col justify-between">
+          <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-3 h-24 flex flex-col gap-1.5">
             <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest text-center">Próximo avance</p>
-            <p className="text-3xl font-black text-cyan-300 tabular-nums text-center">
-              {nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}
-            </p>
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-2xl font-black text-cyan-300 tabular-nums">{nextHorseAdvanceSeconds !== null ? `${nextHorseAdvanceSeconds}s` : '—'}</span>
+            </div>
+            <TimedProgressBar
+              durationMs={drawState?.intervals?.phase3AdvanceMs}
+              anchor={drawState?.lastHorseAdvanceAt}
+              color="bg-cyan-400"
+            />
           </div>
-          <div className={`border rounded-2xl p-3 h-20 flex flex-col justify-between transition-all duration-500 ${
+          <div className={`border rounded-2xl p-3 h-24 flex flex-col gap-1.5 transition-all duration-500 ${
             drawState?.isFinaleStretch
               ? 'bg-red-500/20 border-red-500/60 shadow-lg shadow-red-500/40'
               : 'bg-zinc-900/70 border-red-500/30'
@@ -1170,6 +1232,11 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               )}
             </p>
             <DramaticCountdown seconds={nextHorseEliminationSeconds} />
+            <TimedProgressBar
+              durationMs={drawState?.intervals?.phase3EliminationMs}
+              anchor={drawState?.lastHorseEliminationAt}
+              color="bg-red-400"
+            />
           </div>
         </div>
         {drawState?.isFinaleStretch && (
@@ -1181,36 +1248,54 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         )}
 
         <div className="relative bg-gradient-to-b from-zinc-900/40 to-zinc-950 border border-zinc-800 rounded-2xl p-3 overflow-hidden">
-          <div className="flex justify-around items-start" style={{ minHeight: trackHeight + 80 }}>
-            {alive.map((t) => {
-              const offsetTop = (t.horseSteps - minSteps) * stepHeight;
+          <div className="flex justify-around items-start" style={{ minHeight: trackHeight + 100 }}>
+            {allP3.map((t) => {
+              const isEliminated = !!t.eliminatedAt;
+              const offsetTop = isEliminated
+                ? (t.horseSteps - minSteps) * stepHeight
+                : (t.horseSteps - minSteps) * stepHeight;
               const isLast = drawState?.lastPlace?.id === t.id;
               const popping = popExitIds.has(t.id);
+              const ringCls = isEliminated ? 'ring-red-500/50' : isLast ? 'ring-red-500' : 'ring-amber-400/60';
+              const dimCls = isEliminated && !popping ? 'grayscale opacity-40' : '';
+              const numberCls = isEliminated
+                ? 'text-zinc-600 line-through'
+                : isLast
+                ? 'text-red-400'
+                : 'text-amber-200';
               return (
-                <div key={`p3-${t.id}`} className={`flex flex-col items-center ${popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''}`} style={{ width: '10%' }}>
-                  <span className={`text-[10px] font-mono font-bold tabular-nums mb-1 ${isLast ? 'text-red-400' : 'text-amber-200'}`}>
+                <div key={`p3-${t.id}`} className={`flex flex-col items-center ${popping ? 'animate-[ticket-explode_1.5s_ease-out_forwards] z-10' : ''}`} style={{ width: colWidth }}>
+                  <span className={`text-[10px] font-mono font-bold tabular-nums leading-none mb-0.5 ${numberCls}`}>
                     #{t.number}
+                  </span>
+                  <span
+                    key={`steps-${t.id}-${t.horseSteps}`}
+                    className={`text-[9px] font-black tabular-nums leading-none mb-1 ${
+                      isEliminated ? 'text-zinc-600' : 'text-cyan-300'
+                    } ${!isEliminated ? 'animate-[step-bump_400ms_ease-out]' : ''}`}
+                  >
+                    {t.horseSteps} pasos
                   </span>
                   {t.userImageUrl ? (
                     <img
                       src={t.userImageUrl}
                       alt=""
-                      className={`w-9 h-9 rounded-full object-cover ring-2 transition-all duration-700 ${isLast ? 'ring-red-500' : 'ring-amber-400/60'}`}
+                      className={`w-9 h-9 rounded-full object-cover ring-2 transition-all duration-700 ${ringCls} ${dimCls}`}
                       style={{ transform: `translateY(${offsetTop}px)` }}
                     />
                   ) : (
                     <div
-                      className={`w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-200 text-sm font-black ring-2 transition-all duration-700 ${isLast ? 'ring-red-500' : 'ring-amber-400/60'}`}
+                      className={`w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-200 text-sm font-black ring-2 transition-all duration-700 ${ringCls} ${dimCls}`}
                       style={{ transform: `translateY(${offsetTop}px)` }}
                     >
                       {t.userUsername?.[0]?.toUpperCase() ?? '?'}
                     </div>
                   )}
                   <span
-                    className="text-2xl mt-0.5 transition-all duration-700"
+                    className={`text-2xl mt-0.5 transition-all duration-700 ${dimCls}`}
                     style={{ transform: `translateY(${offsetTop}px)` }}
                   >
-                    🐎
+                    {isEliminated ? '💀' : '🐎'}
                   </span>
                 </div>
               );
@@ -1218,9 +1303,8 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           </div>
         </div>
         <p className="text-center text-[10px] text-zinc-500 italic">
-          El líder va más abajo · el último de la carrera cae cada 15s
+          El líder va más abajo · los caídos quedan congelados en su columna
         </p>
-        {RecentEliminatedStrip}
       </div>
     );
   })();
@@ -1600,6 +1684,15 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           0%   { opacity: 0.95; }
           40%  { opacity: 0.7; }
           100% { opacity: 0; }
+        }
+        @keyframes progress-deplete {
+          from { width: 100%; }
+          to   { width: 0%; }
+        }
+        @keyframes step-bump {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.25); }
+          100% { transform: scale(1); }
         }
       `}</style>
       <Navbar
