@@ -1661,6 +1661,44 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
               <p className="text-center text-zinc-500 text-sm italic">Sin ganadores registrados.</p>
             )}
           </div>
+
+          {/* Last 5 eliminated — gives the loser context next to the winner. */}
+          {drawState?.recentEliminated && drawState.recentEliminated.length > 0 && (
+            <div className="pt-4 border-t border-zinc-800/60">
+              <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-3 flex items-center justify-center gap-1">
+                <Skull size={10} /> Últimos eliminados
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {drawState.recentEliminated.slice(0, 5).map((e) => (
+                  <div
+                    key={`final-recent-${e.id}`}
+                    className="flex flex-col items-center gap-0.5"
+                    title={`#${e.eliminationOrder}° · @${e.userUsername} · ticket #${e.number}`}
+                  >
+                    <div className="relative">
+                      {e.userImageUrl ? (
+                        <img
+                          src={e.userImageUrl}
+                          alt=""
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-red-500/40 grayscale opacity-70"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 ring-2 ring-red-500/40">
+                          {e.userUsername?.[0]?.toUpperCase() ?? '?'}
+                        </div>
+                      )}
+                      <span className="absolute -top-1 -right-1 px-1 py-0 rounded-full bg-red-500 text-white text-[8px] font-black tabular-nums leading-tight">
+                        {e.eliminationOrder}°
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-zinc-500 tabular-nums leading-none">
+                      #{e.number}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
