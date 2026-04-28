@@ -34,6 +34,7 @@ interface Raffle {
   drawType: 'countdown' | 'max-tickets';
   drawAt: string | null;
   status: string;
+  completedAt?: string | null;
   cancelReason: string | null;
   sold: number;
   available: number;
@@ -275,6 +276,11 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
+  const [commentError, setCommentError] = useState('');
+  // Last successful comment timestamp (FE-side spam guard mirroring the
+  // backend's 3s cooldown — keeps the button disabled so users don't even
+  // try to submit during the cooldown window).
+  const [commentLastSentAt, setCommentLastSentAt] = useState<number>(0);
   const commentsScrollRef = useRef<HTMLDivElement | null>(null);
   const wasAtBottomRef = useRef(true);
 
@@ -750,19 +756,30 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
     if (el) el.scrollTop = el.scrollHeight;
   }, [comments]);
 
+  const COMMENT_COOLDOWN_MS = 3_000;
   const submitComment = async () => {
     const body = commentDraft.trim();
     if (!body || commentBusy) return;
     if (!logged) { window.location.href = '/login'; return; }
+    const sinceLast = Date.now() - commentLastSentAt;
+    if (sinceLast < COMMENT_COOLDOWN_MS) {
+      const waitS = Math.ceil((COMMENT_COOLDOWN_MS - sinceLast) / 1000);
+      setCommentError(`Espera ${waitS}s antes de enviar otro mensaje.`);
+      return;
+    }
     setCommentBusy(true);
+    setCommentError('');
     try {
       await callAPI(`/api/raffle/${raffle.slug}/comments`, {
         method: 'POST',
         body: JSON.stringify({ body }),
       });
       setCommentDraft('');
+      setCommentLastSentAt(Date.now());
     } catch (err: any) {
-      console.error(err);
+      // Surface backend errors (cooldown collision, chat closed, etc.)
+      // to the user instead of silently swallowing in the console.
+      setCommentError(err?.message || 'No se pudo enviar el mensaje.');
     } finally {
       setCommentBusy(false);
     }
@@ -796,8 +813,22 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
   };
 
   // ─── Right-side chat block ──────────────────────────────────────────────────
+  // Chat closes 1 hour after the raffle finishes — server enforces this on
+  // POST, FE mirrors so the input is hidden + a "cerrado" notice replaces it.
+  const CHAT_CLOSE_AFTER_MS = 60 * 60 * 1000;
+  const chatClosed = (raffle.status === 'cancelled')
+    || (raffle.status === 'completed' && raffle.completedAt
+        && (Date.now() - new Date(raffle.completedAt).getTime()) > CHAT_CLOSE_AFTER_MS);
+  const formatTime = (iso: string): string => {
+    try {
+      const d = new Date(iso);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch { return ''; }
+  };
+
   const Chat = (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col h-[600px] lg:h-full lg:min-h-[600px]">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col h-[600px] lg:h-full lg:max-h-[700px] lg:min-h-[600px]">
       <div className="flex items-center gap-2 mb-3 pb-3 border-b border-zinc-800">
         <Sparkles size={14} className="text-yellow-400" />
         <h3 className="text-xs font-black text-white uppercase tracking-widest">Chat en vivo</h3>
@@ -860,6 +891,12 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
                     {badgeText} 🎟️
                   </span>
                 )}
+                <span
+                  className="ml-1 text-[9px] text-zinc-500 font-mono tabular-nums"
+                  title={new Date(c.createdAt).toLocaleString('es-ES')}
+                >
+                  {formatTime(c.createdAt)}
+                </span>
                 <span className={`ml-1.5 break-words ${allOut ? 'text-zinc-400' : 'text-zinc-200'}`}>
                   {linkifyMentions(c.body)}
                 </span>
@@ -868,10 +905,21 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           );
         })}
       </div>
-      <div className="mt-3 pt-3 border-t border-zinc-800 flex gap-2">
+      {chatClosed ? (
+        <div className="mt-3 pt-3 border-t border-zinc-800">
+          <p className="text-[11px] text-zinc-500 italic text-center px-3 py-2 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+            🔒 El chat está cerrado.
+          </p>
+        </div>
+      ) : (
+      <div className="mt-3 pt-3 border-t border-zinc-800">
+        {commentError && (
+          <p className="mb-2 text-[10px] text-red-400 italic px-2">{commentError}</p>
+        )}
+        <div className="flex gap-2">
         <input
           value={commentDraft}
-          onChange={(e) => setCommentDraft(e.target.value)}
+          onChange={(e) => { setCommentDraft(e.target.value); if (commentError) setCommentError(''); }}
           onKeyDown={(e) => { if (e.key === 'Enter') submitComment(); }}
           placeholder={logged ? 'Escribe un comentario...' : 'Inicia sesión para comentar'}
           disabled={!logged || commentBusy}
@@ -885,7 +933,9 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         >
           <Send size={14} />
         </button>
+        </div>
       </div>
+      )}
     </div>
   );
 
