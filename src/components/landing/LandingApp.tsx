@@ -10,6 +10,7 @@ import ScansSection from './ScansSection';
 import TopReaders from './TopReaders';
 import TopCommenters from './TopCommenters';
 import ScansButtonsSection from './ScansButtonsSection';
+import ContinueReading from './ContinueReading';
 import Footer from './Footer';
 import SearchView from './SearchView';
 import { Star, Flame } from 'lucide-react';
@@ -94,6 +95,11 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
             {/* Scans Buttons Section */}
             {!isWritings && (
               <ScansButtonsSection nsfwMode={nsfwMode} onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+            )}
+
+            {/* Continue Reading — logged-in users only */}
+            {logged && !isWritings && (
+              <ContinueReading />
             )}
 
             {/* Popular Today Section */}
