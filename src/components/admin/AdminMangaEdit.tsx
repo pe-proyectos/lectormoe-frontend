@@ -322,6 +322,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       requireLogin: initialResource?.requireLogin || false,
       isSimulRelease: initialResource?.isSimulRelease || false,
       isNSFW: initialResource?.isNSFW || false,
+      hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
       cover: initialResource?.imageUrl || '',
       banner: initialResource?.bannerUrl || '',
       genres: initialResource?.genres || [],
@@ -606,6 +607,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         requireLogin: initialResource?.requireLogin || false,
         isSimulRelease: initialResource?.isSimulRelease || false,
         isNSFW: initialResource?.isNSFW || false,
+        hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
         workType: initialResource?.workType || 'manga',
         cover: initialResource?.imageUrl || '',
         banner: initialResource?.bannerUrl || '',
@@ -1288,6 +1290,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.requireLogin = formData.requireLogin;
         patchBody.isSimulRelease = formData.isSimulRelease;
         patchBody.isNSFW = formData.isNSFW;
+        patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
         patchBody.genreIds = formData.genres.map((g: any) => g.id);
         patchBody.subscriptionPlanIdsCanReadUnreleased = formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [];
         patchBody.subscriptionPlanIdsCanReadReleased = formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [];
@@ -2817,6 +2820,23 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
                         Si se activa, el usuario deberá iniciar sesión para leer este capítulo
                       </p>
+                    </div>
+
+                    {/* Ocultar capítulos programados */}
+                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
+                      <div>
+                        <p className="text-sm font-medium text-white">Ocultar capítulos programados</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">Los capítulos con fecha futura no aparecen en listas públicas ni en últimas actualizaciones</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.hideUnreleasedChapters}
+                          onChange={(e) => setFormData(prev => ({ ...prev, hideUnreleasedChapters: e.target.checked }))}
+                        />
+                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                      </label>
                     </div>
                   </div>
                   )}
