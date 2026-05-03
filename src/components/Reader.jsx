@@ -154,6 +154,10 @@ export function Reader({
 
   const [accessError, setAccessError] = useState(null);
 
+  const [bookmarks, setBookmarks] = useState(new Set()); // Set<number> of page numbers bookmarked for this chapter
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [bookmarkError, setBookmarkError] = useState(null);
+
   const [settings, setSettings] = useState(() => {
     const savedReadType = localStorage.getItem("readType");
     const workType = manga?.workType || 'manga';
@@ -369,6 +373,30 @@ export function Reader({
     setSettings((prev) => ({ ...prev, pageGap: value }));
   }, []);
 
+  const handleToggleBookmark = useCallback(async () => {
+    if (!logged || bookmarkLoading || !chapter?.id) return;
+    setBookmarkLoading(true);
+    setBookmarkError(null);
+    try {
+      const result = await callAPI('/api/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterId: chapter.id, pageNumber: currentPage }),
+      });
+      const action = result?.action ?? result?.data?.action;
+      if (action === 'added') {
+        setBookmarks((prev) => new Set([...prev, currentPage]));
+      } else {
+        setBookmarks((prev) => { const n = new Set(prev); n.delete(currentPage); return n; });
+      }
+    } catch (err) {
+      setBookmarkError(err?.message || 'Error al guardar marcador');
+      setTimeout(() => setBookmarkError(null), 3000);
+    } finally {
+      setBookmarkLoading(false);
+    }
+  }, [logged, bookmarkLoading, chapter, currentPage]);
+
   const getGapValue = useCallback((gapType) => {
     switch (gapType) {
       case "ninguno":
@@ -508,6 +536,19 @@ export function Reader({
     if (!isJoint || !jointSlug) return;
     fetch(`/api/views/joint/${jointSlug}`, { method: 'POST' }).catch(() => {});
   }, [isJoint, jointSlug]);
+
+  // Load bookmarks for this chapter when logged in
+  useEffect(() => {
+    if (!logged || !chapter?.id) return;
+    callAPI('/api/bookmarks')
+      .then((data) => {
+        const thisChapterBookmarks = (data || [])
+          .filter((b) => b.chapterId === chapter.id || b.chapter?.id === chapter.id)
+          .map((b) => b.pageNumber);
+        setBookmarks(new Set(thisChapterBookmarks));
+      })
+      .catch(() => {});
+  }, [logged, chapter?.id]);
 
   // Update URL - con debounce
   useEffect(() => {
@@ -963,7 +1004,29 @@ export function Reader({
                 </span>
                 <span className="text-md md:text-2xl">{chapter?.title}</span>
               </div>
-              <div>
+              <div className="flex items-center gap-2">
+                {logged && chapter?.id && (
+                  <button
+                    onClick={handleToggleBookmark}
+                    disabled={bookmarkLoading}
+                    title={bookmarks.has(currentPage) ? 'Quitar marcador de página' : 'Marcar esta página'}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      bookmarks.has(currentPage)
+                        ? 'text-yellow-400 hover:text-yellow-300'
+                        : 'text-zinc-400 hover:text-white'
+                    } ${bookmarkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <svg
+                      className="h-6 w-6 sm:h-7 sm:w-7"
+                      fill={bookmarks.has(currentPage) ? 'currentColor' : 'none'}
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                  </button>
+                )}
                 <AdjustmentsHorizontalIcon
                   className="h-6 w-6 sm:h-8 sm:w-8 cursor-pointer hover:text-gray-300 transition-all duration-300 hover:-rotate-90 transform"
                   onClick={handleToggleSettings}
@@ -1383,6 +1446,11 @@ export function Reader({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {bookmarkError && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 text-red-200 text-sm px-4 py-2 rounded-lg shadow-lg">
+          {bookmarkError}
         </div>
       )}
     </div>
