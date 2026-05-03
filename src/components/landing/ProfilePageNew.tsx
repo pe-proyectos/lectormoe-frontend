@@ -101,6 +101,9 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [openScans, setOpenScans] = useState(false);
   const [openFavorites, setOpenFavorites] = useState(false);
   const [openUserList, setOpenUserList] = useState(true);
+  const [openBookmarks, setOpenBookmarks] = useState(false);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [bookmarksLoading, setBookmarksLoading] = useState(false);
 
   // Client-side filter pills for the profile sections (type + status).
   // These filter the already-loaded preview arrays — the full-filter UI lives on /list.
@@ -520,6 +523,15 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       setLoadingUserList(false);
     }
   }, [isOwner, logged, user, profileSlug]);
+
+  // Fetch bookmarks (owner only, lazy — loads when section is opened)
+  useEffect(() => {
+    if (!openBookmarks || !isOwner) return;
+    setBookmarksLoading(true);
+    callAPI('/api/bookmarks')
+      .then((data: any[]) => { setBookmarks(data || []); setBookmarksLoading(false); })
+      .catch(() => setBookmarksLoading(false));
+  }, [openBookmarks, isOwner]);
 
   // Persist a reorder (optimistic). Called by <SortableMangaList>.
   const persistReorder = async (endpoint: '/api/favorites/reorder' | '/api/user-list/reorder', ids: number[]) => {
@@ -1352,6 +1364,83 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               </>
               )}
             </section>
+
+            {/* Marcadores Section — owner only */}
+            {isOwner && (
+              <section>
+                <button
+                  onClick={() => setOpenBookmarks((v) => !v)}
+                  className="w-full flex items-center justify-between mb-4 group"
+                  aria-expanded={openBookmarks}
+                >
+                  <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3">
+                    <ChevronDown size={20} className={`text-zinc-500 group-hover:text-white transition-transform ${openBookmarks ? '' : '-rotate-90'}`} />
+                    <svg className="h-5 w-5 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Mis <span className="text-yellow-400">Marcadores</span>
+                    {!openBookmarks && bookmarks.length > 0 && (
+                      <span className="text-zinc-600 text-base font-bold">({bookmarks.length})</span>
+                    )}
+                  </h2>
+                </button>
+                {openBookmarks && (
+                  <div className="mt-2">
+                    {bookmarksLoading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-400" />
+                      </div>
+                    ) : bookmarks.length === 0 ? (
+                      <div className="text-center py-12 bg-zinc-900/40 border border-zinc-800 rounded-[32px]">
+                        <p className="text-zinc-500 text-sm font-medium">
+                          No tienes marcadores aún. Márcalos mientras lees usando el ícono de marcador en el lector.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {bookmarks.map((bk: any) => {
+                          const mc = bk.chapter?.mangaCustom;
+                          const joint = bk.chapter?.joint;
+                          const title = mc?.title || joint?.title || 'Manga';
+                          const cover = mc?.imageUrl || joint?.imageUrl;
+                          const orgSlug = mc?.organization?.slug;
+                          const mangaSlug = mc?.manga?.slug;
+                          const chapterNum = bk.chapter?.number;
+                          const pageNum = bk.pageNumber;
+
+                          const url = joint
+                            ? `/joint/manga/${joint.slug}/chapters/${chapterNum}?page=${pageNum}`
+                            : `/${orgSlug}/manga/${mangaSlug}/chapters/${chapterNum}?page=${pageNum}`;
+
+                          return (
+                            <a
+                              key={bk.id}
+                              href={url}
+                              className="flex items-center gap-3 bg-zinc-900/40 border border-zinc-800/50 hover:border-yellow-500/40 rounded-2xl px-3 py-2.5 transition-all group"
+                            >
+                              {cover && (
+                                <img
+                                  src={cover}
+                                  alt={title}
+                                  className="w-9 h-12 object-cover rounded flex-shrink-0"
+                                />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-white text-sm font-semibold truncate">{title}</p>
+                                <p className="text-zinc-400 text-xs mt-0.5">
+                                  Cap. {chapterNum} · Página {pageNum}
+                                </p>
+                              </div>
+                              <ChevronRight size={16} className="text-zinc-600 group-hover:text-yellow-400 flex-shrink-0 transition-colors" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
           </div>
 
           {/* Sidebar - Reading History (owner only) */}
