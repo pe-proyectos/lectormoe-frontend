@@ -24,7 +24,7 @@ import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 // Componente memoizado para imágenes individuales
 // @ts-ignore
 const PageImage = memo((props) => {
-  const { page, isSideBySide, isLeft, getImageClassName, _ } = props;
+  const { page, isSideBySide, isLeft, getImageClassName, getImageStyle, _ } = props;
   return (
     <LazyImage
       id={`page-${page.number}-img`}
@@ -32,6 +32,7 @@ const PageImage = memo((props) => {
       className={`${getImageClassName(isSideBySide)} ${
         isSideBySide && (isLeft ? "object-left" : "object-right")
       }`}
+      style={getImageStyle ? getImageStyle() : {}}
       alt={`${_("page")} ${page.number}`}
       loading="lazy"
       decoding="async"
@@ -161,7 +162,12 @@ export function Reader({
     return {
       readType: defaultReadType,
       readingDirection: localStorage.getItem("readingDirection") || defaultDirection,
-      limitPageHeight: localStorage.getItem("limitPageHeight") === "true",
+      fitMode: (() => {
+        const saved = localStorage.getItem('fitMode');
+        if (saved) return saved;
+        return localStorage.getItem('limitPageHeight') === 'true' ? 'height' : 'none';
+      })(),
+      pageFitLimitPx: parseInt(localStorage.getItem('pageFitLimitPx') || '900', 10),
       useDoublePages: localStorage.getItem("useDoublePages") === "true",
       chapterSettings: localStorage.getItem("chapterSettings") === "true",
       pageGap: localStorage.getItem("pageGap") || "minimo",
@@ -271,12 +277,15 @@ export function Reader({
     });
   }, []);
 
-  const handleLimitPageHeight = useCallback(() => {
-    setSettings((prev) => {
-      const newValue = !prev.limitPageHeight;
-      localStorage.setItem("limitPageHeight", newValue ? "true" : "false");
-      return { ...prev, limitPageHeight: newValue };
-    });
+  const handleFitMode = useCallback((mode) => {
+    localStorage.setItem('fitMode', mode);
+    setSettings((prev) => ({ ...prev, fitMode: mode }));
+  }, []);
+
+  const handlePageFitLimitPx = useCallback((value) => {
+    const px = Math.max(100, Math.min(3000, parseInt(value, 10) || 900));
+    localStorage.setItem('pageFitLimitPx', String(px));
+    setSettings((prev) => ({ ...prev, pageFitLimitPx: px }));
   }, []);
 
   const handleToggleUseDoublePages = useCallback(() => {
@@ -376,8 +385,8 @@ export function Reader({
   }, []);
 
   const getPageContainerStyle = useCallback(
-    (isCascade) => ({
-      marginBottom: isCascade ? `${getGapValue(settings.pageGap)}px` : "0",
+    (_isCascade) => ({
+      marginBottom: `${getGapValue(settings.pageGap)}px`,
     }),
     [settings.pageGap, getGapValue]
   );
@@ -402,21 +411,30 @@ export function Reader({
         className += " w-auto max-w-full";
       }
 
-      if (settings.limitPageHeight) {
-        // Aplicar limitación de altura en todos los casos cuando está activado
-        className += " max-h-[100vh] h-auto";
-      } else {
-        className += " h-auto";
+      switch (settings.fitMode) {
+        case 'height':
+          className += ' max-h-[100vh] h-auto';
+          break;
+        case 'width':
+          if (!isSideBySide) className = 'pointer-events-none object-contain w-full h-auto';
+          else className += ' h-auto';
+          break;
+        default:
+          className += ' h-auto';
       }
 
       return className;
     },
-    [
-      settings.limitPageHeight,
-      settings.readType,
-      readTypes.PAGINATED,
-      readTypes.CASCADE,
-    ]
+    [settings.fitMode]
+  );
+
+  const getImageStyle = useCallback(
+    () => {
+      if (settings.fitMode === 'limitH') return { maxHeight: `${settings.pageFitLimitPx}px` };
+      if (settings.fitMode === 'limitW') return { maxWidth: `${settings.pageFitLimitPx}px`, margin: '0 auto' };
+      return {};
+    },
+    [settings.fitMode, settings.pageFitLimitPx]
   );
 
   // Detect joint chapter and extract joint slug from mangaUrl
@@ -773,6 +791,7 @@ export function Reader({
             page={page}
             isSideBySide={false}
             getImageClassName={getImageClassName}
+            getImageStyle={getImageStyle}
             _={_}
           />
         );
@@ -817,6 +836,7 @@ export function Reader({
             isSideBySide={true}
             isLeft={true}
             getImageClassName={getImageClassName}
+            getImageStyle={getImageStyle}
             _={_}
           />
         );
@@ -828,6 +848,7 @@ export function Reader({
             isSideBySide={true}
             isLeft={false}
             getImageClassName={getImageClassName}
+            getImageStyle={getImageStyle}
             _={_}
           />
         );
@@ -855,6 +876,7 @@ export function Reader({
             page={page}
             isSideBySide={false}
             getImageClassName={getImageClassName}
+            getImageStyle={getImageStyle}
             _={_}
           />
         );
@@ -886,6 +908,7 @@ export function Reader({
     getPageContainerClassName,
     getPageContainerStyle,
     getImageClassName,
+    getImageStyle,
     _,
   ]);
 
@@ -955,20 +978,44 @@ export function Reader({
             <div className="py-6 px-4">
               <div className="flex flex-wrap w-full justify-between items-center gap-x-4">
                 <div className="space-y-4">
-                  {/* Limitar altura de página */}
-                  <div className="flex items-center gap-3 mx-4">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={settings.limitPageHeight}
-                        onChange={handleLimitPageHeight}
-                      />
-                      <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                      <span className="ms-3 text-sm font-medium text-gray-100">
-                        {_("limit_page_height")}
-                      </span>
-                    </label>
+                  {/* Ajuste de imagen */}
+                  <div className="mx-4">
+                    <label className="block text-sm font-medium text-gray-100 mb-2">Ajuste de imagen</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'none', label: 'Sin límite' },
+                        { value: 'height', label: 'Alto ventana' },
+                        { value: 'width', label: 'Ancho ventana' },
+                        { value: 'limitH', label: 'Límite alto' },
+                        { value: 'limitW', label: 'Límite ancho' },
+                      ].map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => handleFitMode(value)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                            settings.fitMode === value
+                              ? 'bg-red-500 text-white shadow'
+                              : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-zinc-700'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {(settings.fitMode === 'limitH' || settings.fitMode === 'limitW') && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={100}
+                          max={3000}
+                          step={50}
+                          value={settings.pageFitLimitPx}
+                          onChange={(e) => handlePageFitLimitPx(e.target.value)}
+                          className="w-24 bg-zinc-800 border border-zinc-700 text-white rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        />
+                        <span className="text-xs text-gray-400">px</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Usar páginas dobles */}
@@ -981,38 +1028,24 @@ export function Reader({
                         onChange={handleToggleUseDoublePages}
                       />
                       <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                      <span className="ms-3 text-sm font-medium text-gray-100">
-                        {_("use_double_pages")}
-                      </span>
+                      <span className="ms-3 text-sm font-medium text-gray-100">{_('use_double_pages')}</span>
                     </label>
                   </div>
 
-                  {/* Espacio entre páginas (solo en modo cascada) */}
-                  {settings.readType === readTypes.CASCADE && (
-                    <div className="mx-4">
-                      <label className="block text-sm font-medium text-gray-100 mb-2">
-                        Espacio entre páginas
-                      </label>
-                      <select
-                        value={settings.pageGap}
-                        onChange={(e) => handlePageGap(e.target.value)}
-                        className="w-full sm:w-72 bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all cursor-pointer hover:bg-zinc-700"
-                      >
-                        <option value="ninguno" className="bg-zinc-800">
-                          Ninguno (0px)
-                        </option>
-                        <option value="minimo" className="bg-zinc-800">
-                          Mínimo (2px)
-                        </option>
-                        <option value="medio" className="bg-zinc-800">
-                          Medio (5px)
-                        </option>
-                        <option value="grande" className="bg-zinc-800">
-                          Grande (10px)
-                        </option>
-                      </select>
-                    </div>
-                  )}
+                  {/* Espacio entre páginas — now available in all read modes */}
+                  <div className="mx-4">
+                    <label className="block text-sm font-medium text-gray-100 mb-2">Espacio entre páginas</label>
+                    <select
+                      value={settings.pageGap}
+                      onChange={(e) => handlePageGap(e.target.value)}
+                      className="w-full sm:w-72 bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all cursor-pointer hover:bg-zinc-700"
+                    >
+                      <option value="ninguno" className="bg-zinc-800">Ninguno (0px)</option>
+                      <option value="minimo" className="bg-zinc-800">Mínimo (2px)</option>
+                      <option value="medio" className="bg-zinc-800">Medio (5px)</option>
+                      <option value="grande" className="bg-zinc-800">Grande (10px)</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="mx-auto sm:mx-0">
                   <p className="text-gray-400 text-sm font-medium mb-3">
