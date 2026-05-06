@@ -39,6 +39,13 @@ if (manga?.jointSlug) {
   return Astro.redirect(`/joint/manga/${manga.jointSlug}`, 301);
 }
 
+// Si el manga es un writing (novel/book/etc), redirigir al lector de novelas
+const bookTypeCode = manga?.manga?.bookType?.code;
+if (bookTypeCode && new Set(['novel', 'light-novel', 'book', 'short-story']).has(bookTypeCode)) {
+  const writingsRoot = nsfwMode ? '/red/writings' : '/writings';
+  return Astro.redirect(`${writingsRoot}/${organizationSlug}/${bookTypeCode}/${mangaSlug}/chapter/${chapterNumber}`, 301);
+}
+
 // Si el manga o la org es NSFW y no estamos en modo /red/, redirigir
 if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
