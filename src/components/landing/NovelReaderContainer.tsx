@@ -41,7 +41,12 @@ const NovelReaderContainer: React.FC<NovelReaderContainerProps> = ({ manga, chap
         chapter={chapter}
         mangaTitle={manga?.title || mangaSlug}
         mangaUrl={mangaUrl}
+        mangaSlug={mangaSlug}
         chapterUrlPattern={chapterUrlPattern}
+        user={user}
+        logged={logged}
+        organization={organization}
+        organizationSlug={organization?.slug}
       />
 
       <Footer organization={organization} onNavigate={(p) => {
