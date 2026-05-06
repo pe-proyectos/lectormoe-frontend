@@ -2283,7 +2283,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <div className="pt-6 space-y-3 border-t border-zinc-800">
                       <button
                         onClick={handleSaveChapter}
-                        disabled={loading || !newChapter.number || pages.length === 0}
+                        disabled={loading || !newChapter.number || (!isWriting && pages.length === 0)}
                         className="w-full py-4 bg-cyan-500 text-zinc-950 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-cyan-500/10 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <CheckCircle2 size={18} /> {loading ? 'Guardando...' : isEditingChapter ? 'Actualizar capítulo' : 'Guardar capítulo'}
