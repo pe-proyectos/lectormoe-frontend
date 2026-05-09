@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Bookmark, X } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import SortableMangaList from './SortableMangaList';
+import SortableMangaList, { READING_STATUS_META, READING_STATUS_KEYS, type ReadingStatus } from './SortableMangaList';
 import { callAPI } from '../../util/callApi';
 
 interface Props {
@@ -21,6 +21,7 @@ type SortKey = 'order' | 'recent' | 'title';
 type TypeKey = 'all' | 'manga' | 'joint';
 type StatusKey = 'all' | 'ongoing' | 'completed' | 'hiatus' | 'dropped';
 type FinishedKey = 'all' | 'yes' | 'no';
+type ReadingStatusKey = 'all' | ReadingStatus;
 
 const PAGE_SIZE = 10;
 
@@ -29,24 +30,30 @@ interface FilterState {
   sort: SortKey;
   type: TypeKey;
   status: StatusKey;
+  readingStatus: ReadingStatusKey;
   scan: string;
   finished: FinishedKey;
   favoritesOnly: boolean;
   page: number;
 }
 
+const isReadingStatusKey = (v: string | null): v is ReadingStatusKey =>
+  v === 'all' || v === 'READING' || v === 'PLAN_TO_READ' || v === 'COMPLETED' || v === 'PAUSED' || v === 'DROPPED';
+
 const readQuery = (): FilterState => {
-  if (typeof window === 'undefined') return { search: '', sort: 'order', type: 'all', status: 'all', scan: '', finished: 'all', favoritesOnly: false, page: 1 };
+  if (typeof window === 'undefined') return { search: '', sort: 'order', type: 'all', status: 'all', readingStatus: 'all', scan: '', finished: 'all', favoritesOnly: false, page: 1 };
   const p = new URLSearchParams(window.location.search);
   const sort = p.get('sort');
   const type = p.get('type');
   const status = p.get('status');
   const finished = p.get('finished');
+  const rs = p.get('readingStatus');
   return {
     search: p.get('q') || '',
     sort: (sort === 'recent' || sort === 'title' || sort === 'order') ? sort : 'order',
     type: (type === 'manga' || type === 'joint') ? type : 'all',
     status: (status === 'ongoing' || status === 'completed' || status === 'hiatus' || status === 'dropped') ? status : 'all',
+    readingStatus: isReadingStatusKey(rs) ? rs : 'all',
     scan: p.get('scan') || '',
     finished: (finished === 'yes' || finished === 'no') ? finished : 'all',
     favoritesOnly: p.get('favs') === '1',
@@ -61,6 +68,7 @@ const writeQuery = (s: FilterState) => {
   if (s.sort !== 'order') p.set('sort', s.sort);
   if (s.type !== 'all') p.set('type', s.type);
   if (s.status !== 'all') p.set('status', s.status);
+  if (s.readingStatus !== 'all') p.set('readingStatus', s.readingStatus);
   if (s.scan) p.set('scan', s.scan);
   if (s.finished !== 'all') p.set('finished', s.finished);
   if (s.favoritesOnly) p.set('favs', '1');
@@ -81,6 +89,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   const [sort, setSort] = useState<SortKey>(initial.sort);
   const [type, setType] = useState<TypeKey>(initial.type);
   const [status, setStatus] = useState<StatusKey>(initial.status);
+  const [readingStatus, setReadingStatus] = useState<ReadingStatusKey>(initial.readingStatus);
   const [scan, setScan] = useState<string>(initial.scan);
   const [finished, setFinished] = useState<FinishedKey>(initial.finished);
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(initial.favoritesOnly);
@@ -110,7 +119,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   }, [search]);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [debouncedSearch, sort, type, status, scan, finished, favoritesOnly]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, sort, type, status, readingStatus, scan, finished, favoritesOnly]);
 
   // Fetch list — owner uses authenticated endpoint (full filters + reorder);
   // visitors use the read-only public endpoint and filter client-side.
@@ -147,6 +156,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
             if (type === 'manga' && !e.mangaCustom) return false;
             if (type === 'joint' && !e.joint) return false;
             if (status !== 'all' && e.mangaCustom && e.mangaCustom.status !== status) return false;
+            if (readingStatus !== 'all' && (e.readingStatus || 'READING') !== readingStatus) return false;
             if (scan && e.mangaCustom?.organization?.slug !== scan) return false;
             if (finished === 'yes' && !e.finishedAt) return false;
             if (finished === 'no' && e.finishedAt) return false;
@@ -183,6 +193,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
           if (debouncedSearch) qs.set('search', debouncedSearch);
           if (type !== 'all') qs.set('type', type);
           if (status !== 'all') qs.set('status', status);
+          if (readingStatus !== 'all') qs.set('readingStatus', readingStatus);
           if (scan) qs.set('scanSlug', scan);
           if (finished !== 'all') qs.set('finished', finished);
           if (favoritesOnly) qs.set('favoritesOnly', '1');
@@ -208,8 +219,8 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
       }
     };
     run();
-    writeQuery({ search: debouncedSearch, sort, type, status, scan, finished, favoritesOnly, page });
-  }, [debouncedSearch, sort, type, status, scan, finished, favoritesOnly, page, profileSlug, isOwner, usePublicEndpoint]);
+    writeQuery({ search: debouncedSearch, sort, type, status, readingStatus, scan, finished, favoritesOnly, page });
+  }, [debouncedSearch, sort, type, status, readingStatus, scan, finished, favoritesOnly, page, profileSlug, isOwner, usePublicEndpoint]);
 
   // Populate the scan-filter dropdown from a single full pass on mount.
   // Uses limit=500 — profile lists are small and this only runs once.
@@ -288,6 +299,24 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
     }
   };
 
+  const handleChangeReadingStatus = async (entry: any, next: ReadingStatus) => {
+    const before = entries;
+    setEntries(entries.map((e: any) => e.id === entry.id ? {
+      ...e,
+      readingStatus: next,
+      finishedAt: next === 'COMPLETED' ? (e.finishedAt || new Date().toISOString()) : null,
+    } : e));
+    try {
+      await callAPI(`/api/user-list/${entry.id}/reading-status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: next }),
+      });
+    } catch (e) {
+      console.error('Error changing reading status:', e);
+      setEntries(before);
+    }
+  };
+
   // Toggle the manga/joint in the user's favorites (add/remove). The underlying
   // endpoints are per-slug (not per-favorite-id), so we derive the right one.
   const handleToggleFavorite = async (entry: any, next: boolean) => {
@@ -320,10 +349,11 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
     setFinished('all');
     setFavoritesOnly(false);
     setStatus('all');
+    setReadingStatus('all');
     setScan('');
   };
 
-  const hasFilters = !!debouncedSearch || sort !== 'order' || type !== 'all' || status !== 'all' || !!scan || finished !== 'all' || favoritesOnly;
+  const hasFilters = !!debouncedSearch || sort !== 'order' || type !== 'all' || status !== 'all' || readingStatus !== 'all' || !!scan || finished !== 'all' || favoritesOnly;
   const go = (p: string) => { if (typeof window !== 'undefined') window.location.href = p; };
 
   return (
@@ -391,6 +421,29 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
               </div>
             </div>
 
+            {/* Reading status pills — the user's own classification (owner-only filter) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mr-1">Mi estado</span>
+              <FilterPill label="Todos" active={readingStatus === 'all'} onClick={() => setReadingStatus('all')} />
+              {READING_STATUS_KEYS.map((k) => {
+                const m = READING_STATUS_META[k];
+                const active = readingStatus === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setReadingStatus(active ? 'all' : k)}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
+                      active
+                        ? `${m.bg} ${m.text} ${m.border} shadow-lg`
+                        : 'bg-zinc-900/40 text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-700'
+                    }`}
+                  >
+                    {m.icon} {m.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Pills row */}
             <div className="flex items-center gap-2 flex-wrap">
               <FilterPill label="Todos" active={type === 'all'} onClick={() => setType('all')} />
@@ -403,8 +456,6 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
               <FilterPill label="Hiatus" active={status === 'hiatus'} onClick={() => setStatus('hiatus')} />
               <FilterPill label="Dropped" active={status === 'dropped'} onClick={() => setStatus('dropped')} />
               <span className="w-px h-5 bg-zinc-800 mx-1" />
-              <FilterPill label="No leídos" active={finished === 'no'} onClick={() => setFinished(finished === 'no' ? 'all' : 'no')} />
-              <FilterPill label="Leídos" active={finished === 'yes'} onClick={() => setFinished(finished === 'yes' ? 'all' : 'yes')} />
               <FilterPill label="★ Solo favoritos" active={favoritesOnly} onClick={() => setFavoritesOnly(v => !v)} />
               {availableScans.length > 0 && (
                 <>
@@ -471,6 +522,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
                 // Reorder only makes sense for the owner on the default 'Mi orden' sort.
                 onReorder={isOwner && sort === 'order' ? handleReorder : undefined}
                 onToggleFinished={isOwner ? handleToggleFinished : undefined}
+                onChangeReadingStatus={isOwner ? handleChangeReadingStatus : undefined}
                 showFavoriteIndicator
                 onToggleFavorite={isOwner ? handleToggleFavorite : undefined}
               />

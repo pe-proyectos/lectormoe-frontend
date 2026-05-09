@@ -1,5 +1,5 @@
-import React from 'react';
-import { GripVertical, BookOpen, ChevronRight, Users, CheckCircle2, Circle, Star } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { GripVertical, BookOpen, ChevronRight, Users, CheckCircle2, Circle, Star, Clock, Pause, XCircle, ChevronDown } from 'lucide-react';
 import {
   DndContext,
   type DragEndEvent,
@@ -22,6 +22,7 @@ export interface MangaListEntry {
   id: number; // Favorite / UserList row id — used for reorder
   order?: number;
   finishedAt?: string | null;
+  readingStatus?: ReadingStatus | string | null;
   // Caller-provided: whether this entry is also in the user's favorites
   // (only relevant on the /list page where UserList + Favorite cross-references).
   isFavorite?: boolean;
@@ -30,6 +31,94 @@ export interface MangaListEntry {
   // Convenience (built by callers for MangaCard-style entries)
   [key: string]: any;
 }
+
+export type ReadingStatus = 'READING' | 'PLAN_TO_READ' | 'COMPLETED' | 'PAUSED' | 'DROPPED';
+
+export const READING_STATUS_META: Record<ReadingStatus, {
+  label: string;
+  short: string;
+  icon: React.ReactNode;
+  text: string;
+  bg: string;
+  border: string;
+  ring: string;
+}> = {
+  READING:      { label: 'Leyendo',     short: 'Leyendo',  icon: <BookOpen size={12} />,    text: 'text-cyan-300',    bg: 'bg-cyan-500/15',    border: 'border-cyan-500/40',    ring: 'ring-cyan-500/30' },
+  PLAN_TO_READ: { label: 'Pendiente',   short: 'Pendiente',icon: <Clock size={12} />,       text: 'text-blue-300',    bg: 'bg-blue-500/15',    border: 'border-blue-500/40',    ring: 'ring-blue-500/30' },
+  COMPLETED:    { label: 'Completado',  short: 'Completado',icon: <CheckCircle2 size={12} />,text: 'text-green-300',   bg: 'bg-green-500/15',   border: 'border-green-500/40',   ring: 'ring-green-500/30' },
+  PAUSED:       { label: 'En pausa',    short: 'Pausa',    icon: <Pause size={12} />,       text: 'text-yellow-300',  bg: 'bg-yellow-500/15',  border: 'border-yellow-500/40',  ring: 'ring-yellow-500/30' },
+  DROPPED:      { label: 'Abandonado',  short: 'Abandonado',icon: <XCircle size={12} />,    text: 'text-red-300',     bg: 'bg-red-500/15',     border: 'border-red-500/40',     ring: 'ring-red-500/30' },
+};
+
+export const READING_STATUS_KEYS: ReadingStatus[] = ['READING', 'PLAN_TO_READ', 'COMPLETED', 'PAUSED', 'DROPPED'];
+
+const StatusPicker: React.FC<{
+  current: ReadingStatus;
+  onChange: (s: ReadingStatus) => void;
+  disabled?: boolean;
+}> = ({ current, onChange, disabled }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
+
+  const meta = READING_STATUS_META[current];
+
+  if (disabled) {
+    return (
+      <span
+        className={`shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border ${meta.bg} ${meta.border} ${meta.text}`}
+        title={meta.label}
+      >
+        {meta.icon} <span className="hidden sm:inline">{meta.short}</span>
+      </span>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${meta.bg} ${meta.border} ${meta.text} hover:ring-2 ${meta.ring}`}
+        title="Cambiar estado de lectura"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        {meta.icon} <span className="hidden sm:inline">{meta.short}</span> <ChevronDown size={10} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-30 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
+          {READING_STATUS_KEYS.map((k) => {
+            const m = READING_STATUS_META[k];
+            const active = k === current;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(k); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-semibold hover:bg-zinc-800 transition-colors ${active ? m.text : 'text-zinc-200'}`}
+              >
+                <span className={`inline-flex items-center justify-center w-5 h-5 rounded ${m.bg} ${m.text}`}>
+                  {m.icon}
+                </span>
+                <span className="flex-1">{m.label}</span>
+                {active && <CheckCircle2 size={12} className={m.text} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface RowViewModel {
   key: string | number;
@@ -84,6 +173,7 @@ function Row({
   isOwner,
   nsfwMode,
   onToggleFinished,
+  onChangeReadingStatus,
   onToggleFavorite,
   showFavoriteIndicator,
 }: {
@@ -92,6 +182,7 @@ function Row({
   isOwner: boolean;
   nsfwMode: boolean;
   onToggleFinished?: (entry: MangaListEntry, next: boolean) => void;
+  onChangeReadingStatus?: (entry: MangaListEntry, status: ReadingStatus) => void;
   onToggleFavorite?: (entry: MangaListEntry, next: boolean) => void;
   showFavoriteIndicator?: boolean;
 }) {
@@ -212,10 +303,21 @@ function Row({
         </div>
       ) : null}
 
-      {/* Finished / read indicator. Owner gets a clickable toggle; everyone else
-          just sees the current state. Entries without finishedAt support (e.g.
-          ad-hoc callers that don't persist it) render nothing. */}
-      {onToggleFinished ? (
+      {/* Reading status picker — preferred over the legacy finished toggle.
+          Owner sees an interactive pill; non-owner sees the badge in read-only mode. */}
+      {onChangeReadingStatus && entry.readingStatus ? (
+        <StatusPicker
+          current={(entry.readingStatus as ReadingStatus) in READING_STATUS_META ? (entry.readingStatus as ReadingStatus) : 'READING'}
+          onChange={(s) => onChangeReadingStatus(entry, s)}
+        />
+      ) : entry.readingStatus && (entry.readingStatus as ReadingStatus) in READING_STATUS_META ? (
+        <StatusPicker current={entry.readingStatus as ReadingStatus} onChange={() => {}} disabled />
+      ) : null}
+
+      {/* Finished / read indicator (legacy). Only renders for callers that don't
+          provide onChangeReadingStatus, to keep the simpler one-toggle UX intact
+          (e.g. profile sidebar widgets). */}
+      {!onChangeReadingStatus && onToggleFinished ? (
         <button
           type="button"
           onClick={(e) => {
@@ -233,7 +335,7 @@ function Row({
         >
           {entry.finishedAt ? <CheckCircle2 size={18} /> : <Circle size={18} />}
         </button>
-      ) : entry.finishedAt ? (
+      ) : !onChangeReadingStatus && entry.finishedAt ? (
         <div
           className="shrink-0 text-green-400 p-2"
           title="Leído"
@@ -255,15 +357,14 @@ interface Props {
   entries: MangaListEntry[];
   isOwner: boolean;
   nsfwMode?: boolean;
-  // Called when the user drops a row into a new position.
-  // Receives the new ordered list of ids — callers should persist via API.
   onReorder?: (newIds: number[]) => void;
-  // Called when the user toggles the finished-reading indicator on a row.
-  // Only passed for owners; non-owners see a read-only badge.
+  // Legacy single-toggle "finished" UX. Use only for simple widgets that don't
+  // need the full status picker.
   onToggleFinished?: (entry: MangaListEntry, next: boolean) => void;
-  // Only relevant when rendering a UserList (shows whether each entry is
-  // also in the user's favorites). Pass onToggleFavorite for owners so the
-  // star is interactive.
+  // Preferred: opens a small picker so the user can set Leyendo / Pendiente /
+  // Completado / Pausa / Abandonado. Takes precedence over onToggleFinished
+  // when both are provided.
+  onChangeReadingStatus?: (entry: MangaListEntry, status: ReadingStatus) => void;
   showFavoriteIndicator?: boolean;
   onToggleFavorite?: (entry: MangaListEntry, next: boolean) => void;
 }
@@ -274,6 +375,7 @@ const SortableMangaList: React.FC<Props> = ({
   nsfwMode = false,
   onReorder,
   onToggleFinished,
+  onChangeReadingStatus,
   showFavoriteIndicator,
   onToggleFavorite,
 }) => {
@@ -307,6 +409,7 @@ const SortableMangaList: React.FC<Props> = ({
               isOwner={isOwner}
               nsfwMode={nsfwMode}
               onToggleFinished={isOwner ? onToggleFinished : undefined}
+              onChangeReadingStatus={isOwner ? onChangeReadingStatus : undefined}
               showFavoriteIndicator={showFavoriteIndicator}
               onToggleFavorite={isOwner ? onToggleFavorite : undefined}
             />
