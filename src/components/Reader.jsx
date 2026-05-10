@@ -159,7 +159,7 @@ export function Reader({
   const [workBookmark, setWorkBookmark] = useState(null);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [bookmarkError, setBookmarkError] = useState(null);
-  const [showDeleteBookmarkModal, setShowDeleteBookmarkModal] = useState(false);
+  const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
 
   const [settings, setSettings] = useState(() => {
     const savedReadType = localStorage.getItem("readType");
@@ -376,13 +376,11 @@ export function Reader({
     setSettings((prev) => ({ ...prev, pageGap: value }));
   }, []);
 
-  // Bookmark interaction (single bookmark per work):
-  //   • No bookmark            → save at current page
-  //   • Bookmark on a different chapter → navigate to that chapter+page
-  //   • Bookmark on this chapter, NOT at currentPage → jump to that page
-  //   • Bookmark on this chapter, AT currentPage → open delete modal
+  // Bookmark interaction — clicking the floating button always opens a modal
+  // with the available actions. We avoid auto-detecting "are you at the
+  // bookmark" because in cascade/vertical mangas currentPage doesn't track the
+  // visible page reliably and the UX got stuck on "delete only".
   const isOnBookmarkedChapter = !!workBookmark && workBookmark.chapterId === chapter?.id;
-  const isAtBookmarkPosition = isOnBookmarkedChapter && workBookmark.pageNumber === currentPage;
 
   const saveBookmarkHere = useCallback(async () => {
     if (!chapter?.id || bookmarkLoading) return;
@@ -401,6 +399,7 @@ export function Reader({
       setTimeout(() => setBookmarkError(null), 3000);
     } finally {
       setBookmarkLoading(false);
+      setBookmarkModalOpen(false);
     }
   }, [chapter, currentPage, bookmarkLoading]);
 
@@ -416,9 +415,20 @@ export function Reader({
       setTimeout(() => setBookmarkError(null), 3000);
     } finally {
       setBookmarkLoading(false);
-      setShowDeleteBookmarkModal(false);
+      setBookmarkModalOpen(false);
     }
   }, [workBookmark, bookmarkLoading]);
+
+  const goToBookmark = useCallback(() => {
+    if (!workBookmark) return;
+    if (isOnBookmarkedChapter) {
+      setCurrentPage(workBookmark.pageNumber);
+      setBookmarkModalOpen(false);
+      return;
+    }
+    const url = `${window.location.pathname.replace(/\/chapters\/[^/]+/, `/chapters/${workBookmark.chapterNumber}`)}?page=${workBookmark.pageNumber}`;
+    window.location.href = url;
+  }, [workBookmark, isOnBookmarkedChapter]);
 
   const handleToggleBookmark = useCallback(() => {
     if (!chapter?.id) return;
@@ -427,17 +437,8 @@ export function Reader({
       setTimeout(() => setBookmarkError(null), 3000);
       return;
     }
-    if (!workBookmark) { saveBookmarkHere(); return; }
-    if (!isOnBookmarkedChapter) {
-      // Navigate to the chapter+page where the bookmark lives.
-      const url = `${window.location.pathname.replace(/\/chapters\/[^/]+/, `/chapters/${workBookmark.chapterNumber}`)}?page=${workBookmark.pageNumber}`;
-      window.location.href = url;
-      return;
-    }
-    if (isAtBookmarkPosition) { setShowDeleteBookmarkModal(true); return; }
-    // On this chapter, not at the page — jump to the bookmarked page.
-    setCurrentPage(workBookmark.pageNumber);
-  }, [chapter, logged, workBookmark, isOnBookmarkedChapter, isAtBookmarkPosition, saveBookmarkHere]);
+    setBookmarkModalOpen(true);
+  }, [chapter, logged]);
 
   const getGapValue = useCallback((gapType) => {
     switch (gapType) {
@@ -1061,16 +1062,9 @@ export function Reader({
                   <button
                     onClick={handleToggleBookmark}
                     disabled={bookmarkLoading}
-                    title={
-                      !workBookmark ? 'Guardar marcador en esta página'
-                      : isAtBookmarkPosition ? 'Eliminar marcador'
-                      : isOnBookmarkedChapter ? `Ir a la página ${workBookmark.pageNumber}`
-                      : `Ir al marcador (Cap. ${workBookmark.chapterNumber} · pág. ${workBookmark.pageNumber})`
-                    }
+                    title="Marcador"
                     className={`p-1.5 rounded-lg transition-all ${
-                      workBookmark
-                        ? (isAtBookmarkPosition ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-500/80 hover:text-yellow-400')
-                        : 'text-zinc-400 hover:text-white'
+                      workBookmark ? 'text-yellow-400 hover:text-yellow-300' : 'text-zinc-400 hover:text-white'
                     } ${bookmarkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <svg
@@ -1511,27 +1505,15 @@ export function Reader({
         </div>
       )}
 
-      {/* Floating bookmark button — single bookmark per work, behavior depends
-          on state: empty → save here, off-chapter → navigate, on-chapter not at
-          page → jump to page, at-page → open delete modal. */}
+      {/* Floating bookmark button — always opens the actions modal. */}
       {chapter?.id && (
         <button
           onClick={handleToggleBookmark}
           disabled={bookmarkLoading}
-          title={
-            !logged ? 'Inicia sesión para guardar tu marcador'
-            : !workBookmark ? `Guardar marcador en la página ${currentPage}`
-            : isAtBookmarkPosition ? 'Eliminar marcador'
-            : isOnBookmarkedChapter ? `Ir a la página ${workBookmark.pageNumber}`
-            : `Ir al marcador (Cap. ${workBookmark.chapterNumber} · pág. ${workBookmark.pageNumber})`
-          }
+          title="Marcador"
           aria-label="Marcador"
           className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 ${
-            !workBookmark
-              ? 'bg-zinc-900/90 backdrop-blur border border-zinc-700 text-zinc-300 hover:text-white'
-              : isAtBookmarkPosition
-              ? 'bg-yellow-400 text-zinc-950'
-              : 'bg-yellow-400/85 text-zinc-950'
+            workBookmark ? 'bg-yellow-400 text-zinc-950' : 'bg-zinc-900/90 backdrop-blur border border-zinc-700 text-zinc-300 hover:text-white'
           } ${bookmarkLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
         >
           <svg
@@ -1546,39 +1528,64 @@ export function Reader({
         </button>
       )}
 
-      {/* Delete bookmark confirmation */}
-      {showDeleteBookmarkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowDeleteBookmarkModal(false)}>
+      {/* Bookmark actions modal — surfaces save / go-to / delete every click. */}
+      {bookmarkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setBookmarkModalOpen(false)}>
           <div
             className="max-w-sm w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-1">
               <div className="w-10 h-10 rounded-full bg-yellow-500/15 border border-yellow-500/40 flex items-center justify-center text-yellow-400">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
               </div>
-              <h3 className="text-white font-black text-base">¿Eliminar marcador?</h3>
+              <h3 className="text-white font-black text-base">Marcador</h3>
             </div>
-            <p className="text-zinc-400 text-sm mb-5">
-              Quedará en blanco hasta que guardes uno nuevo.
+            <p className="text-zinc-400 text-xs mb-5">
+              {workBookmark
+                ? `Tienes un marcador en Cap. ${workBookmark.chapterNumber} · pág. ${workBookmark.pageNumber}.`
+                : 'Aún no tienes un marcador en esta obra.'}
             </p>
-            <div className="flex gap-2 justify-end">
+            <div className="flex flex-col gap-2">
               <button
                 type="button"
-                onClick={() => setShowDeleteBookmarkModal(false)}
-                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-black uppercase tracking-widest transition-colors"
+                onClick={saveBookmarkHere}
+                disabled={bookmarkLoading}
+                className="w-full px-4 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                {workBookmark ? 'Mover marcador aquí' : 'Marcar esta página'} · Pág. {currentPage}
+              </button>
+              {workBookmark && (
+                <button
+                  type="button"
+                  onClick={goToBookmark}
+                  disabled={bookmarkLoading}
+                  className="w-full px-4 py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-zinc-950 text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-60"
+                >
+                  Ir a mi marcador
+                </button>
+              )}
+              {workBookmark && (
+                <button
+                  type="button"
+                  onClick={deleteCurrentBookmark}
+                  disabled={bookmarkLoading}
+                  className="w-full px-4 py-3 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-60 border border-red-500/40"
+                >
+                  Eliminar marcador
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setBookmarkModalOpen(false)}
+                className="w-full px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-black uppercase tracking-widest transition-colors"
               >
                 Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={deleteCurrentBookmark}
-                disabled={bookmarkLoading}
-                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-60"
-              >
-                Eliminar
               </button>
             </div>
           </div>
