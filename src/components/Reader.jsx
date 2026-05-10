@@ -424,11 +424,21 @@ export function Reader({
     if (isOnBookmarkedChapter) {
       setCurrentPage(workBookmark.pageNumber);
       setBookmarkModalOpen(false);
+      // In cascade/vertical mode all pages are stacked in one scroll, so just
+      // updating currentPage doesn't actually move the viewport. Scroll the
+      // bookmarked page container into view explicitly. Defers a frame so the
+      // modal close + state update have committed.
+      if (settings.readType === readTypes.CASCADE) {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`page-${workBookmark.pageNumber}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
       return;
     }
     const url = `${window.location.pathname.replace(/\/chapters\/[^/]+/, `/chapters/${workBookmark.chapterNumber}`)}?page=${workBookmark.pageNumber}`;
     window.location.href = url;
-  }, [workBookmark, isOnBookmarkedChapter]);
+  }, [workBookmark, isOnBookmarkedChapter, settings.readType, readTypes.CASCADE]);
 
   const handleToggleBookmark = useCallback(() => {
     if (!chapter?.id) return;
@@ -765,7 +775,18 @@ export function Reader({
           const pageIndex = pages.findIndex((page) => page.number === initialPageNumber);
           // Si no se encuentra la página, usar la primera (índice 0)
           const validPageIndex = pageIndex >= 0 ? pageIndex : 0;
-          setCurrentPage(pages[validPageIndex].number);
+          const targetPage = pages[validPageIndex].number;
+          setCurrentPage(targetPage);
+          // In cascade mode all pages are stacked, so just setting currentPage
+          // doesn't move the viewport. If we got a real ?page=N (not the
+          // implicit 1), scroll the matching page container into view after
+          // the DOM commits the page nodes.
+          if (initialPageNumber > 1 && settings.readType === readTypes.CASCADE) {
+            setTimeout(() => {
+              const el = document.getElementById(`page-${targetPage}`);
+              if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }, 200);
+          }
         }
         setLoading(false);
       })
