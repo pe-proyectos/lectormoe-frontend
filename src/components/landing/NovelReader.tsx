@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft, ChevronRight, Settings as SettingsIcon, X, Book,
   Type, Palette, Layout as LayoutIcon, Eye, RotateCcw, Maximize2,
-  AlignLeft, AlignCenter, AlignJustify, Clock, List, ArrowUp,
+  AlignLeft, AlignCenter, AlignJustify, Clock, List, ArrowUp, Bookmark,
 } from 'lucide-react';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
 import CommentsSection from './CommentsSection';
+import { callAPI } from '../../util/callApi';
 
 interface AdjacentChapter {
   number: number;
@@ -221,6 +222,14 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
+  // Bookmarks for this chapter — stored as a Set of pageNumbers, where for
+  // novels we encode the scroll position as a percentage (1-100). The
+  // UserPageBookmark table is shared with image-based mangas; this convention
+  // lets us reuse the same backend without schema changes.
+  const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [bookmarkFlash, setBookmarkFlash] = useState<{ kind: 'added' | 'removed' | 'error'; msg: string } | null>(null);
+
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -252,6 +261,67 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     const font = FONTS.find((f) => f.value === prefs.family);
     if (font?.google) loadGoogleFont(font.google);
   }, [prefs.family]);
+
+  // Load existing bookmarks for this chapter from the API.
+  useEffect(() => {
+    if (!logged || !chapter?.id) return;
+    callAPI('/api/bookmarks')
+      .then((data: any[]) => {
+        const positions = (data || [])
+          .filter((b: any) => (b.chapterId ?? b.chapter?.id) === chapter.id)
+          .map((b: any) => b.pageNumber as number);
+        setBookmarks(new Set(positions));
+      })
+      .catch(() => {});
+  }, [logged, chapter?.id]);
+
+  // If we arrived with ?page=N, scroll to that percentage after the article
+  // renders. Defers a frame to make sure layout is final.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !hydrated) return;
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('page');
+    if (!target) return;
+    const pct = Math.max(1, Math.min(100, parseInt(target, 10)));
+    if (Number.isNaN(pct)) return;
+    requestAnimationFrame(() => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      window.scrollTo({ top: (max * pct) / 100, behavior: 'auto' });
+    });
+  }, [hydrated, chapter?.id]);
+
+  const handleToggleBookmark = async () => {
+    if (!chapter?.id) return;
+    if (!logged) {
+      setBookmarkFlash({ kind: 'error', msg: 'Inicia sesión para marcar este punto.' });
+      setTimeout(() => setBookmarkFlash(null), 2500);
+      return;
+    }
+    if (bookmarkLoading) return;
+    const pageNumber = Math.max(1, Math.min(100, Math.round(scrollProgress) || 1));
+    setBookmarkLoading(true);
+    try {
+      const result: any = await callAPI('/api/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterId: chapter.id, pageNumber }),
+      });
+      const action = result?.action ?? result?.data?.action;
+      if (action === 'added') {
+        setBookmarks((prev) => new Set([...prev, pageNumber]));
+        setBookmarkFlash({ kind: 'added', msg: `Marcador guardado al ${pageNumber}%` });
+      } else {
+        setBookmarks((prev) => { const n = new Set(prev); n.delete(pageNumber); return n; });
+        setBookmarkFlash({ kind: 'removed', msg: 'Marcador eliminado' });
+      }
+    } catch (err: any) {
+      setBookmarkFlash({ kind: 'error', msg: err?.message || 'No se pudo guardar el marcador' });
+    } finally {
+      setBookmarkLoading(false);
+      setTimeout(() => setBookmarkFlash(null), 2500);
+    }
+  };
 
   // Scroll progress + remember position
   useEffect(() => {
@@ -529,7 +599,60 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         >
           <Maximize2 size={18} />
         </button>
+        <button
+          type="button"
+          onClick={handleToggleBookmark}
+          disabled={bookmarkLoading || !chapter?.id}
+          style={{
+            background: bookmarks.size > 0 ? '#facc15' : palette.ui,
+            color: bookmarks.size > 0 ? '#0a0a0b' : palette.uiText,
+            border: bookmarks.size > 0 ? '1px solid transparent' : `1px solid ${palette.border}`,
+            opacity: bookmarkLoading ? 0.6 : 1,
+          }}
+          className="relative w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform disabled:cursor-not-allowed"
+          title={
+            !logged
+              ? 'Inicia sesión para guardar marcadores'
+              : bookmarks.size > 0
+              ? `Guardar nuevo marcador (${bookmarks.size} en este capítulo)`
+              : 'Marcar este punto del capítulo'
+          }
+          aria-label="Guardar marcador"
+        >
+          <Bookmark size={18} fill={bookmarks.size > 0 ? 'currentColor' : 'none'} />
+          {bookmarks.size > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center"
+              style={{ background: '#0a0a0b', color: '#facc15', border: '2px solid #facc15' }}
+            >
+              {bookmarks.size}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Bookmark flash toast */}
+      {bookmarkFlash && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: bookmarkFlash.kind === 'error' ? '#7f1d1d' : '#0a0a0b',
+            color: bookmarkFlash.kind === 'error' ? '#fecaca' : '#facc15',
+            border: `1px solid ${bookmarkFlash.kind === 'error' ? '#dc2626' : '#facc15'}`,
+            padding: '10px 18px',
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 700,
+            zIndex: 50,
+            boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+          }}
+        >
+          {bookmarkFlash.msg}
+        </div>
+      )}
 
       {/* Settings panel */}
       {panelOpen && (
