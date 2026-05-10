@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { GripVertical, BookOpen, ChevronRight, Users, CheckCircle2, Circle, Star, Clock, Pause, XCircle, ChevronDown } from 'lucide-react';
 import {
   DndContext,
@@ -58,12 +59,33 @@ const StatusPicker: React.FC<{
   disabled?: boolean;
 }> = ({ current, onChange, disabled }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const popRef = useRef<HTMLDivElement | null>(null);
+
+  // Recompute the popover position whenever it opens, the window resizes, or
+  // the page scrolls — the button rect changes in all of those.
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    const update = () => {
+      const r = btnRef.current!.getBoundingClientRect();
+      setPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (popRef.current?.contains(t) || btnRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -83,19 +105,25 @@ const StatusPicker: React.FC<{
   }
 
   return (
-    <div ref={ref} className="relative shrink-0">
+    <>
       <button
+        ref={btnRef}
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${meta.bg} ${meta.border} ${meta.text} hover:ring-2 ${meta.ring}`}
+        className={`shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${meta.bg} ${meta.border} ${meta.text} hover:ring-2 ${meta.ring}`}
         title="Cambiar estado de lectura"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         {meta.icon} <span className="hidden sm:inline">{meta.short}</span> <ChevronDown size={10} />
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
+      {open && pos && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={popRef}
+          style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 1000 }}
+          className="w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden"
+          role="listbox"
+        >
           {READING_STATUS_KEYS.map((k) => {
             const m = READING_STATUS_META[k];
             const active = k === current;
@@ -105,6 +133,8 @@ const StatusPicker: React.FC<{
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(k); setOpen(false); }}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-semibold hover:bg-zinc-800 transition-colors ${active ? m.text : 'text-zinc-200'}`}
+                role="option"
+                aria-selected={active}
               >
                 <span className={`inline-flex items-center justify-center w-5 h-5 rounded ${m.bg} ${m.text}`}>
                   {m.icon}
@@ -114,9 +144,10 @@ const StatusPicker: React.FC<{
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 };
 
