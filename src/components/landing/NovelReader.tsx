@@ -222,13 +222,13 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
-  // Bookmarks for this chapter — stored as a Set of pageNumbers, where for
-  // novels we encode the scroll position as a percentage (1-100). The
-  // UserPageBookmark table is shared with image-based mangas; this convention
-  // lets us reuse the same backend without schema changes.
-  const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
+  // ONE bookmark per work (manga/novel). Stored on the backend as a row in
+  // user_page_bookmark; for novels pageNumber encodes scroll % (1-100).
+  // null means the user has no bookmark on this work yet.
+  const [workBookmark, setWorkBookmark] = useState<{ id: number; chapterId: number; chapterNumber: number; pageNumber: number } | null>(null);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [bookmarkFlash, setBookmarkFlash] = useState<{ kind: 'added' | 'removed' | 'error'; msg: string } | null>(null);
+  const [showDeleteBookmark, setShowDeleteBookmark] = useState(false);
 
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -262,18 +262,28 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     if (font?.google) loadGoogleFont(font.google);
   }, [prefs.family]);
 
-  // Load existing bookmarks for this chapter from the API.
+  // Load the single bookmark this user has for THIS work (if any). We fetch
+  // all bookmarks and pick one that lives on a chapter belonging to the same
+  // mangaCustom — there can only be one per work by backend invariant.
   useEffect(() => {
-    if (!logged || !chapter?.id) return;
+    if (!logged || !chapter?.id) { setWorkBookmark(null); return; }
     callAPI('/api/bookmarks')
       .then((data: any[]) => {
-        const positions = (data || [])
-          .filter((b: any) => (b.chapterId ?? b.chapter?.id) === chapter.id)
-          .map((b: any) => b.pageNumber as number);
-        setBookmarks(new Set(positions));
+        const ours = (data || []).find((b: any) =>
+          b.chapter?.mangaCustom?.manga?.slug === mangaSlug ||
+          (b.chapterId ?? b.chapter?.id) === chapter.id
+        );
+        setWorkBookmark(ours
+          ? {
+              id: ours.id,
+              chapterId: ours.chapterId ?? ours.chapter?.id,
+              chapterNumber: ours.chapter?.number ?? chapter.number,
+              pageNumber: ours.pageNumber,
+            }
+          : null);
       })
-      .catch(() => {});
-  }, [logged, chapter?.id]);
+      .catch(() => setWorkBookmark(null));
+  }, [logged, chapter?.id, mangaSlug]);
 
   // If we arrived with ?page=N, scroll to that percentage after the article
   // renders. Defers a frame to make sure layout is final.
@@ -291,14 +301,22 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     });
   }, [hydrated, chapter?.id]);
 
-  const handleToggleBookmark = async () => {
-    if (!chapter?.id) return;
-    if (!logged) {
-      setBookmarkFlash({ kind: 'error', msg: 'Inicia sesión para marcar este punto.' });
-      setTimeout(() => setBookmarkFlash(null), 2500);
-      return;
-    }
-    if (bookmarkLoading) return;
+  // Bookmark interaction model (single bookmark per work):
+  //   • No bookmark yet  → save at current scroll
+  //   • Bookmark on a different chapter → navigate to it
+  //   • Bookmark on this chapter, but not at the marked scroll → scroll to it
+  //   • Bookmark on this chapter and we're already at it → open delete modal
+  const isOnBookmarkedChapter = !!workBookmark && workBookmark.chapterId === chapter?.id;
+  const isAtBookmarkPosition = isOnBookmarkedChapter && Math.abs(scrollProgress - (workBookmark?.pageNumber ?? 0)) <= 3;
+
+  const scrollToPercent = (pct: number) => {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    window.scrollTo({ top: (max * pct) / 100, behavior: 'smooth' });
+  };
+
+  const saveBookmarkHere = async () => {
+    if (!chapter?.id || bookmarkLoading) return;
     const pageNumber = Math.max(1, Math.min(100, Math.round(scrollProgress) || 1));
     setBookmarkLoading(true);
     try {
@@ -307,20 +325,52 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chapterId: chapter.id, pageNumber }),
       });
-      const action = result?.action ?? result?.data?.action;
-      if (action === 'added') {
-        setBookmarks((prev) => new Set([...prev, pageNumber]));
-        setBookmarkFlash({ kind: 'added', msg: `Marcador guardado al ${pageNumber}%` });
-      } else {
-        setBookmarks((prev) => { const n = new Set(prev); n.delete(pageNumber); return n; });
-        setBookmarkFlash({ kind: 'removed', msg: 'Marcador eliminado' });
-      }
+      const bk = result?.bookmark ?? result?.data?.bookmark;
+      if (bk) setWorkBookmark({ id: bk.id, chapterId: bk.chapterId, chapterNumber: chapter.number, pageNumber: bk.pageNumber });
+      setBookmarkFlash({ kind: 'added', msg: `Marcador guardado al ${pageNumber}%` });
     } catch (err: any) {
       setBookmarkFlash({ kind: 'error', msg: err?.message || 'No se pudo guardar el marcador' });
     } finally {
       setBookmarkLoading(false);
       setTimeout(() => setBookmarkFlash(null), 2500);
     }
+  };
+
+  const deleteCurrentBookmark = async () => {
+    if (!workBookmark || bookmarkLoading) return;
+    setBookmarkLoading(true);
+    try {
+      await callAPI(`/api/bookmarks/${workBookmark.id}`, { method: 'DELETE' });
+      setWorkBookmark(null);
+      setBookmarkFlash({ kind: 'removed', msg: 'Marcador eliminado' });
+    } catch (err: any) {
+      setBookmarkFlash({ kind: 'error', msg: err?.message || 'No se pudo eliminar el marcador' });
+    } finally {
+      setBookmarkLoading(false);
+      setShowDeleteBookmark(false);
+      setTimeout(() => setBookmarkFlash(null), 2500);
+    }
+  };
+
+  const handleBookmarkClick = () => {
+    if (!chapter?.id) return;
+    if (!logged) {
+      setBookmarkFlash({ kind: 'error', msg: 'Inicia sesión para marcar este punto.' });
+      setTimeout(() => setBookmarkFlash(null), 2500);
+      return;
+    }
+    if (!workBookmark) { saveBookmarkHere(); return; }
+    if (!isOnBookmarkedChapter) {
+      const target = chapterUrlPattern(workBookmark.chapterNumber);
+      window.location.href = `${target}${target.includes('?') ? '&' : '?'}page=${workBookmark.pageNumber}`;
+      return;
+    }
+    if (isAtBookmarkPosition) {
+      setShowDeleteBookmark(true);
+      return;
+    }
+    // On the bookmarked chapter but not at the position → scroll there.
+    scrollToPercent(workBookmark.pageNumber);
   };
 
   // Scroll progress + remember position
@@ -599,37 +649,84 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         >
           <Maximize2 size={18} />
         </button>
-        <button
-          type="button"
-          onClick={handleToggleBookmark}
-          disabled={bookmarkLoading || !chapter?.id}
-          style={{
-            background: bookmarks.size > 0 ? '#facc15' : palette.ui,
-            color: bookmarks.size > 0 ? '#0a0a0b' : palette.uiText,
-            border: bookmarks.size > 0 ? '1px solid transparent' : `1px solid ${palette.border}`,
-            opacity: bookmarkLoading ? 0.6 : 1,
-          }}
-          className="relative w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform disabled:cursor-not-allowed"
-          title={
-            !logged
-              ? 'Inicia sesión para guardar marcadores'
-              : bookmarks.size > 0
-              ? `Guardar nuevo marcador (${bookmarks.size} en este capítulo)`
-              : 'Marcar este punto del capítulo'
-          }
-          aria-label="Guardar marcador"
-        >
-          <Bookmark size={18} fill={bookmarks.size > 0 ? 'currentColor' : 'none'} />
-          {bookmarks.size > 0 && (
-            <span
-              className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center"
-              style={{ background: '#0a0a0b', color: '#facc15', border: '2px solid #facc15' }}
+        {(() => {
+          const hasBookmark = !!workBookmark;
+          const isOn = hasBookmark && isOnBookmarkedChapter;
+          const isAt = isAtBookmarkPosition;
+          const bg = !hasBookmark
+            ? palette.ui
+            : isAt
+            ? '#facc15'
+            : isOn
+            ? 'rgba(250, 204, 21, 0.85)'
+            : 'rgba(251, 146, 60, 0.85)';
+          const fg = !hasBookmark ? palette.uiText : '#0a0a0b';
+          const title = !logged
+            ? 'Inicia sesión para guardar tu marcador'
+            : !hasBookmark
+            ? 'Guardar marcador en esta posición'
+            : isAt
+            ? 'Eliminar marcador'
+            : isOn
+            ? `Ir al marcador (${workBookmark.pageNumber}%)`
+            : `Ir al marcador (Cap. ${workBookmark.chapterNumber} · ${workBookmark.pageNumber}%)`;
+          return (
+            <button
+              type="button"
+              onClick={handleBookmarkClick}
+              disabled={bookmarkLoading || !chapter?.id}
+              style={{
+                background: bg,
+                color: fg,
+                border: hasBookmark ? '1px solid transparent' : `1px solid ${palette.border}`,
+                opacity: bookmarkLoading ? 0.6 : 1,
+              }}
+              className="relative w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform disabled:cursor-not-allowed"
+              title={title}
+              aria-label="Marcador de lectura"
             >
-              {bookmarks.size}
-            </span>
-          )}
-        </button>
+              <Bookmark size={18} fill={hasBookmark ? 'currentColor' : 'none'} />
+            </button>
+          );
+        })()}
       </div>
+
+      {/* Delete bookmark confirmation */}
+      {showDeleteBookmark && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowDeleteBookmark(false)}>
+          <div
+            className="max-w-sm w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-500/15 border border-yellow-500/40 flex items-center justify-center text-yellow-400">
+                <Bookmark size={18} fill="currentColor" />
+              </div>
+              <h3 className="text-white font-black text-base">¿Eliminar marcador?</h3>
+            </div>
+            <p className="text-zinc-400 text-sm mb-5">
+              Quedará en blanco hasta que guardes uno nuevo.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteBookmark(false)}
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-black uppercase tracking-widest transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={deleteCurrentBookmark}
+                disabled={bookmarkLoading}
+                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-60"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bookmark flash toast */}
       {bookmarkFlash && (

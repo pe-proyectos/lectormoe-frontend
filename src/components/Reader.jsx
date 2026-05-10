@@ -154,9 +154,12 @@ export function Reader({
 
   const [accessError, setAccessError] = useState(null);
 
-  const [bookmarks, setBookmarks] = useState(new Set()); // Set<number> of page numbers bookmarked for this chapter
+  // ONE bookmark per work (manga or joint). null = no bookmark on this work.
+  // For mangas, pageNumber is the actual page (1..N).
+  const [workBookmark, setWorkBookmark] = useState(null);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [bookmarkError, setBookmarkError] = useState(null);
+  const [showDeleteBookmarkModal, setShowDeleteBookmarkModal] = useState(false);
 
   const [settings, setSettings] = useState(() => {
     const savedReadType = localStorage.getItem("readType");
@@ -373,8 +376,16 @@ export function Reader({
     setSettings((prev) => ({ ...prev, pageGap: value }));
   }, []);
 
-  const handleToggleBookmark = useCallback(async () => {
-    if (!logged || bookmarkLoading || !chapter?.id) return;
+  // Bookmark interaction (single bookmark per work):
+  //   • No bookmark            → save at current page
+  //   • Bookmark on a different chapter → navigate to that chapter+page
+  //   • Bookmark on this chapter, NOT at currentPage → jump to that page
+  //   • Bookmark on this chapter, AT currentPage → open delete modal
+  const isOnBookmarkedChapter = !!workBookmark && workBookmark.chapterId === chapter?.id;
+  const isAtBookmarkPosition = isOnBookmarkedChapter && workBookmark.pageNumber === currentPage;
+
+  const saveBookmarkHere = useCallback(async () => {
+    if (!chapter?.id || bookmarkLoading) return;
     setBookmarkLoading(true);
     setBookmarkError(null);
     try {
@@ -383,19 +394,50 @@ export function Reader({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chapterId: chapter.id, pageNumber: currentPage }),
       });
-      const action = result?.action ?? result?.data?.action;
-      if (action === 'added') {
-        setBookmarks((prev) => new Set([...prev, currentPage]));
-      } else {
-        setBookmarks((prev) => { const n = new Set(prev); n.delete(currentPage); return n; });
-      }
+      const bk = result?.bookmark ?? result?.data?.bookmark;
+      if (bk) setWorkBookmark({ id: bk.id, chapterId: bk.chapterId, chapterNumber: chapter?.number, pageNumber: bk.pageNumber });
     } catch (err) {
       setBookmarkError(err?.message || 'Error al guardar marcador');
       setTimeout(() => setBookmarkError(null), 3000);
     } finally {
       setBookmarkLoading(false);
     }
-  }, [logged, bookmarkLoading, chapter, currentPage]);
+  }, [chapter, currentPage, bookmarkLoading]);
+
+  const deleteCurrentBookmark = useCallback(async () => {
+    if (!workBookmark || bookmarkLoading) return;
+    setBookmarkLoading(true);
+    setBookmarkError(null);
+    try {
+      await callAPI(`/api/bookmarks/${workBookmark.id}`, { method: 'DELETE' });
+      setWorkBookmark(null);
+    } catch (err) {
+      setBookmarkError(err?.message || 'Error al eliminar marcador');
+      setTimeout(() => setBookmarkError(null), 3000);
+    } finally {
+      setBookmarkLoading(false);
+      setShowDeleteBookmarkModal(false);
+    }
+  }, [workBookmark, bookmarkLoading]);
+
+  const handleToggleBookmark = useCallback(() => {
+    if (!chapter?.id) return;
+    if (!logged) {
+      setBookmarkError('Inicia sesión para guardar tu marcador');
+      setTimeout(() => setBookmarkError(null), 3000);
+      return;
+    }
+    if (!workBookmark) { saveBookmarkHere(); return; }
+    if (!isOnBookmarkedChapter) {
+      // Navigate to the chapter+page where the bookmark lives.
+      const url = `${window.location.pathname.replace(/\/chapters\/[^/]+/, `/chapters/${workBookmark.chapterNumber}`)}?page=${workBookmark.pageNumber}`;
+      window.location.href = url;
+      return;
+    }
+    if (isAtBookmarkPosition) { setShowDeleteBookmarkModal(true); return; }
+    // On this chapter, not at the page — jump to the bookmarked page.
+    setCurrentPage(workBookmark.pageNumber);
+  }, [chapter, logged, workBookmark, isOnBookmarkedChapter, isAtBookmarkPosition, saveBookmarkHere]);
 
   const getGapValue = useCallback((gapType) => {
     switch (gapType) {
@@ -537,18 +579,28 @@ export function Reader({
     fetch(`/api/views/joint/${jointSlug}`, { method: 'POST' }).catch(() => {});
   }, [isJoint, jointSlug]);
 
-  // Load bookmarks for this chapter when logged in
+  // Load the user's single bookmark for this work (manga or joint).
   useEffect(() => {
-    if (!logged || !chapter?.id) return;
+    if (!logged || !chapter?.id) { setWorkBookmark(null); return; }
     callAPI('/api/bookmarks')
       .then((data) => {
-        const thisChapterBookmarks = (data || [])
-          .filter((b) => b.chapterId === chapter.id || b.chapter?.id === chapter.id)
-          .map((b) => b.pageNumber);
-        setBookmarks(new Set(thisChapterBookmarks));
+        const ours = (data || []).find((b) => {
+          if (isJoint) {
+            return b.chapter?.joint?.slug === jointSlug || (b.chapterId ?? b.chapter?.id) === chapter.id;
+          }
+          return b.chapter?.mangaCustom?.manga?.slug === mangaSlug || (b.chapterId ?? b.chapter?.id) === chapter.id;
+        });
+        setWorkBookmark(ours
+          ? {
+              id: ours.id,
+              chapterId: ours.chapterId ?? ours.chapter?.id,
+              chapterNumber: ours.chapter?.number,
+              pageNumber: ours.pageNumber,
+            }
+          : null);
       })
       .catch(() => {});
-  }, [logged, chapter?.id]);
+  }, [logged, chapter?.id, isJoint, mangaSlug, jointSlug]);
 
   // Update URL - con debounce
   useEffect(() => {
@@ -1009,16 +1061,21 @@ export function Reader({
                   <button
                     onClick={handleToggleBookmark}
                     disabled={bookmarkLoading}
-                    title={bookmarks.has(currentPage) ? 'Quitar marcador de página' : 'Marcar esta página'}
+                    title={
+                      !workBookmark ? 'Guardar marcador en esta página'
+                      : isAtBookmarkPosition ? 'Eliminar marcador'
+                      : isOnBookmarkedChapter ? `Ir a la página ${workBookmark.pageNumber}`
+                      : `Ir al marcador (Cap. ${workBookmark.chapterNumber} · pág. ${workBookmark.pageNumber})`
+                    }
                     className={`p-1.5 rounded-lg transition-all ${
-                      bookmarks.has(currentPage)
-                        ? 'text-yellow-400 hover:text-yellow-300'
+                      workBookmark
+                        ? (isAtBookmarkPosition ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-500/80 hover:text-yellow-400')
                         : 'text-zinc-400 hover:text-white'
                     } ${bookmarkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <svg
                       className="h-6 w-6 sm:h-7 sm:w-7"
-                      fill={bookmarks.has(currentPage) ? 'currentColor' : 'none'}
+                      fill={workBookmark ? 'currentColor' : 'none'}
                       stroke="currentColor"
                       strokeWidth={1.5}
                       viewBox="0 0 24 24"
@@ -1454,37 +1511,78 @@ export function Reader({
         </div>
       )}
 
-      {/* Floating bookmark button — duplicate of the header toggle but pinned
-          to the viewport so it's always visible while reading. The header
-          button is kept for users on the top of the chapter; this one helps
-          when scrolling deep in cascade mode. */}
-      {logged && chapter?.id && (
+      {/* Floating bookmark button — single bookmark per work, behavior depends
+          on state: empty → save here, off-chapter → navigate, on-chapter not at
+          page → jump to page, at-page → open delete modal. */}
+      {chapter?.id && (
         <button
           onClick={handleToggleBookmark}
           disabled={bookmarkLoading}
-          title={bookmarks.has(currentPage) ? `Quitar marcador página ${currentPage}` : `Marcar página ${currentPage}`}
-          aria-label="Marcar página actual"
+          title={
+            !logged ? 'Inicia sesión para guardar tu marcador'
+            : !workBookmark ? `Guardar marcador en la página ${currentPage}`
+            : isAtBookmarkPosition ? 'Eliminar marcador'
+            : isOnBookmarkedChapter ? `Ir a la página ${workBookmark.pageNumber}`
+            : `Ir al marcador (Cap. ${workBookmark.chapterNumber} · pág. ${workBookmark.pageNumber})`
+          }
+          aria-label="Marcador"
           className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 ${
-            bookmarks.has(currentPage)
+            !workBookmark
+              ? 'bg-zinc-900/90 backdrop-blur border border-zinc-700 text-zinc-300 hover:text-white'
+              : isAtBookmarkPosition
               ? 'bg-yellow-400 text-zinc-950'
-              : 'bg-zinc-900/90 backdrop-blur border border-zinc-700 text-zinc-300 hover:text-white'
+              : 'bg-yellow-400/85 text-zinc-950'
           } ${bookmarkLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
         >
           <svg
             className="h-6 w-6"
-            fill={bookmarks.has(currentPage) ? 'currentColor' : 'none'}
+            fill={workBookmark ? 'currentColor' : 'none'}
             stroke="currentColor"
             strokeWidth={2}
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
-          {bookmarks.size > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-zinc-950 text-yellow-400 text-[10px] font-black flex items-center justify-center border-2 border-yellow-400">
-              {bookmarks.size}
-            </span>
-          )}
         </button>
+      )}
+
+      {/* Delete bookmark confirmation */}
+      {showDeleteBookmarkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowDeleteBookmarkModal(false)}>
+          <div
+            className="max-w-sm w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-500/15 border border-yellow-500/40 flex items-center justify-center text-yellow-400">
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+              </div>
+              <h3 className="text-white font-black text-base">¿Eliminar marcador?</h3>
+            </div>
+            <p className="text-zinc-400 text-sm mb-5">
+              Quedará en blanco hasta que guardes uno nuevo.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteBookmarkModal(false)}
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-black uppercase tracking-widest transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={deleteCurrentBookmark}
+                disabled={bookmarkLoading}
+                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-60"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

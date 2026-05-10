@@ -133,6 +133,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [copied, setCopied] = useState(false);
   const [chaptersUpdating, setChaptersUpdating] = useState<Set<number>>(new Set());
   const [showNSFWModal, setShowNSFWModal] = useState(false);
+  // Single bookmark per work (manga or joint). Used to render the "Ir a mi
+  // marcador" button next to the user-list toggle and link straight to the
+  // bookmarked chapter+position.
+  const [workBookmark, setWorkBookmark] = useState<any | null>(null);
 
   // Check if NSFW content and show age verification modal
   useEffect(() => {
@@ -152,6 +156,19 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       .then((value) => { setIsFavorite(!!value); })
       .catch(() => {});
   }, [logged, mangaSlug, isJoint]);
+
+  // Load the user's single bookmark for THIS work (if any). Used to surface
+  // an "Ir a mi marcador" shortcut on the manga detail page.
+  useEffect(() => {
+    if (!logged) { setWorkBookmark(null); return; }
+    const qs = isJoint
+      ? `?jointId=${(manga as any)?.id ?? ''}`
+      : `?mangaCustomId=${manga?.id ?? ''}`;
+    if (!qs.includes('=') || qs.endsWith('=')) return;
+    callAPI(`/api/bookmarks/work${qs}`)
+      .then((bk: any) => setWorkBookmark(bk || null))
+      .catch(() => setWorkBookmark(null));
+  }, [logged, isJoint, manga?.id]);
 
   // Check if manga/joint is in user's 'Mi Lista'
   useEffect(() => {
@@ -1149,6 +1166,43 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               <Bookmark size={18} fill={isInUserList ? 'currentColor' : 'none'} />
               {isInUserList ? 'EN MI LISTA' : 'AÑADIR A MI LISTA'}
             </button>
+
+            {/* Bookmark shortcut — only visible when the user has saved a
+                position somewhere in this work. Routes to the chapter and, for
+                novels, hints the scroll percentage via ?page= which the
+                NovelReader picks up on mount. */}
+            {logged && workBookmark && (() => {
+              const ch = workBookmark.chapter;
+              if (!ch) return null;
+              const isWriting = !!ch.mangaCustom?.manga?.bookType?.code &&
+                ['novel', 'light-novel', 'book', 'short-story'].includes(ch.mangaCustom.manga.bookType.code);
+              const orgSlug = ch.mangaCustom?.organization?.slug;
+              const ms = ch.mangaCustom?.manga?.slug;
+              const jSlug = ch.joint?.slug;
+              const typeSeg = ch.mangaCustom?.manga?.bookType?.code || 'novel';
+              let url: string;
+              if (jSlug) {
+                url = `/joint/manga/${jSlug}/chapters/${ch.number}?page=${workBookmark.pageNumber}`;
+              } else if (isWriting && orgSlug && ms) {
+                url = `/writings/${orgSlug}/${typeSeg}/${ms}/chapter/${ch.number}?page=${workBookmark.pageNumber}`;
+              } else if (orgSlug && ms) {
+                url = `/${orgSlug}/manga/${ms}/chapters/${ch.number}?page=${workBookmark.pageNumber}`;
+              } else {
+                return null;
+              }
+              const positionLabel = isWriting
+                ? `${workBookmark.pageNumber}%`
+                : `Pág. ${workBookmark.pageNumber}`;
+              return (
+                <a
+                  href={url}
+                  className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border-2 transition-all active:scale-95 bg-yellow-400/10 border-yellow-500/50 text-yellow-400 hover:bg-yellow-400/20"
+                >
+                  <Bookmark size={18} fill="currentColor" />
+                  Ir a mi marcador · Cap. {ch.number} · {positionLabel}
+                </a>
+              );
+            })()}
 
             {/* Feedback message */}
             {favoriteFeedback && (
