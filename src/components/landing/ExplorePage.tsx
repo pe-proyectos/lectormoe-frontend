@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import MangaCard3D from './MangaCard3D';
-import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User, X } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 import { callAPI } from '../../util/callApi';
 
@@ -151,10 +151,13 @@ interface ExplorePageProps {
 }
 
 const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged, nsfwMode = false }) => {
+  const initialAuthor = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('author') ?? '' : '';
   const [search, setSearch] = useState('');
   const [selectedScan, setSelectedScan] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedGenre, setSelectedGenre] = useState('All');
+  const [authorSlug, setAuthorSlug] = useState<string>(initialAuthor);
+  const [authorName, setAuthorName] = useState<string>('');
   const [sortBy, setSortBy] = useState('latest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mangas, setMangas] = useState<Manga[]>([]);
@@ -169,7 +172,26 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, selectedStatus, selectedGenre, sortBy]);
+  }, [search, selectedStatus, selectedGenre, sortBy, authorSlug]);
+
+  // Look up the author's display name when filtering by author (so the pill
+  // shows "Por: Akasaka Aka" instead of the raw slug). Best-effort — falls back
+  // to the slug if the fetch fails.
+  useEffect(() => {
+    if (!authorSlug) { setAuthorName(''); return; }
+    callAPI(`/api/author/${encodeURIComponent(authorSlug)}`)
+      .then((a: any) => setAuthorName(a?.name ?? authorSlug))
+      .catch(() => setAuthorName(authorSlug));
+  }, [authorSlug]);
+
+  // Sync author filter into the URL so refresh / share preserves it.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const u = new URL(window.location.href);
+    if (authorSlug) u.searchParams.set('author', authorSlug);
+    else u.searchParams.delete('author');
+    window.history.replaceState({}, '', u.toString());
+  }, [authorSlug]);
 
   const isScanBranded = organization && organizationSlug;
 
@@ -277,6 +299,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           queryParams.set('genre', selectedGenre);
         }
 
+        if (authorSlug) {
+          queryParams.set('author', authorSlug);
+        }
+
         const result = await callAPI(`/api/manga-custom?${queryParams}`);
 
         // El API retorna { items: [...], maxPage: X, total: Y }
@@ -327,7 +353,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     };
 
     fetchMangas();
-  }, [search, selectedStatus, selectedGenre, sortBy, page, organizationSlug, organization, user, logged]);
+  }, [search, selectedStatus, selectedGenre, sortBy, authorSlug, page, organizationSlug, organization, user, logged]);
 
   // Load genres: from API for org-specific pages, from all loaded mangas for global
   useEffect(() => {
@@ -415,6 +441,24 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               />
             </div>
           </div>
+
+          {/* Active author pill — only shown when searching by author */}
+          {authorSlug && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Autor:</span>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-bold">
+                {authorName || authorSlug}
+                <button
+                  onClick={() => setAuthorSlug('')}
+                  className="ml-1 -mr-1 p-0.5 rounded-full hover:bg-cyan-500/20 text-cyan-200 hover:text-white transition-colors"
+                  title="Quitar filtro de autor"
+                  aria-label="Quitar filtro de autor"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            </div>
+          )}
 
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center gap-3 p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-2xl backdrop-blur-sm">
@@ -556,6 +600,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                 if (!isScanBranded) setSelectedScan('All');
                 setSelectedGenre('All');
                 setSelectedStatus('All');
+                setAuthorSlug('');
               }}
               className="text-cyan-500 font-bold text-xs uppercase tracking-[0.2em] border-b border-cyan-500/30 pb-1 hover:border-cyan-500 transition-all"
             >
@@ -567,7 +612,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
         {/* Joints Section — only shown when the user is browsing the unfiltered
             global catalog. Hidden as soon as any search/filter is active so the
             joints don't masquerade as "results" for a filter that returned 0. */}
-        {!isScanBranded && !search && selectedStatus === 'All' && selectedGenre === 'All' && selectedScan === 'All' && joints.length > 0 && (
+        {!isScanBranded && !search && !authorSlug && selectedStatus === 'All' && selectedGenre === 'All' && selectedScan === 'All' && joints.length > 0 && (
           <div className="mt-16">
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">

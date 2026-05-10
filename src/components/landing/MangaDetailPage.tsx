@@ -52,7 +52,10 @@ interface MangaDetailPageProps {
     } | null;
     genres?: Genre[];
     chapters?: Chapter[];
-    authors?: Array<{ name: string }>;
+    authors?: Array<{ name: string; slug?: string }>;
+    manga?: {
+      authors?: Array<{ name: string; slug?: string }>;
+    };
     subscriptionPlansCanReadUnreleased?: Array<{ id: number; name: string }>;
     subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
     requireLogin?: boolean;
@@ -1332,11 +1335,34 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
                 {manga.title}
               </h1>
-              {manga.authors && manga.authors.length > 0 && (
-                <p className="text-zinc-400 text-lg font-bold">
-                  Por {manga.authors.map((a) => a.name).join(", ")}
-                </p>
-              )}
+              {(() => {
+                // Authors live on the underlying manga model (mangaCustom.manga.authors),
+                // not on the per-org mangaCustom. Fall back to root .authors to be safe
+                // for any caller that may have flattened the structure.
+                const authors = manga.manga?.authors ?? manga.authors ?? [];
+                if (authors.length === 0) return null;
+                return (
+                  <p className="text-zinc-400 text-lg font-bold">
+                    Por{' '}
+                    {authors.map((a, i) => (
+                      <React.Fragment key={a.slug ?? a.name}>
+                        {i > 0 && ', '}
+                        {a.slug ? (
+                          <a
+                            href={`/search?author=${encodeURIComponent(a.slug)}`}
+                            className="text-cyan-400 hover:text-cyan-300 underline decoration-cyan-500/30 underline-offset-4 hover:decoration-cyan-400 transition-colors"
+                            title={`Ver más obras de ${a.name}`}
+                          >
+                            {a.name}
+                          </a>
+                        ) : (
+                          <span>{a.name}</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </p>
+                );
+              })()}
 
               <div className="max-w-4xl">
                 <p className="text-zinc-300 text-base leading-relaxed font-medium">
