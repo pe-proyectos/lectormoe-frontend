@@ -267,7 +267,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
         }
 
         if (selectedStatus !== 'All') {
-          queryParams.set('status', selectedStatus);
+          // The DB stores statuses lowercase ("ongoing"/"completed"/"hiatus"),
+          // but the dropdown values are TitleCase. Normalize before sending so
+          // the filter actually matches.
+          queryParams.set('status', selectedStatus.toLowerCase());
         }
 
         if (selectedGenre !== 'All') {
@@ -554,8 +557,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           </div>
         )}
 
-        {/* Joints Section (global only, no search filter applied) */}
-        {!isScanBranded && !search && joints.length > 0 && (
+        {/* Joints Section — only shown when the user is browsing the unfiltered
+            global catalog. Hidden as soon as any search/filter is active so the
+            joints don't masquerade as "results" for a filter that returned 0. */}
+        {!isScanBranded && !search && selectedStatus === 'All' && selectedGenre === 'All' && selectedScan === 'All' && joints.length > 0 && (
           <div className="mt-16">
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">
