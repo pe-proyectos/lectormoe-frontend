@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { X, ExternalLink, Trophy, Clock } from 'lucide-react';
 
-// v5 — Capibara Aeronautics SMP launch (compact). Previous dismissers should see this.
-const STORAGE_KEY = 'discord-invite-modal-v5';
+// v6 — Capibara Aeronautics SMP launch — population challenge banner.
+// Bumped key so previous dismissers see the new artwork + prizes.
+const STORAGE_KEY = 'discord-invite-modal-v6';
 const DISCORD_INVITE = 'https://capibaratraductor.com/discord';
 const SNOOZE_MS = 60 * 60 * 1000; // 1 hour
 
-// 2026-05-31 23:59:00 local time
-const DEADLINE = new Date(2026, 4, 31, 23, 59, 0);
+// 2026-05-31 12:00:00 local time (noon — per the banner artwork)
+const DEADLINE = new Date(2026, 4, 31, 12, 0, 0);
 
 const shouldShow = (): boolean => {
   if (typeof window === 'undefined') return false;
@@ -96,8 +97,8 @@ const DiscordInviteModal: React.FC = () => {
 
         {/* Hero image */}
         <img
-          src="/images/svmc.jpg"
-          alt="Capibara Aeronautics — Nuevo SMP"
+          src="/images/bannermodal.png"
+          alt="Capibara Aeronautics — Gran desafío de población"
           className="block w-full object-cover rounded-t-3xl"
         />
 
@@ -107,7 +108,7 @@ const DiscordInviteModal: React.FC = () => {
             <div className="flex items-center gap-2 mb-2">
               <Trophy size={14} className="text-yellow-400 shrink-0" />
               <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest">
-                75 USD · Mejor colonia al 31 de mayo
+                $50 + $25 USD · Más ciudadanos · 31 de mayo 12:00
               </p>
             </div>
             {!expired ? (
