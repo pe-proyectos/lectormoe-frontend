@@ -17,8 +17,11 @@ export async function getPresignedUrl(
   const body = JSON.stringify({ filename, contentType, expiresIn, contentFolder });
 
   if (authToken) {
+    // The superadmin token is signed with a different JWT secret than regular
+    // user tokens, so the public /api/files/presigned-url (which uses logged())
+    // would reject it. Hit the superadmin-scoped endpoint instead.
     const API_URL = (import.meta as any).env?.PUBLIC_API_URL ?? '';
-    const res = await fetch(`${API_URL}/api/files/presigned-url`, {
+    const res = await fetch(`${API_URL}/api/superadmin/files/presigned-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
