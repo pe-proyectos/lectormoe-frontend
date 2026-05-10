@@ -1,31 +1,39 @@
 import { callAPI } from './callApi';
 
 /**
- * Get a presigned URL for uploading a file directly to R2
- * @param filename - The filename
- * @param contentType - The content type (optional, will be inferred from filename if not provided)
- * @param expiresIn - URL expiration time in seconds (default: 1 hour)
- * @param contentFolder - Optional folder name for content type (e.g., 'chapters', 'mangas', 'profile_pictures')
- * @returns Object with uploadUrl and fileKey
+ * Get a presigned URL for uploading a file directly to R2.
+ * @param authToken - Optional explicit bearer token. Used by superadmin tooling
+ *                    where the auth token is held in component state instead of
+ *                    a cookie (callAPI's default source). When provided, the
+ *                    request bypasses callAPI and goes straight to the API.
  */
 export async function getPresignedUrl(
   filename: string,
   contentType?: string,
   expiresIn?: number,
-  contentFolder?: string
+  contentFolder?: string,
+  authToken?: string,
 ): Promise<{ uploadUrl: string; fileKey: string }> {
-  const response = await callAPI('/api/files/presigned-url', {
-    method: 'POST',
-    body: JSON.stringify({
-      filename,
-      contentType,
-      expiresIn,
-      contentFolder,
-    }),
-  });
+  const body = JSON.stringify({ filename, contentType, expiresIn, contentFolder });
 
-  // callAPI already extracts the data
-  return response;
+  if (authToken) {
+    const API_URL = (import.meta as any).env?.PUBLIC_API_URL ?? '';
+    const res = await fetch(`${API_URL}/api/files/presigned-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body,
+    });
+    const json = await res.json();
+    if (!res.ok || json?.status === false) {
+      throw new Error(json?.message || json?.error || 'No se pudo generar la URL de subida.');
+    }
+    return json.data;
+  }
+
+  return await callAPI('/api/files/presigned-url', { method: 'POST', body });
 }
 
 /**
@@ -85,9 +93,10 @@ export async function uploadFileToR2(
 export async function uploadFile(
   file: File,
   onProgress?: (progress: number) => void,
-  contentFolder?: string
+  contentFolder?: string,
+  authToken?: string,
 ): Promise<string> {
-  const { uploadUrl, fileKey } = await getPresignedUrl(file.name, file.type, undefined, contentFolder);
+  const { uploadUrl, fileKey } = await getPresignedUrl(file.name, file.type, undefined, contentFolder, authToken);
   await uploadFileToR2(file, uploadUrl, onProgress);
   return fileKey;
 }

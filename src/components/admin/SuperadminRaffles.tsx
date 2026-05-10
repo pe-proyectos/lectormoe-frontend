@@ -176,7 +176,7 @@ const CreateModal: React.FC<{ onClose: () => void; onCreated: () => void; token:
 
   const handleFileUpload = async (file: File, target: 'image' | 'banner') => {
     try {
-      const key = await uploadFile(file, undefined, 'raffles');
+      const key = await uploadFile(file, undefined, 'raffles', token);
       const fullUrl = resolveR2Url(key);
       if (target === 'image') setImageUrl(fullUrl);
       else setBannerUrl(fullUrl);
@@ -326,7 +326,7 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
 
   const handleFileUpload = async (file: File, target: 'image' | 'banner') => {
     try {
-      const key = await uploadFile(file, undefined, 'raffles');
+      const key = await uploadFile(file, undefined, 'raffles', token);
       const fullUrl = resolveR2Url(key);
       if (target === 'image') setImageUrl(fullUrl);
       else setBannerUrl(fullUrl);
