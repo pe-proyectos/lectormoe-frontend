@@ -3,6 +3,8 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ListBulletIcon as ListIcon,
+  ArrowUpIcon,
 } from "@heroicons/react/24/outline";
 import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
@@ -1399,63 +1401,75 @@ export function Reader({
           </div>
         )}
 
-        <div className="flex w-full justify-center mt-2">
-          <div className="m-2 flex flex-wrap gap-2 justify-center">
-            {chapter?.previousChapter &&
-              (new Date(chapter.previousChapter?.releasedAt).getTime() <
-              new Date().getTime() ? (
+        {/* Chapter navigation strip — restyled to match the rest of the dark
+            reader theme (zinc + cyan accents, generous radii, uppercase
+            tracking, consistent with the floating buttons and footer cards). */}
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-8 mt-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Previous */}
+            {chapter?.previousChapter ? (
+              new Date(chapter.previousChapter?.releasedAt).getTime() < new Date().getTime() ? (
                 <button
                   onClick={() => resolvedPrevChapterUrl && (location.href = resolvedPrevChapterUrl)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="group flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-900 text-zinc-200 hover:text-cyan-400 text-xs font-black uppercase tracking-widest transition-all"
                 >
-                  {_("previous_chapter")}#{chapter?.previousChapter?.number}{" "}
-                  {chapter?.previousChapter?.title}
+                  <ChevronLeftIcon className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+                  <span className="truncate">Cap. {chapter.previousChapter.number}</span>
                 </button>
               ) : (
                 <button
                   disabled
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg cursor-not-allowed opacity-50"
+                  className="flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-zinc-600 text-xs font-bold uppercase tracking-widest cursor-not-allowed"
                 >
-                  {_("previous_chapter_will_be_released_in")}{" "}
-                  {formatDate(chapter.previousChapter?.releasedAt, language)}
+                  Próximamente · {formatDate(chapter.previousChapter?.releasedAt, language)}
                 </button>
-              ))}
+              )
+            ) : (
+              <span className="hidden sm:block" />
+            )}
+
+            {/* Back to chapter list (center, primary action) */}
             <button
               onClick={() => (location.href = resolvedMangaUrl)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="group flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 text-xs font-black uppercase tracking-widest shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]"
             >
-              {_("back_to_chapter_list")}
+              <ListIcon className="h-4 w-4" />
+              Lista de capítulos
             </button>
-            {chapter?.nextChapter &&
-              (new Date(chapter.nextChapter?.releasedAt).getTime() <
-              new Date().getTime() ? (
+
+            {/* Next */}
+            {chapter?.nextChapter ? (
+              new Date(chapter.nextChapter?.releasedAt).getTime() < new Date().getTime() ? (
                 <button
                   onClick={() => resolvedNextChapterUrl && (location.href = resolvedNextChapterUrl)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="group flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-900 text-zinc-200 hover:text-cyan-400 text-xs font-black uppercase tracking-widest transition-all"
                 >
-                  {_("next_chapter")}
+                  <span className="truncate">Cap. {chapter.nextChapter.number}</span>
+                  <ChevronRightIcon className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               ) : (
                 <button
                   disabled
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg cursor-not-allowed opacity-50"
+                  className="flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-zinc-600 text-xs font-bold uppercase tracking-widest cursor-not-allowed"
                 >
-                  {_("next_chapter_will_be_released_in")}{" "}
-                  {formatDate(chapter.nextChapter?.releasedAt, language)}
+                  Próximamente · {formatDate(chapter.nextChapter?.releasedAt, language)}
                 </button>
-              ))}
-          </div>
-        </div>
-
-        <div className="flex w-full justify-center mt-2 mb-4">
-          {settings.readType === readTypes.CASCADE &&
-            chapterData.pages.length > 0 && (
-              <a href="#manga-pages-top" className="text-white text-xl">
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  {_("back_to_start")}
-                </button>
-              </a>
+              )
+            ) : (
+              <span className="hidden sm:block" />
             )}
+          </div>
+
+          {settings.readType === readTypes.CASCADE && chapterData.pages.length > 0 && (
+            <div className="flex justify-center mt-3">
+              <a
+                href="#manga-pages-top"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-800 hover:border-cyan-500/40 text-zinc-400 hover:text-cyan-400 text-[10px] font-black uppercase tracking-widest transition-colors"
+              >
+                <ArrowUpIcon className="h-3.5 w-3.5" /> Volver arriba
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="w-full bg-zinc-950 border-t border-zinc-800 px-4 md:px-8 py-6">
