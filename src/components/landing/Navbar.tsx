@@ -478,7 +478,7 @@ const Navbar: React.FC<NavbarProps> = ({
     <>
     <nav
       className={`${
-        isSticky ? "fixed" : "relative"
+        isSticky ? "md:fixed relative" : "relative"
       } top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled || activeView !== "home"
           ? "bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800 py-3 shadow-2xl shadow-black/50"
@@ -796,48 +796,17 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Toggle — kept minimal: only the notification bell remains in
+            the top bar. Catálogo / Novelas / Luckys / +18 toggle / hamburger
+            menu all moved to the bottom bar + mega-menu. */}
         <div className="flex items-center gap-3 md:hidden">
-          {/* NSFW Mode Toggle Circle - mobile */}
-          <button
-            onClick={() => setNsfwModalOpen(true)}
-            title={nsfwMode ? 'Salir del modo +18' : 'Activar modo +18'}
-            className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[9px] transition-all shadow-md group/nsfw-m cursor-pointer ${
-              nsfwMode
-                ? 'bg-red-500 text-white shadow-red-500/30'
-                : 'bg-cyan-500 text-zinc-950 shadow-cyan-500/30 hover:bg-red-500 hover:text-white hover:shadow-red-500/30'
-            }`}
-          >
-            {nsfwMode ? '18+' : <span className="opacity-0 group-hover/nsfw-m:opacity-100 transition-opacity">18+</span>}
-          </button>
-
           {logged && <NotificationBell logged={!!logged} variant="mobile" />}
-
-          {logged && user && (
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-500 bg-zinc-800 flex items-center justify-center">
-              {user.imageUrl ? (
-                <img
-                  src={user.imageUrl}
-                  className="w-full h-full object-cover"
-                  alt=""
-                />
-              ) : (
-                <span className="text-cyan-500 font-black text-xs">
-                  {user.username?.[0] || "U"}
-                </span>
-              )}
-            </div>
-          )}
-          <button
-            className="text-zinc-100 p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu — legacy hamburger drawer (now superseded by the bottom
+          bar mega menu). Kept inert so any external code that still toggles
+          mobileMenuOpen doesn't break. */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl max-h-[80vh] overflow-y-auto">
           {activeScan && (
@@ -1199,10 +1168,16 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Quick navigation grid */}
           <div className="grid grid-cols-3 gap-2 px-5 mt-4">
             {[
-              { icon: <Home size={18} />,    label: 'Inicio',     href: nsfwMode ? '/red' : '/' },
-              { icon: <Search size={18} />,  label: 'Buscar',     href: `${nsfwPrefix}/search` },
-              { icon: <Compass size={18} />, label: 'Explorar',   href: '/scans' },
-              { icon: <Bookmark size={18} />,label: 'Novelas',    href: nsfwMode ? '/red/writings' : '/writings' },
+              { icon: <Home size={18} />,     label: 'Inicio',    href: nsfwMode ? '/red' : '/' },
+              { icon: <Search size={18} />,   label: 'Catálogo',  href: `${nsfwPrefix}/search` },
+              { icon: <Compass size={18} />,  label: 'Explorar',  href: '/scans' },
+              { icon: <Bookmark size={18} />, label: 'Novelas',   href: nsfwMode ? '/red/writings' : '/writings' },
+              {
+                icon: <Sparkles size={18} className={luckys.hasActive ? 'text-yellow-400' : ''} />,
+                label: 'Luckys',
+                href: '/luckys',
+                badge: luckys.hasActive ? '🔥' : undefined,
+              },
               ...(logged && user?.slug ? [
                 { icon: <ListIcon size={18} />, label: 'Mi lista', href: `${nsfwPrefix}/list/${user.slug}` },
               ] : []),
