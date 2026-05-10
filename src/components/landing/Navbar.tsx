@@ -16,6 +16,12 @@ import {
   MessageCircle,
   Bell,
   Sparkles,
+  Home,
+  Compass,
+  List as ListIcon,
+  Heart,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
@@ -141,6 +147,10 @@ const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [nsfwModalOpen, setNsfwModalOpen] = useState(false);
+  // Bottom-bar mega menu (mobile only). Surfaces every desktop nav option in a
+  // single fullscreen sheet so the bottombar itself can stay tight (3 quick
+  // actions: lists / menu / profile).
+  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState(initialUser);
   const [logged, setLogged] = useState(initialLogged);
@@ -1060,6 +1070,204 @@ const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               {nsfwMode ? 'Confirmar' : 'Tengo 18+ años'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ─── Mobile bottom bar ──────────────────────────────────────────────
+        Fixed-bottom 3-action shortcut + center mega-menu opener. Hidden on
+        md+ where the regular Navbar is visible. */}
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]"
+      aria-label="Navegación móvil"
+    >
+      <div className="flex items-stretch justify-between max-w-md mx-auto px-2">
+        {/* Left: My lists */}
+        <button
+          type="button"
+          onClick={() => {
+            const target = logged && user?.slug ? `${nsfwPrefix}/list/${user.slug}` : `${nsfwPrefix}/login`;
+            window.location.href = target;
+          }}
+          className="flex flex-col items-center justify-center gap-0.5 py-3 flex-1 text-zinc-400 active:bg-zinc-900 transition-colors"
+          aria-label="Mi lista"
+        >
+          <Bookmark size={22} />
+          <span className="text-[9px] font-black uppercase tracking-widest">Lista</span>
+        </button>
+
+        {/* Center: open mega menu */}
+        <button
+          type="button"
+          onClick={() => setMegaMenuOpen(true)}
+          className="-mt-5 mx-1 w-14 h-14 rounded-full bg-cyan-500 text-zinc-950 flex items-center justify-center shadow-2xl shadow-cyan-500/40 active:scale-95 transition-transform self-center"
+          aria-label="Abrir menú"
+        >
+          <Menu size={24} strokeWidth={2.5} />
+        </button>
+
+        {/* Right: profile picture */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!logged || !user) { window.location.href = `${nsfwPrefix}/login`; return; }
+            navigateToProfile();
+          }}
+          className="flex flex-col items-center justify-center gap-0.5 py-3 flex-1 text-zinc-400 active:bg-zinc-900 transition-colors"
+          aria-label="Mi perfil"
+        >
+          {logged && user?.imageUrl ? (
+            <img
+              src={user.imageUrl}
+              alt={user.username || 'Perfil'}
+              className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700"
+            />
+          ) : logged && (user?.username || user?.email) ? (
+            <div className="w-7 h-7 rounded-full bg-cyan-500 text-zinc-950 text-xs font-black flex items-center justify-center">
+              {(user.username || user.email || 'U')[0].toUpperCase()}
+            </div>
+          ) : (
+            <UserIcon size={22} />
+          )}
+          <span className="text-[9px] font-black uppercase tracking-widest">Perfil</span>
+        </button>
+      </div>
+    </nav>
+
+    {/* Mega-menu sheet — shown when the bottombar's center button is tapped.
+        Mirrors every link the desktop nav exposes. */}
+    {megaMenuOpen && (
+      <div
+        className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end"
+        onClick={() => setMegaMenuOpen(false)}
+      >
+        <div
+          className="w-full bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[88vh] overflow-y-auto pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-zinc-900 sticky top-0 bg-zinc-950 z-10">
+            <span className="text-xs font-black text-zinc-500 uppercase tracking-[0.3em]">Menú</span>
+            <button
+              type="button"
+              onClick={() => setMegaMenuOpen(false)}
+              className="w-9 h-9 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 flex items-center justify-center transition-colors"
+              aria-label="Cerrar"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* User card (logged) or auth CTA (logged-out) */}
+          {logged && user ? (
+            <a
+              href={`${nsfwPrefix}/profile/${user.slug}`}
+              className="flex items-center gap-3 mx-5 mt-4 mb-2 p-3 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 transition-colors"
+            >
+              {user.imageUrl ? (
+                <img src={user.imageUrl} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-cyan-500 text-zinc-950 text-base font-black flex items-center justify-center">
+                  {(user.username || user.email || 'U')[0].toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-white font-bold text-sm truncate">{user.username || user.email}</p>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">Ver mi perfil</p>
+              </div>
+              <ChevronDown size={16} className="text-zinc-500 -rotate-90" />
+            </a>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 mx-5 mt-4 mb-2">
+              <a
+                href={`${nsfwPrefix}/login`}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-cyan-500 text-zinc-950 text-xs font-black uppercase tracking-widest"
+              >
+                <LogIn size={16} /> Iniciar sesión
+              </a>
+              <a
+                href={`${nsfwPrefix}/register`}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-white text-xs font-black uppercase tracking-widest"
+              >
+                <UserPlus size={16} /> Registrarme
+              </a>
+            </div>
+          )}
+
+          {/* Quick navigation grid */}
+          <div className="grid grid-cols-3 gap-2 px-5 mt-4">
+            {[
+              { icon: <Home size={18} />,    label: 'Inicio',     href: nsfwMode ? '/red' : '/' },
+              { icon: <Search size={18} />,  label: 'Buscar',     href: `${nsfwPrefix}/search` },
+              { icon: <Compass size={18} />, label: 'Explorar',   href: '/scans' },
+              { icon: <Bookmark size={18} />,label: 'Novelas',    href: nsfwMode ? '/red/writings' : '/writings' },
+              ...(logged && user?.slug ? [
+                { icon: <ListIcon size={18} />, label: 'Mi lista', href: `${nsfwPrefix}/list/${user.slug}` },
+              ] : []),
+              ...(activeScan && onGoSubscriptions ? [
+                { icon: <Crown size={18} />,  label: 'Suscripciones', action: onGoSubscriptions as any },
+              ] : []),
+            ].map((item: any, i) => (
+              item.href ? (
+                <a
+                  key={i}
+                  href={item.href}
+                  className="flex flex-col items-center justify-center gap-1 py-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white transition-colors"
+                >
+                  <span className="text-cyan-400">{item.icon}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                </a>
+              ) : (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { item.action?.(); setMegaMenuOpen(false); }}
+                  className="flex flex-col items-center justify-center gap-1 py-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white transition-colors"
+                >
+                  <span className="text-cyan-400">{item.icon}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                </button>
+              )
+            ))}
+          </div>
+
+          {/* Logged-in user shortcuts */}
+          {logged && user && (
+            <div className="px-5 mt-4 space-y-1">
+              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 px-1">Mi cuenta</p>
+              <a href={`${nsfwPrefix}/profile/${user.slug}`} className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
+                <UserIcon size={16} className="text-zinc-500" /><span className="text-sm font-bold">Mi perfil</span>
+              </a>
+              <a href={`${nsfwPrefix}/notifications`} className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
+                <Bell size={16} className="text-zinc-500" /><span className="text-sm font-bold">Notificaciones</span>
+              </a>
+              <a href={`${nsfwPrefix}/settings`} className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
+                <Settings size={16} className="text-zinc-500" /><span className="text-sm font-bold">Configuración</span>
+              </a>
+              <a href="/luckys" className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
+                <Gift size={16} className="text-yellow-400" /><span className="text-sm font-bold">Sorteos</span>
+              </a>
+              <a href="/logout" className="flex items-center gap-3 px-3 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors">
+                <LogOut size={16} /><span className="text-sm font-bold">Cerrar sesión</span>
+              </a>
+            </div>
+          )}
+
+          {/* NSFW toggle */}
+          <div className="px-5 mt-5 mb-3">
+            <button
+              type="button"
+              onClick={() => { window.location.href = getNsfwToggleTarget(); }}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors ${
+                nsfwMode
+                  ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  : 'bg-red-500/15 border border-red-500/40 text-red-400 hover:bg-red-500/25'
+              }`}
+            >
+              <Heart size={14} fill={nsfwMode ? 'none' : 'currentColor'} />
+              {nsfwMode ? 'Salir del modo +18' : 'Activar +18'}
             </button>
           </div>
         </div>
