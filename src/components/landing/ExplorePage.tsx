@@ -520,9 +520,16 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                   nsfwMode={nsfwMode}
                   manga={{
                     ...manga,
-                    status: (manga.status === 'Ongoing' || manga.status === 'Completed' || manga.status === 'Hiatus')
-                      ? manga.status
-                      : 'Ongoing' as 'Ongoing' | 'Completed' | 'Hiatus'
+                    // The DB stores status lowercase ("completed", "hiatus", "ongoing")
+                    // but MangaCard3D's prop type is TitleCase. Normalize so a
+                    // completed manga doesn't fall through to 'Ongoing' and end up
+                    // displaying the "En emisión" badge.
+                    status: ((): 'Ongoing' | 'Completed' | 'Hiatus' => {
+                      const s = (manga.status || '').toLowerCase();
+                      if (s === 'completed') return 'Completed';
+                      if (s === 'hiatus') return 'Hiatus';
+                      return 'Ongoing';
+                    })(),
                   }}
                 />
               ))}
