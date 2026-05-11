@@ -1230,6 +1230,30 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
+          {/* Admin scans — mirrors the desktop dropdown's panel list. Shows
+              every organization where the user has canSeeAdminPanel. */}
+          {logged && user?.permissions?.some((p: any) => p.canSeeAdminPanel && p.organization) && (
+            <div className="px-5 mt-4 space-y-1">
+              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 px-1">Mis scans (admin)</p>
+              {user.permissions
+                .filter((p: any) => p.canSeeAdminPanel && p.organization)
+                .map((p: any) => (
+                  <a
+                    key={p.organizationId}
+                    href={`/${p.organization.slug}/admin/mangas`}
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors"
+                  >
+                    {p.organization.logoUrl ? (
+                      <img src={p.organization.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover" />
+                    ) : (
+                      <Shield size={16} className="text-purple-500" />
+                    )}
+                    <span className="text-sm font-bold truncate">Panel {p.organization.name}</span>
+                  </a>
+                ))}
+            </div>
+          )}
+
           {/* NSFW toggle */}
           <div className="px-5 mt-5 mb-3">
             <button
