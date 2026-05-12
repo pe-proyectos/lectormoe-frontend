@@ -10,12 +10,16 @@ import {
   Users,
 } from 'lucide-react';
 
-// v7 — full redesign. New Minecraft-focused Discord (Capibara Aeronautics) +
-// emphasis on tournaments / sorteos / concursos. Storage key bumped so users
-// who dismissed the previous banner see the new pitch.
-const STORAGE_KEY = 'discord-invite-modal-v7';
+// v8 — staged relaunch. Same Capibara Aeronautics redesign, but gated behind
+// an activation date so the modal stays dark until tomorrow and then surfaces
+// to everyone (new storage key wipes prior dismissals).
+const STORAGE_KEY = 'discord-invite-modal-v8';
 const DISCORD_INVITE = 'https://discord.gg/MD6VwVTNBd';
 const SNOOZE_MS = 60 * 60 * 1000; // 1 hour
+
+// Hold the modal until this moment. Before it, the component renders nothing.
+// 2026-05-13 12:00 local time.
+const ACTIVATION_DATE = new Date(2026, 4, 13, 12, 0, 0);
 
 // First active concurso — Gran Desafío de Población, deadline 2026-05-31 12:00.
 const DEADLINE = new Date(2026, 4, 31, 12, 0, 0);
@@ -85,6 +89,8 @@ const DiscordInviteModal: React.FC = () => {
   useEffect(() => {
     setMounted(true);
     if (isAdminPath()) return;
+    // Hard activation gate — until ACTIVATION_DATE we never open the modal.
+    if (Date.now() < ACTIVATION_DATE.getTime()) return;
     const t = window.setTimeout(() => {
       if (shouldShow()) setOpen(true);
     }, 1200);
