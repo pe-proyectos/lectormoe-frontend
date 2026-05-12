@@ -6,6 +6,7 @@ import FeaturedManga from './FeaturedManga';
 import PopularToday from './PopularToday';
 import LatestUpdates from './LatestUpdates';
 import PerOrgPopular from './PerOrgPopular';
+import ScrollableCardRow from './ScrollableCardRow';
 import ScansSection from './ScansSection';
 import TopReaders from './TopReaders';
 import TopCommenters from './TopCommenters';
@@ -112,9 +113,9 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
                   <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Populares del Día</h2>
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
+              <ScrollableCardRow desktopCols="sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
                 <PopularToday user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
-              </div>
+              </ScrollableCardRow>
             </section>
 
             {/* Featured Mangas Section */}
@@ -127,9 +128,9 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
                   <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Populares de la Semana</h2>
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 md:gap-6">
+              <ScrollableCardRow desktopCols="sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
                 <FeaturedManga user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
-              </div>
+              </ScrollableCardRow>
             </section>
 
 

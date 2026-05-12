@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Flame, ChevronDown } from 'lucide-react';
 import MangaCard3D from './MangaCard3D';
+import ScrollableCardRow from './ScrollableCardRow';
 
 interface ScanPopular24hProps {
   mangas: any[];
@@ -44,7 +45,7 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, user, organizat
       </div>
       <div className="w-full h-0.5 bg-zinc-800 mb-8" />
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+      <ScrollableCardRow desktopCols="sm:grid-cols-3" gapClass="gap-4 sm:gap-6">
         {visibleMangas.map((manga, i) => (
           <MangaCard3D
             key={`pop24h-${i}`}
@@ -55,7 +56,7 @@ const ScanPopular24h: React.FC<ScanPopular24hProps> = ({ mangas, user, organizat
             nsfwMode={nsfwMode}
           />
         ))}
-      </div>
+      </ScrollableCardRow>
 
       {hasMore && (
         <div className="mt-8 flex justify-center">
