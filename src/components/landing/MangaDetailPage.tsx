@@ -1130,7 +1130,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-32 md:-mt-48 relative z-10">
-        <div className="grid lg:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* SECCION IZQUIERDA (SIDEBAR) */}
           <div className="lg:col-span-3 space-y-8">
             <div className="relative group mx-auto w-48 sm:w-56 lg:w-full">
@@ -1451,8 +1451,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   </h2>
                 </div>
 
-                <div className="flex gap-6">
-                  <div className="flex-1 space-y-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden min-w-0">
+                {/* Range picker first on mobile (so user can switch ranges
+                    without scrolling past the whole list), and a side column
+                    on lg+. Chapter list stops being sticky/overflow-scroll on
+                    mobile — that pattern was leaving the list invisible inside
+                    a cramped column. */}
+                <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6">
+                  <div className="flex-1 space-y-4 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:overflow-x-hidden min-w-0">
                     {currentChapters
                       .sort((a, b) => b.number - a.number)
                       .map((chapter) => {
@@ -1678,16 +1683,17 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                       })}
                   </div>
 
-                  {/* Range Picker */}
+                  {/* Range Picker — horizontal scroll on mobile, vertical
+                      sidebar on lg+. */}
                   {Object.keys(chapterGroups).length > 0 && (
-                    <div className="w-24 space-y-2">
+                    <div className="flex lg:block gap-2 lg:gap-0 lg:w-24 lg:space-y-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 -mx-1 px-1 lg:mx-0 lg:px-0">
                       {Object.values(chapterGroups)
                         .sort((a, b) => b.from - a.from)
                         .map((group) => (
                           <button
                             key={group.label}
                             onClick={() => setSelectedChapterGroup(group.label)}
-                            className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            className={`shrink-0 lg:shrink min-w-[5rem] lg:min-w-0 lg:w-full py-2.5 px-3 lg:px-0 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                               group.label === selectedChapterGroup
                                 ? "bg-white text-zinc-950 shadow-lg"
                                 : "bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white"
