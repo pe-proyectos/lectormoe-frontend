@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Star,
   Bookmark,
@@ -11,6 +11,8 @@ import {
   Copy,
   Check,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
@@ -109,6 +111,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       { label: string; from: number; to: number; chapters: Chapter[] }
     >
   >({});
+  const rangePickerRef = useRef<HTMLDivElement>(null);
   const [isDownloadingChapter, setIsDownloadingChapter] = useState<
     number | null
   >(null);
@@ -1683,25 +1686,48 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                       })}
                   </div>
 
-                  {/* Range Picker — horizontal scroll on mobile, vertical
-                      sidebar on lg+. */}
+                  {/* Range Picker — horizontal scroll on mobile (with arrow
+                      affordances for users without a visible scrollbar),
+                      vertical sidebar on lg+. */}
                   {Object.keys(chapterGroups).length > 0 && (
-                    <div className="flex lg:block gap-2 lg:gap-0 lg:w-24 lg:space-y-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 -mx-1 px-1 lg:mx-0 lg:px-0">
-                      {Object.values(chapterGroups)
-                        .sort((a, b) => b.from - a.from)
-                        .map((group) => (
-                          <button
-                            key={group.label}
-                            onClick={() => setSelectedChapterGroup(group.label)}
-                            className={`shrink-0 lg:shrink min-w-[5rem] lg:min-w-0 lg:w-full py-2.5 px-3 lg:px-0 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                              group.label === selectedChapterGroup
-                                ? "bg-white text-zinc-950 shadow-lg"
-                                : "bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white"
-                            }`}
-                          >
-                            {group.label}
-                          </button>
-                        ))}
+                    <div className="relative lg:w-24 lg:block">
+                      {/* Mobile scroll arrows (hidden on lg+ where it's a column) */}
+                      <button
+                        type="button"
+                        onClick={() => rangePickerRef.current?.scrollBy({ left: -160, behavior: 'smooth' })}
+                        aria-label="Rangos anteriores"
+                        className="lg:hidden absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-zinc-950/90 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-900 flex items-center justify-center shadow-lg backdrop-blur"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => rangePickerRef.current?.scrollBy({ left: 160, behavior: 'smooth' })}
+                        aria-label="Rangos siguientes"
+                        className="lg:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-zinc-950/90 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-900 flex items-center justify-center shadow-lg backdrop-blur"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                      <div
+                        ref={rangePickerRef}
+                        className="flex lg:block gap-2 lg:gap-0 lg:space-y-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 px-8 lg:px-0 scroll-smooth scrollbar-thin"
+                      >
+                        {Object.values(chapterGroups)
+                          .sort((a, b) => b.from - a.from)
+                          .map((group) => (
+                            <button
+                              key={group.label}
+                              onClick={() => setSelectedChapterGroup(group.label)}
+                              className={`shrink-0 lg:shrink min-w-[5rem] lg:min-w-0 lg:w-full py-2.5 px-3 lg:px-0 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                group.label === selectedChapterGroup
+                                  ? "bg-white text-zinc-950 shadow-lg"
+                                  : "bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white"
+                              }`}
+                            >
+                              {group.label}
+                            </button>
+                          ))}
+                      </div>
                     </div>
                   )}
                 </div>
