@@ -309,18 +309,20 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       lastLabel = label;
     }
 
-    // Handle chapter 0
-    const chapterZero = sortedChapters.find((chapter) => chapter.number === 0);
-    if (chapterZero) {
+    // Handle chapters with number < 1 (e.g. 0, 0.5, 0.01 — prologues /
+    // specials). The main loop starts at i=10 covering number >= 1, so anything
+    // below 1 falls through unless we catch it here.
+    const subOneChapters = sortedChapters.filter((chapter) => chapter.number < 1);
+    if (subOneChapters.length > 0) {
       if (Object.keys(groups).length > 0) {
         const firstGroup = Object.keys(groups)[0];
-        groups[firstGroup].chapters.push(chapterZero);
+        groups[firstGroup].chapters.push(...subOneChapters);
       } else {
         groups["0"] = {
           label: "0",
           from: 0,
           to: 0,
-          chapters: [chapterZero],
+          chapters: subOneChapters,
         };
         lastLabel = "0";
       }
