@@ -31,9 +31,9 @@ const AdminRecentMangasPills: React.FC<AdminRecentMangasPillsProps> = ({
       .then((result) => {
         let mangas = [];
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-          mangas = result.items;
+          mangas = result.items.filter((m: any) => !m._jointSlug);
         } else if (Array.isArray(result)) {
-          mangas = result.slice(0, 20);
+          mangas = result.filter((m: any) => !m._jointSlug).slice(0, 20);
         }
         
         // Log para debugging (puede removerse después)

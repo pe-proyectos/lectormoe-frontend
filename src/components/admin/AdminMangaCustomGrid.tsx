@@ -97,7 +97,9 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
       .then((result) => {
         // El API retorna { items: [...], maxPage: X, total: Y }
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
-          setMangaList(result.items);
+          // Filter out synthetic joint entries (no real MangaCustom to manage)
+          const realItems = result.items.filter((m: any) => !m._jointSlug);
+          setMangaList(realItems);
           setMaxPage(result.maxPage || 1);
           setTotal(result.total || 0);
         }
