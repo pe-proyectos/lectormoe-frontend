@@ -10,6 +10,7 @@ interface Manga {
   chapter?: string;
   status?: string;
   views?: number;
+  mangaUrl?: string;
 }
 
 interface ScanTopThreeProps {
@@ -40,9 +41,8 @@ const ScanTopThree: React.FC<ScanTopThreeProps> = ({ mangas, organization }) => 
     );
   };
 
-  const handleMangaClick = (mangaId: string) => {
-    // mangaId is the slug
-    window.location.href = `/${organization?.slug}/manga/${mangaId}`;
+  const handleMangaClick = (manga: Manga) => {
+    window.location.href = manga.mangaUrl || `/${organization?.slug}/manga/${manga.id}`;
   };
 
   return (
@@ -66,7 +66,7 @@ const ScanTopThree: React.FC<ScanTopThreeProps> = ({ mangas, organization }) => 
         {mangas[0] && (
           <div 
             className="lg:col-span-7 group relative h-[500px] md:h-[650px] rounded-[32px] overflow-hidden border border-yellow-500/20 shadow-2xl shadow-yellow-500/5 cursor-pointer"
-            onClick={() => handleMangaClick(mangas[0].id)}
+            onClick={() => handleMangaClick(mangas[0])}
           >
             <img 
               src={mangas[0].cover} 
@@ -113,7 +113,7 @@ const ScanTopThree: React.FC<ScanTopThreeProps> = ({ mangas, organization }) => 
               <div 
                 key={`top-rank-${manga.id}`}
                 className={`flex-1 group relative rounded-[32px] overflow-hidden border shadow-xl cursor-pointer transition-all duration-500 ${isRank2 ? 'border-zinc-300/10 hover:border-zinc-300/30' : 'border-orange-900/10 hover:border-orange-500/30'}`}
-                onClick={() => handleMangaClick(manga.id)}
+                onClick={() => handleMangaClick(manga)}
               >
                 <img 
                   src={manga.cover} 

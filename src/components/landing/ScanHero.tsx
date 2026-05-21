@@ -9,6 +9,7 @@ interface Manga {
   chapter?: string;
   status?: string;
   demography?: string | null;
+  mangaUrl?: string;
 }
 
 interface ScanHeroProps {
@@ -33,9 +34,8 @@ const ScanHero: React.FC<ScanHeroProps> = ({ mangas, organization }) => {
   const currentFeatured = mangas[activeIndex];
 
   const handleReadNow = () => {
-    if (currentFeatured.id) {
-      window.location.href = `/${organization?.slug}/manga/${currentFeatured.id}`;
-    }
+    const url = currentFeatured.mangaUrl || `/${organization?.slug}/manga/${currentFeatured.id}`;
+    window.location.href = url;
   };
 
   return (

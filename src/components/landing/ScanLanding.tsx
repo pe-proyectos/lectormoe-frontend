@@ -150,6 +150,9 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
           setFeaturedMangas(
             filterByKind(heroResult.value.items).slice(0, 5).map((m: any) => {
               const mangaSlug = m.manga?.slug || m.slug || m.id;
+              const mangaUrl = m._jointSlug
+                ? `/joint/manga/${m._jointSlug}`
+                : `${orgPrefix}/manga/${mangaSlug}`;
               return {
                 id: mangaSlug,
                 title: m.title,
@@ -158,6 +161,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
                 chapter: "Cap. 01",
                 status: m.status || "Ongoing",
                 demography: m.demography?.name || null,
+                mangaUrl,
               };
             })
           );
@@ -170,6 +174,9 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
           setTopThreeMangas(
             filterByKind(topThreeResult.value.items).slice(0, 3).map((m: any) => {
               const mangaSlug = m.manga?.slug || m.slug || m.id;
+              const mangaUrl = m._jointSlug
+                ? `/joint/manga/${m._jointSlug}`
+                : `${orgPrefix}/manga/${mangaSlug}`;
               return {
                 id: mangaSlug,
                 title: m.title,
@@ -178,6 +185,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
                 chapter: "Cap. 01",
                 status: m.status || "Ongoing",
                 views: m.views || 0,
+                mangaUrl,
               };
             })
           );
