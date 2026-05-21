@@ -52,7 +52,9 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
               chapters: (m.chapters || []).map((ch: any) => ({
                 ...ch,
                 chapterUrl: orgSlug && mangaSlug
-                  ? (isWritingItem
+                  ? (ch._jointSlug
+                    ? `/joint/manga/${ch._jointSlug}/chapters/${ch.number}`
+                    : isWritingItem
                     ? `${detailUrl}/chapter/${ch.number}`
                     : `${urlPrefix}/manga/${mangaSlug}/chapters/${ch.number}`)
                   : '#',

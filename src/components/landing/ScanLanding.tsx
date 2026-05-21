@@ -79,7 +79,9 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
           number: chapter.number,
           title: chapter.title,
           releasedAt: chapter.releasedAt,
-          chapterUrl: mangaSlug && mangaSlug !== 'undefined'
+          chapterUrl: chapter._jointSlug
+            ? `/joint/manga/${chapter._jointSlug}/chapters/${chapter.number}`
+            : mangaSlug && mangaSlug !== 'undefined'
             ? `${detailBase}/${mangaSlug}/${chapterPathSegment}/${chapter.number}`
             : '#',
           isRead,

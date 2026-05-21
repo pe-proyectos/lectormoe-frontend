@@ -332,7 +332,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               genres: m.genres?.map((g: any) => g.name || g) || [],
               chapters: (m.chapters || m.lastChapters || []).map((ch: any) => ({
                 ...ch,
-                chapterUrl: mangaSlug && mangaSlug !== 'undefined' && mangaOrgSlug
+                chapterUrl: ch._jointSlug
+                  ? `/joint/manga/${ch._jointSlug}/chapters/${ch.number}`
+                  : mangaSlug && mangaSlug !== 'undefined' && mangaOrgSlug
                   ? `${mangaOrgPrefix}/manga/${mangaSlug}/chapters/${ch.number}`
                   : '#',
               })),
