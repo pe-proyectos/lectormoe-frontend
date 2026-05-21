@@ -90,7 +90,9 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
     );
 
     const mangaSlug = m.manga?.slug || m.slug || m.id;
-    const mangaUrl = mangaSlug && mangaSlug !== 'undefined'
+    const mangaUrl = m._jointSlug
+      ? `/joint/manga/${m._jointSlug}`
+      : mangaSlug && mangaSlug !== 'undefined'
       ? `${detailBase}/${mangaSlug}`
       : undefined;
 

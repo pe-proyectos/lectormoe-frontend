@@ -38,7 +38,9 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
             const isWritingItem = WRITING_TYPES.has(code);
             const urlPrefix = nsfwMode ? `/red/${orgSlug}` : `/${orgSlug}`;
             const writingsPrefix = nsfwMode ? `/red/writings/${orgSlug}` : `/writings/${orgSlug}`;
-            const detailUrl = isWritingItem
+            const detailUrl = m._jointSlug
+              ? `/joint/manga/${m._jointSlug}`
+              : isWritingItem
               ? `${writingsPrefix}/${code}/${mangaSlug}`
               : `${urlPrefix}/manga/${mangaSlug}`;
             return {

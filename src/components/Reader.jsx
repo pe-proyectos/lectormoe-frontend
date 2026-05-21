@@ -1045,7 +1045,7 @@ export function Reader({
             <div className="flex md:hidden w-full">
               <PreviousChapterArrow />
               <a
-                href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
+                href={resolvedMangaUrl}
                 className="flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors relative group/tooltip"
               >
                 <span className="text-3xl sm:text-6xl">
@@ -1059,7 +1059,7 @@ export function Reader({
             </div>
             <div className="flex w-full items-center gap-x-4">
               <a
-                href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
+                href={resolvedMangaUrl}
                 className="hidden md:flex items-center justify-center cursor-pointer hover:text-red-100 transition-colors relative group/tooltip"
               >
                 <span className="text-2xl md:text-6xl">
@@ -1072,7 +1072,7 @@ export function Reader({
               <div className="flex flex-grow flex-wrap items-center justify-start">
                 <span className="w-full text-xl md:text-3xl">
                   <a
-                    href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
+                    href={resolvedMangaUrl}
                     className="transition-colors hover:text-red-100"
                   >
                     {manga?.title}
@@ -1313,7 +1313,7 @@ export function Reader({
                     )}
 
                     <a
-                      href={getOrgPath(`/manga/${mangaSlug}`, orgSlug)}
+                      href={resolvedMangaUrl}
                       className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 px-6 rounded-xl transition-all uppercase tracking-wider border-2 border-zinc-700"
                     >
                       Volver al Manga

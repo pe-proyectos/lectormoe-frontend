@@ -315,7 +315,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
             
             // Solo construir mangaUrl si tenemos un slug válido
             const mangaOrgPrefix = mangaOrgSlug ? (nsfwMode ? `/red/${mangaOrgSlug}` : `/${mangaOrgSlug}`) : null;
-            const mangaUrl = mangaSlug && mangaSlug !== 'undefined'
+            const mangaUrl = m._jointSlug
+              ? `/joint/manga/${m._jointSlug}`
+              : mangaSlug && mangaSlug !== 'undefined'
               ? (mangaOrgPrefix ? `${mangaOrgPrefix}/manga/${mangaSlug}` : `/manga/${mangaSlug}`)
               : undefined;
             
