@@ -82,6 +82,7 @@ const PERKS = [
 ];
 
 const DiscordInviteModal: React.FC = () => {
+  return null;
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { d, h, m, s, expired } = useCountdown(DEADLINE);
