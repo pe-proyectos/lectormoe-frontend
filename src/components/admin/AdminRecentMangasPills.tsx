@@ -36,11 +36,6 @@ const AdminRecentMangasPills: React.FC<AdminRecentMangasPillsProps> = ({
           mangas = result.filter((m: any) => !m._jointSlug).slice(0, 20);
         }
         
-        // Log para debugging (puede removerse después)
-        if (mangas.length > 0) {
-          console.log('Estructura del primer manga:', mangas[0]);
-        }
-        
         setRecentMangas(mangas);
       })
       .catch((error) => {

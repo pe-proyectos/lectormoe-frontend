@@ -160,6 +160,13 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         if (!number) {
             return toast.error(_("mandatory_number"));
         }
+        // Validate chapter number uniqueness before starting any file uploads
+        if (!chapter) {
+            const duplicate = mangaCustom?.chapters?.find(c => Number(c.number) === Number(number));
+            if (duplicate) {
+                return toast.error(`El capítulo ${number} ya existe`);
+            }
+        }
         setLoading(true);
         
         // Declarar variables fuera del bloque try para que estén disponibles en todo el scope
