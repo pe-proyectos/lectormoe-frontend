@@ -197,21 +197,33 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
 
                 // Skip the per-page upload loop for writing chapters.
                 if (!isWriting) {
-                    for (const page of pages) {
+                    // Upload up to 5 files concurrently instead of one-by-one.
+                    // Sequential uploads of 30+ heavy pages easily exceed gateway timeouts.
+                    const CONCURRENCY = 5;
+                    const resolvedKeys = new Array(pages.length);
+                    const tasks = pages.map((page, index) => async () => {
                         if (page instanceof File) {
                             uploadedCount++;
                             toast.update(toastId, {
                                 render: `Subiendo archivos ${uploadedCount}/${filesToUpload}`,
                                 position: "bottom-right"
                             });
-                            const key = await uploadFile(page, undefined, 'chapters');
-                            pageKeys.push(key);
+                            resolvedKeys[index] = await uploadFile(page, undefined, 'chapters');
                         } else if (page?.imageUrl) {
-                            pageKeys.push(page.imageUrl);
+                            resolvedKeys[index] = page.imageUrl;
                         } else {
-                            pageKeys.push(page);
+                            resolvedKeys[index] = page;
                         }
-                    }
+                    });
+                    let taskIdx = 0;
+                    const worker = async () => {
+                        while (taskIdx < tasks.length) {
+                            const i = taskIdx++;
+                            await tasks[i]();
+                        }
+                    };
+                    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+                    pageKeys.push(...resolvedKeys);
                 }
 
                 if (toastId) {
