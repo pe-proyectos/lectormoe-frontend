@@ -95,7 +95,12 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
 
             {/* Scans Buttons Section */}
             {!isWritings && (
-              <ScansButtonsSection nsfwMode={nsfwMode} onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)} />
+              <ScansButtonsSection
+                nsfwMode={nsfwMode}
+                onNavigate={(path) => navigateTo(path.startsWith('/') ? path : `/${path}`)}
+                user={user}
+                logged={logged}
+              />
             )}
 
             {/* Continue Reading — logged-in users only */}
