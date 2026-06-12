@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import { Loader2, X, GripVertical } from 'lucide-react';
 import Modal from './ui/Modal';
@@ -46,64 +46,103 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
     const bookTypeCode = mangaCustom?.manga?.bookType?.code || mangaCustom?.bookType?.code;
     const isWriting = WRITING_BOOK_TYPES.has(bookTypeCode);
 
-    const handleDrag = (ev) => {
-        // Obtener el índice desde el id de la imagen
-        const imageId = ev.currentTarget.id;
-        const pageIndex = parseInt(imageId.split('-').pop());
-        // Usar el id del Card padre para el drop
+    // Cache blob URLs so we don't call URL.createObjectURL on every render.
+    // Each File object gets one URL for its lifetime in state.
+    const blobUrlCache = useRef(new Map());
+
+    // Stable page IDs for React keys (avoids full remount on reorder).
+    const pageIdMap = useRef(new WeakMap());
+    const pageIdCounter = useRef(0);
+
+    const getPageSrc = useCallback((page) => {
+        if (page instanceof File) {
+            if (!blobUrlCache.current.has(page)) {
+                blobUrlCache.current.set(page, URL.createObjectURL(page));
+            }
+            return blobUrlCache.current.get(page);
+        }
+        return page?.imageUrl;
+    }, []);
+
+    const getPageId = useCallback((page) => {
+        if (!pageIdMap.current.has(page)) {
+            pageIdMap.current.set(page, ++pageIdCounter.current);
+        }
+        return pageIdMap.current.get(page);
+    }, []);
+
+    // Revoke all cached blob URLs when the dialog is closed/unmounted.
+    useEffect(() => {
+        return () => {
+            for (const url of blobUrlCache.current.values()) URL.revokeObjectURL(url);
+            blobUrlCache.current.clear();
+        };
+    }, []);
+
+    // O(1) lookup instead of O(n) Array.includes on every card render.
+    const singlePageSet = useMemo(() => new Set(singlePageIndexes), [singlePageIndexes]);
+
+    const handleDrag = useCallback((ev) => {
+        const pageIndex = parseInt(ev.currentTarget.id.split('-').pop());
         setDragId(`preview-page-${pageIndex}`);
-    };
+    }, []);
 
-    const handleDragOver = (ev) => {
+    const handleDragOver = useCallback((ev) => {
         ev.preventDefault();
-    };
+    }, []);
 
-    const handleDrop = (ev) => {
+    const handleDrop = useCallback((ev) => {
         ev.preventDefault();
         if (!dragId) return;
-        // @ts-ignore
         const dragPageIndex = parseInt(dragId.split('-').pop());
         const dropPageIndex = parseInt(ev.currentTarget.id.split('-').pop());
-        const newPagesOrder = [...pages];
-        const [draggedPage] = newPagesOrder.splice(dragPageIndex, 1);
-        newPagesOrder.splice(dropPageIndex, 0, draggedPage);
-        setPages(newPagesOrder);
-
-        // Actualizar los índices de páginas simples después de reordenar
-        const newSinglePageIndexes = singlePageIndexes.map(index => {
-            if (index === dragPageIndex) return dropPageIndex;
-            if (index < dragPageIndex && index >= dropPageIndex) return index + 1;
-            if (index > dragPageIndex && index <= dropPageIndex) return index - 1;
-            return index;
+        setPages(prev => {
+            const next = [...prev];
+            const [dragged] = next.splice(dragPageIndex, 1);
+            next.splice(dropPageIndex, 0, dragged);
+            return next;
         });
-        setSinglePageIndexes(newSinglePageIndexes);
+        setSinglePageIndexes(prev => prev.map(i => {
+            if (i === dragPageIndex) return dropPageIndex;
+            if (i < dragPageIndex && i >= dropPageIndex) return i + 1;
+            if (i > dragPageIndex && i <= dropPageIndex) return i - 1;
+            return i;
+        }));
         setDragId(null);
-    };
+    }, [dragId]);
 
-    const handleDragEnd = () => {
+    const handleDragEnd = useCallback(() => {
         setDragId(null);
-    };
+    }, []);
 
-    const removePage = (index) => {
-        const newPages = pages.filter((_page, i) => i !== index);
-        setPages(newPages);
-        
-        // Actualizar los índices de páginas simples después de eliminar
-        const newSinglePageIndexes = singlePageIndexes
-            .filter(i => i !== index)
-            .map(i => i > index ? i - 1 : i);
-        setSinglePageIndexes(newSinglePageIndexes);
-    };
-
-    const togglePageType = (index) => {
-        setSinglePageIndexes(prev => {
-            if (prev.includes(index)) {
-                return prev.filter(i => i !== index);
-            } else {
-                return [...prev, index].sort((a, b) => a - b);
+    const removePage = useCallback((index) => {
+        setPages(prev => {
+            const removed = prev[index];
+            if (removed instanceof File) {
+                const url = blobUrlCache.current.get(removed);
+                if (url) {
+                    URL.revokeObjectURL(url);
+                    blobUrlCache.current.delete(removed);
+                }
             }
+            return prev.filter((_p, i) => i !== index);
         });
-    };
+        setSinglePageIndexes(prev =>
+            prev.filter(i => i !== index).map(i => (i > index ? i - 1 : i))
+        );
+    }, []);
+
+    const togglePageType = useCallback((index) => {
+        setSinglePageIndexes(prev =>
+            prev.includes(index)
+                ? prev.filter(i => i !== index)
+                : [...prev, index].sort((a, b) => a - b)
+        );
+    }, []);
+
+    const handlePagesDrop = useCallback((files) => {
+        setPages(prev => [...prev, ...files]);
+    }, []);
 
     const formatDateToInput = (date) => {
         const year = date.getFullYear();
@@ -360,7 +399,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             {_("pages")}
                         </h3>
                         <MultiImageDropzone
-                            onDrop={(files) => setPages([...pages, ...files])}
+                            onDrop={handlePagesDrop}
                             label={_("drag_and_drop_images")}
                             maxFileSize={25 * 1024 * 1024}
                             maxFiles={100}
@@ -380,7 +419,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                             )}
                             {pages.map((page, index) => (
                                 <Card
-                                    key={index}
+                                    key={getPageId(page)}
                                     id={`preview-page-${index}`}
                                     onDragOver={handleDragOver}
                                     onDrop={handleDrop}
@@ -392,11 +431,7 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                             id={`preview-page-image-${index}`}
                                             onDragStart={handleDrag}
                                             onDragEnd={handleDragEnd}
-                                            src={
-                                                page instanceof File
-                                                    ? URL.createObjectURL(page)
-                                                    : page?.imageUrl
-                                            }
+                                            src={getPageSrc(page)}
                                             alt={`${_("page")} ${index + 1}`}
                                             decoding="async"
                                             loading="lazy"
@@ -425,14 +460,14 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                             <span className="text-xs text-zinc-400">
                                                 Página sola
                                             </span>
-                                            <label 
+                                            <label
                                                 className="relative inline-flex items-center cursor-pointer"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <input
                                                     type="checkbox"
                                                     className="sr-only peer"
-                                                    checked={singlePageIndexes.includes(index)}
+                                                    checked={singlePageSet.has(index)}
                                                     onChange={(e) => {
                                                         e.stopPropagation();
                                                         togglePageType(index);
