@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { MessageCircle, Eye, EyeOff, Trash2, RotateCcw, ThumbsUp, ThumbsDown, X, ArrowUpDown, Reply, Send } from 'lucide-react';
+import { MessageCircle, EyeOff, Trash2, RotateCcw, ThumbsUp, ThumbsDown, ArrowUpDown, Reply, Send, ShieldBan, ShieldOff, ShieldCheck } from 'lucide-react';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
@@ -37,6 +37,17 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface Ban {
+  id: number;
+  userId: number;
+  type: 'TEMPORARY' | 'PERMANENT' | 'RESTRICTED';
+  reason?: string;
+  expiresAt?: string;
+  createdAt: string;
+  user: { id: number; username: string; imageUrl?: string };
+  bannedByUser: { id: number; username: string };
+}
+
 interface AdminCommentsProps {
   language: string;
   user: User;
@@ -58,7 +69,7 @@ const getSubscriptionDays = (subscriptionDate: string) => {
   return diffDays;
 };
 
-const CommentCard = ({ comment, onHide, onDelete, onRestore, onLike, onReply, currentUser }: any) => {
+const CommentCard = ({ comment, onHide, onDelete, onRestore, onLike, onReply, onBan, currentUser }: any) => {
   const [showReplies, setShowReplies] = useState(true);
   const [showImage, setShowImage] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
@@ -216,6 +227,11 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, onLike, onReply, cu
             <Button variant="secondary" size="sm" onClick={() => onHide(comment)}>
               <EyeOff size={14} /> Ocultar
             </Button>
+            {!isOwnComment && onBan && (
+              <Button variant="danger" size="sm" onClick={() => onBan(comment)}>
+                <ShieldBan size={14} /> Sancionar
+              </Button>
+            )}
             {isOwnComment && (
               <Button variant="danger" size="sm" onClick={() => onDelete(comment.id)}>
                 <Trash2 size={14} /> Eliminar
@@ -282,6 +298,7 @@ const CommentCard = ({ comment, onHide, onDelete, onRestore, onLike, onReply, cu
               onRestore={onRestore}
               onLike={onLike}
               onReply={onReply}
+              onBan={onBan}
               currentUser={currentUser}
             />
           ))}
@@ -314,6 +331,19 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
   const [hideDialogOpen, setHideDialogOpen] = useState(false);
   const [hideReason, setHideReason] = useState('');
 
+  // Ban states
+  const [bans, setBans] = useState<Ban[]>([]);
+  const [bansLoading, setBansLoading] = useState(true);
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [banTargetUser, setBanTargetUser] = useState<{ id: number; username: string } | null>(null);
+  const [banType, setBanType] = useState<'TEMPORARY' | 'PERMANENT' | 'RESTRICTED'>('PERMANENT');
+  const [banReason, setBanReason] = useState('');
+  const [banDeleteComments, setBanDeleteComments] = useState(false);
+  const [banOnlyLast24h, setBanOnlyLast24h] = useState(false);
+  const [banExpiresAt, setBanExpiresAt] = useState('');
+  const [isBanning, setIsBanning] = useState(false);
+  const [activeTab, setActiveTab] = useState<'comments' | 'bans'>('comments');
+
   // Filtros y ordenamiento
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -323,6 +353,7 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
 
   useEffect(() => {
     refreshComments();
+    refreshBans();
   }, []);
 
   useEffect(() => {
@@ -519,6 +550,61 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     }
   };
 
+  const refreshBans = () => {
+    setBansLoading(true);
+    callAPI('/api/comment/bans')
+      .then((data) => setBans(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setBansLoading(false));
+  };
+
+  const handleOpenBanDialog = (comment: Comment) => {
+    setBanTargetUser({ id: comment.userId, username: comment.user.username });
+    setBanType('PERMANENT');
+    setBanReason('');
+    setBanDeleteComments(false);
+    setBanOnlyLast24h(false);
+    setBanExpiresAt('');
+    setBanDialogOpen(true);
+  };
+
+  const handleBanUser = async () => {
+    if (!banTargetUser || isBanning) return;
+    try {
+      setIsBanning(true);
+      await callAPI('/api/comment/ban', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: banTargetUser.id,
+          type: banType,
+          reason: banReason || undefined,
+          expiresAt: banType === 'TEMPORARY' && banExpiresAt ? banExpiresAt : undefined,
+          deleteComments: banDeleteComments,
+          onlyLast24h: banOnlyLast24h,
+        }),
+      });
+      toast.success(`Sanción aplicada a ${banTargetUser.username}`);
+      setBanDialogOpen(false);
+      refreshBans();
+      refreshComments();
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al aplicar sanción');
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
+  const handleUnban = async (banId: number) => {
+    if (!window.confirm('¿Revocar esta sanción?')) return;
+    try {
+      await callAPI(`/api/comment/unban/${banId}`, { method: 'POST' });
+      toast.success('Sanción revocada');
+      refreshBans();
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al revocar sanción');
+    }
+  };
+
   const handleReply = async (parentComment: Comment, text: string) => {
     try {
       await callAPI('/api/comment', {
@@ -555,14 +641,86 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-white uppercase tracking-tight">Gestión de Comentarios</h1>
-            <p className="text-sm text-zinc-400 mt-1">Administra todos los comentarios de la plataforma</p>
+            <p className="text-sm text-zinc-400 mt-1">Administra todos los comentarios y sanciones de la plataforma</p>
           </div>
-          <Button variant="secondary" onClick={refreshComments} disabled={loading}>
+          <Button variant="secondary" onClick={() => { refreshComments(); refreshBans(); }} disabled={loading}>
             {loading ? <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" /> : <RotateCcw size={18} />}
             Actualizar
           </Button>
         </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => setActiveTab('comments')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${activeTab === 'comments' ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}
+          >
+            <MessageCircle size={14} className="inline mr-2" />
+            Comentarios
+          </button>
+          <button
+            onClick={() => setActiveTab('bans')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 ${activeTab === 'bans' ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}
+          >
+            <ShieldBan size={14} />
+            Sanciones {bans.length > 0 && <span className="bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded text-xs">{bans.length}</span>}
+          </button>
+        </div>
       </Card>
+
+      {/* Bans Tab */}
+      {activeTab === 'bans' && (
+        <div className="space-y-4">
+          <Card>
+            <h2 className="text-lg font-black text-white uppercase tracking-tight mb-4 flex items-center gap-2">
+              <ShieldBan size={20} className="text-red-400" />
+              Sanciones activas ({bans.length})
+            </h2>
+            {bansLoading ? (
+              <div className="flex justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500" />
+              </div>
+            ) : bans.length === 0 ? (
+              <div className="text-center p-8">
+                <ShieldCheck size={40} className="mx-auto text-zinc-700 mb-3" />
+                <p className="text-zinc-500">No hay sanciones activas</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bans.map((ban) => (
+                  <div key={ban.id} className="flex items-center justify-between p-4 bg-zinc-800/40 rounded-2xl border border-zinc-700">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        ban.type === 'PERMANENT' ? 'bg-red-500' :
+                        ban.type === 'TEMPORARY' ? 'bg-orange-400' : 'bg-yellow-400'
+                      }`} />
+                      <div>
+                        <p className="font-bold text-white text-sm">{ban.user.username}</p>
+                        <p className="text-xs text-zinc-500">
+                          {ban.type === 'PERMANENT' ? 'Ban permanente' :
+                           ban.type === 'TEMPORARY' ? `Ban temporal hasta ${ban.expiresAt ? new Date(ban.expiresAt).toLocaleString('es') : '?'}` :
+                           'Restringido'}
+                          {' · '}por {ban.bannedByUser.username}
+                          {' · '}{formatDate(ban.createdAt)}
+                        </p>
+                        {ban.reason && <p className="text-xs text-zinc-400 mt-0.5">Motivo: {ban.reason}</p>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleUnban(ban.id)}
+                      className="px-3 py-1.5 bg-zinc-700 hover:bg-green-600/30 hover:text-green-400 text-zinc-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                    >
+                      <ShieldOff size={12} /> Revocar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Comments Tab */}
+      {activeTab === 'comments' && <>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -680,11 +838,14 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
               onRestore={handleRestore}
               onLike={handleLike}
               onReply={handleReply}
+              onBan={handleOpenBanDialog}
               currentUser={user}
             />
           ))}
         </div>
       )}
+
+      </> }
 
       {/* Hide Comment Modal */}
       {hideDialogOpen && (
@@ -725,6 +886,99 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
               <Button variant="primary" onClick={handleHideComment}>
                 <EyeOff size={16} />
                 Ocultar Comentario
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {/* Ban User Modal */}
+      {banDialogOpen && banTargetUser && (
+        <Modal
+          isOpen={banDialogOpen}
+          onClose={() => setBanDialogOpen(false)}
+          title={`Sancionar a ${banTargetUser.username}`}
+        >
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Tipo de sanción</p>
+              {[
+                { value: 'PERMANENT', label: 'Banear usuario', desc: 'Bloqueo permanente de comentarios', color: 'red' },
+                { value: 'TEMPORARY', label: 'Banear temporalmente', desc: 'Bloqueo por tiempo determinado', color: 'orange' },
+                { value: 'RESTRICTED', label: 'Restringir usuario', desc: 'Restricción suave de comentarios', color: 'yellow' },
+              ].map(opt => (
+                <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                  banType === opt.value ? 'border-red-500/50 bg-red-500/10' : 'border-zinc-700 hover:border-zinc-600'
+                }`}>
+                  <input
+                    type="radio"
+                    name="adminBanType"
+                    value={opt.value}
+                    checked={banType === opt.value}
+                    onChange={() => setBanType(opt.value as any)}
+                    className="mt-0.5 accent-red-500"
+                  />
+                  <div>
+                    <p className="text-white text-sm font-bold">{opt.label}</p>
+                    <p className="text-zinc-500 text-xs">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {banType === 'TEMPORARY' && (
+              <div>
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">Expira el</p>
+                <input
+                  type="datetime-local"
+                  value={banExpiresAt}
+                  onChange={e => setBanExpiresAt(e.target.value)}
+                  className="w-full bg-zinc-900 text-white p-3 rounded-xl border border-zinc-700 focus:outline-none focus:border-red-500"
+                />
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={banDeleteComments}
+                  onChange={e => setBanDeleteComments(e.target.checked)}
+                  className="w-4 h-4 accent-red-500"
+                />
+                <span className="text-white text-sm font-bold">Eliminar comentarios del usuario</span>
+              </label>
+              {banDeleteComments && (
+                <label className="flex items-center gap-3 ml-7 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={banOnlyLast24h}
+                    onChange={e => setBanOnlyLast24h(e.target.checked)}
+                    className="w-4 h-4 accent-orange-500"
+                  />
+                  <span className="text-zinc-400 text-sm">Solo las últimas 24 horas</span>
+                </label>
+              )}
+            </div>
+
+            <Textarea
+              label="Motivo (opcional)"
+              value={banReason}
+              onChange={e => setBanReason(e.target.value)}
+              placeholder="Motivo de la sanción..."
+              rows={3}
+            />
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="ghost" onClick={() => setBanDialogOpen(false)} disabled={isBanning}>
+                Cancelar
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleBanUser}
+                disabled={isBanning || (banType === 'TEMPORARY' && !banExpiresAt)}
+              >
+                <ShieldBan size={16} />
+                {isBanning ? 'Aplicando...' : 'Aplicar Sanción'}
               </Button>
             </div>
           </div>

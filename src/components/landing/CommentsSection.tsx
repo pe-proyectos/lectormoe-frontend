@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, MessageCircle, LogIn, Edit2, Trash2, EyeOff, X, Send, Image as ImageIcon } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageCircle, LogIn, Edit2, Trash2, EyeOff, X, Send, Image as ImageIcon, ShieldBan } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
 import { formatDate as formatDateUtil } from '../../util/date';
@@ -56,6 +56,7 @@ interface User {
     organizationId?: number;
     canDeleteComment?: boolean;
     canHideComment?: boolean;
+    canBanUser?: boolean;
   }>;
 }
 
@@ -70,6 +71,7 @@ interface CommentItemProps {
   onEdit: (commentId: number, text: string) => void;
   onLike: (commentId: number, isLike: boolean) => void;
   onHide: (comment: CommentType) => void;
+  onBan: (comment: CommentType) => void;
   onImageClick: (imageUrl: string) => void;
 }
 
@@ -84,6 +86,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onEdit,
   onLike,
   onHide,
+  onBan,
   onImageClick,
 }) => {
   // Get user permissions for the current organization
@@ -311,6 +314,17 @@ const CommentItem: React.FC<CommentItemProps> = ({
               <EyeOff size={16} />
             </button>
           )}
+
+          {/* Ban (Admin) */}
+          {userPermissions?.canBanUser && user?.id !== comment?.userId && (
+            <button
+              onClick={() => onBan(comment)}
+              className="text-zinc-500 hover:text-red-500 transition-colors"
+              title="Sancionar usuario"
+            >
+              <ShieldBan size={16} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -353,6 +367,16 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const [selectedCommentToHide, setSelectedCommentToHide] = useState<CommentType | null>(null);
   const [hideReason, setHideReason] = useState('');
   const [isHidingComment, setIsHidingComment] = useState(false);
+
+  // Ban dialog (admin)
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [selectedCommentToBan, setSelectedCommentToBan] = useState<CommentType | null>(null);
+  const [banType, setBanType] = useState<'TEMPORARY' | 'PERMANENT' | 'RESTRICTED'>('PERMANENT');
+  const [banReason, setBanReason] = useState('');
+  const [banDeleteComments, setBanDeleteComments] = useState(false);
+  const [banOnlyLast24h, setBanOnlyLast24h] = useState(false);
+  const [banExpiresAt, setBanExpiresAt] = useState('');
+  const [isBanning, setIsBanning] = useState(false);
 
   const baseIdentifier = identifier.replace(/_sidebar$|_drawer$|_accordion$/, '');
 
@@ -553,6 +577,40 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     setHideDialogOpen(true);
   };
 
+  const handleShowBanDialog = (comment: CommentType) => {
+    setSelectedCommentToBan(comment);
+    setBanType('PERMANENT');
+    setBanReason('');
+    setBanDeleteComments(false);
+    setBanOnlyLast24h(false);
+    setBanExpiresAt('');
+    setBanDialogOpen(true);
+  };
+
+  const handleBanUser = async () => {
+    if (!selectedCommentToBan || isBanning) return;
+    try {
+      setIsBanning(true);
+      await callAPI('/api/comment/ban', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: selectedCommentToBan.userId,
+          type: banType,
+          reason: banReason || undefined,
+          expiresAt: banType === 'TEMPORARY' && banExpiresAt ? banExpiresAt : undefined,
+          deleteComments: banDeleteComments,
+          onlyLast24h: banOnlyLast24h,
+        }),
+      });
+      setBanDialogOpen(false);
+      getComments();
+    } catch (error: any) {
+      alert(error?.message || 'Error al aplicar sanción');
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
   return (
     <div className="mt-12 pt-10 border-t border-zinc-800 space-y-10 mb-20 relative z-10 w-full md:max-w-4xl md:mx-auto">
       <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Comentarios</h2>
@@ -581,6 +639,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                 onEdit={handleEditComment}
                 onLike={handleLikeComment}
                 onHide={handleShowHideDialog}
+                onBan={handleShowBanDialog}
                 onImageClick={setZoomImageUrl}
               />
 
@@ -600,6 +659,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                         onEdit={handleEditComment}
                         onLike={handleLikeComment}
                         onHide={handleShowHideDialog}
+                        onBan={handleShowBanDialog}
                         onImageClick={setZoomImageUrl}
                       />
                     </div>
@@ -734,6 +794,115 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
               alt="Vista previa"
               className="max-w-full max-h-[90vh] object-contain rounded-2xl"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Ban User Dialog (Admin) */}
+      {banDialogOpen && selectedCommentToBan && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-lg w-full space-y-6">
+            <div className="flex items-center gap-3">
+              <ShieldBan size={24} className="text-red-400" />
+              <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                Sancionar a {selectedCommentToBan.user.username}
+              </h3>
+            </div>
+
+            {/* Ban type selection */}
+            <div className="space-y-2">
+              <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Tipo de sanción</p>
+              <div className="space-y-2">
+                {[
+                  { value: 'PERMANENT', label: 'Banear usuario', desc: 'Bloqueo permanente de comentarios' },
+                  { value: 'TEMPORARY', label: 'Banear temporalmente', desc: 'Bloqueo por tiempo determinado' },
+                  { value: 'RESTRICTED', label: 'Restringir usuario', desc: 'Restricción de comentarios (más suave)' },
+                ].map(opt => (
+                  <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${
+                    banType === opt.value
+                      ? 'border-red-500/50 bg-red-500/10'
+                      : 'border-zinc-800 hover:border-zinc-700'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="banType"
+                      value={opt.value}
+                      checked={banType === opt.value}
+                      onChange={() => setBanType(opt.value as any)}
+                      className="mt-0.5 accent-red-500"
+                    />
+                    <div>
+                      <p className="text-white text-sm font-bold">{opt.label}</p>
+                      <p className="text-zinc-500 text-xs">{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Expiry (only for TEMPORARY) */}
+            {banType === 'TEMPORARY' && (
+              <div>
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">Expira el</p>
+                <input
+                  type="datetime-local"
+                  value={banExpiresAt}
+                  onChange={e => setBanExpiresAt(e.target.value)}
+                  className="w-full bg-zinc-950 text-white p-3 rounded-2xl border border-zinc-800 focus:outline-none focus:border-red-500"
+                />
+              </div>
+            )}
+
+            {/* Delete comments */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={banDeleteComments}
+                  onChange={e => setBanDeleteComments(e.target.checked)}
+                  className="w-4 h-4 accent-red-500"
+                />
+                <span className="text-white text-sm font-bold">Eliminar comentarios del usuario</span>
+              </label>
+
+              {banDeleteComments && (
+                <label className="flex items-center gap-3 ml-7 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={banOnlyLast24h}
+                    onChange={e => setBanOnlyLast24h(e.target.checked)}
+                    className="w-4 h-4 accent-orange-500"
+                  />
+                  <span className="text-zinc-400 text-sm">Solo los de las últimas 24 horas</span>
+                </label>
+              )}
+            </div>
+
+            {/* Reason */}
+            <textarea
+              value={banReason}
+              onChange={e => setBanReason(e.target.value)}
+              placeholder="Motivo de la sanción (opcional)..."
+              className="w-full bg-zinc-950 text-white p-4 rounded-2xl border border-zinc-800 focus:outline-none focus:border-red-500 resize-none"
+              rows={3}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBanDialogOpen(false)}
+                disabled={isBanning}
+                className="flex-1 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleBanUser}
+                disabled={isBanning || (banType === 'TEMPORARY' && !banExpiresAt)}
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-500 disabled:bg-zinc-800 disabled:cursor-not-allowed text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-colors"
+              >
+                {isBanning ? 'Aplicando...' : 'Aplicar Sanción'}
+              </button>
+            </div>
           </div>
         </div>
       )}
