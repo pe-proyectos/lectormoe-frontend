@@ -16,7 +16,10 @@ interface GlobalStats {
   totalComments: number;
   totalSubscriptions: number;
   totalRevenue: number;
+  grossRevenue: number;
   totalCapibaraFees: number;
+  totalPaypalFees: number;
+  totalWithdrawn: number;
   newUsersThisMonth: number;
   newOrgsThisMonth: number;
 }
@@ -32,8 +35,10 @@ interface OrgStat {
   subscriptionCount: number;
   followerCount: number;
   totalRevenue: number;
+  grossRevenue: number;
   capibaraFees: number;
   paypalFees: number;
+  totalWithdrawn: number;
   saldo: number;
 }
 
@@ -192,8 +197,12 @@ const OverviewTab = ({ token }: { token: string }) => {
         <StatCard label="Capítulos" value={fmt(stats.totalChapters)} />
         <StatCard label="Comentarios" value={fmt(stats.totalComments)} />
         <StatCard label="Suscripciones activas" value={fmt(stats.totalSubscriptions)} />
-        <StatCard label="Revenue total" value={money(stats.totalRevenue)} />
-        <StatCard label="Fees CapibaraTraductor" value={money(stats.totalCapibaraFees)} />
+        <StatCard label="Ingresos brutos" value={money(stats.grossRevenue)} sub="Cobrado a lectores" />
+        <StatCard label="Neto scans" value={money(stats.totalRevenue)} sub="Ganancia de las orgs" />
+        <StatCard label="Comisión Capibara" value={money(stats.totalCapibaraFees)} />
+        <StatCard label="Comisión PayPal" value={money(stats.totalPaypalFees)} />
+        <StatCard label="Retirado por scans" value={money(stats.totalWithdrawn)} />
+        <StatCard label="Saldo pendiente scans" value={money(stats.totalRevenue - stats.totalWithdrawn)} sub="Neto menos retiros" />
       </div>
     </div>
   );
@@ -253,10 +262,12 @@ const OrgsTab = ({ token }: { token: string }) => {
               <SortTh k="mangaCount" label="Mangas" />
               <SortTh k="chapterCount" label="Caps" />
               <SortTh k="subscriptionCount" label="Subs activas" />
-              <SortTh k="totalRevenue" label="Revenue bruto" />
+              <SortTh k="grossRevenue" label="Bruto" />
+              <SortTh k="totalRevenue" label="Neto scan" />
               <SortTh k="capibaraFees" label="Fee Capibara" />
               <SortTh k="paypalFees" label="Fee PayPal" />
-              <SortTh k="saldo" label="Saldo actual" />
+              <SortTh k="totalWithdrawn" label="Retirado" />
+              <SortTh k="saldo" label="Saldo pendiente" />
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
@@ -288,9 +299,11 @@ const OrgsTab = ({ token }: { token: string }) => {
                 <td className="px-3 py-3 text-zinc-300">{org.mangaCount}</td>
                 <td className="px-3 py-3 text-zinc-300">{org.chapterCount}</td>
                 <td className="px-3 py-3 text-zinc-300">{org.subscriptionCount}</td>
+                <td className="px-3 py-3 text-zinc-300">{money(org.grossRevenue)}</td>
                 <td className="px-3 py-3 text-zinc-300">{money(org.totalRevenue)}</td>
                 <td className="px-3 py-3 text-yellow-400">{money(org.capibaraFees)}</td>
                 <td className="px-3 py-3 text-orange-400">{money(org.paypalFees)}</td>
+                <td className="px-3 py-3 text-red-400">{money(org.totalWithdrawn)}</td>
                 <td className="px-3 py-3 font-bold text-green-400">{money(org.saldo)}</td>
               </tr>
             ))}
