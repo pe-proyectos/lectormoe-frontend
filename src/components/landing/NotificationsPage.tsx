@@ -264,18 +264,13 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user, logged, nsf
     fetchItems(page, filter);
   }, [fetchItems, page, filter]);
 
-  const handleItemClick = async (n: NotificationItem) => {
-    const url = buildItemUrl(n, !!nsfwMode);
-    if (!n.readAt) {
-      setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, readAt: new Date().toISOString() } : p)));
-      setUnread((u) => Math.max(0, u - 1));
-      try {
-        await callAPI(`/api/notifications/${n.id}/read`, { method: 'PATCH' });
-      } catch {
-        // best-effort
-      }
-    }
-    if (url) window.location.href = url;
+  // Marca como leída sin bloquear la navegación del anchor: keepalive deja
+  // que el PATCH sobreviva al cambio de página.
+  const markRead = (n: NotificationItem) => {
+    if (n.readAt) return;
+    setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, readAt: new Date().toISOString() } : p)));
+    setUnread((u) => Math.max(0, u - 1));
+    callAPI(`/api/notifications/${n.id}/read`, { method: 'PATCH', keepalive: true } as any).catch(() => {});
   };
 
   const handleMarkAll = async () => {
@@ -374,11 +369,13 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user, logged, nsf
                 const { title, subtitle } = formatItem(n);
                 const isUnread = !n.readAt;
                 const showCover = cover && (n.type === 'new_chapter' || n.type === 'new_manga');
+                const itemUrl = buildItemUrl(n, !!nsfwMode);
+                const RowTag = (itemUrl ? 'a' : 'button') as any;
                 return (
                   <li key={n.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleItemClick(n)}
+                    <RowTag
+                      {...(itemUrl ? { href: itemUrl } : { type: 'button' })}
+                      onClick={() => markRead(n)}
                       className={`w-full flex items-start gap-4 px-4 md:px-5 py-4 text-left transition-colors ${
                         isUnread ? 'bg-cyan-500/[0.04] hover:bg-cyan-500/10' : 'hover:bg-white/5'
                       }`}
@@ -406,7 +403,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user, logged, nsf
                           {formatRelative(n.createdAt)}
                         </p>
                       </div>
-                    </button>
+                    </RowTag>
                   </li>
                 );
               })}

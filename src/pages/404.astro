@@ -7,13 +7,9 @@ const { organizationSlug, showAds } = Astro.locals as any;
 ---
 
 <LandingLayout title="404 - Página no encontrada" showAds={showAds}>
-  <Error404Page 
-    onNavigateHome={() => {
-      window.location.href = organizationSlug ? `/${organizationSlug}` : '/';
-    }}
-    onNavigateSearch={() => {
-      window.location.href = organizationSlug ? `/${organizationSlug}/search` : '/search';
-    }}
-    client:load 
+  <Error404Page
+    homeHref={organizationSlug ? `/${organizationSlug}` : '/'}
+    searchHref={organizationSlug ? `/${organizationSlug}/search` : '/search'}
+    client:load
   />
 </LandingLayout>

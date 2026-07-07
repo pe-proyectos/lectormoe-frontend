@@ -9,21 +9,17 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ organization }) => {
-  const handleScansClick = () => {
-    // Si hay organization, ir a la home de la organización
-    if (organization) {
-      window.location.href = organization.slug ? `/${organization.slug}` : '/';
-      return;
-    }
-    
-    // Si no hay organization, verificar si estamos en home
+  // Anchor real (ctrl+click y middle-click funcionan); el onClick solo
+  // intercepta el caso "ya estoy en la home sin org" para hacer smooth scroll.
+  const scansHref = organization
+    ? (organization.slug ? `/${organization.slug}` : '/')
+    : '/#scans-section';
+  const handleScansClick = (e: React.MouseEvent) => {
+    if (organization) return; // navegación normal del anchor
     const element = document.getElementById('scans-section');
     if (element) {
-      // Estamos en home, hacer scroll
+      e.preventDefault();
       element.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      // No estamos en home, ir a home
-      window.location.href = '/';
     }
   };
   return (
@@ -59,22 +55,21 @@ const Footer: React.FC<FooterProps> = ({ organization }) => {
             <h4 className="text-white font-bold mb-6">Plataforma</h4>
             <ul className="space-y-4">
               <li>
-                <button 
-                  onClick={() => {
-                    window.location.href = organization.slug ? `/${organization.slug}/search` : '/search';
-                  }} 
-                  className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors text-left"
+                <a
+                  href={organization?.slug ? `/${organization.slug}/search` : '/search'}
+                  className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors block"
                 >
                   Explorar Mangas
-                </button>
+                </a>
               </li>
               <li>
-                <button 
-                  onClick={handleScansClick} 
-                  className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors text-left"
+                <a
+                  href={scansHref}
+                  onClick={handleScansClick}
+                  className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors block"
                 >
                   Directorio de Scans
-                </button>
+                </a>
               </li>
             </ul>
           </div>

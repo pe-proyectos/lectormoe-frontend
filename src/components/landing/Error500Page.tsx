@@ -10,14 +10,6 @@ const Error500Page: React.FC<Error500PageProps> = ({
   onNavigateHome, 
   onRefresh 
 }) => {
-  const handleNavigateHome = () => {
-    if (onNavigateHome) {
-      onNavigateHome();
-    } else {
-      window.location.href = '/';
-    }
-  };
-
   const handleRefresh = () => {
     if (onRefresh) {
       onRefresh();
@@ -67,13 +59,14 @@ const Error500Page: React.FC<Error500PageProps> = ({
             <RefreshCw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
             Reintentar
           </button>
-          <button
-            onClick={handleNavigateHome}
+          <a
+            href="/"
+            onClick={(e) => { if (onNavigateHome) { e.preventDefault(); onNavigateHome(); } }}
             className="group w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-orange-500/50 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3"
           >
             <Home size={20} className="group-hover:scale-110 transition-transform" />
             Ir al inicio
-          </button>
+          </a>
         </div>
 
         {/* Error Code */}

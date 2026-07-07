@@ -327,10 +327,6 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
     window.location.href = `/${organization?.slug}/login`;
   };
 
-  const handleMangaClick = (mangaUrl: string) => {
-    window.location.href = mangaUrl;
-  };
-
   return (
     <aside className="lg:col-span-4 space-y-8 pt-16">
       <div className="sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto pr-2 custom-scrollbar space-y-8">
@@ -367,10 +363,10 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
               ) : userHistory.length > 0 ? (
                 <div className="space-y-3">
                   {userHistory.map((item) => (
-                    <div
+                    <a
                       key={item.id}
-                      className="group bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden"
-                      onClick={() => handleMangaClick(item.mangaUrl)}
+                      href={item.mangaUrl}
+                      className="group bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden block"
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="min-w-0 flex-1 pr-2">
@@ -379,16 +375,16 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
                             Cap. {item.chapterNumber} - {item.chapterTitle}
                           </h4>
                         </div>
-                        <button className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">
+                        <span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 group-hover:bg-cyan-500 group-hover:text-zinc-950 transition-all shrink-0">
                           <Play size={14} fill="currentColor" />
-                        </button>
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1.5 text-zinc-600 text-[8px] font-bold uppercase tracking-widest">
                         <Clock size={10} />
                         <span>Visto: {item.lastVisited}</span>
                       </div>
-                    </div>
+                    </a>
                   ))}
                 </div>
               ) : (

@@ -287,19 +287,14 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
     if (next) fetchList();
   };
 
-  const handleItemClick = async (n: NotificationItem) => {
-    const url = buildItemUrl(n);
-    if (!n.readAt) {
-      // Optimistic update so the bell badge feels instant.
-      setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, readAt: new Date().toISOString() } : p)));
-      setUnread((u) => Math.max(0, u - 1));
-      try {
-        await callAPI(`/api/notifications/${n.id}/read`, { method: 'PATCH' });
-      } catch {
-        // Best-effort — server will reconcile on next poll
-      }
-    }
-    if (url) window.location.href = url;
+  // Marca como leída sin bloquear la navegación del anchor: keepalive deja
+  // que el PATCH sobreviva al cambio de página.
+  const markRead = (n: NotificationItem) => {
+    if (n.readAt) return;
+    // Optimistic update so the bell badge feels instant.
+    setItems((prev) => prev.map((p) => (p.id === n.id ? { ...p, readAt: new Date().toISOString() } : p)));
+    setUnread((u) => Math.max(0, u - 1));
+    callAPI(`/api/notifications/${n.id}/read`, { method: 'PATCH', keepalive: true } as any).catch(() => {});
   };
 
   const handleMarkAll = async () => {
@@ -381,11 +376,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
                   const { title, subtitle } = formatItem(n);
                   const isUnread = !n.readAt;
                   const showCover = cover && (n.type === 'new_chapter' || n.type === 'new_manga');
+                  const itemUrl = buildItemUrl(n);
+                  const RowTag = (itemUrl ? 'a' : 'button') as any;
                   return (
                     <li key={n.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleItemClick(n)}
+                      <RowTag
+                        {...(itemUrl ? { href: itemUrl } : { type: 'button' })}
+                        onClick={() => markRead(n)}
                         className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${
                           isUnread ? 'bg-cyan-500/[0.03] hover:bg-cyan-500/10' : 'hover:bg-white/5'
                         }`}
@@ -410,7 +407,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ logged, variant = '
                             {subtitle}
                           </p>
                         </div>
-                      </button>
+                      </RowTag>
                     </li>
                   );
                 })}

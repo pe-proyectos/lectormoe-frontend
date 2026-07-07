@@ -2,27 +2,31 @@ import React from 'react';
 import { Home, Search, AlertCircle } from 'lucide-react';
 
 interface Error404PageProps {
+  // hrefs directos (anchors reales: ctrl+click/middle-click funcionan).
+  homeHref?: string;
+  searchHref?: string;
+  // Callbacks legacy: si vienen, se respetan con preventDefault.
   onNavigateHome?: () => void;
   onNavigateSearch?: () => void;
 }
 
-const Error404Page: React.FC<Error404PageProps> = ({ 
-  onNavigateHome, 
-  onNavigateSearch 
+const Error404Page: React.FC<Error404PageProps> = ({
+  homeHref = '/',
+  searchHref = '/search',
+  onNavigateHome,
+  onNavigateSearch,
 }) => {
-  const handleNavigateHome = () => {
+  const handleNavigateHome = (e: React.MouseEvent) => {
     if (onNavigateHome) {
+      e.preventDefault();
       onNavigateHome();
-    } else {
-      window.location.href = '/';
     }
   };
 
-  const handleNavigateSearch = () => {
+  const handleNavigateSearch = (e: React.MouseEvent) => {
     if (onNavigateSearch) {
+      e.preventDefault();
       onNavigateSearch();
-    } else {
-      window.location.href = '/search';
     }
   };
 
@@ -60,20 +64,22 @@ const Error404Page: React.FC<Error404PageProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
-          <button
+          <a
+            href={homeHref}
             onClick={handleNavigateHome}
             className="group w-full sm:w-auto bg-white hover:bg-cyan-400 text-zinc-950 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-white/10 hover:shadow-cyan-400/20 active:scale-95 flex items-center justify-center gap-3"
           >
             <Home size={20} className="group-hover:scale-110 transition-transform" />
             Ir al inicio
-          </button>
-          <button
+          </a>
+          <a
+            href={searchHref}
             onClick={handleNavigateSearch}
             className="group w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-cyan-500/50 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3"
           >
             <Search size={20} className="group-hover:scale-110 transition-transform" />
             Buscar manga
-          </button>
+          </a>
         </div>
 
         {/* Decorative Elements */}
