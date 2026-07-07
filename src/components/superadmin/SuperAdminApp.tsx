@@ -498,17 +498,92 @@ const ErrorMsg = ({ msg }: { msg: string }) => (
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles';
+type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles' | 'reports';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview', label: 'Vista general', icon: '📊' },
   { id: 'orgs', label: 'Organizaciones', icon: '🏢' },
+  { id: 'reports', label: 'Reportes', icon: '🚩' },
   { id: 'users', label: 'Usuarios', icon: '👥' },
   { id: 'subscriptions', label: 'Suscripciones', icon: '💳' },
   { id: 'raffles', label: 'Sorteos', icon: '🎟️' },
   { id: 'requests', label: 'Solicitudes', icon: '📬' },
   { id: 'create-scan', label: 'Alta de Scan', icon: '➕' },
 ];
+
+const ReportsTab = ({ token }: { token: string }) => {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'all'>('pending');
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    saFetch(`/api/superadmin/reports?status=${statusFilter}`, token)
+      .then(setReports)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [token, statusFilter]);
+
+  const act = async (id: number, action: 'dismiss' | 'hide_content') => {
+    if (action === 'hide_content' && !confirm('Se ocultará el contenido al público y se marcarán los reportes como atendidos.')) return;
+    setBusyId(id);
+    try {
+      await saFetch(`/api/superadmin/reports/${id}`, token, { method: 'PATCH', body: JSON.stringify({ action }) });
+      load();
+    } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
+  };
+
+  const catLabel: Record<string, string> = { menores: 'Menores', ilegal: 'Ilegal', no_etiquetado: '+18 sin etiquetar', spam: 'Spam', otro: 'Otro' };
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMsg msg={error} />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-black text-white">Reportes {statusFilter === 'pending' && `(${reports.length} pendientes)`}</h2>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300">
+          <option value="pending">Pendientes</option>
+          <option value="all">Todos</option>
+        </select>
+      </div>
+      {reports.length === 0 ? (
+        <p className="text-zinc-500 text-sm">No hay reportes.</p>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r) => {
+            const target = r.mangaCustom || r.joint;
+            const targetUrl = r.mangaCustom ? `/${r.mangaCustom.organization?.slug}/manga/${r.mangaCustom.manga?.slug}` : r.joint ? `/joint/manga/${r.joint.slug}` : '#';
+            return (
+              <div key={r.id} className="flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                {target?.imageUrl && <img src={target.imageUrl} alt="" className="w-10 h-14 object-cover rounded" />}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a href={targetUrl} target="_blank" rel="noreferrer" className="font-semibold text-white hover:text-violet-400 truncate">{target?.title || 'Obra'}</a>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${r.category === 'menores' ? 'bg-red-500/20 text-red-400' : 'bg-zinc-800 text-zinc-400'}`}>{catLabel[r.category] || r.category}</span>
+                    {r.reportsForTarget > 1 && <span className="text-[10px] text-zinc-500">{r.reportsForTarget} reportes</span>}
+                    {r.status !== 'pending' && <span className="text-[10px] text-zinc-600">{r.status}</span>}
+                  </div>
+                  <p className="text-zinc-500 text-xs">{r.mangaCustom?.organization?.name} · por @{r.reporter?.slug}</p>
+                  {r.details && <p className="text-zinc-400 text-xs mt-1 truncate">{r.details}</p>}
+                </div>
+                {r.status === 'pending' && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => act(r.id, 'hide_content')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Ocultar</button>
+                    <button onClick={() => act(r.id, 'dismiss')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">Descartar</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SuperAdminApp = () => {
   const [token, setToken] = useState<string | null>(null);
@@ -572,6 +647,7 @@ const SuperAdminApp = () => {
         {tab === 'users' && <SuperadminUsers token={token} />}
         {tab === 'subscriptions' && <SuperadminSubscriptions token={token} />}
         {tab === 'raffles' && <SuperadminRaffles token={token} />}
+        {tab === 'reports' && <ReportsTab token={token} />}
       </div>
     </div>
   );

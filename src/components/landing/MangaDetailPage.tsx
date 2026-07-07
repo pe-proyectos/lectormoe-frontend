@@ -19,6 +19,7 @@ import { translateStatus } from "../../util/landing/translateStatus";
 import { getBookTypeBadge, getDemographyBadge } from "../../util/taxonomy";
 import MilestoneAlertButton from "./MilestoneAlertButton";
 import MangaReviews from "./MangaReviews";
+import ReportButton from "./ReportButton";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
 import NSFWAgeModal from "./NSFWAgeModal";
@@ -1174,6 +1175,16 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 }, 0)}
               />
             )}
+
+            {/* Reportar contenido (discreto) */}
+            <div className="flex justify-end">
+              <ReportButton
+                mangaSlug={mangaSlug}
+                organizationSlug={organization?.slug}
+                jointSlug={isJoint ? mangaSlug : undefined}
+                logged={logged}
+              />
+            </div>
 
             {/* Bookmark shortcut — only visible when the user has saved a
                 position somewhere in this work. Routes to the chapter and, for
