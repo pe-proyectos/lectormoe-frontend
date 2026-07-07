@@ -2,11 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Hero from './Hero';
-import FeaturedManga from './FeaturedManga';
-import PopularToday from './PopularToday';
+import TrendingSection from './TrendingSection';
+import RecentlyAdded from './RecentlyAdded';
 import LatestUpdates from './LatestUpdates';
 import PerOrgPopular from './PerOrgPopular';
-import ScrollableCardRow from './ScrollableCardRow';
 import ScansSection from './ScansSection';
 import TopReaders from './TopReaders';
 import TopCommenters from './TopCommenters';
@@ -14,7 +13,6 @@ import ScansButtonsSection from './ScansButtonsSection';
 import ContinueReading from './ContinueReading';
 import Footer from './Footer';
 import SearchView from './SearchView';
-import { Star, Flame } from 'lucide-react';
 
 interface LandingAppProps {
   user?: any;
@@ -108,37 +106,11 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
               <ContinueReading />
             )}
 
-            {/* Popular Today Section */}
-            <section className="max-w-[1600px] mx-auto px-4 md:px-8 pt-16 pb-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-orange-500 font-bold uppercase tracking-[0.2em] text-[10px]">
-                    <Flame size={12} fill="currentColor" /> Tendencias Globales
-                  </div>
-                  <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Populares del Día</h2>
-                </div>
-              </div>
-              <ScrollableCardRow desktopCols="sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
-                <PopularToday user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
-              </ScrollableCardRow>
-            </section>
+            {/* Trending: día / semana / mes en una sola sección */}
+            <TrendingSection user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 
-            {/* Featured Mangas Section */}
-            <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-yellow-500 font-bold uppercase tracking-[0.2em] text-[10px]">
-                    <Star size={12} fill="currentColor" /> Tendencias Globales
-                  </div>
-                  <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Populares de la Semana</h2>
-                </div>
-              </div>
-              <ScrollableCardRow desktopCols="sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
-                <FeaturedManga user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
-              </ScrollableCardRow>
-            </section>
-
-
+            {/* Últimos añadidos a la plataforma */}
+            <RecentlyAdded user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 
             <LatestUpdates user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 
