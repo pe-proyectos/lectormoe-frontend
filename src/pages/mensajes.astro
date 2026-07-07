@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import MessagesInbox from '../components/landing/MessagesInbox';
+
+// @ts-ignore
+const { user, showAds } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Mis mensajes" description="Tus conversaciones con los scans" showAds={showAds}>
+  <MessagesInbox user={user} logged={logged} client:only="react" />
+</LandingLayout>

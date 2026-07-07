@@ -6,6 +6,7 @@ import {
   Ticket,
   DollarSign,
   MessageSquare,
+  Inbox,
   Settings,
   Tag,
   UserCircle,
@@ -79,6 +80,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ page, organizationSlug }) =
       label: 'Comentarios',
       icon: MessageSquare,
       href: `/${organizationSlug}/admin/comments`,
+    },
+    {
+      id: 'messages',
+      label: 'Mensajes',
+      icon: Inbox,
+      href: `/${organizationSlug}/admin/messages`,
     },
     {
       id: 'settings',

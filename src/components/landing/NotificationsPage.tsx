@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Bell, ChevronLeft, ChevronRight, CheckCheck, Loader2, MessageSquare, BookPlus, User, AlertCircle } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, CheckCheck, Loader2, MessageSquare, BookPlus, User, AlertCircle, Mail } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { callAPI } from '../../util/callApi';
@@ -152,6 +152,8 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
     case 'failed_payment':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/finance`;
+    case 'scan_message_reply':
+      return '/mensajes';
     default:
       return null;
   }
@@ -202,6 +204,13 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: `Suscripción #${subId} · ${rel}`,
       };
     }
+    case 'scan_message_reply': {
+      const orgName = n.organization?.name || 'El scan';
+      return {
+        title: `${orgName} respondió tu mensaje`,
+        subtitle: `Toca para ver la conversación · ${rel}`,
+      };
+    }
     case 'new_chapter':
     default: {
       const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
@@ -226,6 +235,8 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 
       return <User size={size} className="text-cyan-400" />;
     case 'failed_payment':
       return <AlertCircle size={size} className="text-red-400" />;
+    case 'scan_message_reply':
+      return <Mail size={size} className="text-cyan-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
   }

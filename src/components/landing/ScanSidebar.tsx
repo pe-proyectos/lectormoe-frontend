@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles, BookOpen, Medal, ChevronDown } from 'lucide-react';
+import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles, BookOpen, Medal, ChevronDown, Mail } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import ContactScanModal from './ContactScanModal';
 
 interface TopCommenter {
   id: number;
@@ -60,6 +61,7 @@ interface GroupedDonor extends TopDonor {
 }
 
 const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, organization, discordUrl }) => {
+  const [contactOpen, setContactOpen] = useState(false);
   const [userHistory, setUserHistory] = useState<HistoryItem[]>([]);
   const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
   const [topReaders, setTopReaders] = useState<TopReader[]>([]);
@@ -685,6 +687,32 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
               </a>
             </div>
           </div>
+        )}
+
+        {/* Contactar al scan */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 bg-cyan-500/15 rounded-2xl flex items-center justify-center">
+              <Mail size={20} className="text-cyan-400" />
+            </div>
+            <div>
+              <span className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.2em]">Escríbenos</span>
+              <h3 className="text-lg font-black text-white leading-none">Contactar al scan</h3>
+            </div>
+          </div>
+          <p className="text-zinc-400 text-sm mb-4">¿Un agradecimiento, una sugerencia o quieres unirte al equipo? Envíanos un mensaje y te responderemos aquí mismo.</p>
+          {logged ? (
+            <button onClick={() => setContactOpen(true)} className="inline-flex w-full items-center justify-center gap-2 bg-cyan-500 text-zinc-950 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors active:scale-95">
+              Enviar mensaje
+            </button>
+          ) : (
+            <a href="/login" className="inline-flex w-full items-center justify-center gap-2 bg-zinc-800 text-zinc-300 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-700 transition-colors">
+              <LogIn size={14} /> Inicia sesión para escribir
+            </a>
+          )}
+        </div>
+        {contactOpen && organization?.slug && (
+          <ContactScanModal scanSlug={organization.slug} open={contactOpen} onClose={() => setContactOpen(false)} />
         )}
 
         {/* Estilos adicionales para scrollbars */}
