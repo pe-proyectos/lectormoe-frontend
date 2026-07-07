@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
+import { getBookTypeBadge, getDemographyBadge } from "../../util/taxonomy";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
 import NSFWAgeModal from "./NSFWAgeModal";
@@ -1222,6 +1223,21 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             )}
 
             <div className="space-y-6">
+              {(() => {
+                const typeBadge = getBookTypeBadge((manga as any).manga?.bookType?.name);
+                const demoBadge = getDemographyBadge(manga.demography?.name || (manga as any).manga?.demography?.name);
+                if (!typeBadge && !demoBadge) return null;
+                return (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {typeBadge && (
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${typeBadge.className}`}>{typeBadge.label}</span>
+                    )}
+                    {demoBadge && (
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${demoBadge.className}`}>{demoBadge.label}</span>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-2">
                   Estado:
