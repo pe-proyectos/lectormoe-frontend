@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Bookmark, X } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Bookmark, X, SlidersHorizontal } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import SortableMangaList, { READING_STATUS_META, READING_STATUS_KEYS, type ReadingStatus } from './SortableMangaList';
@@ -94,6 +94,8 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   const [finished, setFinished] = useState<FinishedKey>(initial.finished);
   const [favoritesOnly, setFavoritesOnly] = useState<boolean>(initial.favoritesOnly);
   const [page, setPage] = useState(initial.page);
+  // Panel de filtros colapsable en móvil (siempre visible en desktop)
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [entries, setEntries] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -354,6 +356,16 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
   };
 
   const hasFilters = !!debouncedSearch || sort !== 'order' || type !== 'all' || status !== 'all' || readingStatus !== 'all' || !!scan || finished !== 'all' || favoritesOnly;
+  // Cuenta solo los filtros del panel colapsable (búsqueda y orden viven en la
+  // barra sticky, no suman al contador del botón Filtros).
+  const activeFilterCount = [
+    type !== 'all',
+    status !== 'all',
+    readingStatus !== 'all',
+    !!scan,
+    finished !== 'all',
+    favoritesOnly,
+  ].filter(Boolean).length;
   const go = (p: string) => { if (typeof window !== 'undefined') window.location.href = p; };
 
   return (
@@ -391,9 +403,10 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
           </div>
         </section>
 
-        {/* Controls */}
+        {/* Controls: barra compacta, la única parte sticky. En móvil los filtros
+            viven en el panel colapsable de abajo para no tapar las tarjetas. */}
         <section className="border-b border-zinc-900 bg-zinc-950 sticky top-16 z-20 backdrop-blur-xl">
-          <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 space-y-3">
+          <div className="max-w-5xl mx-auto px-4 md:px-8 py-3">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="relative flex-1">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -405,22 +418,44 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
                   className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl pl-11 pr-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:border-cyan-500 outline-none transition-colors"
                 />
               </div>
-              <div className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-1.5">
-                <ArrowUpDown size={14} className="text-zinc-500 ml-2" />
-                {(['order', 'recent', 'title'] as SortKey[]).map((k) => (
-                  <button
-                    key={k}
-                    onClick={() => setSort(k)}
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                      sort === k ? 'bg-zinc-800 text-cyan-400' : 'text-zinc-500 hover:text-white'
-                    }`}
-                  >
-                    {k === 'order' ? 'Mi orden' : k === 'recent' ? 'Reciente' : 'A-Z'}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-1.5">
+                  <ArrowUpDown size={14} className="text-zinc-500 ml-2" />
+                  {(['order', 'recent', 'title'] as SortKey[]).map((k) => (
+                    <button
+                      key={k}
+                      onClick={() => setSort(k)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        sort === k ? 'bg-zinc-800 text-cyan-400' : 'text-zinc-500 hover:text-white'
+                      }`}
+                    >
+                      {k === 'order' ? 'Mi orden' : k === 'recent' ? 'Reciente' : 'A-Z'}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  className={`md:hidden flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-colors ${
+                    filtersOpen
+                      ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10'
+                      : 'border-zinc-800 text-zinc-400 bg-zinc-900/50 hover:text-white'
+                  }`}
+                >
+                  <SlidersHorizontal size={14} />
+                  {filtersOpen ? 'Ocultar' : 'Filtros'}
+                  {!filtersOpen && activeFilterCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-cyan-500 text-zinc-950 text-[9px]">{activeFilterCount}</span>
+                  )}
+                </button>
               </div>
             </div>
+          </div>
+        </section>
 
+        {/* Panel de filtros: colapsable en móvil (empuja el contenido, no es
+            overlay ni sticky), siempre visible en desktop. */}
+        <section className={`border-b border-zinc-900 bg-zinc-950 ${filtersOpen ? 'block' : 'hidden'} md:block`}>
+          <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 space-y-3">
             {/* Reading status pills — the user's own classification (owner-only filter) */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mr-1">Mi estado</span>
