@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Heart, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle, Ticket, Trophy, RotateCcw, Wallet, Link2, Unlink, RefreshCw, Check, X } from 'lucide-react'
+import { Shield, Bell, Monitor, User as UserIcon, Globe, Save, Loader2, BookOpen, Zap, CreditCard, BarChart3, MessageSquare, Pause, Play, ChevronDown, ChevronUp, AlertTriangle, Ticket, Trophy, RotateCcw, Wallet, Link2, Unlink, RefreshCw, XCircle, ExternalLink, Clock, CheckCircle2 } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
 
 interface User {
@@ -141,23 +141,38 @@ const intervalLabel = (interval: string): string => {
   }
 }
 
-const StatusBadge: React.FC<{ status: string; failed: number }> = ({ status, failed }) => {
+const AccessBadge: React.FC<{ active: boolean; endDate: string | null; status: string }> = ({ active, endDate, status }) => {
   const upper = (status || '').toUpperCase()
-  const isSuspendedByFailed = upper === 'SUSPENDED' || (failed > 0 && upper !== 'ACTIVE' && upper !== 'CANCELLED')
+  const isCancelledOrExpired = upper === 'CANCELLED' || upper === 'EXPIRED'
+  const now = new Date()
+  const end = endDate ? new Date(endDate) : null
+  const inGracePeriod = isCancelledOrExpired && active && end && end > now
 
-  if (upper === 'ACTIVE') {
+  if (inGracePeriod) {
+    return <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Acceso activo</span>
+  }
+  if (active) {
     return <span className="text-[10px] font-black text-green-500 bg-green-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Activa</span>
   }
-  if (upper === 'CANCELLED' || upper === 'EXPIRED') {
-    return <span className="text-[10px] font-black text-zinc-400 bg-zinc-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Cancelada</span>
+  return <span className="text-[10px] font-black text-zinc-400 bg-zinc-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Sin acceso</span>
+}
+
+const PaypalStatusBadge: React.FC<{ status: string; failed: number }> = ({ status, failed }) => {
+  const upper = (status || '').toUpperCase()
+  if (upper === 'ACTIVE') {
+    return <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Renovación activa</span>
   }
-  if (isSuspendedByFailed && upper === 'SUSPENDED' && failed > 0) {
-    return <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Suspendida</span>
+  if (upper === 'CANCELLED') {
+    return <span className="text-[9px] font-black text-zinc-500 bg-zinc-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Renovación cancelada</span>
+  }
+  if (upper === 'EXPIRED') {
+    return <span className="text-[9px] font-black text-zinc-500 bg-zinc-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Expirada</span>
   }
   if (upper === 'SUSPENDED') {
-    return <span className="text-[10px] font-black text-cyan-300 bg-cyan-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">Pausada</span>
+    if (failed > 0) return <span className="text-[9px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Pago fallido</span>
+    return <span className="text-[9px] font-black text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Pausada</span>
   }
-  return <span className="text-[10px] font-black text-zinc-400 bg-zinc-500/10 px-2.5 py-1 rounded-full uppercase tracking-wider">{status || 'Desconocido'}</span>
+  return null
 }
 
 const SubscriptionCard: React.FC<{
@@ -169,75 +184,101 @@ const SubscriptionCard: React.FC<{
   onToggleExpand: () => void
   onPause: () => void
   onResume: () => void
+  onCancel: () => void
   busy: boolean
-}> = ({ sub, payments, paymentsLoading, paymentsError, expanded, onToggleExpand, onPause, onResume, busy }) => {
+}> = ({ sub, payments, paymentsLoading, paymentsError, expanded, onToggleExpand, onPause, onResume, onCancel, busy }) => {
   const status = (sub.status || '').toUpperCase()
   const isCancelled = status === 'CANCELLED' || status === 'EXPIRED'
   const isPaused = status === 'SUSPENDED' && sub.failedPaymentsCount === 0
   const isFailedSuspended = status === 'SUSPENDED' && sub.failedPaymentsCount > 0
   const canPause = status === 'ACTIVE'
   const canResume = isPaused || isFailedSuspended
+  const canCancel = status === 'ACTIVE' || status === 'SUSPENDED'
   const org = sub.subscriptionPlan.organization
 
+  const now = new Date()
+  const endDate = sub.endDate ? new Date(sub.endDate) : null
+  const inGracePeriod = isCancelled && sub.active && endDate && endDate > now
+
   return (
-    <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[32px] space-y-4">
-      <div className="flex items-start gap-4">
-        {org.logoUrl ? (
-          <img src={org.logoUrl} alt={org.name} className="w-14 h-14 rounded-2xl object-cover border border-zinc-800 flex-shrink-0" />
-        ) : (
-          <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
-            <CreditCard size={20} className="text-zinc-600" />
-          </div>
-        )}
+    <div className="bg-zinc-950 border border-zinc-800 rounded-[32px] overflow-hidden">
+      {/* Header strip */}
+      <div className="p-5 flex items-start gap-4">
+        <a href={`/${org.slug}`} className="flex-shrink-0">
+          {org.logoUrl ? (
+            <img src={org.logoUrl} alt={org.name} className="w-14 h-14 rounded-2xl object-cover border border-zinc-800 hover:border-cyan-500 transition-colors" />
+          ) : (
+            <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <CreditCard size={20} className="text-zinc-600" />
+            </div>
+          )}
+        </a>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-white font-bold text-sm truncate">{org.name}</p>
-            <StatusBadge status={sub.status} failed={sub.failedPaymentsCount} />
+            <a href={`/${org.slug}`} className="text-white font-bold text-sm truncate hover:text-cyan-400 transition-colors flex items-center gap-1">
+              {org.name} <ExternalLink size={11} className="text-zinc-600" />
+            </a>
+            <AccessBadge active={sub.active} endDate={sub.endDate} status={sub.status} />
           </div>
           <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1">
-            {sub.subscriptionPlan.name} · ${sub.subscriptionPlan.price.toFixed(2)} {sub.subscriptionPlan.currency}/{intervalLabel(sub.subscriptionPlan.interval)}
+            {sub.subscriptionPlan.name} · {formatMoney(sub.subscriptionPlan.price, sub.subscriptionPlan.currency)}/{intervalLabel(sub.subscriptionPlan.interval)}
           </p>
+          <div className="mt-1.5">
+            <PaypalStatusBadge status={sub.status} failed={sub.failedPaymentsCount} />
+          </div>
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3 text-xs">
-        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-4 py-3">
-          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">Próximo cobro</p>
-          <p className="text-white font-medium">
-            {isCancelled ? '—' : formatDateLong(sub.nextPayment)}
-          </p>
-        </div>
-        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-4 py-3">
-          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">Último pago</p>
-          <p className="text-white font-medium">
-            {sub.lastPayment
-              ? `${formatMoney(sub.lastAmount, sub.subscriptionPlan.currency)} el ${formatDateShort(sub.lastPayment)}`
-              : '—'}
-          </p>
-        </div>
-      </div>
-
-      {isFailedSuspended && (
-        <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-          <AlertTriangle size={14} className="text-amber-400 mt-0.5 flex-shrink-0" />
+      {/* Grace period banner */}
+      {inGracePeriod && endDate && (
+        <div className="mx-5 mb-3 flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+          <Clock size={13} className="text-amber-400 mt-0.5 flex-shrink-0" />
           <p className="text-amber-300 text-[11px] leading-relaxed">
-            Tu pago falló {sub.failedPaymentsCount} {sub.failedPaymentsCount === 1 ? 'vez' : 'veces'}. Revisa tu método de pago en PayPal.
+            Cancelaste el cobro recurrente. Tienes acceso hasta el <strong>{formatDateLong(sub.endDate)}</strong>, cuando ya finaliza el período que pagaste.
           </p>
         </div>
       )}
 
-      <div className="flex items-center gap-2 flex-wrap">
-        {isCancelled && (
-          <span className="text-[10px] font-bold text-zinc-500 italic">Cancelada — no puede reactivarse</span>
-        )}
-        {canPause && (
-          <button
-            onClick={onPause}
-            disabled={busy}
-            className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-cyan-500 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Pause size={12} /> Pausar
-          </button>
+      {/* Failed payment warning */}
+      {isFailedSuspended && (
+        <div className="mx-5 mb-3 flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+          <AlertTriangle size={13} className="text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-amber-300 text-[11px] leading-relaxed">
+            Tu pago falló {sub.failedPaymentsCount} {sub.failedPaymentsCount === 1 ? 'vez' : 'veces'}. Revisa tu método de pago en PayPal para no perder el acceso.
+          </p>
+        </div>
+      )}
+
+      {/* Stats grid */}
+      <div className="px-5 pb-3 grid sm:grid-cols-3 gap-2 text-xs">
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-3 py-2.5">
+          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">
+            {isCancelled ? 'Acceso hasta' : 'Próximo cobro'}
+          </p>
+          <p className="text-white font-medium text-sm">
+            {isCancelled
+              ? (endDate ? formatDateLong(sub.endDate) : '—')
+              : formatDateLong(sub.nextPayment)}
+          </p>
+        </div>
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-3 py-2.5">
+          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">Último pago</p>
+          <p className="text-white font-medium text-sm">
+            {sub.lastPayment ? formatDateShort(sub.lastPayment) : '—'}
+          </p>
+        </div>
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-3 py-2.5">
+          <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest mb-1">Monto</p>
+          <p className="text-white font-medium text-sm">
+            {sub.lastAmount != null ? formatMoney(sub.lastAmount, sub.subscriptionPlan.currency) : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="px-5 pb-5 flex items-center gap-2 flex-wrap">
+        {isCancelled && !inGracePeriod && (
+          <span className="text-[10px] font-bold text-zinc-500 italic">Ya no tienes acceso a este scan</span>
         )}
         {canResume && (
           <button
@@ -248,19 +289,37 @@ const SubscriptionCard: React.FC<{
             <Play size={12} /> Reanudar
           </button>
         )}
+        {canPause && (
+          <button
+            onClick={onPause}
+            disabled={busy}
+            className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Pause size={12} /> Pausar
+          </button>
+        )}
+        {canCancel && (
+          <button
+            onClick={onCancel}
+            disabled={busy}
+            className="flex items-center gap-2 bg-transparent border border-red-500/30 hover:border-red-500 text-red-400 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <XCircle size={12} /> Cancelar
+          </button>
+        )}
         <button
           onClick={onToggleExpand}
-          className="flex items-center gap-2 bg-transparent border border-zinc-800 hover:border-zinc-600 text-zinc-300 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors ml-auto"
+          className="flex items-center gap-2 bg-transparent border border-zinc-800 hover:border-zinc-600 text-zinc-400 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors ml-auto"
         >
-          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Ver pagos
+          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Historial de pagos
         </button>
       </div>
 
       {expanded && (
-        <div className="pt-4 border-t border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="border-t border-zinc-800 p-5 animate-in fade-in slide-in-from-top-2 duration-200">
           {paymentsLoading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 size={20} className="text-cyan-500 animate-spin" />
+            <div className="flex items-center justify-center py-6">
+              <Loader2 size={18} className="text-cyan-500 animate-spin" />
             </div>
           )}
           {paymentsError && (
@@ -270,41 +329,31 @@ const SubscriptionCard: React.FC<{
             <p className="text-zinc-500 text-xs italic">Aún no hay pagos registrados.</p>
           )}
           {!paymentsLoading && !paymentsError && payments && payments.length > 0 && (
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-[11px]">
-                <thead>
-                  <tr className="text-zinc-500 text-left">
-                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Fecha</th>
-                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Monto bruto</th>
-                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Comisiones</th>
-                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Neto al scan</th>
-                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">Estado</th>
-                    <th className="font-black uppercase tracking-widest text-[9px] px-2 py-2">ID</th>
-                  </tr>
-                </thead>
-                <tbody className="text-zinc-300">
-                  {payments.map((p) => {
-                    const fees = p.beforeFeesAmount - p.amount
-                    return (
-                      <tr key={p.id} className="border-t border-zinc-800/60">
-                        <td className="px-2 py-2 whitespace-nowrap">{formatDateShort(p.transactionDate)}</td>
-                        <td className="px-2 py-2 whitespace-nowrap">{formatMoney(p.beforeFeesAmount, p.currency)}</td>
-                        <td className="px-2 py-2 whitespace-nowrap text-zinc-500">{formatMoney(fees, p.currency)}</td>
-                        <td className="px-2 py-2 whitespace-nowrap text-white font-medium">{formatMoney(p.amount, p.currency)}</td>
-                        <td className="px-2 py-2 whitespace-nowrap">
-                          <span className="text-[9px] font-black uppercase tracking-wider">{p.status}</span>
-                          {p.source === 'paypal' && (
-                            <span className="ml-1 text-[8px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">Pendiente</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-2 text-zinc-500 truncate max-w-[120px]" title={p.transactionId ?? ''}>
-                          {p.transactionId ?? '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {payments.map((p) => (
+                <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-zinc-900/40 rounded-2xl border border-zinc-800/60">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CheckCircle2 size={13} className={p.status === 'COMPLETED' || p.status === 'Completed' ? 'text-emerald-400' : 'text-zinc-600'} />
+                    <div className="min-w-0">
+                      <p className="text-white text-xs font-bold">{formatMoney(p.beforeFeesAmount, p.currency)}</p>
+                      <p className="text-zinc-500 text-[10px] font-mono truncate max-w-[140px]" title={p.transactionId ?? ''}>
+                        {p.transactionId ? p.transactionId.slice(0, 18) + '…' : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-zinc-300 text-[11px]">{formatDateLong(p.transactionDate)}</p>
+                    <div className="flex items-center gap-1 justify-end mt-0.5">
+                      <span className={`text-[9px] font-black uppercase tracking-wider ${
+                        p.status === 'COMPLETED' || p.status === 'Completed' ? 'text-emerald-400' : 'text-zinc-500'
+                      }`}>{p.status}</span>
+                      {p.source === 'paypal' && (
+                        <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">No confirmado</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -373,9 +422,22 @@ const MySubscriptionsSection: React.FC = () => {
     }
   }
 
+  const cancelSub = async (subId: number) => {
+    setBusyId(subId)
+    setActionError(null)
+    try {
+      await callAPI(`/api/subscription/me/${subId}/cancel`, { method: 'DELETE' })
+      await loadSubs()
+    } catch (err: any) {
+      setActionError(err?.message || 'No se pudo cancelar la suscripción.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const handlePause = (sub: UserSubscription) => {
     const ok = typeof window !== 'undefined' && window.confirm(
-      `¿Pausar tu suscripción a ${sub.subscriptionPlan.organization.name}? PayPal dejará de cobrarte. Puedes reactivarla cuando quieras.`,
+      `¿Pausar tu suscripción a ${sub.subscriptionPlan.organization.name}?\n\nPayPal dejará de cobrarte temporalmente. Puedes reactivarla cuando quieras desde esta misma sección.`,
     )
     if (!ok) return
     setActive(sub.id, false)
@@ -384,6 +446,18 @@ const MySubscriptionsSection: React.FC = () => {
   const handleResume = (sub: UserSubscription) => {
     setActive(sub.id, true)
   }
+
+  const handleCancel = (sub: UserSubscription) => {
+    const ok = typeof window !== 'undefined' && window.confirm(
+      `¿Cancelar tu suscripción a ${sub.subscriptionPlan.organization.name}?\n\nSeguirás teniendo acceso hasta el final del período que ya pagaste. Esta acción no se puede deshacer.`,
+    )
+    if (!ok) return
+    cancelSub(sub.id)
+  }
+
+  // Separate active and inactive subs
+  const activeSubs = (subs ?? []).filter((s) => s.active || (s.status !== 'CANCELLED' && s.status !== 'EXPIRED'))
+  const inactiveSubs = (subs ?? []).filter((s) => !s.active && (s.status === 'CANCELLED' || s.status === 'EXPIRED'))
 
   return (
     <div className="space-y-4">
@@ -413,28 +487,56 @@ const MySubscriptionsSection: React.FC = () => {
       {!loading && !loadError && subs && subs.length === 0 && (
         <div className="p-6 bg-zinc-950 border border-dashed border-zinc-800 rounded-[32px]">
           <p className="text-zinc-400 text-sm">
-            No tienes suscripciones activas. Suscríbete a un scan para apoyar a tus traductores favoritos.
+            No tienes suscripciones activas.{' '}
+            <a href="/scans" className="text-cyan-400 font-bold hover:underline">Explora los scans</a>{' '}
+            para apoyar a tus traductores favoritos.
           </p>
         </div>
       )}
 
       {!loading && !loadError && subs && subs.length > 0 && (
-        <div className="space-y-3">
-          {subs.map((sub) => (
-            <SubscriptionCard
-              key={sub.id}
-              sub={sub}
-              payments={paymentsCache[sub.id] ?? null}
-              paymentsLoading={!!paymentsLoading[sub.id]}
-              paymentsError={paymentsErrors[sub.id] ?? null}
-              expanded={!!expanded[sub.id]}
-              onToggleExpand={() => togglePayments(sub.id)}
-              onPause={() => handlePause(sub)}
-              onResume={() => handleResume(sub)}
-              busy={busyId === sub.id}
-            />
-          ))}
-        </div>
+        <>
+          {activeSubs.length > 0 && (
+            <div className="space-y-3">
+              {activeSubs.map((sub) => (
+                <SubscriptionCard
+                  key={sub.id}
+                  sub={sub}
+                  payments={paymentsCache[sub.id] ?? null}
+                  paymentsLoading={!!paymentsLoading[sub.id]}
+                  paymentsError={paymentsErrors[sub.id] ?? null}
+                  expanded={!!expanded[sub.id]}
+                  onToggleExpand={() => togglePayments(sub.id)}
+                  onPause={() => handlePause(sub)}
+                  onResume={() => handleResume(sub)}
+                  onCancel={() => handleCancel(sub)}
+                  busy={busyId === sub.id}
+                />
+              ))}
+            </div>
+          )}
+
+          {inactiveSubs.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest px-1">Historial</p>
+              {inactiveSubs.map((sub) => (
+                <SubscriptionCard
+                  key={sub.id}
+                  sub={sub}
+                  payments={paymentsCache[sub.id] ?? null}
+                  paymentsLoading={!!paymentsLoading[sub.id]}
+                  paymentsError={paymentsErrors[sub.id] ?? null}
+                  expanded={!!expanded[sub.id]}
+                  onToggleExpand={() => togglePayments(sub.id)}
+                  onPause={() => handlePause(sub)}
+                  onResume={() => handleResume(sub)}
+                  onCancel={() => handleCancel(sub)}
+                  busy={busyId === sub.id}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

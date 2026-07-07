@@ -379,6 +379,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
           createSubscription: function (data: any, actions: any) {
             return actions.subscription.create({
               plan_id: plan.planId,
+              custom_id: String(user?.id ?? ''),
             });
           },
           onApprove: async function (data: any) {
