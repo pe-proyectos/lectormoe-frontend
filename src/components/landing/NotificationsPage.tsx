@@ -106,7 +106,8 @@ const buildCommentThreadUrl = (n: NotificationItem, nsfwMode: boolean): string |
     let jointSlug = identifier.slice('joint_'.length);
     const lu = jointSlug.lastIndexOf('_');
     let chapterNumber: string | null = null;
-    if (lu > 0 && /^\d+$/.test(jointSlug.slice(lu + 1))) {
+    // \d+(\.\d+)? y no \d+: los capítulos decimales (10.5) rompían el link
+    if (lu > 0 && /^\d+(\.\d+)?$/.test(jointSlug.slice(lu + 1))) {
       chapterNumber = jointSlug.slice(lu + 1);
       jointSlug = jointSlug.slice(0, lu);
     }
@@ -119,7 +120,7 @@ const buildCommentThreadUrl = (n: NotificationItem, nsfwMode: boolean): string |
   const orgSlug = n.organization.slug;
   const prefix = nsfwMode ? '/red' : '';
   const lastUnderscore = identifier.lastIndexOf('_');
-  if (lastUnderscore > 0 && /^\d+$/.test(identifier.slice(lastUnderscore + 1))) {
+  if (lastUnderscore > 0 && /^\d+(\.\d+)?$/.test(identifier.slice(lastUnderscore + 1))) {
     const mangaSlug = identifier.slice(0, lastUnderscore);
     const chapterNumber = identifier.slice(lastUnderscore + 1);
     return `${prefix}/${orgSlug}/manga/${mangaSlug}/chapters/${chapterNumber}${tail}`;
