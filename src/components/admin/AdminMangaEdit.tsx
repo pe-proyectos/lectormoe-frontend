@@ -328,6 +328,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       isSimulRelease: initialResource?.isSimulRelease || false,
       isNSFW: initialResource?.isNSFW || false,
       hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
+      finalChapterNumber: initialResource?.finalChapterNumber ?? null,
       cover: initialResource?.imageUrl || '',
       banner: initialResource?.bannerUrl || '',
       genres: initialResource?.genres || [],
@@ -1344,6 +1345,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.isSimulRelease = formData.isSimulRelease;
         patchBody.isNSFW = formData.isNSFW;
         patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
+        patchBody.finalChapterNumber = formData.finalChapterNumber ?? null;
         patchBody.genreIds = formData.genres.map((g: any) => g.id);
         patchBody.subscriptionPlanIdsCanReadUnreleased = formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [];
         patchBody.subscriptionPlanIdsCanReadReleased = formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [];
@@ -2911,6 +2913,26 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         />
                         <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
                       </label>
+                    </div>
+
+                    {/* Capítulo final */}
+                    <div className="py-3">
+                      <p className="text-sm font-medium text-white mb-1">Capítulo final</p>
+                      <p className="text-xs text-zinc-400 mb-2">Marca el capítulo donde termina la historia. Los extras y epílogos posteriores pueden seguir subiéndose; puedes mover la marca cuando quieras.</p>
+                      <select
+                        value={formData.finalChapterNumber ?? ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, finalChapterNumber: e.target.value === '' ? null : parseFloat(e.target.value) }))}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-white text-sm focus:border-cyan-500 outline-none"
+                      >
+                        <option value="">Sin marcar</option>
+                        {/* Si hay una marca guardada pero los capítulos aún no cargaron, conserva la opción */}
+                        {formData.finalChapterNumber != null && !chapters.some((c: any) => Number(c.number) === formData.finalChapterNumber) && (
+                          <option value={formData.finalChapterNumber}>Cap. {formData.finalChapterNumber}</option>
+                        )}
+                        {[...chapters].sort((a: any, b: any) => Number(b.number) - Number(a.number)).map((c: any) => (
+                          <option key={c.id} value={c.number}>Cap. {c.number}{c.title ? ` - ${c.title}` : ''}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   )}

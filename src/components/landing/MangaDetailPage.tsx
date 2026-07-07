@@ -1462,7 +1462,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                         const isUpdating = chaptersUpdating.has(chapter.number);
 
                         const chapterUrl = getChapterUrl(chapter);
-                        
+                        const isFinal = (manga as any).finalChapterNumber != null && chapter.number === (manga as any).finalChapterNumber;
+
                         return (
                           <a
                             key={chapter.id}
@@ -1470,6 +1471,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                             className={`group border rounded-2xl md:rounded-3xl p-3 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between transition-all cursor-pointer block min-w-0 ${
                               isUpdating
                                 ? "border-zinc-700 opacity-60"
+                                : isFinal
+                                ? "border-amber-500/30 hover:border-amber-400/50 hover:bg-zinc-900/80"
                                 : hasAccess
                                 ? isRead
                                   ? "border-zinc-800 hover:border-cyan-500/30 hover:bg-zinc-900/80"
@@ -1524,6 +1527,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                     <h4 className="text-white font-bold text-sm md:text-lg truncate">
                                       Capítulo {chapter.number}
                                     </h4>
+                                    {(manga as any).finalChapterNumber != null && chapter.number === (manga as any).finalChapterNumber && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded text-[9px] font-black uppercase tracking-widest shrink-0">
+                                        Final
+                                      </span>
+                                    )}
                                   </div>
 
                                   <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-wide shrink-0">
