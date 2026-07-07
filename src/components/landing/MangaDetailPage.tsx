@@ -1467,9 +1467,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                     a cramped column. */}
                 <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6">
                   <div className="flex-1 space-y-4 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:overflow-x-hidden min-w-0">
-                    {currentChapters
-                      .sort((a, b) => b.number - a.number)
-                      .map((chapter) => {
+                    {(() => {
+                      const sorted = [...currentChapters].sort((a, b) => b.number - a.number);
+                      const groupByVol = (manga as any).groupChaptersByVolume === true;
+                      const volumes: any[] = (manga as any).volumes || [];
+                      const volMeta = (n: number | null) => (n != null ? volumes.find((v: any) => v.number === n) : null);
+                      let prevVol: number | null | undefined = undefined;
+                      return sorted.map((chapter) => {
                         const hasAccess = userHasAccessToChapter(chapter);
                         const isRead = isChapterRead(chapter.number);
                         const chapterHistory = getChapterHistory(
@@ -1480,7 +1484,28 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                         const chapterUrl = getChapterUrl(chapter);
                         const isFinal = (manga as any).finalChapterNumber != null && chapter.number === (manga as any).finalChapterNumber;
 
+                        // Cabecera de volumen (solo si la obra agrupa por volumen).
+                        const vol = (chapter as any).volumeNumber ?? null;
+                        let volumeHeader = null;
+                        if (groupByVol && vol !== prevVol) {
+                          prevVol = vol;
+                          const meta = volMeta(vol);
+                          volumeHeader = (
+                            <div key={`vol-${vol}`} className="flex items-center gap-3 pt-4 pb-1">
+                              {meta?.coverUrl && <img src={meta.coverUrl} alt="" className="w-10 h-14 object-cover rounded" />}
+                              <div>
+                                <p className="text-white font-black uppercase tracking-tight text-sm">
+                                  {vol != null ? `Volumen ${vol}` : 'Sin volumen'}
+                                </p>
+                                {meta?.title && <p className="text-zinc-500 text-xs">{meta.title}</p>}
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
+                        <React.Fragment key={`wrap-${chapter.id}`}>
+                        {volumeHeader}
                           <a
                             key={chapter.id}
                             href={chapterUrl}
@@ -1696,8 +1721,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                               })()}
                             </div>
                           </a>
+                        </React.Fragment>
                         );
-                      })}
+                      });
+                    })()}
                   </div>
 
                   {/* Range Picker — horizontal scroll on mobile (with arrow

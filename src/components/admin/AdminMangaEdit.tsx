@@ -329,6 +329,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       isNSFW: initialResource?.isNSFW || false,
       hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
       finalChapterNumber: initialResource?.finalChapterNumber ?? null,
+      groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
       cover: initialResource?.imageUrl || '',
       banner: initialResource?.bannerUrl || '',
       genres: initialResource?.genres || [],
@@ -345,6 +346,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     releaseDate: '',
     thumbnail: null as File | string | null,
     isUnreleased: false,
+    volumeNumber: '' as string,
   });
   
   const [pages, setPages] = useState<(File | string)[]>([]);
@@ -570,6 +572,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         isSubscriberOnly: false,
         thumbnail: null,
         isUnreleased: false,
+        volumeNumber: '',
       });
       setPages([]);
       setSinglePageIndexes([]);
@@ -627,6 +630,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         isSimulRelease: initialResource?.isSimulRelease || false,
         isNSFW: initialResource?.isNSFW || false,
         hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
+        finalChapterNumber: initialResource?.finalChapterNumber ?? null,
+        groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
         workType: initialResource?.workType || 'manga',
         cover: initialResource?.imageUrl || '',
         banner: initialResource?.bannerUrl || '',
@@ -790,6 +795,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         releaseDate: chapter.isUnreleased ? '' : utcToLocalDatetimeString(chapter.releasedAt),
         thumbnail: chapter.imageUrl || null,
         isUnreleased: chapter.isUnreleased || false,
+        volumeNumber: chapter.volumeNumber != null ? String(chapter.volumeNumber) : '',
       });
       // Preload the joint worked-by selector from the chapter
       if (isJointMode) {
@@ -1346,6 +1352,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.isNSFW = formData.isNSFW;
         patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
         patchBody.finalChapterNumber = formData.finalChapterNumber ?? null;
+        patchBody.groupChaptersByVolume = formData.groupChaptersByVolume;
         patchBody.genreIds = formData.genres.map((g: any) => g.id);
         patchBody.subscriptionPlanIdsCanReadUnreleased = formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [];
         patchBody.subscriptionPlanIdsCanReadReleased = formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [];
@@ -1493,6 +1500,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             ...(isWriting ? { bodyMarkdown } : {}),
             ...(imageKey ? { image: imageKey } : {}),
             isUnreleased: newChapter.isUnreleased || false,
+            volumeNumber: newChapter.volumeNumber === '' ? null : parseInt(newChapter.volumeNumber, 10),
             ...(isJointMode ? { workedByOrganizationIds: workedByIds } : {}),
           }),
         }
@@ -1516,6 +1524,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           releaseDate: '',
           isSubscriberOnly: false,
           thumbnail: null,
+          volumeNumber: '',
         });
         setPages([]);
         setSinglePageIndexes([]);
@@ -2230,9 +2239,20 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         )}
                       </div>
                       <div className="space-y-2">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">N.º de volumen (opcional)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={newChapter.volumeNumber}
+                          onChange={(e) => setNewChapter({...newChapter, volumeNumber: e.target.value})}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none"
+                          placeholder="Ej. 3"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Título del capítulo</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={newChapter.title}
                           onChange={(e) => setNewChapter({...newChapter, title: e.target.value})}
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none" 
@@ -2372,6 +2392,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             releaseDate: '',
                             thumbnail: null,
                             isUnreleased: false,
+                            volumeNumber: '',
                           });
                           setPages([]);
                           setSinglePageIndexes([]);
@@ -2912,6 +2933,23 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                           onChange={(e) => setFormData(prev => ({ ...prev, hideUnreleasedChapters: e.target.checked }))}
                         />
                         <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                      </label>
+                    </div>
+
+                    {/* Agrupar por volumen */}
+                    <div className="flex items-center justify-between py-3 border-b border-zinc-800">
+                      <div>
+                        <p className="text-sm font-medium text-white">Agrupar capítulos por volumen</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">Muestra los capítulos agrupados por tomo en la página pública</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.groupChaptersByVolume}
+                          onChange={(e) => setFormData(prev => ({ ...prev, groupChaptersByVolume: e.target.checked }))}
+                        />
+                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
                       </label>
                     </div>
 
