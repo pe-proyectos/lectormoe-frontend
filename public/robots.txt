@@ -1,6 +1,12 @@
 # Allow all search engines
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /superadmin
+Disallow: /settings
+Disallow: /notifications
+Disallow: /api/
+Disallow: /*/admin
 
 # Block AI/LLM bots
 User-agent: GPTBot
@@ -48,6 +54,5 @@ Disallow: /
 User-agent: MJ12bot
 Disallow: /
 
-# Sitemap (si tienes uno, descomenta y actualiza la URL)
-# Sitemap: https://capibaratraductor.com/sitemap.xml
+Sitemap: https://capibaratraductor.com/sitemap.xml
 
