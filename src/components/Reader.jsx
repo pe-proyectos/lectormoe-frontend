@@ -174,7 +174,11 @@ export function Reader({
       fitMode: (() => {
         const saved = localStorage.getItem('fitMode');
         if (saved) return saved;
-        return localStorage.getItem('limitPageHeight') === 'true' ? 'height' : 'none';
+        if (localStorage.getItem('limitPageHeight') === 'true') return 'height';
+        // Default por dispositivo (solo si el usuario nunca eligió): en móvil
+        // ajustar al ancho evita el zoom manual constante; en desktop se
+        // conserva el comportamiento clásico (tamaño original).
+        return window.matchMedia('(max-width: 768px)').matches ? 'width' : 'none';
       })(),
       pageFitLimitPx: parseInt(localStorage.getItem('pageFitLimitPx') || '900', 10),
       useDoublePages: localStorage.getItem("useDoublePages") === "true",
@@ -290,6 +294,25 @@ export function Reader({
     localStorage.setItem('fitMode', mode);
     setSettings((prev) => ({ ...prev, fitMode: mode }));
   }, []);
+
+  // Ajuste rápido desde la toolbar: cicla los 3 modos comunes con un toast
+  // breve. Los modos con límite en px se eligen desde el panel completo.
+  const [fitToast, setFitToast] = useState(null);
+  const fitToastTimerRef = useRef(null);
+  const cycleFitMode = useCallback(() => {
+    const order = ['width', 'height', 'none'];
+    const current = order.includes(settings.fitMode) ? settings.fitMode : 'none';
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    handleFitMode(next);
+    const labels = {
+      width: 'Ajuste: ancho de pantalla',
+      height: 'Ajuste: alto de pantalla',
+      none: 'Ajuste: tamaño original',
+    };
+    setFitToast(labels[next]);
+    if (fitToastTimerRef.current) clearTimeout(fitToastTimerRef.current);
+    fitToastTimerRef.current = setTimeout(() => setFitToast(null), 1500);
+  }, [settings.fitMode, handleFitMode]);
 
   const handlePageFitLimitPx = useCallback((value) => {
     const px = Math.max(100, Math.min(3000, parseInt(value, 10) || 900));
@@ -1074,6 +1097,11 @@ export function Reader({
 
   return (
     <div id="reader-top">
+      {fitToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] bg-zinc-900 border border-zinc-700 rounded-full px-4 py-2 text-xs font-bold text-white shadow-xl pointer-events-none">
+          {fitToast}
+        </div>
+      )}
       <div className="relative w-full min-h-44 group py-4">
         <LazyImage
           alt={manga?.title}
@@ -1144,6 +1172,15 @@ export function Reader({
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={cycleFitMode}
+                  title="Ajuste de imagen (ancho / alto / original)"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition-all"
+                >
+                  <svg className="h-6 w-6 sm:h-7 sm:w-7" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                  </svg>
+                </button>
                 <AdjustmentsHorizontalIcon
                   className="h-6 w-6 sm:h-8 sm:w-8 cursor-pointer hover:text-gray-300 transition-all duration-300 hover:-rotate-90 transform"
                   onClick={handleToggleSettings}
