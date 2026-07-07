@@ -343,6 +343,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   
   const [pages, setPages] = useState<(File | string)[]>([]);
   const [singlePageIndexes, setSinglePageIndexes] = useState<number[]>([]);
+  // Último número subido EN ESTA SESIÓN del diálogo. Permite encadenar subidas
+  // de capítulos viejos (subo 1 → sugiere 2 → subo 2 → sugiere 3) en vez de
+  // volver siempre a max+1. Se limpia al cambiar de manga.
+  const lastUploadedNumberRef = useRef<number | null>(null);
+  useEffect(() => {
+    // Cambió el proyecto: la cadena de "capítulos viejos" ya no aplica.
+    lastUploadedNumberRef.current = null;
+  }, [resourceSlug]);
   // For text-based chapters (novels and other writings). The upload tab swaps
   // its UI based on whether the resolved bookType is in the writing set.
   const [bodyMarkdown, setBodyMarkdown] = useState<string>('');
@@ -565,18 +573,23 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   // Pre-fill chapter number/title with the next sensible default whenever the
   // user is about to create (NOT edit) a chapter and chapters are loaded.
-  // Picks max(existing.number) + 1, rounded up so we don't suggest 70.5 → 71.5.
+  // Si el usuario acaba de subir un capítulo en esta sesión, sugerimos ese + 1
+  // (para rellenar capítulos viejos en orden); si no, max(existentes) + 1.
+  const maxChapterNumber = chapters.reduce((m: number, c: any) => Math.max(m, Number(c?.number) || 0), 0);
+  const suggestedFromLast = lastUploadedNumberRef.current !== null
+    ? Math.floor(lastUploadedNumberRef.current) + 1
+    : null;
+  const suggestedNext = suggestedFromLast ?? (Math.floor(maxChapterNumber) + 1);
+  const isContinuingOld = suggestedFromLast !== null && suggestedFromLast <= maxChapterNumber;
   useEffect(() => {
     if (isEditingChapter) return;
     if (newChapter.number && newChapter.title) return;
-    const maxN = chapters.reduce((m: number, c: any) => Math.max(m, Number(c?.number) || 0), 0);
-    const next = Math.floor(maxN) + 1;
     setNewChapter((prev) => ({
       ...prev,
-      number: prev.number || String(next),
-      title: prev.title || `Capítulo ${next}`,
+      number: prev.number || String(suggestedNext),
+      title: prev.title || `Capítulo ${suggestedNext}`,
     }));
-  }, [chapters, isEditingChapter]);
+  }, [chapters, isEditingChapter, suggestedNext]);
 
   // Writings have only one sensible read-direction (continuous text) and never
   // contain adult content (separate +18 system would mean a different surface).
@@ -1447,6 +1460,12 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         toast.success(isEdit ? 'Capítulo actualizado exitosamente' : 'Capítulo creado exitosamente', {
           position: "bottom-right"
         });
+        // Recordar el número recién subido para encadenar la siguiente sugerencia
+        // (solo en creación, no en edición).
+        if (!isEdit) {
+          const uploaded = parseFloat(newChapter.number);
+          if (!Number.isNaN(uploaded)) lastUploadedNumberRef.current = uploaded;
+        }
         // Reset form
         setNewChapter({
           number: '',
@@ -2145,13 +2164,28 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Número del capítulo</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={newChapter.number}
                           onChange={(e) => setNewChapter({...newChapter, number: e.target.value})}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none" 
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none"
                           placeholder="23"
                         />
+                        {!isEditingChapter && isContinuingOld && (
+                          <p className="text-[10px] text-zinc-500 ml-1 leading-relaxed">
+                            Continuando desde el cap. {Math.floor(lastUploadedNumberRef.current as number)} que acabas de subir. El último del proyecto es el {maxChapterNumber}.{' '}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                lastUploadedNumberRef.current = null;
+                                setNewChapter((prev) => ({ ...prev, number: String(Math.floor(maxChapterNumber) + 1), title: `Capítulo ${Math.floor(maxChapterNumber) + 1}` }));
+                              }}
+                              className="text-cyan-400 hover:text-cyan-300 font-black"
+                            >
+                              Usar {Math.floor(maxChapterNumber) + 1}
+                            </button>
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Título del capítulo</label>
