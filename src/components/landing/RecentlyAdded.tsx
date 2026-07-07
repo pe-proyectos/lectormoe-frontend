@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, BookOpen } from 'lucide-react';
 import type { Manga } from '../../util/landing/types';
 import MangaCard3D from './MangaCard3D';
 import ScrollableCardRow from './ScrollableCardRow';
@@ -63,28 +63,41 @@ const RecentlyAdded: React.FC<RecentlyAddedProps> = ({ user, organization, nsfwM
               </div>
             ))
           ) : (
-            mangas.map((manga) => (
-              <MangaCard3D
-                user={user}
-                organization={organization}
-                nsfwMode={nsfwMode}
-                key={manga.id}
-                manga={{
-                  id: manga.id,
-                  title: manga.title,
-                  cover: manga.cover,
-                  scan: manga.scanName,
-                  scanName: manga.scanName,
-                  scanUrl: manga.scanUrl,
-                  mangaUrl: manga.mangaUrl && !manga.mangaUrl.includes('undefined') ? manga.mangaUrl : undefined,
-                  status: 'Ongoing',
-                  chapters: [],
-                  organizationId: (manga as any).organizationId,
-                  isNSFW: (manga as any).isNSFW || false,
-                }}
-                onClick={() => { if (manga.mangaUrl) window.location.href = manga.mangaUrl; }}
-              />
-            ))
+            mangas.map((manga) => {
+              const firstChapterUrl = (manga as any).firstChapterUrl as string | null;
+              const firstChapterNumber = (manga as any).firstChapterNumber as number | null;
+              return (
+                <div key={manga.id} className="flex flex-col gap-2">
+                  <MangaCard3D
+                    user={user}
+                    organization={organization}
+                    nsfwMode={nsfwMode}
+                    manga={{
+                      id: manga.id,
+                      title: manga.title,
+                      cover: manga.cover,
+                      scan: manga.scanName,
+                      scanName: manga.scanName,
+                      scanUrl: manga.scanUrl,
+                      mangaUrl: manga.mangaUrl && !manga.mangaUrl.includes('undefined') ? manga.mangaUrl : undefined,
+                      status: 'Ongoing',
+                      chapters: [],
+                      organizationId: (manga as any).organizationId,
+                      isNSFW: (manga as any).isNSFW || false,
+                    }}
+                    onClick={() => { if (manga.mangaUrl) window.location.href = manga.mangaUrl; }}
+                  />
+                  {firstChapterUrl && (
+                    <a
+                      href={firstChapterUrl}
+                      className="inline-flex items-center justify-center gap-1.5 w-full min-h-[40px] rounded-xl bg-zinc-800 text-zinc-200 text-[11px] font-black uppercase tracking-wider hover:bg-cyan-500 hover:text-zinc-950 transition-colors active:scale-[0.98]"
+                    >
+                      <BookOpen size={14} /> Leer{firstChapterNumber != null ? ` cap. ${firstChapterNumber}` : ' ahora'}
+                    </a>
+                  )}
+                </div>
+              );
+            })
           )}
         </ScrollableCardRow>
       )}
