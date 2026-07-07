@@ -9,7 +9,6 @@ export const LazyImage = ({ src, alt, ...rest }) => {
         return false;
       }}
       onMouseDown={(e) => {
-        console.log(e.button);
         if (e.button === 2) {
           e.preventDefault();
           e.stopPropagation();

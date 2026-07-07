@@ -1,0 +1,50 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { showAds } = Astro.locals;
+---
+
+<LandingLayout title="Política DMCA - CapibaraTraductor" showAds={showAds}>
+  <div class="min-h-screen bg-zinc-950 pt-24 pb-20">
+    <div class="max-w-3xl mx-auto px-4 md:px-8">
+      <a href="/" class="text-cyan-500 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">← Volver al inicio</a>
+      <h1 class="text-3xl font-black text-white uppercase tracking-tight mt-6 mb-2">Política DMCA / Retirada de contenido</h1>
+      <p class="text-zinc-500 text-sm mb-10">Última actualización: 6 de julio de 2026</p>
+
+      <div class="space-y-8 text-zinc-300 text-sm leading-relaxed">
+        <section>
+          <p>CapibaraTraductor respeta los derechos de propiedad intelectual. La Plataforma provee infraestructura a comunidades de traducción independientes (Scans); el contenido es publicado por dichas comunidades y todos los derechos de las obras pertenecen a sus respectivos autores y titulares. Atendemos las notificaciones de infracción conforme a la Digital Millennium Copyright Act (DMCA) y normativas equivalentes.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">1. Cómo enviar una notificación de infracción</h2>
+          <p>Si eres titular de derechos (o su representante autorizado) y consideras que un contenido alojado o enlazado en la Plataforma infringe tus derechos, envíanos una notificación a <a href="mailto:contacto@capibaratraductor.com" class="text-cyan-500 hover:text-white transition-colors">contacto@capibaratraductor.com</a> con el asunto «DMCA» incluyendo:</p>
+          <ul class="list-disc pl-6 mt-3 space-y-2">
+            <li>Identificación de la obra protegida que consideras infringida.</li>
+            <li>URL(s) exacta(s) del contenido presuntamente infractor dentro de capibaratraductor.com.</li>
+            <li>Tus datos de contacto (nombre, correo electrónico).</li>
+            <li>Una declaración de buena fe de que el uso del material no está autorizado por el titular, su agente o la ley.</li>
+            <li>Una declaración, bajo pena de perjurio, de que la información de la notificación es exacta y de que estás autorizado a actuar en nombre del titular.</li>
+            <li>Tu firma física o electrónica.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">2. Qué hacemos al recibirla</h2>
+          <p>Revisamos las notificaciones válidas con prontitud. Si procede, retiramos o deshabilitamos el acceso al contenido señalado y notificamos al Scan que lo publicó. Las infracciones reiteradas de un mismo Scan o usuario pueden conllevar la suspensión de su cuenta o espacio en la Plataforma.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">3. Contranotificación</h2>
+          <p>Si un contenido tuyo fue retirado por error o identificación incorrecta, puedes enviar una contranotificación al mismo correo con: la identificación del material retirado y su URL original, tus datos de contacto, una declaración bajo pena de perjurio de que crees de buena fe que la retirada fue un error, y tu consentimiento a la jurisdicción competente. Si el reclamante original no inicia acción legal en un plazo razonable, podremos restaurar el contenido.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">4. Abuso del proceso</h2>
+          <p>Enviar notificaciones falsas o de mala fe puede acarrear responsabilidad legal (17 U.S.C. § 512(f)). Usa este proceso únicamente para reclamaciones legítimas de derechos de autor.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</LandingLayout>

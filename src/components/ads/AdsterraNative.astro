@@ -11,15 +11,19 @@ interface Props {
 }
 
 const {
-  zoneId = import.meta.env.PUBLIC_ADSTERRA_NATIVE_ZONE_ID || 'TODO',
+  zoneId = import.meta.env.PUBLIC_ADSTERRA_NATIVE_ZONE_ID,
   id = 'container-adsterra-native',
 } = Astro.props;
 ---
 
-<div id={id} data-zone-id={zoneId}></div>
-<script
-  is:inline
-  async
-  data-cfasync="false"
-  src={`//pl.profitablecpmrate.com/${zoneId}/invoke.js`}
-/>
+{zoneId && (
+  <>
+    <div id={id} data-zone-id={zoneId}></div>
+    <script
+      is:inline
+      async
+      data-cfasync="false"
+      src={`//pl.profitablecpmrate.com/${zoneId}/invoke.js`}
+    />
+  </>
+)}

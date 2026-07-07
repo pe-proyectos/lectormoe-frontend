@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, ChevronDown, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare, ExternalLink } from 'lucide-react';
+import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, ChevronDown, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
 import SortableMangaList from './SortableMangaList';
@@ -20,6 +20,7 @@ interface FollowedScan {
   slug: string;
   isNSFW?: boolean;
   subscription: {
+    id: number;
     rank: string;
     price: number;
     currency: string;
@@ -63,6 +64,7 @@ interface ReadingHistory {
 const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization, profileSlug, isOwner = false, nsfwMode = false }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followedScans, setFollowedScans] = useState<FollowedScan[]>([]);
+  const [togglingScanId, setTogglingScanId] = useState<number | null>(null);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [profileData, setProfileData] = useState<any>(null);
@@ -726,8 +728,23 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
     }
   };
 
-  const toggleSubscription = (scanId: number) => {
-    // TODO: Implement subscription pause/resume
+  const toggleSubscription = async (scanId: number) => {
+    const scan = followedScans.find((s) => s.id === scanId);
+    const sub = scan?.subscription;
+    if (!sub?.id || togglingScanId !== null) return;
+    setTogglingScanId(scanId);
+    try {
+      await callAPI(`/api/subscription/me/${sub.id}/active`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active: sub.status !== 'active' }),
+      });
+      const result = await callAPI("/api/organization/followed");
+      setFollowedScans(Array.isArray(result) ? result : []);
+    } catch (error: any) {
+      alert(error?.message || 'No se pudo actualizar la suscripción.');
+    } finally {
+      setTogglingScanId(null);
+    }
   };
 
   // Stats data - for visitors, hide "favorites" and "to read" since those are private
@@ -1133,13 +1150,16 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                                 </div>
                                 <button
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSubscription(scan.id); }}
-                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all ${
+                                  disabled={togglingScanId !== null}
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                     scan.subscription.status === 'active'
                                       ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white'
                                       : 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white'
                                   }`}
                                 >
-                                  {scan.subscription.status === 'active' ? (
+                                  {togglingScanId === scan.id ? (
+                                    <><Loader2 size={12} className="animate-spin" /> ...</>
+                                  ) : scan.subscription.status === 'active' ? (
                                     <><Pause size={12} /> Pausar</>
                                   ) : (
                                     <><PlayCircle size={12} /> Reanudar</>

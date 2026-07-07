@@ -281,21 +281,6 @@ const Navbar: React.FC<NavbarProps> = ({
     ? getSubscriptionColor(mostExpensiveSubscription)
     : { bg: 'bg-zinc-800', text: 'text-zinc-500' };
   
-  // Debug: Log permissions check
-  useEffect(() => {
-    if (logged && user && organization) {
-      console.log('Navbar - User permissions check:', {
-        userId: user.id,
-        organizationId: organization.id,
-        organizationSlug: organization.slug,
-        allPermissions: user.permissions,
-        foundPermission: userPermissions,
-        canSeeAdminPanel: userPermissions?.canSeeAdminPanel,
-        activeScan: activeScan?.slug,
-      });
-    }
-  }, [logged, user, organization, userPermissions, activeScan]);
-
   // Sincronizar con props cuando cambien
   useEffect(() => {
     setUser(initialUser);

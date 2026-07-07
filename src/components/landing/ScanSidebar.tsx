@@ -208,11 +208,44 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
   };
 
   useEffect(() => {
-    // TODO: Fetch user reading history from API
-    if (logged && user) {
-      // Mock data for now
-      setUserHistory([]);
-    }
+    if (!logged || !user) return;
+    const fetchHistory = async () => {
+      try {
+        // callAPI envía x-organization según el path, así que el historial
+        // viene ya filtrado a este scan (+ capítulos joint).
+        const result = await callAPI('/api/user-chapter-history?limit=5');
+        const items = Array.isArray(result?.items) ? result.items : [];
+        const isRedMode = typeof window !== 'undefined' && window.location.pathname.startsWith('/red/');
+        setUserHistory(
+          items.map((item: any): HistoryItem => {
+            const ch = item.chapter || {};
+            const isJoint = !ch.mangaCustomId && !!ch.jointId;
+            const orgSlug = ch.mangaCustom?.organization?.slug;
+            const orgBase = isRedMode ? `/red/${orgSlug}` : `/${orgSlug}`;
+            const mangaUrl = isJoint
+              ? `/joint/manga/${ch.joint?.slug}/chapters/${ch.number}?page=${item.pageNumber ?? 1}`
+              : `${orgBase}/manga/${ch.mangaCustom?.manga?.slug}/chapters/${ch.number}?page=${item.pageNumber ?? 1}`;
+            return {
+              id: String(item.id),
+              mangaName: (isJoint ? ch.joint?.title : ch.mangaCustom?.title) || 'Manga',
+              chapterNumber: String(ch.number ?? ''),
+              chapterTitle: ch.title || '',
+              lastVisited: new Date(item.lastReadAt).toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              mangaUrl,
+            };
+          }),
+        );
+      } catch (error) {
+        console.error('Error fetching reading history:', error);
+        setUserHistory([]);
+      }
+    };
+    fetchHistory();
   }, [logged, user]);
 
   useEffect(() => {

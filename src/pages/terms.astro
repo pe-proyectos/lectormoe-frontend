@@ -1,0 +1,69 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { showAds } = Astro.locals;
+---
+
+<LandingLayout title="Términos de Servicio - CapibaraTraductor" showAds={showAds}>
+  <div class="min-h-screen bg-zinc-950 pt-24 pb-20">
+    <div class="max-w-3xl mx-auto px-4 md:px-8">
+      <a href="/" class="text-cyan-500 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">← Volver al inicio</a>
+      <h1 class="text-3xl font-black text-white uppercase tracking-tight mt-6 mb-2">Términos de Servicio</h1>
+      <p class="text-zinc-500 text-sm mb-10">Última actualización: 6 de julio de 2026</p>
+
+      <div class="space-y-8 text-zinc-300 text-sm leading-relaxed">
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">1. Aceptación de los términos</h2>
+          <p>Al acceder o utilizar CapibaraTraductor (capibaratraductor.com, la «Plataforma»), aceptas estos Términos de Servicio. Si no estás de acuerdo con ellos, no utilices la Plataforma.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">2. Descripción del servicio</h2>
+          <p>CapibaraTraductor es una plataforma que provee infraestructura a comunidades de traducción (scanlations, los «Scans») para publicar y organizar su contenido, y a lectores para descubrirlo y seguirlo. Cada Scan es una comunidad independiente, responsable del contenido que publica.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">3. Cuentas</h2>
+          <p>Para acceder a ciertas funciones necesitas una cuenta. Eres responsable de mantener la confidencialidad de tus credenciales y de toda actividad realizada con tu cuenta. Debes proporcionar información veraz y tener la edad legal requerida en tu jurisdicción para aceptar estos términos. El contenido marcado como +18 solo es accesible en el modo correspondiente y declaras ser mayor de edad para verlo.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">4. Suscripciones y pagos</h2>
+          <p>Los Scans pueden ofrecer planes de suscripción de pago con beneficios definidos por cada Scan (por ejemplo: capítulos anticipados, descargas o navegación sin anuncios). Los pagos se procesan a través de PayPal; no almacenamos datos de tarjetas ni credenciales de pago.</p>
+          <ul class="list-disc pl-6 mt-3 space-y-2">
+            <li>Las suscripciones se renuevan automáticamente según el intervalo del plan hasta que las canceles.</li>
+            <li>Puedes cancelar la renovación en cualquier momento desde tu configuración o desde PayPal. Al cancelar, <strong class="text-white">conservas el acceso hasta el final del período ya pagado</strong>; no se realizan renovaciones posteriores.</li>
+            <li>Salvo obligación legal, los pagos ya efectuados no son reembolsables. Para incidencias de pago contáctanos.</li>
+            <li>Los precios pueden cambiar; los cambios no afectan períodos ya pagados.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">5. Contenido y propiedad intelectual</h2>
+          <p>La Plataforma actúa como agregador e infraestructura: el contenido es publicado por los Scans y sus miembros, quienes son responsables de contar con los derechos necesarios. Todos los derechos de las obras pertenecen a sus respectivos autores y titulares. Si eres titular de derechos y consideras que un contenido los infringe, consulta nuestra <a href="/dmca" class="text-cyan-500 hover:text-white transition-colors">política DMCA</a>.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">6. Conducta del usuario</h2>
+          <p>No está permitido: publicar contenido ilegal, difamatorio o que infrinja derechos de terceros; acosar a otros usuarios; intentar vulnerar la seguridad de la Plataforma; usar bots o scraping masivo sin autorización; ni suplantar identidades. Los Scans pueden moderar sus espacios (incluyendo ocultar o eliminar comentarios y restringir usuarios) y la Plataforma puede suspender cuentas que incumplan estos términos.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">7. Disponibilidad y cambios</h2>
+          <p>El servicio se ofrece «tal cual» y «según disponibilidad», sin garantías de disponibilidad ininterrumpida. Podemos modificar o descontinuar funciones, y actualizar estos términos publicando la nueva versión en esta página. El uso continuado tras un cambio implica su aceptación.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">8. Limitación de responsabilidad</h2>
+          <p>En la máxima medida permitida por la ley, la Plataforma no será responsable de daños indirectos derivados del uso del servicio, del contenido publicado por los Scans, ni de la relación entre lectores y Scans (incluidos los beneficios de suscripción definidos por cada Scan).</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">9. Contacto</h2>
+          <p>Para cualquier consulta sobre estos términos, escríbenos a <a href="mailto:contacto@capibaratraductor.com" class="text-cyan-500 hover:text-white transition-colors">contacto@capibaratraductor.com</a> o únete a nuestro <a href="/discord" class="text-cyan-500 hover:text-white transition-colors">Discord</a>.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</LandingLayout>

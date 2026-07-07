@@ -291,17 +291,6 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
       planIndexMap.set(plan.id, index);
     });
 
-    // Debug: verificar el mapa y los donadores
-    console.log('=== DEBUG TOP DONORS ===');
-    console.log('Subscription Plans:', subscriptionPlans.map((p, i) => ({ index: i, id: p.id, name: p.name, price: p.price })));
-    console.log('Plan Index Map:', Array.from(planIndexMap.entries()));
-    console.log('Top Donors (before mapping):', topDonors.map(d => ({ 
-      username: d.username, 
-      planId: d.subscriptionPlan.id, 
-      planName: d.subscriptionPlan.name,
-      planPrice: d.subscriptionPlan.price
-    })));
-
     // Asignar índice del plan a cada donador y ordenar
     const mapped = topDonors
       .map(donor => {
@@ -313,38 +302,25 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
           // Fallback: buscar por nombre del plan
           const planByName = subscriptionPlans.findIndex(p => p.name === donor.subscriptionPlan.name);
           if (planByName !== -1) {
-            console.log(`Found plan by name for ${donor.username}: planIndex=${planByName}`);
             return {
               ...donor,
               planIndex: planByName,
             };
           }
-          
+
           // Si tampoco se encuentra por nombre, usar el índice del plan más caro como último recurso
-          console.warn(`Plan ID ${donor.subscriptionPlan.id} and name "${donor.subscriptionPlan.name}" not found in subscriptionPlans`, {
-            donorPlan: donor.subscriptionPlan,
-            availablePlans: subscriptionPlans.map(p => ({ id: p.id, name: p.name }))
-          });
           return {
             ...donor,
             planIndex: subscriptionPlans.length - 1, // Fallback al más caro
           };
         }
-        
-        console.log(`Donor ${donor.username}: planId=${donor.subscriptionPlan.id}, planIndex=${planIndex}, planName=${donor.subscriptionPlan.name}`);
-        
+
         return {
           ...donor,
           planIndex,
         };
       });
-    
-    console.log('Mapped donors:', mapped.map(d => ({ 
-      username: d.username, 
-      planIndex: d.planIndex,
-      planName: subscriptionPlans[d.planIndex]?.name 
-    })));
-    
+
     return mapped
       .sort((a, b) => {
         // Primero ordenar por índice del plan (más barato primero, pero en el ranking queremos más caro primero)

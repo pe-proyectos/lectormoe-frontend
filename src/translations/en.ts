@@ -506,7 +506,6 @@ export const translations: Record<string, string> = {
   admin_subscription_plan_title: "Subscription plans",
   admin_books_title: "Works",
   admin_settings_title: "Settings",
-  admin_storage_title: "Storage",
   read_the_chapter: "Read the chapter",
   click_here: "Click here!",
   previous_chapter_will_be_released_in: "Previous chapter will be released",

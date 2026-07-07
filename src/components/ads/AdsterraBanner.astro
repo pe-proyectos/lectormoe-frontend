@@ -16,30 +16,32 @@ interface Props {
 }
 
 const {
-  zoneId = import.meta.env.PUBLIC_ADSTERRA_BANNER_ZONE_ID || 'TODO',
+  zoneId = import.meta.env.PUBLIC_ADSTERRA_BANNER_ZONE_ID,
   width = 728,
   height = 90,
   className = '',
 } = Astro.props;
 ---
 
-<div class={`adsterra-banner ${className}`} data-zone-id={zoneId}>
-  <script
-    is:inline
-    type="text/javascript"
-    set:html={`
-      atOptions = {
-        'key': '${zoneId}',
-        'format': 'iframe',
-        'height': ${height},
-        'width': ${width},
-        'params': {}
-      };
-    `}
-  />
-  <script
-    is:inline
-    type="text/javascript"
-    src={`//www.topcreativeformat.com/${zoneId}/invoke.js`}
-  />
-</div>
+{zoneId && (
+  <div class={`adsterra-banner ${className}`} data-zone-id={zoneId}>
+    <script
+      is:inline
+      type="text/javascript"
+      set:html={`
+        atOptions = {
+          'key': '${zoneId}',
+          'format': 'iframe',
+          'height': ${height},
+          'width': ${width},
+          'params': {}
+        };
+      `}
+    />
+    <script
+      is:inline
+      type="text/javascript"
+      src={`//www.topcreativeformat.com/${zoneId}/invoke.js`}
+    />
+  </div>
+)}

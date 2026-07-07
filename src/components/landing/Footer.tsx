@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Twitter, Instagram, Github } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 
 interface FooterProps {
   onNavigate?: (page: any, id?: string) => void;
@@ -43,14 +43,14 @@ const Footer: React.FC<FooterProps> = ({ organization }) => {
               La plataforma centralizada para scanlations. No alojamos contenido directamente, conectamos a lectores con sus scans favoritos.
             </p>
             <div className="flex items-center gap-4 pt-2">
-              <a href="#" className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:bg-cyan-500 hover:text-zinc-950 transition-all">
-                <Twitter size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:bg-cyan-500 hover:text-zinc-950 transition-all">
-                <Instagram size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:bg-cyan-500 hover:text-zinc-950 transition-all">
-                <Github size={18} />
+              <a
+                href="/discord"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Discord oficial"
+                className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:bg-cyan-500 hover:text-zinc-950 transition-all"
+              >
+                <MessageCircle size={18} />
               </a>
             </div>
           </div>
@@ -100,9 +100,9 @@ const Footer: React.FC<FooterProps> = ({ organization }) => {
             Disclaimer: Capibara Traductor es un agregador de noticias y enlaces. No se almacena ningún archivo con copyright en nuestros servidores. Todos los derechos pertenecen a sus respectivos autores.
           </p>
           <div className="flex gap-6 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-            <a href="#" className="hover:text-white transition-colors">Términos</a>
-            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-            <a href="#" className="hover:text-white transition-colors">DMCA</a>
+            <a href="/terms" className="hover:text-white transition-colors">Términos</a>
+            <a href="/privacy" className="hover:text-white transition-colors">Privacidad</a>
+            <a href="/dmca" className="hover:text-white transition-colors">DMCA</a>
           </div>
         </div>
         

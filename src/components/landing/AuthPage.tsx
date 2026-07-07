@@ -263,7 +263,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization
         </div>
         
         <p className="mt-8 text-center text-zinc-600 text-[10px] uppercase tracking-widest leading-relaxed">
-          Al continuar, aceptas nuestros <a href="#" className="text-zinc-400 hover:text-white underline underline-offset-4">Términos de Servicio</a> y <a href="#" className="text-zinc-400 hover:text-white underline underline-offset-4">Política de Privacidad</a>.
+          Al continuar, aceptas nuestros <a href="/terms" className="text-zinc-400 hover:text-white underline underline-offset-4">Términos de Servicio</a> y <a href="/privacy" className="text-zinc-400 hover:text-white underline underline-offset-4">Política de Privacidad</a>.
         </p>
       </div>
     </div>

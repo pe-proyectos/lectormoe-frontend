@@ -9,8 +9,8 @@ interface Props {
 }
 
 const {
-  zoneId = import.meta.env.PUBLIC_ADSTERRA_FOOTER_ZONE_ID || 'TODO',
+  zoneId = import.meta.env.PUBLIC_ADSTERRA_FOOTER_ZONE_ID,
 } = Astro.props;
 ---
 
-<script is:inline src={`//pl.profitablecpmrate.com/${zoneId}/invoke.js`} />
+{zoneId && <script is:inline src={`//pl.profitablecpmrate.com/${zoneId}/invoke.js`} />}

@@ -1,0 +1,58 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+
+// @ts-ignore - showAds se define dinámicamente en el middleware
+const { showAds } = Astro.locals;
+---
+
+<LandingLayout title="Política de Privacidad - CapibaraTraductor" showAds={showAds}>
+  <div class="min-h-screen bg-zinc-950 pt-24 pb-20">
+    <div class="max-w-3xl mx-auto px-4 md:px-8">
+      <a href="/" class="text-cyan-500 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">← Volver al inicio</a>
+      <h1 class="text-3xl font-black text-white uppercase tracking-tight mt-6 mb-2">Política de Privacidad</h1>
+      <p class="text-zinc-500 text-sm mb-10">Última actualización: 6 de julio de 2026</p>
+
+      <div class="space-y-8 text-zinc-300 text-sm leading-relaxed">
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">1. Datos que recopilamos</h2>
+          <ul class="list-disc pl-6 space-y-2">
+            <li><strong class="text-white">Datos de cuenta:</strong> correo electrónico, nombre de usuario, contraseña (almacenada con hash) y, opcionalmente, avatar, banner y descripción de perfil.</li>
+            <li><strong class="text-white">Datos de uso:</strong> historial de lectura, favoritos, listas, comentarios, scans seguidos y preferencias del lector, para que la Plataforma funcione (continuar leyendo, notificaciones, etc.).</li>
+            <li><strong class="text-white">Datos técnicos:</strong> dirección IP y datos del navegador con fines de seguridad, prevención de abuso y límites de acceso por región cuando un Scan lo configura.</li>
+            <li><strong class="text-white">Cookies:</strong> usamos una cookie de sesión (token) para mantenerte autenticado y cookies de terceros de los proveedores de publicidad.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">2. Pagos</h2>
+          <p>Las suscripciones se procesan a través de PayPal. No almacenamos números de tarjeta ni credenciales de pago; recibimos de PayPal únicamente los datos necesarios para gestionar tu suscripción (identificador de la suscripción, estado, fechas e importes de los cobros y el correo asociado a tu cuenta de PayPal).</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">3. Publicidad</h2>
+          <p>Mostramos anuncios de terceros (Google AdSense y Adsterra) para financiar la Plataforma y a los Scans. Estos proveedores pueden usar cookies y tecnologías similares para personalizar anuncios según sus propias políticas de privacidad. Los usuarios con suscripción activa o beneficio de «sin anuncios» no ven publicidad.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">4. Correos electrónicos</h2>
+          <p>Enviamos correos transaccionales (verificación, recuperación de contraseña) y notificaciones opcionales (nuevos capítulos, avisos de scans que sigues). Puedes darte de baja de las notificaciones desde el enlace incluido en cada correo o desde tu configuración.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">5. Con quién compartimos datos</h2>
+          <p>No vendemos tus datos. Compartimos datos únicamente con los proveedores necesarios para operar: procesamiento de pagos (PayPal), envío de correos (Resend), almacenamiento de archivos e infraestructura (Cloudflare) y redes publicitarias (Google, Adsterra). Los Scans que sigues pueden ver información pública de tu perfil y datos agregados de sus suscriptores.</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">6. Retención y eliminación</h2>
+          <p>Conservamos tus datos mientras tu cuenta exista. Puedes solicitar la eliminación de tu cuenta y datos personales escribiéndonos; eliminaremos o anonimizaremos tus datos salvo los que debamos conservar por obligación legal (por ejemplo, registros de transacciones).</p>
+        </section>
+
+        <section>
+          <h2 class="text-white font-black uppercase tracking-wide text-base mb-3">7. Contacto</h2>
+          <p>Para ejercer tus derechos o resolver dudas sobre privacidad, escríbenos a <a href="mailto:contacto@capibaratraductor.com" class="text-cyan-500 hover:text-white transition-colors">contacto@capibaratraductor.com</a> o únete a nuestro <a href="/discord" class="text-cyan-500 hover:text-white transition-colors">Discord</a>.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</LandingLayout>
