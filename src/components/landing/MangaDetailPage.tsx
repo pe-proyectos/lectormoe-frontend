@@ -18,6 +18,7 @@ import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
 import { getBookTypeBadge, getDemographyBadge } from "../../util/taxonomy";
 import MilestoneAlertButton from "./MilestoneAlertButton";
+import MangaReviews from "./MangaReviews";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
 import NSFWAgeModal from "./NSFWAgeModal";
@@ -1789,6 +1790,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
             )}
           </div>
         </div>
+
+        {/* REVIEWS (solo manga-custom, no joints en esta versión) */}
+        {!isJoint && (
+          <MangaReviews mangaSlug={mangaSlug} user={user} logged={logged} organization={organization} scanSlug={organization?.slug} />
+        )}
 
         {/* COMMENTS SECTION (FULL WIDTH) */}
         <CommentsSection
