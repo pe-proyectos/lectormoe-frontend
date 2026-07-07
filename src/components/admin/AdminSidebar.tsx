@@ -7,6 +7,7 @@ import {
   DollarSign,
   MessageSquare,
   Inbox,
+  Megaphone,
   Settings,
   Tag,
   UserCircle,
@@ -86,6 +87,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ page, organizationSlug }) =
       label: 'Mensajes',
       icon: Inbox,
       href: `/${organizationSlug}/admin/messages`,
+    },
+    {
+      id: 'recruitment',
+      label: 'Reclutamiento',
+      icon: Megaphone,
+      href: `/${organizationSlug}/admin/recruitment`,
     },
     {
       id: 'settings',

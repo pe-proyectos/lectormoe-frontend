@@ -78,11 +78,19 @@ const Footer: React.FC<FooterProps> = ({ organization }) => {
             <h4 className="text-white font-bold mb-6">Scans</h4>
             <ul className="space-y-4">
               <li>
-                <a 
-                  href="/organizations/register" 
+                <a
+                  href="/organizations/register"
                   className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors block"
                 >
                   Registrar mi Scan
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/reclutamiento"
+                  className="text-zinc-500 hover:text-cyan-400 text-sm transition-colors block"
+                >
+                  Reclutamiento
                 </a>
               </li>
             </ul>

@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import RecruitmentBoardPage from '../components/landing/RecruitmentBoardPage';
+
+// @ts-ignore - showAds / nsfwMode set dynamically in middleware
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Mural de reclutamiento" description="Scans que buscan talento. Encuentra tu rol y postúlate." showAds={showAds}>
+  <RecruitmentBoardPage user={user} logged={logged} nsfwMode={nsfwMode} client:only="react" />
+</LandingLayout>

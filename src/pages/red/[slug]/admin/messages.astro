@@ -1,0 +1,24 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import AdminMangasBreadcrumb from "../../../../components/admin/AdminMangasBreadcrumb";
+import AdminMessages from "../../../../components/admin/AdminMessages";
+
+// @ts-ignore
+const { organization, user, organizationSlug } = Astro.locals;
+const logged = !!user;
+
+if (!organization) {
+  return Astro.redirect("/404");
+}
+
+if (!logged) {
+  return Astro.redirect(`/${organizationSlug}/login`);
+}
+---
+
+<AdminLayout title="Mensajes" page="messages" organizationSlug={organizationSlug}>
+  <AdminMangasBreadcrumb organization={organization} organizationSlug={organizationSlug} client:only="react"/>
+  <div class="py-2"></div>
+  <h1>Mensajes de lectores</h1>
+  <AdminMessages organization={organization} user={user} organizationSlug={organizationSlug} client:only="react"/>
+</AdminLayout>
