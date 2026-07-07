@@ -31,6 +31,11 @@ const _code = _data?.manga?.bookType?.code;
 if (_code && new Set(['novel', 'light-novel', 'book', 'short-story']).has(_code)) {
   return Astro.redirect(`/${organizationSlug}/admin/writings/${mangaSlug}`, 302);
 }
+
+// Permisos del usuario en esta org (gatean borrado de capítulo y ficha)
+const _perm = (user?.permissions || []).find((p: any) => p.organization?.slug === organizationSlug || p.organization?.id === organization.id);
+const canDeleteChapter = !!_perm?.canDeleteChapter;
+const canDeleteMangaCustom = !!_perm?.canDeleteMangaCustom;
 ---
 
 <AdminLayout title={_("admin_manga_title")} page="mangas" organizationSlug={organizationSlug}>
@@ -38,6 +43,8 @@ if (_code && new Set(['novel', 'light-novel', 'book', 'short-story']).has(_code)
     language={language}
     initialMangaCustom={manga.data || manga}
     organizationSlug={organizationSlug}
+    canDeleteChapter={canDeleteChapter}
+    canDeleteMangaCustom={canDeleteMangaCustom}
     client:only="react"
   />
 </AdminLayout>

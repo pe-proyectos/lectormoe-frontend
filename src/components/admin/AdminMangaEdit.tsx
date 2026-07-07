@@ -4,7 +4,7 @@ import {
   Settings2, Layers, GripVertical, ZoomIn, ZoomOut,
   Map as MapIcon, CheckCircle2,
   Camera, List, Info, Edit3, Download, ImageIcon, Clock, Users,
-  ArrowRight, Check,
+  ArrowRight, Check, Loader2,
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
@@ -210,6 +210,9 @@ interface AdminMangaEditProps {
   /** Caller's organization (required in joint mode for permission checks) */
   organization?: any;
   organizationSlug: string;
+  /** Permisos del usuario en esta org (gatean borrado de capítulo y ficha) */
+  canDeleteChapter?: boolean;
+  canDeleteMangaCustom?: boolean;
 }
 
 const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
@@ -218,6 +221,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   joint: initialJoint,
   organization,
   organizationSlug,
+  canDeleteChapter = false,
+  canDeleteMangaCustom = false,
 }) => {
   // Joint mode swaps the resource under edit from a MangaCustom to a MangaJoint.
   // Both shapes share id/slug/title/description/imageUrl/bannerUrl/status/workType/chapters,
@@ -736,6 +741,41 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       toast.error(error?.message || 'Error al descargar el capítulo', {
         position: "bottom-right"
       });
+    }
+  };
+
+  // Borrado de capítulo con modal de confirmación (solo con permiso).
+  const [chapterToDelete, setChapterToDelete] = useState<any | null>(null);
+  const [deletingChapter, setDeletingChapter] = useState(false);
+  const confirmDeleteChapter = async () => {
+    if (!chapterToDelete || deletingChapter) return;
+    setDeletingChapter(true);
+    try {
+      await callAPI(chapterUrl(chapterToDelete.number), { method: 'DELETE' });
+      toast.success('Capítulo eliminado', { position: 'bottom-right' });
+      setChapterToDelete(null);
+      loadChapters();
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo eliminar el capítulo', { position: 'bottom-right' });
+    } finally {
+      setDeletingChapter(false);
+    }
+  };
+
+  // Borrado de la ficha completa del manga (zona de peligro, solo con permiso).
+  const [showDeleteMangaModal, setShowDeleteMangaModal] = useState(false);
+  const [deleteMangaConfirmText, setDeleteMangaConfirmText] = useState('');
+  const [deletingManga, setDeletingManga] = useState(false);
+  const confirmDeleteManga = async () => {
+    if (deletingManga || deleteMangaConfirmText !== mangaCustom?.slug) return;
+    setDeletingManga(true);
+    try {
+      await callAPI(`/api/manga-custom/${mangaCustom.slug}`, { method: 'DELETE' });
+      toast.success('Obra eliminada', { position: 'bottom-right' });
+      window.location.href = `/${organizationSlug}/admin/mangas`;
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo eliminar la obra', { position: 'bottom-right' });
+      setDeletingManga(false);
     }
   };
 
@@ -3006,6 +3046,15 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                                 >
                                   <Download size={16} />
                                 </button>
+                                {!isJointMode && canDeleteChapter && (
+                                  <button
+                                    onClick={() => setChapterToDelete(ch)}
+                                    className="p-2 bg-zinc-950 text-zinc-500 hover:text-red-400 border border-zinc-800 rounded-lg transition-all"
+                                    title="Eliminar"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -3022,6 +3071,78 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
         </div>
       </div>
+
+      {/* Zona de peligro: eliminar la ficha del manga (solo con permiso) */}
+      {!isJointMode && canDeleteMangaCustom && (
+        <div className="mt-10 border border-red-500/20 rounded-[32px] p-8 bg-red-500/[0.03]">
+          <h3 className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Zona de peligro</h3>
+          <p className="text-zinc-500 text-sm mb-4">
+            Eliminar esta obra la oculta a los lectores junto con sus capítulos (no se borran los archivos). Si está en un joint activo, primero debe salir del joint.
+          </p>
+          <button
+            onClick={() => { setShowDeleteMangaModal(true); setDeleteMangaConfirmText(''); }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 font-black text-[10px] uppercase tracking-widest transition-colors"
+          >
+            <Trash2 size={14} /> Eliminar esta obra
+          </button>
+        </div>
+      )}
+
+      {/* Modal: confirmar borrado de capítulo */}
+      {chapterToDelete && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4" onClick={() => !deletingChapter && setChapterToDelete(null)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-black text-white mb-3">Eliminar capítulo</h3>
+            <p className="text-zinc-300 text-sm mb-2">
+              Cap. {chapterToDelete.number}{chapterToDelete.title ? ` - ${chapterToDelete.title}` : ''}
+            </p>
+            <p className="text-zinc-500 text-xs mb-5 leading-relaxed">
+              El capítulo dejará de ser visible para los lectores. Esta acción la puede revertir soporte, pero no desde este panel.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={() => setChapterToDelete(null)} disabled={deletingChapter} className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Cancelar</button>
+              <button onClick={confirmDeleteChapter} disabled={deletingChapter} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-400 text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-50">
+                {deletingChapter && <Loader2 size={14} className="animate-spin" />} Eliminar capítulo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: confirmar borrado de la obra (requiere escribir el slug) */}
+      {showDeleteMangaModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4" onClick={() => !deletingManga && setShowDeleteMangaModal(false)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              {mangaCustom?.imageUrl && <img src={mangaCustom.imageUrl} alt="" className="w-12 h-16 object-cover rounded-lg" />}
+              <div>
+                <h3 className="text-lg font-black text-white">Eliminar obra</h3>
+                <p className="text-zinc-500 text-xs">{mangaCustom?.title} · {chapters.length} capítulos</p>
+              </div>
+            </div>
+            <p className="text-zinc-400 text-xs mb-4 leading-relaxed">
+              La obra y sus capítulos dejarán de ser visibles para los lectores (no se borran los archivos). Si la obra está en un joint activo, primero debe salir del joint.
+            </p>
+            <p className="text-zinc-500 text-[11px] mb-2">Escribe <span className="text-white font-black">{mangaCustom?.slug}</span> para confirmar:</p>
+            <input
+              value={deleteMangaConfirmText}
+              onChange={(e) => setDeleteMangaConfirmText(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-white text-sm focus:border-red-500 outline-none mb-5"
+              placeholder={mangaCustom?.slug}
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={() => setShowDeleteMangaModal(false)} disabled={deletingManga} className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Cancelar</button>
+              <button
+                onClick={confirmDeleteManga}
+                disabled={deletingManga || deleteMangaConfirmText !== mangaCustom?.slug}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-400 text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deletingManga && <Loader2 size={14} className="animate-spin" />} Eliminar obra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
