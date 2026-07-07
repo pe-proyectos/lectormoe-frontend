@@ -17,6 +17,7 @@ import {
 import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
 import { getBookTypeBadge, getDemographyBadge } from "../../util/taxonomy";
+import MilestoneAlertButton from "./MilestoneAlertButton";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
 import NSFWAgeModal from "./NSFWAgeModal";
@@ -1160,6 +1161,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               <Bookmark size={18} fill={isInUserList ? 'currentColor' : 'none'} />
               {isInUserList ? 'EN MI LISTA' : 'AÑADIR A MI LISTA'}
             </button>
+
+            {!isJoint && (
+              <MilestoneAlertButton
+                mangaSlug={mangaSlug}
+                logged={logged}
+                scanSlug={organization?.slug}
+                lastPublished={(manga.chapters || []).reduce((m: number, c: any) => {
+                  const released = !c.isUnreleased && (!c.releasedAt || new Date(c.releasedAt) <= new Date());
+                  return released ? Math.max(m, Number(c.number) || 0) : m;
+                }, 0)}
+              />
+            )}
 
             {/* Bookmark shortcut — only visible when the user has saved a
                 position somewhere in this work. Routes to the chapter and, for
