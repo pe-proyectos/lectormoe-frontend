@@ -59,7 +59,7 @@ const RecruitmentBoardPage: React.FC<Props> = ({ user, logged, nsfwMode = false 
       if (language) params.set('language', language);
       if (debounced) params.set('search', debounced);
       const res = await callAPI(`/api/recruitment?${params.toString()}`);
-      setPosts(res.data || []);
+      setPosts(res || []);
     } catch { setPosts([]); } finally { setLoading(false); }
   }, [role, language, debounced]);
 

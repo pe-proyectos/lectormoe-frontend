@@ -54,7 +54,7 @@ const AdminMessages: React.FC<Props> = () => {
     setLoading(true);
     try {
       const res = await callAPI(`/api/organization/messages?status=${statusFilter}`);
-      setThreads(res.data || []);
+      setThreads(res || []);
     } catch { setThreads([]); } finally { setLoading(false); }
   }, [statusFilter]);
 
@@ -64,7 +64,7 @@ const AdminMessages: React.FC<Props> = () => {
     setActive(th); setThreadLoading(true); setMessages([]);
     try {
       const res = await callAPI(`/api/messages/${th.id}`);
-      setMessages(res.data.messages || []);
+      setMessages(res.messages || []);
       setThreads((prev) => prev.map((t) => (t.id === th.id ? { ...t, unread: 0 } : t)));
     } catch { /* noop */ } finally { setThreadLoading(false); }
   };
@@ -76,7 +76,7 @@ const AdminMessages: React.FC<Props> = () => {
       await callAPI(`/api/messages/${active.id}/reply`, { method: 'POST', body: JSON.stringify({ body: reply.trim() }) });
       setReply('');
       const res = await callAPI(`/api/messages/${active.id}`);
-      setMessages(res.data.messages || []);
+      setMessages(res.messages || []);
     } catch (e: any) { alert(e?.message || 'No se pudo enviar.'); } finally { setSending(false); }
   };
 

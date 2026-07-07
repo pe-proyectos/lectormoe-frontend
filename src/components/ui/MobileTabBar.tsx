@@ -18,7 +18,7 @@ const MobileTabBar: React.FC<Props> = ({ logged, organizationSlug, nsfwMode, pro
     setPath(window.location.pathname);
     if (!logged) return;
     callAPI('/api/notifications/unread-count')
-      .then((d: any) => { if (typeof d?.data === 'number') setUnread(d.data); else if (typeof d?.unreadTotal === 'number') setUnread(d.unreadTotal); })
+      .then((d: any) => { if (typeof d?.count === 'number') setUnread(d.count); })
       .catch(() => {});
   }, [logged]);
 

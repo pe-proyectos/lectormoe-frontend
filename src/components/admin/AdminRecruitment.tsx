@@ -35,7 +35,7 @@ const AdminRecruitment: React.FC<Props> = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { const res = await callAPI('/api/organization/recruitment'); setPosts(res.data || []); } catch { setPosts([]); } finally { setLoading(false); }
+    try { const res = await callAPI('/api/organization/recruitment'); setPosts(res || []); } catch { setPosts([]); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);

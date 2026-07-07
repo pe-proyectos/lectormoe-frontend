@@ -49,7 +49,7 @@ const MessagesInbox: React.FC<Props> = ({ logged }) => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { const res = await callAPI('/api/messages/me'); setThreads(res.data || []); } catch { setThreads([]); } finally { setLoading(false); }
+    try { const res = await callAPI('/api/messages/me'); setThreads(res || []); } catch { setThreads([]); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { if (logged) load(); else setLoading(false); }, [logged, load]);
@@ -58,7 +58,7 @@ const MessagesInbox: React.FC<Props> = ({ logged }) => {
     setActive(th); setThreadLoading(true); setMessages([]); setClosed(th.status === 'closed');
     try {
       const res = await callAPI(`/api/messages/${th.id}`);
-      setMessages(res.data.messages || []);
+      setMessages(res.messages || []);
       setThreads((prev) => prev.map((t) => (t.id === th.id ? { ...t, unread: 0 } : t)));
     } catch { /* noop */ } finally { setThreadLoading(false); }
   };
@@ -70,7 +70,7 @@ const MessagesInbox: React.FC<Props> = ({ logged }) => {
       await callAPI(`/api/messages/${active.id}/reply`, { method: 'POST', body: JSON.stringify({ body: reply.trim() }) });
       setReply('');
       const res = await callAPI(`/api/messages/${active.id}`);
-      setMessages(res.data.messages || []);
+      setMessages(res.messages || []);
     } catch (e: any) { alert(e?.message || 'No se pudo enviar.'); } finally { setSending(false); }
   };
 
