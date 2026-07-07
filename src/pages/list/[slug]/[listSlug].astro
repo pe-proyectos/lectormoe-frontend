@@ -1,0 +1,32 @@
+---
+import LandingLayout from '../../../layouts/LandingLayout.astro';
+import CustomListPage from '../../../components/landing/CustomListPage';
+
+// @ts-ignore - middleware injected
+const { user, showAds, nsfwMode, callAPI } = Astro.locals;
+const logged = !!user;
+const { slug, listSlug } = Astro.params;
+
+let result: any = null;
+try {
+  result = await callAPI(`/api/lists/${slug}/${listSlug}`);
+} catch (e) {
+  return Astro.redirect('/404');
+}
+if (!result || result.status === false || !result.data) {
+  return Astro.redirect('/404');
+}
+const list = result.data;
+const owner = list.owner;
+const isOwner = !!(logged && user && owner && user.id === owner.id);
+const firstCover = (list.items || [])[0]?.mangaCustom?.imageUrl || (list.items || [])[0]?.mangaCustom?.manga?.imageUrl || null;
+---
+
+<LandingLayout
+  title={`${list.name} - lista de @${owner?.slug}`}
+  description={list.description || `Lista de mangas de @${owner?.slug}`}
+  imageUrl={firstCover}
+  showAds={showAds}
+>
+  <CustomListPage list={list} owner={owner} user={user} logged={logged} nsfwMode={nsfwMode} isOwner={isOwner} client:only="react" />
+</LandingLayout>

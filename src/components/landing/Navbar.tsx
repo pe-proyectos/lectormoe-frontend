@@ -506,6 +506,13 @@ const Navbar: React.FC<NavbarProps> = ({
             <Bookmark size={16} /> {altContentLink.label}
           </a>
 
+          <a
+            href="/listas"
+            className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
+          >
+            <ListIcon size={16} /> Listas
+          </a>
+
           {/* Luckys oculto del navbar (decisión 2026-07-07). La página /luckys
               sigue accesible por URL directa. */}
 

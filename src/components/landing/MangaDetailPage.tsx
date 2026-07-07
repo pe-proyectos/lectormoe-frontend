@@ -20,6 +20,7 @@ import { getBookTypeBadge, getDemographyBadge } from "../../util/taxonomy";
 import MilestoneAlertButton from "./MilestoneAlertButton";
 import MangaReviews from "./MangaReviews";
 import ReportButton from "./ReportButton";
+import AddToListButton from "./AddToListButton";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
 import NSFWAgeModal from "./NSFWAgeModal";
@@ -1173,6 +1174,15 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   const released = !c.isUnreleased && (!c.releasedAt || new Date(c.releasedAt) <= new Date());
                   return released ? Math.max(m, Number(c.number) || 0) : m;
                 }, 0)}
+              />
+            )}
+
+            {logged && (
+              <AddToListButton
+                mangaCustomId={!isJoint ? (manga as any).id : undefined}
+                jointId={isJoint ? (manga as any).id : undefined}
+                logged={logged}
+                scanSlug={organization?.slug}
               />
             )}
 

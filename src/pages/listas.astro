@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import CommunityListsPage from '../components/landing/CommunityListsPage';
+
+// @ts-ignore
+const { user, showAds, nsfwMode } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Mural de listas - CapibaraTraductor" description="Listas públicas de la comunidad" showAds={showAds}>
+  <CommunityListsPage user={user} logged={logged} nsfwMode={nsfwMode} client:only="react" />
+</LandingLayout>
