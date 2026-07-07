@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Star,
   Bookmark,
@@ -104,13 +104,55 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const [isInUserList, setIsInUserList] = useState(false);
   const [userListFeedback, setUserListFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [userChapterHistory, setUserChapterHistory] = useState<any[]>([]);
-  const [selectedChapterGroup, setSelectedChapterGroup] = useState("");
-  const [chapterGroups, setChapterGroups] = useState<
-    Record<
+  // La agrupación de capítulos se calcula de forma síncrona (useMemo) para que
+  // el HTML del servidor ya traiga los capítulos: con useEffect, el SSR salía
+  // vacío y en móvil con red lenta (o JS fallido) nunca aparecían.
+  const { groups: chapterGroups, defaultGroup: defaultChapterGroup } = useMemo(() => {
+    const groups: Record<
       string,
       { label: string; from: number; to: number; chapters: Chapter[] }
-    >
-  >({});
+    > = {};
+    let lastLabel = "";
+    if (!manga.chapters || manga.chapters.length === 0) {
+      return { groups, defaultGroup: lastLabel };
+    }
+
+    const sortedChapters = [...manga.chapters].sort((a, b) => b.number - a.number);
+    const highestChapterNumber = sortedChapters[0]?.number || 0;
+    const highestChapterNumberCeiled = Math.ceil(highestChapterNumber / 10) * 10;
+
+    for (let i = 10; i <= highestChapterNumberCeiled; i += 10) {
+      const chapters = sortedChapters.filter(
+        (chapter) => chapter.number >= i - 9 && chapter.number < i + 1
+      );
+      if (chapters.length === 0) continue;
+      const label = `${i - 9}-${i}`;
+      groups[label] = { label, from: i - 9, to: i, chapters };
+      lastLabel = label;
+    }
+
+    // Capítulos con número < 1 (prólogos/especiales 0, 0.5, 0.01): el loop
+    // principal arranca en 1, así que se agregan aparte.
+    const subOneChapters = sortedChapters.filter((chapter) => chapter.number < 1);
+    if (subOneChapters.length > 0) {
+      if (Object.keys(groups).length > 0) {
+        const firstGroup = Object.keys(groups)[0];
+        groups[firstGroup].chapters.push(...subOneChapters);
+      } else {
+        groups["0"] = { label: "0", from: 0, to: 0, chapters: subOneChapters };
+        lastLabel = "0";
+      }
+    }
+
+    return { groups, defaultGroup: lastLabel };
+  }, [manga.chapters]);
+
+  // null = el usuario aún no eligió grupo; se usa el default (el más reciente).
+  const [selectedChapterGroupState, setSelectedChapterGroup] = useState<string | null>(null);
+  const selectedChapterGroup =
+    selectedChapterGroupState !== null && chapterGroups[selectedChapterGroupState]
+      ? selectedChapterGroupState
+      : defaultChapterGroup;
   const rangePickerRef = useRef<HTMLDivElement>(null);
   const [isDownloadingChapter, setIsDownloadingChapter] = useState<
     number | null
@@ -277,60 +319,6 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       setRecommendedMangas([]);
     }
   }, [manga.usersAlsoReadMangaCustomIds]);
-
-  // Group chapters
-  useEffect(() => {
-    if (!manga.chapters || manga.chapters.length === 0) return;
-
-    const sortedChapters = [...manga.chapters].sort(
-      (a, b) => b.number - a.number
-    );
-    const highestChapterNumber = sortedChapters[0]?.number || 0;
-    const highestChapterNumberCeiled =
-      Math.ceil(highestChapterNumber / 10) * 10;
-    const groups: Record<
-      string,
-      { label: string; from: number; to: number; chapters: Chapter[] }
-    > = {};
-    let lastLabel = "";
-
-    for (let i = 10; i <= highestChapterNumberCeiled; i += 10) {
-      const chapters = sortedChapters.filter(
-        (chapter) => chapter.number >= i - 9 && chapter.number < i + 1
-      );
-      if (chapters.length === 0) continue;
-      const label = `${i - 9}-${i}`;
-      groups[label] = {
-        label,
-        from: i - 9,
-        to: i,
-        chapters,
-      };
-      lastLabel = label;
-    }
-
-    // Handle chapters with number < 1 (e.g. 0, 0.5, 0.01 — prologues /
-    // specials). The main loop starts at i=10 covering number >= 1, so anything
-    // below 1 falls through unless we catch it here.
-    const subOneChapters = sortedChapters.filter((chapter) => chapter.number < 1);
-    if (subOneChapters.length > 0) {
-      if (Object.keys(groups).length > 0) {
-        const firstGroup = Object.keys(groups)[0];
-        groups[firstGroup].chapters.push(...subOneChapters);
-      } else {
-        groups["0"] = {
-          label: "0",
-          from: 0,
-          to: 0,
-          chapters: subOneChapters,
-        };
-        lastLabel = "0";
-      }
-    }
-
-    setChapterGroups(groups);
-    setSelectedChapterGroup(lastLabel);
-  }, [manga.chapters]);
 
   // Get required plans for a chapter
   const getRequiredPlansForChapter = (chapter: Chapter): Array<{ id: number; name: string }> | null => {
@@ -1118,7 +1106,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   const currentChapters = chapterGroups[selectedChapterGroup]?.chapters || [];
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-20">
+    <div className="min-h-screen bg-zinc-950 pt-20 overflow-x-hidden">
       {/* NSFW Age Verification Modal */}
       {showNSFWModal && (
         <NSFWAgeModal onConfirm={() => setShowNSFWModal(false)} />
