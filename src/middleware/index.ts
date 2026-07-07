@@ -52,6 +52,18 @@ function calculateShowAds(user: any, organization: any): boolean {
     if (hasHideAds) {
       return false;
     }
+
+    // STAFF: los miembros del scan con acceso al panel no ven anuncios en las
+    // páginas de SU scan (siguen viendo anuncios en scans ajenos y en la
+    // landing). Criterio: canSeeAdminPanel de ESA org; el role no es confiable.
+    const isStaffHere = user.permissions.some(
+      (perm: any) =>
+        perm.canSeeAdminPanel === true &&
+        perm.organizationId === organization.id,
+    );
+    if (isStaffHere) {
+      return false;
+    }
   }
   return true;
 }
