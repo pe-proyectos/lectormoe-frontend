@@ -454,14 +454,58 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     setImagePreview(null);
   };
 
+  // Busca un comentario en todo el árbol (cualquier profundidad).
+  const findInTree = (nodes: CommentType[], id: number): CommentType | null => {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.replies?.length) {
+        const found = findInTree(n.replies, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const handleReply = (commentId: number) => {
     setReplyingTo(commentId);
-    const targetComment =
-      comments.find((c) => c.id === commentId) ||
-      comments.flatMap((c) => c.replies || []).find((r) => r.id === commentId);
-    setReplyingToComment(targetComment || null);
+    setReplyingToComment(findInTree(comments, commentId));
     setCommentText('');
     clearImage();
+  };
+
+  // Render recursivo con indentación hasta profundidad 4; a partir de ahí se
+  // mantiene el mismo nivel visual (estilo Reddit móvil) y el hilo se sigue por
+  // el @autor del padre que el CommentItem muestra en el cuerpo.
+  const MAX_DEPTH = 4;
+  const renderCommentTree = (comment: CommentType, depth: number): React.ReactNode => {
+    const replies = comment.replies || [];
+    return (
+      <div className="space-y-4 min-w-0 w-full">
+        <CommentItem
+          comment={comment}
+          user={user}
+          logged={logged}
+          organization={organization}
+          isReply={depth > 0}
+          onReply={handleReply}
+          onDelete={handleDeleteComment}
+          onEdit={handleEditComment}
+          onLike={handleLikeComment}
+          onHide={handleShowHideDialog}
+          onBan={handleShowBanDialog}
+          onImageClick={setZoomImageUrl}
+        />
+        {replies.length > 0 && (
+          <div className={depth < MAX_DEPTH ? 'ml-4 md:ml-8 border-l border-zinc-800 pl-3 md:pl-4 space-y-4 min-w-0' : 'space-y-4 min-w-0'}>
+            {replies.map((reply) => (
+              <div key={reply.id} className="min-w-0 w-full">
+                {renderCommentTree(reply, Math.min(depth + 1, MAX_DEPTH))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const cancelReply = () => {
@@ -628,44 +672,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       ) : (
         <div className="space-y-8 w-full">
           {comments.map((comment) => (
-            <div key={comment.id} className="space-y-6 min-w-0 w-full">
-              <CommentItem
-                comment={comment}
-                user={user}
-                logged={logged}
-                organization={organization}
-                onReply={handleReply}
-                onDelete={handleDeleteComment}
-                onEdit={handleEditComment}
-                onLike={handleLikeComment}
-                onHide={handleShowHideDialog}
-                onBan={handleShowBanDialog}
-                onImageClick={setZoomImageUrl}
-              />
-
-              {/* Replies */}
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-8 md:ml-20 space-y-6 min-w-0 w-full">
-                  {comment.replies.map((reply) => (
-                    <div key={reply.id} className="min-w-0 w-full">
-                      <CommentItem
-                        comment={reply}
-                        user={user}
-                        logged={logged}
-                        organization={organization}
-                        isReply={true}
-                        onReply={handleReply}
-                        onDelete={handleDeleteComment}
-                        onEdit={handleEditComment}
-                        onLike={handleLikeComment}
-                        onHide={handleShowHideDialog}
-                        onBan={handleShowBanDialog}
-                        onImageClick={setZoomImageUrl}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div key={comment.id} className="min-w-0 w-full">
+              {renderCommentTree(comment, 0)}
             </div>
           ))}
         </div>
