@@ -498,18 +498,86 @@ const ErrorMsg = ({ msg }: { msg: string }) => (
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles' | 'reports';
+type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles' | 'reports' | 'moderation';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview', label: 'Vista general', icon: '📊' },
   { id: 'orgs', label: 'Organizaciones', icon: '🏢' },
   { id: 'reports', label: 'Reportes', icon: '🚩' },
+  { id: 'moderation', label: 'Auditoría', icon: '📋' },
   { id: 'users', label: 'Usuarios', icon: '👥' },
   { id: 'subscriptions', label: 'Suscripciones', icon: '💳' },
   { id: 'raffles', label: 'Sorteos', icon: '🎟️' },
   { id: 'requests', label: 'Solicitudes', icon: '📬' },
   { id: 'create-scan', label: 'Alta de Scan', icon: '➕' },
 ];
+
+const ACTION_LABEL: Record<string, string> = {
+  report_hide_content: 'Contenido oculto (reporte)',
+  report_dismiss: 'Reporte descartado',
+  review_hide: 'Reseña oculta',
+  manga_delete: 'Manga eliminado',
+  chapter_delete: 'Capítulo eliminado',
+  genre_create: 'Género creado',
+  genre_rename: 'Género renombrado',
+  genre_delete: 'Género eliminado',
+};
+
+const ModerationLogTab = ({ token }: { token: string }) => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [action, setAction] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    saFetch(`/api/superadmin/moderation-log?page=${page}${action ? `&action=${action}` : ''}`, token)
+      .then((d: any) => { setRows(d.rows || []); setTotal(d.total || 0); })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [token, page, action]);
+
+  const maxPage = Math.max(1, Math.ceil(total / 30));
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 className="text-xl font-black text-white">Log de auditoría <span className="text-zinc-500 text-sm font-normal">({total})</span></h2>
+        <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }} className="bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white text-sm">
+          <option value="">Todas las acciones</option>
+          {Object.entries(ACTION_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </div>
+      {loading ? <Spinner /> : error ? <ErrorMsg msg={error} /> : rows.length === 0 ? (
+        <p className="text-zinc-500 text-center py-10">Sin registros.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white">{ACTION_LABEL[r.action] || r.action}</p>
+                <p className="text-xs text-zinc-500">
+                  {r.actor ? `@${r.actor.username}` : 'superadmin'} · {r.targetType} #{r.targetId}
+                  {r.details ? ` · ${r.details}` : ''}
+                </p>
+              </div>
+              <span className="text-[11px] text-zinc-600 shrink-0">{new Date(r.createdAt).toLocaleString('es')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {maxPage > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm disabled:opacity-40">Anterior</button>
+          <span className="text-zinc-500 text-sm">{page} / {maxPage}</span>
+          <button disabled={page >= maxPage} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-sm disabled:opacity-40">Siguiente</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ReportsTab = ({ token }: { token: string }) => {
   const [reports, setReports] = useState<any[]>([]);
@@ -648,6 +716,7 @@ const SuperAdminApp = () => {
         {tab === 'subscriptions' && <SuperadminSubscriptions token={token} />}
         {tab === 'raffles' && <SuperadminRaffles token={token} />}
         {tab === 'reports' && <ReportsTab token={token} />}
+        {tab === 'moderation' && <ModerationLogTab token={token} />}
       </div>
     </div>
   );

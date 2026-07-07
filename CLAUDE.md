@@ -120,3 +120,40 @@ Translations in `src/translations/{en,es}.ts`. Use `getTranslator(language)` fro
 - Commit messages follow conventional commits (`feat:`, `fix:`, etc.)
 - React components use `.tsx` in admin/landing, `.jsx` for shared components
 - Biome enforces single quotes, no trailing commas, arrow function parentheses
+- No em dashes in UI text or new comments; Spanish with correct accents
+
+## Mobile / PWA (Tarea 19)
+
+- `util/useIsMobile.ts`: hook `matchMedia` para el breakpoint 768px.
+- `components/ui/BottomSheet.tsx`: modal en desktop, hoja inferior en móvil.
+  Migra modales a este componente en vez de crear overlays nuevos.
+- `components/ui/MobileTabBar.tsx`: barra inferior (Inicio/Buscar/Mi Lista/
+  Alertas/Perfil). Se monta desde `LandingLayout.astro`; se oculta con la prop
+  `hideTabBar` (lector de capítulos inmersivo, admin).
+- PWA: `public/manifest.json`, `public/sw.js` (cache-first SOLO para
+  `/_astro`, `/icons`, `/images`; NUNCA `/api` ni HTML), `public/offline.html`.
+  El SW versiona el cache (`capibara-static-vN`): sube la versión para invalidar.
+- Fundamentos móviles (tap highlight, inputs 16px, scrollbars ocultos, util
+  `.cv-auto`) están en el `<style is:global>` de `LandingLayout.astro`.
+
+## Rutas reservadas
+
+Al agregar una página global nueva (no de scan), añade su primer segmento a la
+lista de rutas reservadas EN DOS sitios: `middleware/index.ts` y `util/callApi.ts`.
+Ej. recientes: `listas`, `reclutamiento`, `mensajes`.
+
+## Componentes/páginas nuevos del plan
+
+- Mensajería: `landing/ContactScanModal`, `landing/MessagesInbox` (+`/mensajes`),
+  `admin/AdminMessages`.
+- Reclutamiento: `landing/RecruitmentBoardPage` (+`/reclutamiento`),
+  `admin/AdminRecruitment`.
+- Listas: `landing/CommunityListsPage` (+`/listas`), `landing/CustomListPage`.
+- Tendencias/novedades: `landing/TrendingSection`, `landing/RecentlyAdded`.
+- Reseñas/reacciones/reportes: `landing/MangaReviews`, `landing/StarRating`,
+  `landing/ChapterReactions`, `landing/ReportButton`, `landing/AddToListButton`,
+  `landing/MilestoneAlertButton`.
+- Novelas con ilustraciones: `admin/NovelEditor` (botón imagen → R2, marcador de
+  tamaño `wNN` en el title del markdown) y `landing/NovelReader` (solo renderiza
+  imágenes del dominio R2 propio).
+- Superadmin: tab **Auditoría** (`ModerationLogTab` en `superadmin/SuperAdminApp`).
