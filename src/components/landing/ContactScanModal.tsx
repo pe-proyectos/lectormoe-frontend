@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import BottomSheet from '../ui/BottomSheet';
 
 interface Props {
   scanSlug: string;
@@ -39,9 +40,8 @@ const ContactScanModal: React.FC<Props> = ({ scanSlug, open, onClose, defaultCat
   };
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4" onClick={() => !busy && onClose()}>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3"><h3 className="text-lg font-black text-white">Contactar al scan</h3><button onClick={onClose}><X size={18} className="text-zinc-500" /></button></div>
+    <BottomSheet open={open} onClose={() => !busy && onClose()} title="Contactar al scan">
+      <>
         {done ? (
           <p className="text-green-400 text-sm py-4">Mensaje enviado. El scan te responderá aquí mismo; te avisaremos con una notificación.</p>
         ) : (
@@ -53,11 +53,11 @@ const ContactScanModal: React.FC<Props> = ({ scanSlug, open, onClose, defaultCat
             <textarea value={body} onChange={(e) => setBody(e.target.value.slice(0, 4000))} rows={4} placeholder="Escribe tu mensaje…" className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white text-sm mb-1 focus:border-cyan-500 outline-none resize-none" />
             <p className="text-zinc-600 text-[10px] mb-3 text-right">{body.length}/4000</p>
             {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-            <button onClick={submit} disabled={busy} className="w-full inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl py-2.5 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Enviar mensaje</button>
+            <button onClick={submit} disabled={busy} className="w-full inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl py-3 min-h-[44px] font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors active:scale-[0.98] disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Enviar mensaje</button>
           </>
         )}
-      </div>
-    </div>
+      </>
+    </BottomSheet>
   );
 };
 

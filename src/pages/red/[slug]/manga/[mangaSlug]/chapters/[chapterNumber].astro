@@ -103,7 +103,7 @@ if (!hasAccess) {
 const ogImageUrl = chapter?.imageUrl || manga.imageUrl || manga.bannerUrl;
 ---
 
-<LandingLayout
+<LandingLayout hideTabBar={true}
   title={`${chapter.title} - ${manga.title} #${chapter.number}`}
   imageUrl={ogImageUrl}
   description={`${_("read_the_chapter")} ${chapter.number} ${_("of")} ${manga.title}: '${chapter.title || ""}' - ${manga?.shortDescription || manga?.description || _("click_here")}`}

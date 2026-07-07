@@ -36,6 +36,7 @@ const adsProvider = resolveAdsProvider({
 		<meta name="description" content={description || organization?.description || "Mangas"} />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<link rel="icon" type="image/png" href={organization?.faviconUrl || "/images/faviconcaptrad.png"} />
+		<link rel="manifest" href="/manifest.json" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
 		{/* Google AdSense meta tag - always present for verification */}
@@ -122,6 +123,9 @@ const adsProvider = resolveAdsProvider({
 		{adsProvider === 'adsterra' && (
 			<script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
 		)}
+		<script is:inline>
+			if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+		</script>
 	</body>
 </html>
 

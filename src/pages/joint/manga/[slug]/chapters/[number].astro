@@ -64,7 +64,7 @@ const orgFromJoint = {
 const ogImageUrl = chapter?.imageUrl || joint.imageUrl || joint.bannerUrl;
 ---
 
-<LandingLayout
+<LandingLayout hideTabBar={true}
   title={`${joint.title} - Cap. ${chapter.number}${chapter.title ? ` - ${chapter.title}` : ''}`}
   description={`Lee el capítulo ${chapter.number} de ${joint.title}`}
   imageUrl={ogImageUrl}

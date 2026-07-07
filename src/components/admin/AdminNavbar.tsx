@@ -7,6 +7,8 @@ import {
   Ticket,
   DollarSign,
   MessageSquare,
+  Inbox,
+  Megaphone,
   Settings,
   Tag,
   UserCircle,
@@ -129,6 +131,18 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
       label: 'Comentarios',
       icon: MessageSquare,
       href: `/${organizationSlug}/admin/comments`,
+    },
+    {
+      id: 'messages',
+      label: 'Mensajes',
+      icon: Inbox,
+      href: `/${organizationSlug}/admin/messages`,
+    },
+    {
+      id: 'recruitment',
+      label: 'Reclutamiento',
+      icon: Megaphone,
+      href: `/${organizationSlug}/admin/recruitment`,
     },
     {
       id: 'settings',

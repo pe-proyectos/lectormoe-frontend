@@ -8,7 +8,7 @@ const { title, page, organizationSlug } = Astro.props;
 const { organization } = Astro.locals;
 ---
 
-<LandingLayout title={title + " - Admin"} showAds={false}>
+<LandingLayout title={title + " - Admin"} showAds={false} hideTabBar={true}>
     <AdminNavbar 
         organization={organization}
         organizationSlug={organizationSlug}

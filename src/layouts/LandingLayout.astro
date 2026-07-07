@@ -2,6 +2,7 @@
 // Sorteo ended — hidden until next giveaway
 // import SorteoModal from '../components/landing/SorteoModal';
 import DiscordInviteModal from '../components/landing/DiscordInviteModal';
+import MobileTabBar from '../components/ui/MobileTabBar';
 import { resolveAdsProvider } from '../util/ads-provider';
 
 interface Props {
@@ -11,10 +12,12 @@ interface Props {
   manga?: any;
   imageUrl?: string;
   showAds?: boolean;
+  hideTabBar?: boolean;
 }
 
 // @ts-ignore - organization se define dinámicamente en el middleware
 const { organization, user, nsfwMode } = Astro.locals;
+const logged = !!user;
 
 const {
   title: propTitle,
@@ -22,6 +25,7 @@ const {
   imageUrl: propImageUrl,
   showAds = false,
   manga: propManga,
+  hideTabBar = false,
 } = Astro.props;
 
 // Single source of truth for which ad network to render. Pages may pass a
@@ -62,6 +66,8 @@ const siteName =
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/png" href={faviconUrl} />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://r2.capibaratraductor.com" crossorigin />
     <link rel="canonical" href={Astro.url.origin + Astro.url.pathname} />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -123,6 +129,16 @@ const siteName =
   </head>
   <body>
     <slot />
+    {!hideTabBar && <div class="h-16 md:hidden" aria-hidden="true"></div>}
+    {!hideTabBar && (
+      <MobileTabBar
+        client:only="react"
+        logged={logged}
+        organizationSlug={organization?.slug ?? null}
+        nsfwMode={nsfwMode}
+        profileSlug={user?.slug ?? null}
+      />
+    )}
     <DiscordInviteModal client:only="react" />
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
@@ -130,6 +146,9 @@ const siteName =
     {adsProvider === 'adsterra' && (
       <script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
     )}
+    <script is:inline>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script>
   </body>
 </html>
 
@@ -144,6 +163,32 @@ const siteName =
     overflow-x: hidden;
     margin: 0;
     padding: 0;
+  }
+
+  /* Fundamentos de interacción móvil (Tarea 19a) */
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px; /* evita el zoom automático de iOS al enfocar */
+    }
+    ::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+  }
+  /* Utilidad de rendimiento para filas de listas largas (Tarea 19e) */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 72px;
   }
 
   .text-outline-white {
