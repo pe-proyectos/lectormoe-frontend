@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
 import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
@@ -345,12 +345,48 @@ export function Reader({
     [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, settings.readingDirection]
   );
 
+  // Anti doble disparo al encadenar capítulos con el teclado.
+  const lastChapterNavAtRef = useRef(0);
+  const navigateChapterWithKeyboard = useCallback((url) => {
+    if (!url) return;
+    const now = Date.now();
+    if (now - lastChapterNavAtRef.current < 500) return;
+    lastChapterNavAtRef.current = now;
+    window.location.href = url;
+  }, []);
+
   useEffect(() => {
-    if (settings.readType === readTypes.CASCADE) return;
     const handleKeyDown = (e) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // URLs de capítulo anterior/siguiente: misma resolución que usan los
+      // botones de navegación (props tienen prioridad para páginas joint).
+      const kbPrevUrl = prevChapterUrl !== undefined
+        ? prevChapterUrl
+        : (chapter?.previousChapter?.number
+            ? getOrgPath(`/manga/${mangaSlug}/chapters/${chapter?.previousChapter?.number}`, orgSlug)
+            : null);
+      const kbNextUrl = nextChapterUrl !== undefined
+        ? nextChapterUrl
+        : (chapter?.nextChapter?.number
+            ? getOrgPath(`/manga/${mangaSlug}/chapters/${chapter?.nextChapter?.number}`, orgSlug)
+            : null);
+
       const clickedRight = e.key === 'ArrowRight';
+
+      // Modo cascada: → al final del scroll pasa al siguiente capítulo,
+      // ← al inicio vuelve al anterior. ↑/↓ siguen siendo scroll nativo.
+      if (settings.readType === readTypes.CASCADE) {
+        const atBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 50;
+        const atTop = window.scrollY <= 50;
+        if (clickedRight && atBottom) navigateChapterWithKeyboard(kbNextUrl);
+        else if (!clickedRight && atTop) navigateChapterWithKeyboard(kbPrevUrl);
+        return;
+      }
+
       const isGoingForward = settings.readingDirection === 'ltr' ? clickedRight : !clickedRight;
       const currentPageIndex = chapterData.pages.findIndex((p) => p.number === currentPage);
       if (currentPageIndex === -1) return;
@@ -367,11 +403,18 @@ export function Reader({
       if (targetPage) {
         setCurrentPage(targetPage.number);
         location.href = '#manga-pages-top';
+        return;
+      }
+      // Sin más páginas: encadenar al capítulo siguiente/anterior.
+      if (isGoingForward && targetIndex >= chapterData.pages.length) {
+        navigateChapterWithKeyboard(kbNextUrl);
+      } else if (!isGoingForward && targetIndex < 0) {
+        navigateChapterWithKeyboard(kbPrevUrl);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [settings.readType, readTypes.CASCADE, chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, settings.readingDirection]);
+  }, [settings.readType, readTypes.CASCADE, chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, settings.readingDirection, chapter, prevChapterUrl, nextChapterUrl, mangaSlug, orgSlug, navigateChapterWithKeyboard]);
 
   const handlePageGap = useCallback((value) => {
     localStorage.setItem("pageGap", value);
