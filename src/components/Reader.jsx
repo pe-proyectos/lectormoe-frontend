@@ -11,6 +11,7 @@ import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
 import CommentsSection from "./landing/CommentsSection";
+import ChapterReactions from "./ChapterReactions";
 import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
 /**
@@ -1553,6 +1554,10 @@ export function Reader({
         </div>
 
         <div className="w-full bg-zinc-950 border-t border-zinc-800 px-4 md:px-8 py-6">
+          {/* Reactions */}
+          {chapter?.id && (
+            <ChapterReactions chapterId={chapter.id} logged={logged || false} />
+          )}
           {/* Comments Section - Below Reader */}
           {chapterData.pages.length > 0 && !loading && (
             <CommentsSection

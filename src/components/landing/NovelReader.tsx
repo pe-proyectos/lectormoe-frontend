@@ -7,6 +7,7 @@ import {
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
 import CommentsSection from './CommentsSection';
+import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
 
 interface AdjacentChapter {
@@ -606,10 +607,11 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         </div>
       </main>
 
-      {/* Comments */}
+      {/* Reactions + Comments */}
       {mangaSlug && html && (
         <section style={{ borderTop: `1px solid ${palette.border}`, background: palette.ui, padding: '2rem 1rem' }}>
           <div style={{ maxWidth: WIDTH_PX[prefs.width], margin: '0 auto' }}>
+            {chapter?.id && <ChapterReactions chapterId={chapter.id} logged={logged || false} />}
             <CommentsSection
               identifier={`${mangaSlug}_${chapter.number}`}
               logged={logged || false}
