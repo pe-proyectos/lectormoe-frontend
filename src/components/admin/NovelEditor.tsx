@@ -5,14 +5,26 @@ import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import { Markdown } from 'tiptap-markdown';
+import Image from '@tiptap/extension-image';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Minus, Link as LinkIcon,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Undo, Redo, Upload, FileText, Eye, EyeOff,
+  Undo, Redo, Upload, FileText, Eye, EyeOff, Image as ImageIcon, Loader2,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { uploadFile } from '../../util/uploadFile';
+
+// Las ilustraciones se guardan en markdown como ![alt](url "wNN"), donde el
+// title codifica el ancho: "w40" (40%), "w70" (70%) o "w100" (100%). El lector
+// (NovelReader) interpreta ese marcador. Solo se permiten URLs del R2 propio.
+const R2_PUBLIC_BASE = (import.meta.env.PUBLIC_R2_PUBLIC_URL || 'https://r2.capibaratraductor.com').replace(/\/$/, '');
+const SIZE_OPTIONS: { label: string; marker: string }[] = [
+  { label: 'Pequeña (40%)', marker: 'w40' },
+  { label: 'Mediana (70%)', marker: 'w70' },
+  { label: 'Completa (100%)', marker: 'w100' },
+];
 
 interface NovelEditorProps {
   value: string | null;
@@ -45,8 +57,10 @@ const Divider = () => <div className="w-px h-6 bg-zinc-800 mx-1" />;
 const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = false }) => {
   const [showSource, setShowSource] = useState(false);
   const [chars, setChars] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const docxInputRef = useRef<HTMLInputElement>(null);
   const mdInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const lastValueRef = useRef<string | null>(value);
 
   const editor = useEditor({
@@ -60,6 +74,11 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         protocols: ['http', 'https', 'mailto'],
       }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: { class: 'mx-auto rounded-xl max-w-full my-6' },
+      }),
       Markdown.configure({
         html: false,
         tightLists: true,
@@ -151,6 +170,32 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
     e.target.value = '';
   };
 
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Solo se permiten imágenes JPG, PNG o WEBP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen no puede superar 5MB.');
+      return;
+    }
+    const marker = SIZE_OPTIONS[Number.parseInt(window.prompt('Tamaño de la imagen:\n1 = Pequeña (40%)\n2 = Mediana (70%)\n3 = Completa (100%)', '2') || '2', 10) - 1]?.marker || 'w70';
+    setUploadingImage(true);
+    try {
+      const fileKey = await uploadFile(file, undefined, 'novels');
+      const url = /^https?:\/\//i.test(fileKey) ? fileKey : `${R2_PUBLIC_BASE}/${fileKey.replace(/^\//, '')}`;
+      editor.chain().focus().setImage({ src: url, title: marker } as any).run();
+      toast.success('Ilustración insertada.');
+    } catch (err: any) {
+      toast.error(err?.message || 'No se pudo subir la imagen.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const promptLink = () => {
     const previous = editor.getAttributes('link').href;
     const url = window.prompt('URL del enlace (vacío = quitar):', previous || 'https://');
@@ -204,6 +249,9 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         <ToolbarButton onClick={promptLink} active={editor.isActive('link')} title="Enlace">
           <LinkIcon size={16} />
         </ToolbarButton>
+        <ToolbarButton onClick={() => imageInputRef.current?.click()} disabled={uploadingImage} title="Insertar ilustración">
+          {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+        </ToolbarButton>
         <Divider />
         <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Alinear izquierda">
           <AlignLeft size={16} />
@@ -255,6 +303,7 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         </button>
         <input ref={docxInputRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={onPickDocx} />
         <input ref={mdInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={onPickMd} />
+        <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onPickImage} />
 
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">

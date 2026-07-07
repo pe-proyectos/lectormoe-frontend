@@ -268,6 +268,8 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
           <img
             src={manga.cover}
             alt={manga.title}
+            loading="lazy"
+            decoding="async"
             className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 rounded-t-2xl ${shouldBlur ? 'blur-xl scale-110' : ''}`}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />

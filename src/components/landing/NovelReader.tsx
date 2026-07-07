@@ -155,12 +155,27 @@ const WORDS_PER_MIN = 230;
 
 const md = new MarkdownIt({ html: false, linkify: true, typographer: true, breaks: false });
 
+// Ilustraciones de novela (Tarea 33): solo se renderizan imágenes alojadas en el
+// R2 propio (previene hotlinking y tracking pixels). El title codifica el ancho:
+// "w40" | "w70" | "w100" (en móvil siempre 100% vía CSS).
+const R2_IMG_BASE = (import.meta.env.PUBLIC_R2_PUBLIC_URL || 'https://r2.capibaratraductor.com').replace(/\/$/, '');
+md.renderer.rules.image = (tokens, idx) => {
+  const token = tokens[idx];
+  const src = token?.attrGet('src') || '';
+  if (!src.startsWith(`${R2_IMG_BASE}/`)) return '';
+  const alt = token?.content || '';
+  const title = token?.attrGet('title') || '';
+  const marker = /^w(40|70|100)$/.test(title) ? title : 'w100';
+  const escAlt = alt.replace(/"/g, '&quot;');
+  return `<img class="nr-img nr-img-${marker}" src="${src}" alt="${escAlt}" loading="lazy" decoding="async" />`;
+};
+
 const ALLOWED_TAGS = [
   'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'del', 'ins',
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li',
-  'blockquote', 'hr', 'a', 'code', 'pre', 'span', 'div',
+  'blockquote', 'hr', 'a', 'code', 'pre', 'span', 'div', 'img',
 ];
-const ALLOWED_ATTR = ['href', 'target', 'rel', 'class'];
+const ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'src', 'alt', 'loading', 'decoding'];
 const FORBID_TAGS = ['style', 'script', 'iframe', 'object', 'embed', 'form', 'input', 'button'];
 const FORBID_ATTR = ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'];
 
@@ -502,6 +517,11 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     .nr-article hr { border: none; border-top: 1px solid ${palette.border}; margin: 2em 0; }
     .nr-article ul, .nr-article ol { padding-left: 1.6em; margin: 0 0 ${prefs.paragraphSpacing}em 0; }
     .nr-article li { margin: 0.3em 0; }
+    .nr-article .nr-img { display: block; margin: 1.5em auto; border-radius: 12px; height: auto; }
+    .nr-article .nr-img-w40 { max-width: 40%; }
+    .nr-article .nr-img-w70 { max-width: 70%; }
+    .nr-article .nr-img-w100 { max-width: 100%; }
+    @media (max-width: 767px) { .nr-article .nr-img { max-width: 100% !important; } }
     .nr-article code { background: ${palette.ui}; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.92em; }
     .nr-article pre { background: ${palette.ui}; padding: 1em; border-radius: 8px; overflow-x: auto; }
     .nr-article pre code { background: transparent; padding: 0; }
