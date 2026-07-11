@@ -168,42 +168,94 @@ const LoginScreen = ({ onLogin }: { onLogin: (token: string) => void }) => {
 
 // ── Overview Tab ──────────────────────────────────────────────────────────────
 
+const toDateInput = (d: Date) => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 const OverviewTab = ({ token }: { token: string }) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const PERIODS: { key: string; label: string; from: string; to: string }[] = [
+    { key: 'month', label: 'Este mes', from: toDateInput(new Date(year, now.getMonth(), 1)), to: toDateInput(now) },
+    { key: 'year', label: `Este año (${year})`, from: `${year}-01-01`, to: toDateInput(now) },
+    { key: 'prev-year', label: `${year - 1}`, from: `${year - 1}-01-01`, to: `${year - 1}-12-31` },
+    { key: 'all', label: 'Todo', from: '', to: '' },
+  ];
+
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Por defecto: el año actual.
+  const [period, setPeriod] = useState('year');
+  const [from, setFrom] = useState(`${year}-01-01`);
+  const [to, setTo] = useState(toDateInput(now));
 
   useEffect(() => {
-    saFetch('/api/superadmin/stats', token)
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    saFetch(`/api/superadmin/stats${qs ? `?${qs}` : ''}`, token)
       .then(setStats)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, from, to]);
 
-  if (loading) return <Spinner />;
-  if (error) return <ErrorMsg msg={error} />;
-  if (!stats) return null;
+  const pickPeriod = (p: (typeof PERIODS)[number]) => {
+    setPeriod(p.key);
+    setFrom(p.from);
+    setTo(p.to);
+  };
 
   const fmt = (n: number) => n.toLocaleString('es');
   const money = (n: number) => `$${n.toFixed(2)}`;
+  const periodLabel = period === 'all' ? 'histórico' : `${from || 'inicio'} a ${to || 'hoy'}`;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-black text-white">Vista general</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Usuarios totales" value={fmt(stats.totalUsers)} sub={`+${fmt(stats.newUsersThisMonth)} este mes`} />
-        <StatCard label="Organizaciones" value={fmt(stats.totalOrgs)} sub={`+${fmt(stats.newOrgsThisMonth)} este mes`} />
-        <StatCard label="Mangas" value={fmt(stats.totalMangas)} />
-        <StatCard label="Capítulos" value={fmt(stats.totalChapters)} />
-        <StatCard label="Comentarios" value={fmt(stats.totalComments)} />
-        <StatCard label="Suscripciones activas" value={fmt(stats.totalSubscriptions)} />
-        <StatCard label="Ingresos brutos" value={money(stats.grossRevenue)} sub="Cobrado a lectores" />
-        <StatCard label="Neto scans" value={money(stats.totalRevenue)} sub="Ganancia de las orgs" />
-        <StatCard label="Comisión Capibara" value={money(stats.totalCapibaraFees)} />
-        <StatCard label="Comisión PayPal" value={money(stats.totalPaypalFees)} />
-        <StatCard label="Retirado por scans" value={money(stats.totalWithdrawn)} />
-        <StatCard label="Saldo pendiente scans" value={money(stats.totalRevenue - stats.totalWithdrawn)} sub="Neto menos retiros" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-black text-white">Vista general</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          {PERIODS.map((p) => (
+            <button key={p.key} onClick={() => pickPeriod(p)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${period === p.key ? 'bg-cyan-500 text-zinc-950' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+              {p.label}
+            </button>
+          ))}
+          <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPeriod('custom'); }} className="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-2 text-white text-xs" aria-label="Desde" />
+          <span className="text-zinc-600 text-xs">a</span>
+          <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPeriod('custom'); }} className="bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-2 text-white text-xs" aria-label="Hasta" />
+        </div>
       </div>
+
+      {loading ? <Spinner /> : error ? <ErrorMsg msg={error} /> : !stats ? null : (
+        <>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Finanzas · {periodLabel}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Ingresos brutos" value={money(stats.grossRevenue)} sub="Cobrado a lectores" />
+              <StatCard label="Neto scans" value={money(stats.totalRevenue)} sub="Ganancia de las orgs" />
+              <StatCard label="Comisión Capibara" value={money(stats.totalCapibaraFees)} sub="Neta, ya sin PayPal" />
+              <StatCard label="Comisión PayPal" value={money(stats.totalPaypalFees)} sub="Sale de la mitad Capibara" />
+              <StatCard label="Retirado por scans" value={money(stats.totalWithdrawn)} />
+              <StatCard label="Saldo pendiente scans" value={money(stats.totalRevenue - stats.totalWithdrawn)} sub="Neto menos retiros" />
+            </div>
+            <p className="text-zinc-600 text-[11px] mt-2">La mitad de Capibara por publicidad se retiene antes de registrarse, así que no aparece en estas cifras.</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Plataforma · histórico</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Usuarios totales" value={fmt(stats.totalUsers)} sub={`+${fmt(stats.newUsersThisMonth)} este mes`} />
+              <StatCard label="Organizaciones" value={fmt(stats.totalOrgs)} sub={`+${fmt(stats.newOrgsThisMonth)} este mes`} />
+              <StatCard label="Mangas" value={fmt(stats.totalMangas)} />
+              <StatCard label="Capítulos" value={fmt(stats.totalChapters)} />
+              <StatCard label="Comentarios" value={fmt(stats.totalComments)} />
+              <StatCard label="Suscripciones activas" value={fmt(stats.totalSubscriptions)} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
