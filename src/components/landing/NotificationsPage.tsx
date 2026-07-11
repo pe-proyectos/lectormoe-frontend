@@ -154,6 +154,9 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
       return `/${n.organization.slug}/admin/finance`;
     case 'scan_message_reply':
       return '/mensajes';
+    case 'content_removed':
+      if (!n.organization?.slug) return null;
+      return `/${n.organization.slug}/admin/mangas`;
     default:
       return null;
   }
@@ -211,6 +214,14 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: `Toca para ver la conversación · ${rel}`,
       };
     }
+    case 'content_removed': {
+      const mangaTitle = n.mangaCustom?.title || 'Una obra de tu scan';
+      const reason = (n as any).details ? truncate((n as any).details, 80) : '';
+      return {
+        title: `Obra retirada: ${mangaTitle}`,
+        subtitle: reason ? `Razón: ${reason} · ${rel}` : rel,
+      };
+    }
     case 'new_chapter':
     default: {
       const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
@@ -237,6 +248,8 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 
       return <AlertCircle size={size} className="text-red-400" />;
     case 'scan_message_reply':
       return <Mail size={size} className="text-cyan-400" />;
+    case 'content_removed':
+      return <AlertCircle size={size} className="text-red-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
   }

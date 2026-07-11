@@ -569,6 +569,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 const ACTION_LABEL: Record<string, string> = {
   report_hide_content: 'Contenido oculto (reporte)',
+  report_delete_notify: 'Obra borrada y scan notificado',
   report_dismiss: 'Reporte descartado',
   review_hide: 'Reseña oculta',
   manga_delete: 'Manga eliminado',
@@ -650,11 +651,18 @@ const ReportsTab = ({ token }: { token: string }) => {
   };
   useEffect(() => { load(); }, [token, statusFilter]);
 
-  const act = async (id: number, action: 'dismiss' | 'hide_content') => {
+  const act = async (id: number, action: 'dismiss' | 'hide_content' | 'delete_notify') => {
+    let resolutionNote: string | undefined;
     if (action === 'hide_content' && !confirm('Se ocultará el contenido al público y se marcarán los reportes como atendidos.')) return;
+    if (action === 'delete_notify') {
+      const reason = prompt('Razón del borrado (se enviará al scan por correo y notificación):');
+      if (reason === null) return;
+      if (!reason.trim()) { alert('La razón es obligatoria.'); return; }
+      resolutionNote = reason.trim();
+    }
     setBusyId(id);
     try {
-      await saFetch(`/api/superadmin/reports/${id}`, token, { method: 'PATCH', body: JSON.stringify({ action }) });
+      await saFetch(`/api/superadmin/reports/${id}`, token, { method: 'PATCH', body: JSON.stringify({ action, ...(resolutionNote ? { resolutionNote } : {}) }) });
       load();
     } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
   };
@@ -695,7 +703,8 @@ const ReportsTab = ({ token }: { token: string }) => {
                 </div>
                 {r.status === 'pending' && (
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => act(r.id, 'hide_content')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Ocultar</button>
+                    <button onClick={() => act(r.id, 'delete_notify')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra y avisa al scan (correo + notificación) con la razón">Borrar y notificar</button>
+                    <button onClick={() => act(r.id, 'hide_content')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra sin avisar al scan">Ocultar</button>
                     <button onClick={() => act(r.id, 'dismiss')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">Descartar</button>
                   </div>
                 )}

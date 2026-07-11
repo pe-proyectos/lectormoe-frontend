@@ -153,6 +153,11 @@ const buildItemUrl = (n: NotificationItem): string | null => {
     case 'failed_payment':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/finance`;
+    case 'scan_message_reply':
+      return '/mensajes';
+    case 'content_removed':
+      if (!n.organization?.slug) return null;
+      return `/${n.organization.slug}/admin/mangas`;
     default:
       return null;
   }
@@ -203,6 +208,15 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: `Suscripción #${subId} · ${rel}`,
       };
     }
+    case 'scan_message_reply': {
+      const orgName = n.organization?.name || 'El scan';
+      return { title: `${orgName} respondió tu mensaje`, subtitle: rel };
+    }
+    case 'content_removed': {
+      const mangaTitle = n.mangaCustom?.title || 'Una obra de tu scan';
+      const reason = (n as any).details ? truncate((n as any).details, 60) : '';
+      return { title: `Obra retirada: ${mangaTitle}`, subtitle: reason ? `${reason} · ${rel}` : rel };
+    }
     case 'new_chapter':
     default: {
       const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
@@ -222,6 +236,7 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 14 
     case 'new_subscriber':
       return <User size={size} className="text-cyan-400" />;
     case 'failed_payment':
+    case 'content_removed':
       return <AlertCircle size={size} className="text-red-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
