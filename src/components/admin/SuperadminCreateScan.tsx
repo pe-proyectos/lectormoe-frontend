@@ -138,6 +138,17 @@ const SuperadminCreateScan: React.FC<Props> = ({ token }) => {
     setUserResults([]);
   };
 
+  const [recentScans, setRecentScans] = useState<{ id: number; name: string; slug: string; isNSFW: boolean; createdAt: string }[]>([]);
+  const loadRecent = useCallback(() => {
+    saFetch('/api/superadmin/recent-scans', token).then(setRecentScans).catch(() => {});
+  }, [token]);
+  useEffect(() => { loadRecent(); }, [loadRecent]);
+
+  const scanUrl = (s: { slug: string; isNSFW: boolean }) => `https://capibaratraductor.com${s.isNSFW ? '/red' : ''}/${s.slug}`;
+  const copyUrl = (s: { slug: string; isNSFW: boolean }) => {
+    navigator.clipboard.writeText(scanUrl(s)).then(() => toast.success('Link copiado'), () => toast.error('No se pudo copiar'));
+  };
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -155,13 +166,14 @@ const SuperadminCreateScan: React.FC<Props> = ({ token }) => {
         });
         toast.success(`Scan creado: ${data.name} (#${data.id})`);
         resetForm();
+        loadRecent();
       } catch (err: any) {
         toast.error(err?.message ?? 'Error al crear el scan');
       } finally {
         setSubmitting(false);
       }
     },
-    [canSubmit, selectedUser, token, trimmedName, trimmedSlug, isNSFW]
+    [canSubmit, selectedUser, token, trimmedName, trimmedSlug, isNSFW, loadRecent]
   );
 
   return (
@@ -317,6 +329,27 @@ const SuperadminCreateScan: React.FC<Props> = ({ token }) => {
           </button>
         </div>
       </form>
+
+      {/* Últimos scans dados de alta, con link listo para copiar */}
+      {recentScans.length > 0 && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-2xl">
+          <h3 className="text-sm font-black text-white uppercase tracking-widest mb-3">Últimos 5 scans dados de alta</h3>
+          <div className="space-y-2">
+            {recentScans.map((s) => (
+              <div key={s.id} className="flex items-center justify-between gap-3 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{s.name} {s.isNSFW && <span className="text-[10px] font-black text-red-400 uppercase ml-1">NSFW</span>}</p>
+                  <a href={scanUrl(s)} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:underline truncate block">{scanUrl(s)}</a>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] text-zinc-600">{new Date(s.createdAt).toLocaleDateString('es')}</span>
+                  <button onClick={() => copyUrl(s)} className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-xs font-bold hover:bg-cyan-500 hover:text-zinc-950 transition-colors">Copiar link</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <ToastContainer theme="dark" position="bottom-right" />
     </div>

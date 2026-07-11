@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Zap, Headphones, CreditCard, DollarSign, Users, MessageCircle, Share2, CheckCircle, Send } from 'lucide-react';
+import { ShieldCheck, Zap, Headphones, CreditCard, DollarSign, Users, MessageCircle, Share2, CheckCircle, Send, LogIn, UserCircle } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
-const RegisterScanPage: React.FC = () => {
+interface RegisterScanPageProps {
+  user?: any;
+  logged?: boolean;
+}
+
+const RegisterScanPage: React.FC<RegisterScanPageProps> = ({ user, logged = false }) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,11 +173,39 @@ const RegisterScanPage: React.FC = () => {
                     Enviar otra solicitud
                   </button>
                 </div>
+              ) : !logged ? (
+                <div className="text-center py-16 px-6 space-y-6">
+                  <div className="w-16 h-16 mx-auto bg-cyan-500/10 border border-cyan-500/20 rounded-2xl flex items-center justify-center">
+                    <LogIn size={28} className="text-cyan-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Necesitas una cuenta</h3>
+                    <p className="text-zinc-400 font-medium max-w-sm mx-auto text-sm">
+                      Para postular tu scan primero crea una cuenta en CapibaraTraductor e inicia sesión. Tu solicitud quedará vinculada a esa cuenta y agiliza el proceso de alta: si te aprobamos, esa misma cuenta será la dueña del scan.
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a href="/login?redirect=/organizations/register" className="inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-2xl px-8 py-4 font-black text-xs uppercase tracking-widest hover:bg-white transition-colors w-full sm:w-auto">
+                      <LogIn size={16} /> Iniciar sesión
+                    </a>
+                    <a href="/register?redirect=/organizations/register" className="inline-flex items-center justify-center gap-2 bg-zinc-800 text-zinc-200 rounded-2xl px-8 py-4 font-black text-xs uppercase tracking-widest hover:bg-zinc-700 transition-colors w-full sm:w-auto">
+                      Crear cuenta
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
                   <div className="md:col-span-2 mb-4">
                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Formulario de Aplicación</h3>
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">Completa los campos para postular tu equipo</p>
+                  </div>
+
+                  <div className="md:col-span-2 flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-2xl py-3 px-5">
+                    <UserCircle size={20} className="text-cyan-400 shrink-0" />
+                    <p className="text-sm text-zinc-300">
+                      Solicitud vinculada a <span className="font-black text-white">@{user?.username}</span>
+                      {user?.email ? <span className="text-zinc-500"> · {user.email}</span> : null}
+                    </p>
                   </div>
 
                   {error && (
@@ -195,19 +228,6 @@ const RegisterScanPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
-                    <input 
-                      type="email" 
-                      name="applicantEmail"
-                      value={formData.applicantEmail}
-                      onChange={handleChange}
-                      required 
-                      placeholder="contacto@tuscan.com"
-                      className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-cyan-500 transition-all placeholder:text-zinc-800 text-sm"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Nombre del Scan</label>
                     <input 
                       type="text" 

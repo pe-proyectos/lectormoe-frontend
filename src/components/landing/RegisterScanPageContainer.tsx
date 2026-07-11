@@ -56,7 +56,7 @@ const RegisterScanPageContainer: React.FC<RegisterScanPageContainerProps> = ({
         }}
       />
       <div className="flex-1">
-        <RegisterScanPage />
+        <RegisterScanPage user={user} logged={logged || false} />
       </div>
       <Footer 
         organization={organization}

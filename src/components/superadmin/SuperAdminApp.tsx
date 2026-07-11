@@ -53,6 +53,7 @@ interface OrgRequest {
   status: string;
   reviewNotes: string | null;
   createdAt: string;
+  user?: { id: number; username: string; slug: string } | null;
 }
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -241,7 +242,7 @@ const OverviewTab = ({ token }: { token: string }) => {
               <StatCard label="Retirado por scans" value={money(stats.totalWithdrawn)} />
               <StatCard label="Saldo pendiente scans" value={money(stats.totalRevenue - stats.totalWithdrawn)} sub="Neto menos retiros" />
             </div>
-            <p className="text-zinc-600 text-[11px] mt-2">La mitad de Capibara por publicidad se retiene antes de registrarse, así que no aparece en estas cifras.</p>
+            <p className="text-zinc-600 text-[11px] mt-2">Incluye suscripciones y publicidad. La comisión Capibara de publicidad es el 50% retenido antes del reparto a scans.</p>
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Plataforma · histórico</p>
@@ -460,6 +461,7 @@ const RequestsTab = ({ token }: { token: string }) => {
                   <p className="font-bold text-white">{req.scanName}</p>
                   <p className="text-zinc-400 text-xs">
                     {req.applicantName} · {req.applicantEmail}
+                    {req.user && <span className="text-cyan-400 font-bold"> · @{req.user.username}</span>}
                   </p>
                 </div>
               </div>
@@ -478,6 +480,7 @@ const RequestsTab = ({ token }: { token: string }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <Field label="Nombre del solicitante" value={req.applicantName} />
                   <Field label="Email" value={req.applicantEmail} />
+                  <Field label="Cuenta vinculada" value={req.user ? `@${req.user.username} (id ${req.user.id})` : 'Sin cuenta (solicitud antigua)'} />
                   <Field label="Lectores estimados/mes" value={req.estimatedMonthlyReaders} />
                   <Field label="Fecha de solicitud" value={new Date(req.createdAt).toLocaleString('es')} />
                   <Field label="Referencias" value={req.references} className="md:col-span-2" />
