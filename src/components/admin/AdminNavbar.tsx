@@ -1,8 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Menu, ChevronDown, Pin, PinOff, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
+  X,
+  Menu,
+  Search,
+  ExternalLink,
   LayoutDashboard,
   BookOpen,
+  BookText,
   Users,
   Ticket,
   DollarSign,
@@ -13,6 +17,7 @@ import {
   Tag,
   UserCircle,
   Link2,
+  CornerDownLeft,
 } from 'lucide-react';
 
 interface AdminNavbarProps {
@@ -25,512 +30,357 @@ interface AdminNavbarProps {
   page: string;
 }
 
-const STORAGE_KEY = 'admin_pinned_items';
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  href: string;
+  keywords: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+// Secciones del panel agrupadas por área. El agrupamiento ES la navegación:
+// un uploader piensa "voy a subir un capítulo" (Contenido), "me escribieron"
+// (Comunidad) o "cuánto llevo este mes" (Ingresos).
+const buildGroups = (slug: string): NavGroup[] => [
+  {
+    label: 'Panel',
+    items: [
+      { id: 'analytics', label: 'Dashboard', icon: LayoutDashboard, href: `/${slug}/admin/analytics`, keywords: 'dashboard analytics estadisticas inicio' },
+    ],
+  },
+  {
+    label: 'Contenido',
+    items: [
+      { id: 'mangas', label: 'Mangas', icon: BookOpen, href: `/${slug}/admin/mangas`, keywords: 'mangas obras capitulos subir' },
+      { id: 'writings', label: 'Novelas', icon: BookText, href: `/${slug}/admin/writings`, keywords: 'novelas escritos writings' },
+      { id: 'authors', label: 'Autores', icon: UserCircle, href: `/${slug}/admin/authors`, keywords: 'autores artistas' },
+      { id: 'genres', label: 'Géneros', icon: Tag, href: `/${slug}/admin/genres`, keywords: 'generos etiquetas tags' },
+      { id: 'joints', label: 'Joints', icon: Link2, href: `/${slug}/admin/joints`, keywords: 'joints colaboraciones' },
+    ],
+  },
+  {
+    label: 'Comunidad',
+    items: [
+      { id: 'comments', label: 'Comentarios', icon: MessageSquare, href: `/${slug}/admin/comments`, keywords: 'comentarios moderar' },
+      { id: 'messages', label: 'Mensajes', icon: Inbox, href: `/${slug}/admin/messages`, keywords: 'mensajes bandeja lectores' },
+      { id: 'users', label: 'Usuarios', icon: Users, href: `/${slug}/admin/users`, keywords: 'usuarios staff permisos roles' },
+      { id: 'recruitment', label: 'Reclutamiento', icon: Megaphone, href: `/${slug}/admin/recruitment`, keywords: 'reclutamiento anuncios vacantes' },
+    ],
+  },
+  {
+    label: 'Ingresos',
+    items: [
+      { id: 'subscription_plans', label: 'Planes', icon: Ticket, href: `/${slug}/admin/subscription-plans`, keywords: 'planes suscripcion vip precios' },
+      { id: 'finance', label: 'Finanzas', icon: DollarSign, href: `/${slug}/admin/finance`, keywords: 'finanzas dinero retiros saldo' },
+    ],
+  },
+  {
+    label: 'Ajustes',
+    items: [
+      { id: 'settings', label: 'Ajustes', icon: Settings, href: `/${slug}/admin/settings`, keywords: 'configuracion ajustes scan logo discord' },
+    ],
+  },
+];
+
+const normalize = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
 const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlug, page }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
-  const [pinnedItems, setPinnedItems] = useState<string[]>([]);
-  const megaMenuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const groups = useMemo(() => buildGroups(organizationSlug), [organizationSlug]);
+  const allItems = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const current = allItems.find((i) => i.id === page);
 
-  // Cargar items fijados desde localStorage
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Paleta rápida: Ctrl+K (o Cmd+K) desde cualquier parte del panel.
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length <= 3) {
-          setPinnedItems(parsed);
-        }
-      } catch (e) {
-        console.error('Error loading pinned items:', e);
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        setQuery('');
+        setSelected(0);
       }
-    }
+      if (e.key === 'Escape') {
+        setPaletteOpen(false);
+        setDrawerOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const handleExit = () => {
-    window.location.href = `/${organizationSlug}`;
-  };
-
-  const togglePin = (itemId: string) => {
-    setPinnedItems((prev) => {
-      let newPinned: string[];
-      if (prev.includes(itemId)) {
-        // Desfijar
-        newPinned = prev.filter((id) => id !== itemId);
-      } else {
-        // Fijar (máximo 3)
-        if (prev.length >= 3) {
-          return prev; // Ya hay 3 fijados
-        }
-        newPinned = [...prev, itemId];
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPinned));
-      return newPinned;
-    });
-  };
-
-  const menuItems = [
-    {
-      id: 'analytics',
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      href: `/${organizationSlug}/admin/analytics`,
-    },
-    {
-      id: 'authors',
-      label: 'Autores',
-      icon: UserCircle,
-      href: `/${organizationSlug}/admin/authors`,
-    },
-    {
-      id: 'genres',
-      label: 'Géneros',
-      icon: Tag,
-      href: `/${organizationSlug}/admin/genres`,
-    },
-    {
-      id: 'mangas',
-      label: 'Mangas',
-      icon: BookOpen,
-      href: `/${organizationSlug}/admin/mangas`,
-    },
-    {
-      id: 'writings',
-      label: 'Novelas',
-      icon: BookOpen,
-      href: `/${organizationSlug}/admin/writings`,
-    },
-    {
-      id: 'users',
-      label: 'Usuarios',
-      icon: Users,
-      href: `/${organizationSlug}/admin/users`,
-    },
-    {
-      id: 'joints',
-      label: 'Joints',
-      icon: Link2,
-      href: `/${organizationSlug}/admin/joints`,
-    },
-    {
-      id: 'subscription_plans',
-      label: 'Planes de Suscripción',
-      icon: Ticket,
-      href: `/${organizationSlug}/admin/subscription-plans`,
-    },
-    {
-      id: 'finance',
-      label: 'Finanzas',
-      icon: DollarSign,
-      href: `/${organizationSlug}/admin/finance`,
-    },
-    {
-      id: 'comments',
-      label: 'Comentarios',
-      icon: MessageSquare,
-      href: `/${organizationSlug}/admin/comments`,
-    },
-    {
-      id: 'messages',
-      label: 'Mensajes',
-      icon: Inbox,
-      href: `/${organizationSlug}/admin/messages`,
-    },
-    {
-      id: 'recruitment',
-      label: 'Reclutamiento',
-      icon: Megaphone,
-      href: `/${organizationSlug}/admin/recruitment`,
-    },
-    {
-      id: 'settings',
-      label: 'Configuración',
-      icon: Settings,
-      href: `/${organizationSlug}/admin/settings`,
-    },
-  ];
-
-  const getPinnedItems = () => {
-    return menuItems.filter((item) => pinnedItems.includes(item.id));
-  };
-
-  // Cerrar menú móvil al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (isMobileMenuOpen && !target.closest('.admin-mobile-menu') && !target.closest('.admin-menu-button')) {
-        setIsMobileMenuOpen(false);
-      }
-    };
+    if (paletteOpen) setTimeout(() => inputRef.current?.focus(), 30);
+  }, [paletteOpen]);
 
-    if (isMobileMenuOpen) {
-      document.addEventListener('click', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
+  // Bloquear scroll del fondo mientras hay overlay abierto.
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen || paletteOpen ? 'hidden' : 'unset';
     return () => {
-      document.removeEventListener('click', handleClickOutside);
       document.body.style.overflow = 'unset';
     };
-  }, [isMobileMenuOpen]);
+  }, [drawerOpen, paletteOpen]);
 
-  // Cerrar megamenu al hacer clic fuera (desktop)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (
-        isMegaMenuOpen &&
-        megaMenuRef.current &&
-        menuButtonRef.current &&
-        !megaMenuRef.current.contains(target) &&
-        !menuButtonRef.current.contains(target)
-      ) {
-        setIsMegaMenuOpen(false);
-      }
-    };
+  const results = useMemo(() => {
+    const q = normalize(query.trim());
+    if (!q) return allItems;
+    return allItems.filter((i) => normalize(`${i.label} ${i.keywords}`).includes(q));
+  }, [query, allItems]);
 
-    if (isMegaMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+  const goTo = useCallback((href: string) => {
+    window.location.href = href;
+  }, []);
+
+  const onPaletteKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelected((s) => Math.min(s + 1, results.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelected((s) => Math.max(s - 1, 0));
+    } else if (e.key === 'Enter' && results[selected]) {
+      goTo(results[selected].href);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMegaMenuOpen]);
+  };
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800 shadow-2xl shadow-black/50">
-        <div className="max-w-full px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-4">
-          {/* Botón hamburguesa (solo mobile) */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes an-rail-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes an-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes an-pop-in { from { opacity: 0; transform: scale(.98) translateY(-4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes an-drawer-in { from { transform: translateX(-16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .an-rail-item { animation: an-rail-in .3s ease-out both; }
+        .an-underline { position: absolute; left: 10px; right: 10px; bottom: 4px; height: 2px; border-radius: 2px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .18s ease-out; opacity: .5; }
+        .an-item:hover .an-underline { transform: scaleX(1); }
+        @media (prefers-reduced-motion: reduce) {
+          .an-rail-item, [class*='an-'] { animation: none !important; transition: none !important; }
+        }
+      `,
+        }}
+      />
+
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/80">
+        {/* Fila 1: identidad + acciones */}
+        <div className="px-4 md:px-6 h-14 flex items-center justify-between gap-3">
           <button
-            className="admin-menu-button md:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors text-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }}
-            aria-label="Toggle menu"
+            className="md:hidden min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Abrir secciones del panel"
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <Menu size={22} />
           </button>
 
-          {/* Logo y Nombre */}
-          <a 
+          <a
             href={`/${organizationSlug}`}
-            className="flex items-center gap-3 md:gap-4 hover:opacity-80 transition-opacity cursor-pointer flex-1 min-w-0"
+            className="flex items-center gap-3 min-w-0 flex-1 md:flex-initial group"
+            title="Ver mi scan"
           >
-            <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-800 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl overflow-hidden bg-zinc-800 flex items-center justify-center flex-shrink-0 ring-1 ring-zinc-800 group-hover:ring-cyan-500/50 transition-all">
               {organization.logoUrl ? (
-                <img 
-                  src={organization.logoUrl} 
-                  alt={organization.name} 
-                  className="w-full h-full object-cover"
-                />
+                <img src={organization.logoUrl} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-cyan-500 font-black text-lg">
-                  {organization.name[0]?.toUpperCase()}
-                </span>
+                <span className="text-cyan-500 font-black">{organization.name[0]?.toUpperCase()}</span>
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-base sm:text-lg md:text-xl font-black italic tracking-tighter text-white uppercase leading-none truncate">
+              <span className="text-sm md:text-base font-black tracking-tight text-white leading-none truncate">
                 {organization.name}
               </span>
-              <span className="text-[9px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                Panel de Administración
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.2em] truncate">
+                Admin{current ? ` · ${current.label}` : ''}
               </span>
             </div>
           </a>
 
-          {/* Items fijados (desktop) */}
-          <div className="hidden md:flex items-center gap-2">
-            {getPinnedItems().map((item) => {
-              const Icon = item.icon;
-              const isActive = page === item.id;
-              
-              return (
-                <a
-                  key={item.id}
-                  href={item.href}
-                  className={`
-                    flex items-center gap-2 px-3 py-2 rounded-xl 
-                    text-xs font-bold uppercase tracking-wider transition-all group relative
-                    ${isActive 
-                      ? 'bg-cyan-500 text-zinc-950 shadow-lg shadow-cyan-500/30' 
-                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white'
-                    }
-                  `}
-                  title={item.label}
-                >
-                  <Icon size={16} />
-                  <span className="hidden lg:inline">{item.label}</span>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      togglePin(item.id);
-                    }}
-                    className="ml-1 p-0.5 hover:bg-zinc-700 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Desfijar"
-                  >
-                    <PinOff size={12} />
-                  </button>
-                </a>
-              );
-            })}
-          </div>
-
-          {/* Botón Menú (desktop) - Diseño mejorado */}
-          <div className="hidden md:block relative">
+          <div className="flex items-center gap-2">
             <button
-              ref={menuButtonRef}
-              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-              onMouseEnter={() => setIsMegaMenuOpen(true)}
-              className={`
-                relative flex items-center gap-2 px-5 py-2.5 rounded-2xl 
-                text-sm font-black uppercase tracking-widest transition-all duration-300
-                overflow-hidden group
-                ${isMegaMenuOpen 
-                  ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-zinc-950 shadow-lg shadow-cyan-500/50 scale-105' 
-                  : 'bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-zinc-700 hover:to-zinc-600 text-white shadow-lg hover:shadow-xl'
-                }
-              `}
+              onClick={() => { setPaletteOpen(true); setQuery(''); setSelected(0); }}
+              className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 text-xs transition-colors"
+              aria-label="Ir a una sección"
             >
-              {/* Efecto de brillo animado */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              
-              <div className="relative flex items-center gap-2">
-                <div className="relative">
-                  <Menu size={18} className="relative z-10" />
-                  {!isMegaMenuOpen && (
-                    <Sparkles 
-                      size={12} 
-                      className="absolute -top-1 -right-1 text-cyan-400 animate-pulse" 
-                    />
-                  )}
-                </div>
-                <span>Menú</span>
-                <ChevronDown 
-                  size={16} 
-                  className={`transition-transform duration-300 ${isMegaMenuOpen ? 'rotate-180' : ''}`}
-                />
-              </div>
+              <Search size={13} />
+              <span>Ir a…</span>
+              <kbd className="text-[9px] font-bold bg-zinc-800 rounded px-1.5 py-0.5 text-zinc-400">Ctrl K</kbd>
             </button>
+            <button
+              onClick={() => { setPaletteOpen(true); setQuery(''); setSelected(0); }}
+              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all"
+              aria-label="Ir a una sección"
+            >
+              <Search size={20} />
+            </button>
+            <a
+              href={`/${organizationSlug}`}
+              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs font-bold transition-colors"
+            >
+              <ExternalLink size={13} /> Ver mi scan
+            </a>
+          </div>
+        </div>
 
-            {/* Megamenu (desktop) */}
-            {isMegaMenuOpen && (
-              <div
-                ref={megaMenuRef}
-                onMouseLeave={() => setIsMegaMenuOpen(false)}
-                className="absolute top-full right-0 mt-2 w-[650px] max-w-[90vw] bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border-2 border-zinc-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl"
-              >
-                <div className="p-6">
-                  {/* Header del megamenu */}
-                  <div className="mb-4 pb-4 border-b border-zinc-800">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Sparkles size={16} className="text-cyan-400" />
-                        Menú de Administración
-                      </h3>
-                      <span className="text-xs text-zinc-500">
-                        {pinnedItems.length}/3 fijados
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    {menuItems.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = page === item.id;
-                      const isPinned = pinnedItems.includes(item.id);
-                      const canPin = !isPinned && pinnedItems.length < 3;
-                      
-                      return (
-                        <div
-                          key={item.id}
-                          className="relative group/item"
-                        >
-                          <a
-                            href={item.href}
-                            onClick={() => setIsMegaMenuOpen(false)}
-                            className={`
-                              flex flex-col items-center gap-3 p-4 rounded-xl
-                              transition-all cursor-pointer
-                              ${isActive 
-                                ? 'bg-gradient-to-br from-cyan-500/30 to-cyan-500/10 border-2 border-cyan-500 shadow-lg shadow-cyan-500/20' 
-                                : 'hover:bg-zinc-800/50 border-2 border-transparent hover:border-zinc-700'
-                              }
-                            `}
-                          >
-                            <div className="relative">
-                              <div className={`
-                                p-3 rounded-xl transition-all
-                                ${isActive 
-                                  ? 'bg-cyan-500 text-zinc-950 shadow-lg' 
-                                  : 'bg-zinc-800 text-zinc-400 group-hover/item:bg-zinc-700 group-hover/item:text-white'
-                                }
-                              `}>
-                                <Icon size={24} />
-                              </div>
-                              {isPinned && (
-                                <div className="absolute -top-1 -right-1 p-1 bg-cyan-500 rounded-full">
-                                  <Pin size={10} className="text-zinc-950" />
-                                </div>
-                              )}
-                            </div>
-                            <span className={`
-                              text-xs font-bold uppercase tracking-wider text-center
-                              ${isActive ? 'text-cyan-400' : 'text-zinc-400 group-hover/item:text-white'}
-                            `}>
-                              {item.label}
-                            </span>
-                          </a>
-                          {/* Botón para fijar/desfijar */}
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              togglePin(item.id);
-                            }}
-                            className={`
-                              absolute top-2 right-2 p-1.5 rounded-lg transition-all opacity-0 group-hover/item:opacity-100
-                              ${isPinned
-                                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
-                                : canPin
-                                ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400'
-                                : 'bg-zinc-800/50 text-zinc-600 cursor-not-allowed'
-                              }
-                            `}
-                            title={isPinned ? 'Desfijar' : canPin ? 'Fijar en navbar' : 'Máximo 3 opciones fijadas'}
-                            disabled={!isPinned && !canPin}
-                          >
-                            {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {/* Botón Salir en megamenu */}
-                  <div className="mt-4 pt-4 border-t border-zinc-800">
+        {/* Fila 2 (desktop): rail de secciones agrupado, siempre visible */}
+        <div className="hidden md:block border-t border-zinc-900">
+          <div className="px-4 md:px-6 h-11 flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {groups.map((group, gi) => (
+              <React.Fragment key={group.label}>
+                {gi > 0 && <div className="w-px h-5 bg-zinc-800 mx-1.5 shrink-0" aria-hidden="true" />}
+                {group.items.length > 1 && (
+                  <span className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-600 mr-1 shrink-0 select-none">
+                    {group.label}
+                  </span>
+                )}
+                {group.items.map((item, ii) => {
+                  const isActive = page === item.id;
+                  return (
                     <a
-                      href={`/${organizationSlug}`}
-                      onClick={() => setIsMegaMenuOpen(false)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500/20 to-red-600/20 hover:from-red-500/30 hover:to-red-600/30 border-2 border-red-500/50 hover:border-red-500 rounded-xl text-red-400 hover:text-red-300 text-sm font-bold uppercase tracking-widest transition-all group"
+                      key={item.id}
+                      href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`an-item an-rail-item relative shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${
+                        isActive
+                          ? 'bg-cyan-500 text-zinc-950 shadow-[0_0_16px_-4px] shadow-cyan-500/60'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                      style={{ animationDelay: `${(gi * 4 + ii) * 20}ms` }}
                     >
-                      <X size={18} className="group-hover:rotate-90 transition-transform" />
-                      <span>Salir del Panel</span>
+                      {item.label}
+                      {!isActive && <span className="an-underline" aria-hidden="true" />}
                     </a>
-                  </div>
-                </div>
-              </div>
-            )}
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </nav>
 
-      {/* Menú móvil (overlay) */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[45] md:hidden">
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <aside 
-            className="admin-mobile-menu absolute left-0 top-0 h-full w-full max-w-sm border-r border-zinc-800 bg-zinc-950 overflow-y-auto shadow-2xl"
+      {/* Drawer móvil: secciones agrupadas, filas de 44px */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60"
+          style={{ animation: 'an-fade-in .15s ease-out both' }}
+          onClick={() => setDrawerOpen(false)}
+        >
+          <div
+            className="absolute inset-y-0 left-0 w-[300px] max-w-[85vw] bg-zinc-950 border-r border-zinc-800 flex flex-col"
+            style={{ animation: 'an-drawer-in .2s ease-out both' }}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Secciones del panel"
           >
-            <div className="p-6 border-b border-zinc-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles size={18} className="text-cyan-400" />
-                  Menú de Administración
-                </h2>
-                <span className="text-xs text-zinc-500">
-                  {pinnedItems.length}/3 fijados
-                </span>
-              </div>
+            <div className="flex items-center justify-between px-4 h-14 border-b border-zinc-900 shrink-0">
+              <span className="text-xs font-black text-white uppercase tracking-widest">Secciones</span>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center rounded-xl text-zinc-400 hover:text-white active:scale-95 transition-all"
+                aria-label="Cerrar"
+              >
+                <X size={20} />
+              </button>
             </div>
-            <nav className="p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = page === item.id;
-                  const isPinned = pinnedItems.includes(item.id);
-                  const canPin = !isPinned && pinnedItems.length < 3;
-                  
-                  return (
-                    <div
-                      key={item.id}
-                      className="relative group/item"
-                    >
+            <div className="flex-1 overflow-y-auto py-2 pb-[env(safe-area-inset-bottom)]">
+              {groups.map((group, gi) => (
+                <div key={group.label} className="px-2 mb-1" style={{ animation: `an-rail-in .25s ease-out ${gi * 40}ms both` }}>
+                  <p className="px-3 pt-3 pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 select-none">
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = page === item.id;
+                    return (
                       <a
+                        key={item.id}
                         href={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`
-                          flex flex-col items-center gap-2 p-4 rounded-xl 
-                          text-xs font-bold uppercase tracking-wider
-                          transition-all
-                          ${isActive 
-                            ? 'bg-cyan-500 text-zinc-950 shadow-lg shadow-cyan-500/20' 
-                            : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                          }
-                        `}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors active:scale-[0.98] ${
+                          isActive ? 'bg-cyan-500 text-zinc-950' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                        }`}
                       >
-                        <div className="relative">
-                          <Icon 
-                            size={24} 
-                            className={`flex-shrink-0 transition-transform group-hover/item:scale-110 ${isActive ? 'text-zinc-950' : ''}`}
-                          />
-                          {isPinned && (
-                            <div className="absolute -top-1 -right-1 p-1 bg-cyan-500 rounded-full">
-                              <Pin size={10} className="text-zinc-950" />
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-center leading-tight">{item.label}</span>
+                        <Icon size={17} className={isActive ? '' : 'text-zinc-500'} />
+                        {item.label}
                       </a>
-                      {/* Botón para fijar/desfijar en mobile */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          togglePin(item.id);
-                        }}
-                        className={`
-                          absolute top-2 right-2 p-1.5 rounded-lg transition-all
-                          ${isPinned
-                            ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 opacity-100'
-                            : canPin
-                            ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 opacity-100'
-                            : 'bg-zinc-800/50 text-zinc-600 opacity-50'
-                          }
-                        `}
-                        title={isPinned ? 'Desfijar' : canPin ? 'Fijar en navbar' : 'Máximo 3 opciones fijadas'}
-                        disabled={!isPinned && !canPin}
-                      >
-                        {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Botón Salir en menú móvil */}
-              <div className="mt-4 pt-4 border-t border-zinc-800">
-                <a
-                  href={`/${organizationSlug}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/20 hover:bg-red-500/30 border-2 border-red-500/50 hover:border-red-500 rounded-xl text-red-400 hover:text-red-300 text-sm font-bold uppercase tracking-widest transition-all group"
-                >
-                  <X size={18} className="group-hover:rotate-90 transition-transform" />
-                  <span>Salir del Panel</span>
+                    );
+                  })}
+                </div>
+              ))}
+              <div className="px-2 mt-2 pt-2 border-t border-zinc-900">
+                <a href={`/${organizationSlug}`} className="flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-sm font-bold text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors">
+                  <ExternalLink size={17} className="text-zinc-500" /> Ver mi scan
                 </a>
               </div>
-            </nav>
-          </aside>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paleta rápida (Ctrl+K): escribe y salta a la sección */}
+      {paletteOpen && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/60 flex items-start justify-center pt-[15vh] px-4"
+          style={{ animation: 'an-fade-in .12s ease-out both' }}
+          onClick={() => setPaletteOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
+            style={{ animation: 'an-pop-in .15s ease-out both' }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Ir a una sección"
+          >
+            <div className="flex items-center gap-2 px-4 border-b border-zinc-900">
+              <Search size={16} className="text-zinc-500 shrink-0" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setSelected(0); }}
+                onKeyDown={onPaletteKey}
+                placeholder="Escribe una sección… (mangas, finanzas, mensajes)"
+                className="w-full bg-transparent py-3.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none"
+                aria-label="Buscar sección"
+              />
+              <kbd className="hidden md:block text-[9px] font-bold bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 text-zinc-500 shrink-0">Esc</kbd>
+            </div>
+            <div className="max-h-[46vh] overflow-y-auto py-1.5">
+              {results.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-zinc-600">
+                  Nada coincide con "{query}". Prueba con "mangas" o "finanzas".
+                </p>
+              ) : (
+                results.map((item, i) => {
+                  const Icon = item.icon;
+                  const group = groups.find((g) => g.items.includes(item));
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => goTo(item.href)}
+                      onMouseEnter={() => setSelected(i)}
+                      className={`w-full flex items-center gap-3 px-4 min-h-[44px] text-left text-sm font-bold transition-colors ${
+                        i === selected ? 'bg-zinc-900 text-white' : 'text-zinc-400'
+                      }`}
+                    >
+                      <Icon size={16} className="text-zinc-500 shrink-0" />
+                      <span className="flex-1">{item.label}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{group?.label}</span>
+                      {i === selected && <CornerDownLeft size={13} className="text-zinc-500" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
     </>
@@ -538,4 +388,3 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
 };
 
 export default AdminNavbar;
-
