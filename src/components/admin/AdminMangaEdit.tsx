@@ -772,11 +772,21 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [showDeleteMangaModal, setShowDeleteMangaModal] = useState(false);
   const [deleteMangaConfirmText, setDeleteMangaConfirmText] = useState('');
   const [deletingManga, setDeletingManga] = useState(false);
+  // El slug de la obra vive en manga.slug (mangaCustom.slug no existe en el
+  // payload); sin este fallback el modal mostraba la confirmación vacía y el
+  // botón de eliminar nunca se habilitaba.
+  const deleteMangaSlug = mangaCustom?.manga?.slug || mangaCustom?.slug || '';
+  const copyDeleteSlug = () => {
+    navigator.clipboard.writeText(deleteMangaSlug).then(
+      () => toast.success('Copiado. Pégalo en el campo para confirmar.', { position: 'bottom-right' }),
+      () => toast.error('No se pudo copiar', { position: 'bottom-right' })
+    );
+  };
   const confirmDeleteManga = async () => {
-    if (deletingManga || deleteMangaConfirmText !== mangaCustom?.slug) return;
+    if (deletingManga || !deleteMangaSlug || deleteMangaConfirmText.trim() !== deleteMangaSlug) return;
     setDeletingManga(true);
     try {
-      await callAPI(`/api/manga-custom/${mangaCustom.slug}`, { method: 'DELETE' });
+      await callAPI(`/api/manga-custom/${deleteMangaSlug}`, { method: 'DELETE' });
       toast.success('Obra eliminada', { position: 'bottom-right' });
       window.location.href = `/${organizationSlug}/admin/mangas`;
     } catch (error: any) {
@@ -3183,18 +3193,36 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             <p className="text-zinc-400 text-xs mb-4 leading-relaxed">
               La obra y sus capítulos dejarán de ser visibles para los lectores (no se borran los archivos). Si la obra está en un joint activo, primero debe salir del joint.
             </p>
-            <p className="text-zinc-500 text-[11px] mb-2">Escribe <span className="text-white font-black">{mangaCustom?.slug}</span> para confirmar:</p>
+            <p className="text-zinc-400 text-xs mb-2">Para confirmar, escribe este texto tal cual (o cópialo con el botón):</p>
+            <div className="flex items-center gap-2 bg-zinc-950 border border-red-500/30 rounded-xl px-3 py-2.5 mb-2">
+              <code className="flex-1 text-red-300 text-sm font-bold break-all select-all">{deleteMangaSlug}</code>
+              <button
+                type="button"
+                onClick={copyDeleteSlug}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700 hover:text-white transition-colors active:scale-95"
+              >
+                Copiar
+              </button>
+            </div>
             <input
               value={deleteMangaConfirmText}
               onChange={(e) => setDeleteMangaConfirmText(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-white text-sm focus:border-red-500 outline-none mb-5"
-              placeholder={mangaCustom?.slug}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-white text-sm focus:border-red-500 outline-none mb-1"
+              placeholder="Escribe o pega aquí el texto de arriba"
+              aria-label="Confirmación de borrado"
             />
+            <p className={`text-[11px] mb-4 min-h-[16px] ${deleteMangaConfirmText && deleteMangaConfirmText.trim() !== deleteMangaSlug ? 'text-red-400' : 'text-zinc-600'}`}>
+              {deleteMangaConfirmText
+                ? deleteMangaConfirmText.trim() === deleteMangaSlug
+                  ? 'Coincide. Ya puedes eliminar la obra.'
+                  : 'Todavía no coincide con el texto de arriba.'
+                : 'El botón rojo se habilita cuando el texto coincida.'}
+            </p>
             <div className="flex items-center justify-end gap-2">
               <button onClick={() => setShowDeleteMangaModal(false)} disabled={deletingManga} className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Cancelar</button>
               <button
                 onClick={confirmDeleteManga}
-                disabled={deletingManga || deleteMangaConfirmText !== mangaCustom?.slug}
+                disabled={deletingManga || !deleteMangaSlug || deleteMangaConfirmText.trim() !== deleteMangaSlug}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-400 text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {deletingManga && <Loader2 size={14} className="animate-spin" />} Eliminar obra
