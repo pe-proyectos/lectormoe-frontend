@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Bookmark, X, SlidersHorizontal } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Bookmark, X, SlidersHorizontal, Trash2 } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import SortableMangaList, { READING_STATUS_META, READING_STATUS_KEYS, type ReadingStatus } from './SortableMangaList';
@@ -99,6 +99,23 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
 
   const [entries, setEntries] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
+  const [showClearListModal, setShowClearListModal] = useState(false);
+  const [clearingList, setClearingList] = useState(false);
+
+  const handleClearList = async () => {
+    setClearingList(true);
+    try {
+      await callAPI('/api/user-list/all', { method: 'DELETE' });
+      setEntries([]);
+      setTotal(0);
+      setPage(1);
+      setShowClearListModal(false);
+    } catch {
+      alert('No se pudo vaciar la lista. Intenta de nuevo.');
+    } finally {
+      setClearingList(false);
+    }
+  };
   const [maxPage, setMaxPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
@@ -512,12 +529,44 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
                   onClick={clearAll}
                   className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest ml-auto"
                 >
-                  <X size={12} /> Limpiar
+                  <X size={12} /> Limpiar filtros
+                </button>
+              )}
+              {isOwner && total > 0 && (
+                <button
+                  onClick={() => setShowClearListModal(true)}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-black text-zinc-600 hover:text-red-400 uppercase tracking-widest ${hasFilters ? '' : 'ml-auto'}`}
+                  title="Quitar todas las obras de tu lista"
+                >
+                  <Trash2 size={12} /> Vaciar lista
                 </button>
               )}
             </div>
           </div>
         </section>
+
+        {/* Modal: vaciar toda la lista personal */}
+        {showClearListModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4" onClick={() => !clearingList && setShowClearListModal(false)}>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-[24px] p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-black text-white mb-2">Vaciar mi lista</h3>
+              <p className="text-zinc-400 text-sm mb-1">
+                Se quitarán las <span className="text-white font-black">{total}</span> obras de tu lista, junto con su orden y estados de lectura.
+              </p>
+              <p className="text-zinc-500 text-xs mb-5">Las obras no se borran de la plataforma; puedes volver a agregarlas cuando quieras. Tus favoritos no se tocan.</p>
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={() => setShowClearListModal(false)} disabled={clearingList} className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Cancelar</button>
+                <button
+                  onClick={handleClearList}
+                  disabled={clearingList}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-400 text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-50"
+                >
+                  {clearingList && <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />} Vaciar lista
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* List */}
         <section className="max-w-5xl mx-auto px-4 md:px-8 py-8">

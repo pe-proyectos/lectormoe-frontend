@@ -6,6 +6,7 @@ import ScanTopThree from "./ScanTopThree";
 import ScanPopular24h from "./ScanPopular24h";
 import ScanRecentUpdates from "./ScanRecentUpdates";
 import ScanSidebar from "./ScanSidebar";
+import RecruitmentSpotlight from "./RecruitmentSpotlight";
 import Footer from "./Footer";
 import { callAPI } from "../../util/callApi";
 
@@ -359,6 +360,9 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
           />
         </div>
       </div>
+
+      {/* Anuncios de reclutamiento de este scan (si tiene abiertos) */}
+      {organization?.slug && <RecruitmentSpotlight scanSlug={organization.slug} logged={logged} />}
 
       <Footer
         organization={organization}

@@ -20,6 +20,7 @@ interface Post {
   language: string;
   urgent: boolean;
   status: string;
+  createdAt: string;
   updatedAt: string;
   organization: { name: string; slug: string; logoUrl: string | null; _count?: { followers: number } };
 }
@@ -34,7 +35,8 @@ const relTime = (iso: string) => {
   if (d < 1) return 'hoy';
   if (d === 1) return 'ayer';
   if (d < 30) return `hace ${d} días`;
-  return new Date(iso).toLocaleDateString('es');
+  const months = Math.floor(d / 30);
+  return `hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
 };
 
 const RecruitmentBoardPage: React.FC<Props> = ({ user, logged, nsfwMode = false }) => {
@@ -136,7 +138,10 @@ const RecruitmentBoardPage: React.FC<Props> = ({ user, logged, nsfwMode = false 
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {roles.map((r) => <span key={r} className="text-[11px] font-bold bg-cyan-500/10 text-cyan-300 rounded-md px-2 py-0.5">{ROLE_LABEL[r] || r}</span>)}
                       </div>
-                      <p className="text-[11px] text-zinc-500 mt-2">{LANG_LABEL[p.language] || p.language} · {relTime(p.updatedAt)}</p>
+                      <p className="text-[11px] text-zinc-500 mt-2">
+                        {LANG_LABEL[p.language] || p.language} · Publicado {relTime(p.createdAt)}
+                        {new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime() > 86400000 ? ` · actualizado ${relTime(p.updatedAt)}` : ''}
+                      </p>
                     </div>
                   </div>
 

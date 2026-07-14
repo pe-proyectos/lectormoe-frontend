@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Hero from './Hero';
 import TrendingSection from './TrendingSection';
 import RecentlyAdded from './RecentlyAdded';
+import RecruitmentSpotlight from './RecruitmentSpotlight';
 import LatestUpdates from './LatestUpdates';
 import PerOrgPopular from './PerOrgPopular';
 import ScansSection from './ScansSection';
@@ -113,6 +114,9 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
             <RecentlyAdded user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 
             <LatestUpdates user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
+
+            {/* Scans reclutando (muestra aleatoria del mural) */}
+            {!isWritings && <RecruitmentSpotlight logged={logged} />}
 
             {!isWritings && (
               <div className="grid md:grid-cols-2 gap-0">
