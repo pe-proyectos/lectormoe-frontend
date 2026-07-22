@@ -2228,7 +2228,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         <input
                           type="text"
                           value={newChapter.number}
-                          onChange={(e) => setNewChapter({...newChapter, number: e.target.value})}
+                          onChange={(e) => setNewChapter((prev) => ({ ...prev, number: e.target.value }))}
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none"
                           placeholder="23"
                         />
@@ -2254,7 +2254,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                           type="number"
                           min={1}
                           value={newChapter.volumeNumber}
-                          onChange={(e) => setNewChapter({...newChapter, volumeNumber: e.target.value})}
+                          onChange={(e) => setNewChapter((prev) => ({ ...prev, volumeNumber: e.target.value }))}
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none"
                           placeholder="Ej. 3"
                         />
@@ -2264,7 +2264,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         <input
                           type="text"
                           value={newChapter.title}
-                          onChange={(e) => setNewChapter({...newChapter, title: e.target.value})}
+                          onChange={(e) => setNewChapter((prev) => ({ ...prev, title: e.target.value }))}
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white font-bold focus:border-cyan-500 outline-none" 
                           placeholder="Capítulo 23"
                         />
@@ -2281,7 +2281,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             input.onchange = (e: any) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                setNewChapter({...newChapter, thumbnail: file});
+                                setNewChapter((prev) => ({ ...prev, thumbnail: file }));
                               }
                             };
                             input.click();
@@ -2313,7 +2313,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </label>
                       <DateTimePicker
                         value={newChapter.releaseDate}
-                        onChange={(value) => setNewChapter({...newChapter, releaseDate: value || ''})}
+                        onChange={(value) => setNewChapter((prev) => ({ ...prev, releaseDate: value || '' }))}
                         disabled={newChapter.isUnreleased}
                         showTime={true}
                       />
@@ -2335,13 +2335,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                           checked={newChapter.isUnreleased}
                           onChange={(e) => {
                             const isUnreleased = e.target.checked;
-                            setNewChapter({
-                              ...newChapter, 
+                            setNewChapter((prev) => ({
+                              ...prev,
                               isUnreleased,
                               // Si se marca isUnreleased, releasedAt debe ser null
                               // Si se desmarca, releasedAt debe ser la fecha actual en formato local
                               releaseDate: isUnreleased ? '' : getCurrentLocalDatetimeString()
-                            });
+                            }));
                           }}
                           className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-zinc-950"
                         />
@@ -2682,7 +2682,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <input 
                       type="text" 
                       value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-xl font-black italic tracking-tighter uppercase focus:border-cyan-500 transition-all outline-none"
                       placeholder="One Punch-Man"
                     />
@@ -2703,7 +2703,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       value={formData.shortDescription}
                       onChange={(e) => {
                         if (e.target.value.length <= 300) {
-                          setFormData({...formData, shortDescription: e.target.value});
+                          setFormData((prev) => ({ ...prev, shortDescription: e.target.value }));
                         }
                       }}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm leading-relaxed focus:border-cyan-500 transition-all outline-none resize-none"
@@ -2717,7 +2717,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <textarea 
                       rows={6}
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-3xl py-4 px-6 text-white text-sm leading-relaxed focus:border-cyan-500 transition-all outline-none resize-none"
                       placeholder="La historia tiene lugar en una de las metrópolis de ficción de la Tierra, la Ciudad-Z..."
                     />
@@ -2731,7 +2731,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       multiple
                       options={genres}
                       value={formData.genres}
-                      onChange={(_, newValue) => setFormData({...formData, genres: newValue as any[]})}
+                      onChange={(_, newValue) => setFormData((prev) => ({ ...prev, genres: newValue as any[] }))}
                       getOptionLabel={(option: any) => option.name || option.title || String(option)}
                       isOptionEqualToValue={(option: any, value: any) => option.id === value.id}
                       placeholder="Géneros..."
@@ -2754,7 +2754,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       multiple
                       options={subscriptionPlans || []}
                       value={formData.subscriptionPlansCanReadUnreleased || []}
-                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlansCanReadUnreleased: (newValue as any[]) || []})}
+                      onChange={(_, newValue) => setFormData((prev) => ({ ...prev, subscriptionPlansCanReadUnreleased: (newValue as any[]) || [] }))}
                       getOptionLabel={(option: any) => option?.name || option?.title || String(option || '')}
                       isOptionEqualToValue={(option: any, value: any) => option?.id === value?.id}
                       placeholder="Suscripciones con Acceso Anticipado..."
@@ -2772,7 +2772,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       multiple
                       options={subscriptionPlans || []}
                       value={formData.subscriptionPlansCanReadReleased || []}
-                      onChange={(_, newValue) => setFormData({...formData, subscriptionPlansCanReadReleased: (newValue as any[]) || []})}
+                      onChange={(_, newValue) => setFormData((prev) => ({ ...prev, subscriptionPlansCanReadReleased: (newValue as any[]) || [] }))}
                       getOptionLabel={(option: any) => option?.name || option?.title || String(option || '')}
                       isOptionEqualToValue={(option: any, value: any) => option?.id === value?.id}
                       placeholder="Suscripciones que pueden leer capítulos publicados..."
@@ -2803,7 +2803,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Estado de la obra</label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:border-cyan-500 transition-all outline-none"
                     >
                       <option value="ongoing">En emisión</option>
@@ -2818,7 +2818,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Tipo de lectura</label>
                     <select
                       value={formData.workType}
-                      onChange={(e) => setFormData({...formData, workType: e.target.value})}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, workType: e.target.value }))}
                       disabled={isWriting}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:border-cyan-500 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
                     >
@@ -2842,7 +2842,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     </label>
                     <DateTimePicker
                       value={formData.releasedAt}
-                      onChange={(value) => setFormData({...formData, releasedAt: value})}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, releasedAt: value }))}
                       showTime={true}
                     />
                   </div>
@@ -2856,7 +2856,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     </label>
                     <DateTimePicker
                       value={formData.nextChapterAt}
-                      onChange={(value) => setFormData({...formData, nextChapterAt: value})}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, nextChapterAt: value }))}
                       showTime={true}
                     />
                   </div>
@@ -2869,7 +2869,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <input
                       type="text"
                       value={formData.nextChapterAtMessage}
-                      onChange={(e) => setFormData({...formData, nextChapterAtMessage: e.target.value})}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, nextChapterAtMessage: e.target.value }))}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm font-bold focus:border-cyan-500 outline-none"
                       placeholder="Ej: ¡Próximo capítulo el 15 de marzo!"
                     />
@@ -2884,7 +2884,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black text-white uppercase tracking-widest">{isWriting ? 'Novela con simul release' : 'Manga con simul release'}</span>
                         <div 
-                          onClick={() => setFormData({...formData, isSimulRelease: !formData.isSimulRelease})}
+                          onClick={() => setFormData((prev) => ({ ...prev, isSimulRelease: !formData.isSimulRelease }))}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isSimulRelease ? 'bg-cyan-500' : 'bg-zinc-800'}`}
                         >
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isSimulRelease ? 'right-1' : 'left-1'}`} />
@@ -2901,7 +2901,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Manga +18</span>
                         <div
-                          onClick={() => setFormData({...formData, isNSFW: !formData.isNSFW})}
+                          onClick={() => setFormData((prev) => ({ ...prev, isNSFW: !formData.isNSFW }))}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isNSFW ? 'bg-red-500' : 'bg-zinc-800'}`}
                         >
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isNSFW ? 'right-1' : 'left-1'}`} />
@@ -2918,7 +2918,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black text-white uppercase tracking-widest">Requiere inicio de sesión (Opcional)</span>
                         <div
-                          onClick={() => setFormData({...formData, requireLogin: !formData.requireLogin})}
+                          onClick={() => setFormData((prev) => ({ ...prev, requireLogin: !formData.requireLogin }))}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.requireLogin ? 'bg-yellow-500' : 'bg-zinc-800'}`}
                         >
                           <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.requireLogin ? 'right-1' : 'left-1'}`} />
