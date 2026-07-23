@@ -3,6 +3,7 @@
 // import SorteoModal from '../components/landing/SorteoModal';
 import DiscordInviteModal from '../components/landing/DiscordInviteModal';
 import MobileTabBar from '../components/ui/MobileTabBar';
+import GlobalToaster from '../components/ui/GlobalToaster';
 import { resolveAdsProvider } from '../util/ads-provider';
 
 interface Props {
@@ -129,6 +130,7 @@ const siteName =
   </head>
   <body>
     <slot />
+    <GlobalToaster client:only="react" />
     {!hideTabBar && <div class="h-16 md:hidden" aria-hidden="true"></div>}
     {!hideTabBar && (
       <MobileTabBar
@@ -184,6 +186,49 @@ const siteName =
       width: 0;
       height: 0;
     }
+    /* Rebote de fin de scroll contenido: evita que el WebView (Capacitor) tire
+       de toda la página al hacer overscroll dentro de un panel. */
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+    /* El chrome de la interfaz (barras, botones, etiquetas) no debe poder
+       seleccionarse con long-press como si fuera texto: se siente app nativa.
+       El contenido real de lectura sí queda seleccionable vía .selectable-text. */
+    nav,
+    header,
+    footer,
+    button,
+    [role="button"],
+    label {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+  }
+  /* Scroll con inercia en contenedores desplazables (carruseles, listas). */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Reactiva selección donde sí importa (texto de novelas, comentarios). */
+  .selectable-text {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  /* Área táctil mínima accesible (44x44) sin alterar el layout visual. */
+  .tap-target {
+    position: relative;
+  }
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    inset: 50% 50% 50% 50%;
+    min-width: 44px;
+    min-height: 44px;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
   }
   /* Utilidad de rendimiento para filas de listas largas (Tarea 19e) */
   .cv-auto {
