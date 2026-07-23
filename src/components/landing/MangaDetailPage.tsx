@@ -21,6 +21,7 @@ import MilestoneAlertButton from "./MilestoneAlertButton";
 import MangaReviews from "./MangaReviews";
 import ReportButton from "./ReportButton";
 import AddToListButton from "./AddToListButton";
+import DownloadButton from "../app/DownloadButton";
 import { formatDate as formatDateUtil } from "../../util/date";
 import CommentsSection from "./CommentsSection";
 import NSFWAgeModal from "./NSFWAgeModal";
@@ -1184,6 +1185,22 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 logged={logged}
                 scanSlug={organization?.slug}
               />
+            )}
+
+            {/* Descargar para leer sin conexión — solo móvil/app (desktop intacto).
+                Solo obras con imágenes (no novelas). */}
+            {!isWriting && organization?.slug && (
+              <div className="md:hidden">
+                <DownloadButton
+                  user={user}
+                  scanSlug={organization.slug}
+                  mangaSlug={mangaSlug}
+                  title={(manga as any).title || (manga as any)?.manga?.title || 'Manga'}
+                  coverUrl={(manga as any).imageUrl || (manga as any)?.manga?.imageUrl || ''}
+                  chapters={(manga.chapters || []).map((c: any) => ({ number: c.number, title: c.title, isUnreleased: c.isUnreleased }))}
+                  isJoint={isJoint}
+                />
+              </div>
             )}
 
             {/* Reportar contenido (discreto) */}

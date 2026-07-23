@@ -217,6 +217,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "listas",
     "reclutamiento",
     "mensajes",
+    "descargas",
+    "app",
   ];
 
   // Extraer el primer segmento de la ruta

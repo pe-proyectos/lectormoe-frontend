@@ -1,0 +1,17 @@
+---
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import DownloadsLibrary from '../../components/app/DownloadsLibrary';
+
+// Punto de entrada offline (usado por el shell de la app Android en arranque en
+// frío sin conexión). Muestra la biblioteca de descargas directamente.
+// @ts-ignore
+const { user } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Sin conexión" showAds={false}>
+  <div class="max-w-3xl mx-auto px-4 pt-4">
+    <p class="text-amber-400 text-xs font-black uppercase tracking-widest">Sin conexión</p>
+  </div>
+  <DownloadsLibrary user={user} logged={logged} client:only="react" />
+</LandingLayout>
