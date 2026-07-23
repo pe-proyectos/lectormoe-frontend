@@ -8,6 +8,14 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - mobile-app-overhaul
+    paths:
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'capacitor-shell/**'
+      - '.github/workflows/android.yml'
+      - 'package.json'
 
 jobs:
   build:
