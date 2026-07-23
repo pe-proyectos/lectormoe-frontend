@@ -23,3 +23,9 @@ bun.lock
 
 # API code (for type inference only, not committed to git)
 lectormoe-api/Screenshot_*.jpg
+
+# Capacitor / Android firma — NUNCA commitear secretos
+keystore.properties
+*.keystore
+*.jks
+android/app/google-services.json
