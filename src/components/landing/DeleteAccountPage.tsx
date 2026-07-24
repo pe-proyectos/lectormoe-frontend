@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, ShieldAlert, Loader2, CheckCircle2, LogIn } from 'lucide-react';
+import { Trash2, ShieldAlert, Loader2, CheckCircle2, LogIn, Eraser } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface Props { user?: any; logged?: boolean }
@@ -13,6 +13,20 @@ const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [clearingData, setClearingData] = useState(false);
+
+  const clearData = async () => {
+    if (!confirm('Se borrarán tu lista, favoritos, notificaciones e historial de lectura. Tu cuenta seguirá activa. ¿Continuar?')) return;
+    setClearingData(true);
+    try {
+      await callAPI('/api/user/delete-data', { method: 'POST' });
+      alert('Tus datos de actividad fueron eliminados. Tu cuenta sigue activa.');
+    } catch (e: any) {
+      alert(e?.message || 'No se pudieron borrar los datos.');
+    } finally {
+      setClearingData(false);
+    }
+  };
 
   const submit = async () => {
     if (confirmText.trim().toUpperCase() !== 'ELIMINAR') { setError('Escribe ELIMINAR para confirmar.'); return; }
@@ -62,9 +76,27 @@ const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
             <p className="text-zinc-500 text-sm mt-1">Cerrando sesión…</p>
           </div>
         ) : logged ? (
+          <>
+          {/* Opción 1: borrar solo los datos, conservando la cuenta. */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Eraser size={16} className="text-amber-400" />
+              <p className="text-sm font-black text-white">Borrar mis datos (mantener la cuenta)</p>
+            </div>
+            <p className="text-zinc-500 text-sm mb-4">Elimina tu lista personal, favoritos, notificaciones e historial de lectura. Tu cuenta sigue activa y puedes seguir usándola.</p>
+            <button
+              onClick={clearData}
+              disabled={clearingData}
+              className="inline-flex items-center gap-2 border border-amber-500/30 text-amber-400 hover:bg-amber-500 hover:text-zinc-950 rounded-xl px-5 py-2.5 min-h-[44px] font-black text-[10px] uppercase tracking-widest transition-colors disabled:opacity-50"
+            >
+              {clearingData ? <Loader2 size={15} className="animate-spin" /> : <Eraser size={15} />} Borrar mis datos de actividad
+            </button>
+          </div>
+
+          {/* Opción 2: eliminar la cuenta por completo. */}
           <div className="bg-zinc-900 border border-red-500/20 rounded-2xl p-5">
             <p className="text-zinc-300 text-sm mb-4">
-              Sesión iniciada como <span className="font-black text-white">@{user?.username}</span>. Para confirmar, ingresa tu contraseña y escribe <span className="font-black text-white">ELIMINAR</span>.
+              <span className="font-black text-white">Eliminar la cuenta.</span> Sesión iniciada como <span className="font-black text-white">@{user?.username}</span>. Para confirmar, ingresa tu contraseña y escribe <span className="font-black text-white">ELIMINAR</span>.
             </p>
             <input
               type="password"
@@ -88,6 +120,7 @@ const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
               {busy ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />} Eliminar mi cuenta permanentemente
             </button>
           </div>
+          </>
         ) : (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <p className="text-zinc-300 text-sm mb-4">
