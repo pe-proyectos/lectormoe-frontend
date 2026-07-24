@@ -129,7 +129,7 @@ const ScansButtonsSection: React.FC<Props> = ({ onNavigate, nsfwMode = false, us
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 relative z-30 space-y-3">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 mt-12 relative z-30 space-y-3">
         <div className="flex flex-wrap items-center justify-center gap-3">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="h-10 w-24 bg-zinc-900/80 rounded-full animate-pulse" />
@@ -140,7 +140,7 @@ const ScansButtonsSection: React.FC<Props> = ({ onNavigate, nsfwMode = false, us
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 relative z-30 space-y-4">
+    <div className="max-w-7xl mx-auto px-3 md:px-8 mt-12 relative z-30 space-y-4">
       {/* Top 10 trending — scans with most new followers this week */}
       <div className="flex flex-wrap items-center justify-center gap-3">
         {trendingScans.map(scan => (

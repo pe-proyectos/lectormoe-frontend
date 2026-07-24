@@ -49,7 +49,7 @@ const ScrollableCardRow: React.FC<ScrollableCardRowProps> = ({
       <div
         ref={ref}
         style={{ ['--scroll-item-width' as any]: mobileItemWidth }}
-        className={`grid grid-flow-col auto-cols-[var(--scroll-item-width)] overflow-x-auto sm:overflow-visible sm:grid-flow-row sm:auto-cols-auto ${desktopCols} ${gapClass} px-9 sm:px-0 scroll-smooth scrollbar-thin`}
+        className={`hscroll grid grid-flow-col auto-cols-[var(--scroll-item-width)] overflow-x-auto sm:overflow-visible sm:grid-flow-row sm:auto-cols-auto sm:[touch-action:auto] sm:[scroll-snap-type:none] ${desktopCols} ${gapClass} px-4 sm:px-0 scroll-smooth scrollbar-thin`}
       >
         {children}
       </div>

@@ -35,7 +35,7 @@ const ContinueReading: React.FC = () => {
   };
 
   return (
-    <section className="max-w-[1600px] mx-auto px-4 md:px-8 pt-8 pb-2">
+    <section className="max-w-[1600px] mx-auto px-3 md:px-8 pt-8 pb-2">
       <div className="flex items-center gap-2 mb-3">
         <BookOpen size={14} className="text-cyan-400" />
         <span className="text-cyan-400 font-bold uppercase tracking-[0.2em] text-[10px]">
@@ -45,7 +45,7 @@ const ContinueReading: React.FC = () => {
       <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none mb-4">
         Continuar leyendo
       </h2>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+      <div className="hscroll flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
         {entries.map((entry, i) => (
           <a
             key={i}

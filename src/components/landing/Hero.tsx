@@ -123,7 +123,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
   if (loading || mangas.length === 0) {
     return (
       <div className="relative h-[550px] md:h-[600px] w-full bg-zinc-950 overflow-hidden pt-20">
-        <div className="relative z-10 h-full max-w-7xl mx-auto px-4 md:px-8 flex items-center">
+        <div className="relative z-10 h-full max-w-7xl mx-auto px-3 md:px-8 flex items-center">
           <div className="w-full h-64 bg-zinc-900 rounded-2xl animate-pulse" />
         </div>
       </div>
@@ -145,7 +145,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-transparent to-transparent" />
       </div>
 
-      <div className="relative z-10 h-full max-w-7xl mx-auto px-4 md:px-8 flex items-center">
+      <div className="relative z-10 h-full max-w-7xl mx-auto px-3 md:px-8 flex items-center">
         <div className="grid lg:grid-cols-12 gap-8 items-center w-full">
           
           {/* Text Content - Compressed for smaller height */}

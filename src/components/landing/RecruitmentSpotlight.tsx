@@ -63,7 +63,7 @@ const RecruitmentSpotlight: React.FC<Props> = ({ scanSlug, logged, maxItems }) =
   if (posts.length === 0) return null;
 
   return (
-    <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-8">
+    <section className="max-w-[1600px] mx-auto px-3 md:px-8 py-8">
       <div className="flex items-end justify-between gap-4 mb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-orange-400 font-bold uppercase tracking-[0.2em] text-[10px]">

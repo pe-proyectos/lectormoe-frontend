@@ -81,7 +81,7 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
 
   if (loading) {
     return (
-      <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
+      <section className="max-w-[1600px] mx-auto px-3 md:px-8 py-16">
         <div className="space-y-1 mb-8">
           <div className="h-3 bg-zinc-800 rounded w-32 animate-pulse" />
           <div className="h-8 bg-zinc-800 rounded w-64 animate-pulse" />
@@ -104,7 +104,7 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
   if (mangas.length === 0) return null;
 
   return (
-    <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
+    <section className="max-w-[1600px] mx-auto px-3 md:px-8 py-16">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-cyan-500 font-bold uppercase tracking-[0.2em] text-[10px]">

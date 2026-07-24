@@ -392,7 +392,7 @@ const Navbar: React.FC<NavbarProps> = ({
           : "bg-transparent py-5"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 flex items-center justify-between">
         {/* Branding Area Contextual */}
         <div className="flex items-center gap-6">
           <div

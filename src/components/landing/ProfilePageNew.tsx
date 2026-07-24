@@ -819,7 +819,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-zinc-950 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+      <div className="max-w-7xl mx-auto px-3 md:px-8">
 
         {/* Profile Header */}
         <div className="relative mb-12">

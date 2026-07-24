@@ -75,7 +75,7 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
         {isHome && (
           <>
             {isWritings ? (
-              <section className="max-w-[1600px] mx-auto px-4 md:px-8 pt-32 pb-12 text-center">
+              <section className="max-w-[1600px] mx-auto px-3 md:px-8 pt-32 pb-12 text-center">
                 <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase text-white">
                   Novelas y libros
                 </h1>

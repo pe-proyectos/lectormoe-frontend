@@ -63,7 +63,7 @@ const TopCommenters: React.FC = () => {
   };
 
   return (
-    <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
+    <section className="max-w-[1600px] mx-auto px-3 md:px-8 py-16">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-purple-500 font-bold uppercase tracking-[0.2em] text-[10px]">

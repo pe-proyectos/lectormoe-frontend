@@ -92,7 +92,7 @@ const ScanStatsBar: React.FC<ScanStatsBarProps> = ({ organization, user, logged 
 
   return (
     <div className="bg-zinc-900/50 border-b border-zinc-800 py-4">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-wrap items-center justify-center gap-4 md:justify-between md:gap-0">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 flex flex-wrap items-center justify-center gap-4 md:justify-between md:gap-0">
         <div className="flex items-center gap-6">
           <div className="hidden md:flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">

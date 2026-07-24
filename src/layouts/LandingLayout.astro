@@ -4,6 +4,7 @@
 import DiscordInviteModal from '../components/landing/DiscordInviteModal';
 import MobileTabBar from '../components/ui/MobileTabBar';
 import GlobalToaster from '../components/ui/GlobalToaster';
+import PullToRefresh from '../components/ui/PullToRefresh';
 import { resolveAdsProvider } from '../util/ads-provider';
 
 interface Props {
@@ -131,6 +132,7 @@ const siteName =
   <body>
     <slot />
     <GlobalToaster client:only="react" />
+    {!hideTabBar && <PullToRefresh client:only="react" />}
     {!hideTabBar && <div class="h-16 md:hidden" aria-hidden="true"></div>}
     {!hideTabBar && (
       <MobileTabBar
@@ -209,6 +211,19 @@ const siteName =
   /* Scroll con inercia en contenedores desplazables (carruseles, listas). */
   .momentum-scroll {
     -webkit-overflow-scrolling: touch;
+  }
+  /* Carrusel horizontal con tacto nativo: inercia, snap suave, y touch-action
+     pan-x para que el swipe vertical pase a la página (no lo secuestre el riel)
+     y el horizontal mueva el carrusel. overscroll-x contain evita arrastrar
+     toda la vista al llegar al borde. */
+  .hscroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    touch-action: pan-x;
+  }
+  .hscroll > * {
+    scroll-snap-align: start;
   }
   /* Reactiva selección donde sí importa (texto de novelas, comentarios). */
   .selectable-text {

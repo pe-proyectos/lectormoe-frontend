@@ -269,6 +269,26 @@ export function Reader({
     [visiblePageNumbers]
   );
 
+  // Precarga de páginas vecinas en modo paginado: mantiene en caché las 2
+  // siguientes y la anterior para que el cambio de página sea instantáneo
+  // (sin flash en blanco). No monta nada extra ni altera la visibilidad; solo
+  // calienta la caché del navegador con Image().
+  useEffect(() => {
+    if (settings.readType === readTypes.CASCADE) return;
+    if (!chapterData.pages.length) return;
+    const idx = chapterData.pages.findIndex((p) => p.number === currentPage);
+    if (idx === -1) return;
+    const toWarm = [idx + 1, idx + 2, idx - 1];
+    for (const i of toWarm) {
+      const p = chapterData.pages[i];
+      if (p?.imageUrl) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = p.imageUrl;
+      }
+    }
+  }, [currentPage, chapterData.pages, settings.readType, readTypes.CASCADE]);
+
   // Callbacks para settings - estables
   const handleSetReadType = useCallback((type) => {
     localStorage.setItem("readType", type);
@@ -333,18 +353,16 @@ export function Reader({
     setOpenPagesDialog((prev) => !prev);
   }, []);
 
-  const handlePageClick = useCallback(
-    (evt) => {
-      const clickedRight = evt.clientX > window.innerWidth / 2;
-      const isGoingForward = settings.readingDirection === 'ltr' ? clickedRight : !clickedRight;
+  // Avanza/retrocede una página en modo paginado. Compartido por el toque en
+  // zonas (izq/der), el swipe horizontal y el teclado.
+  const stepPaginated = useCallback(
+    (isGoingForward) => {
       const currentPageIndex = chapterData.pages.findIndex(
         (p) => p.number === currentPage
       );
-
       if (currentPageIndex === -1) return;
 
       let targetIndex;
-
       if (isGoingForward) {
         const isSideBySide = shouldRenderSideBySide(
           currentPageIndex,
@@ -363,10 +381,48 @@ export function Reader({
       const targetPage = chapterData.pages[targetIndex];
       if (targetPage) {
         setCurrentPage(targetPage.number);
-        location.href = "#manga-pages-top";
+        // scrollIntoView en vez de location.href="#..." para no ensuciar el
+        // historial en cada toque (rompería el botón atrás en Android).
+        document.getElementById("manga-pages-top")?.scrollIntoView({ block: "start" });
       }
     },
-    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth, settings.readingDirection]
+    [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth]
+  );
+
+  // Swipe horizontal en modo paginado. touchStart/End sobre la capa de toque.
+  const swipeRef = useRef({ x: 0, y: 0, swiped: false });
+  const handlePageTouchStart = useCallback((e) => {
+    const t = e.touches[0];
+    swipeRef.current = { x: t.clientX, y: t.clientY, swiped: false };
+  }, []);
+  const handlePageTouchEnd = useCallback(
+    (e) => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - swipeRef.current.x;
+      const dy = t.clientY - swipeRef.current.y;
+      // Swipe válido: horizontal, suficientemente largo y más horizontal que vertical.
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        swipeRef.current.swiped = true; // evita que el onClick posterior navegue de nuevo
+        const swipedLeft = dx < 0;
+        const isGoingForward = settings.readingDirection === 'ltr' ? swipedLeft : !swipedLeft;
+        stepPaginated(isGoingForward);
+      }
+    },
+    [settings.readingDirection, stepPaginated]
+  );
+
+  const handlePageClick = useCallback(
+    (evt) => {
+      // Si el gesto fue un swipe, no navegar otra vez con el tap sintético.
+      if (swipeRef.current.swiped) {
+        swipeRef.current.swiped = false;
+        return;
+      }
+      const clickedRight = evt.clientX > window.innerWidth / 2;
+      const isGoingForward = settings.readingDirection === 'ltr' ? clickedRight : !clickedRight;
+      stepPaginated(isGoingForward);
+    },
+    [settings.readingDirection, stepPaginated]
   );
 
   // Anti doble disparo al encadenar capítulos con el teclado.
@@ -426,7 +482,7 @@ export function Reader({
       const targetPage = chapterData.pages[targetIndex];
       if (targetPage) {
         setCurrentPage(targetPage.number);
-        location.href = '#manga-pages-top';
+        document.getElementById("manga-pages-top")?.scrollIntoView({ block: "start" });
         return;
       }
       // Sin más páginas: encadenar al capítulo siguiente/anterior.
@@ -1443,7 +1499,10 @@ export function Reader({
               {settings.readType === readTypes.PAGINATED && (
                 <div
                   className="absolute inset-0 z-10 cursor-pointer"
+                  style={{ touchAction: 'pan-y' }}
                   onClick={handlePageClick}
+                  onTouchStart={handlePageTouchStart}
+                  onTouchEnd={handlePageTouchEnd}
                 />
               )}
               {renderedPages}

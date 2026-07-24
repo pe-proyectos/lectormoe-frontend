@@ -1128,7 +1128,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-32 md:-mt-48 relative z-10">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 -mt-32 md:-mt-48 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* SECCION IZQUIERDA (SIDEBAR) */}
           <div className="lg:col-span-3 space-y-8">
@@ -1803,7 +1803,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                       </button>
                       <div
                         ref={rangePickerRef}
-                        className="flex lg:block gap-2 lg:gap-0 lg:space-y-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 px-8 lg:px-0 scroll-smooth scrollbar-thin"
+                        className="hscroll lg:[touch-action:auto] lg:[scroll-snap-type:none] flex lg:block gap-2 lg:gap-0 lg:space-y-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 px-4 lg:px-0 scroll-smooth scrollbar-thin"
                       >
                         {Object.values(chapterGroups)
                           .sort((a, b) => b.from - a.from)
