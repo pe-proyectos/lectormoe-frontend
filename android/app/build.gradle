@@ -7,7 +7,9 @@ android {
         applicationId "com.capibaratraductor.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // versionCode: entero único por subida a Play. Play rechaza reutilizar
+        // uno ya consumido, así que SUBE ESTE +1 en cada nueva versión.
+        versionCode 2
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
