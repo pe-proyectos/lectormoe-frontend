@@ -651,9 +651,15 @@ const ReportsTab = ({ token }: { token: string }) => {
   };
   useEffect(() => { load(); }, [token, statusFilter]);
 
-  const act = async (id: number, action: 'dismiss' | 'hide_content' | 'delete_notify') => {
+  const act = async (id: number, action: 'dismiss' | 'hide_content' | 'delete_notify' | 'restore') => {
     let resolutionNote: string | undefined;
     if (action === 'hide_content' && !confirm('Se ocultará el contenido al público y se marcarán los reportes como atendidos.')) return;
+    if (action === 'restore') {
+      if (!confirm('La obra volverá a ser visible para los lectores y el reporte quedará como descartado. ¿Continuar?')) return;
+      const motivo = prompt('Motivo de la reactivación (opcional, queda en el historial):', 'El reporte resultó falso; el tema se aclaró.');
+      if (motivo === null) return;
+      resolutionNote = motivo.trim() || undefined;
+    }
     if (action === 'delete_notify') {
       const reason = prompt('Razón del borrado (se enviará al scan por correo y notificación):');
       if (reason === null) return;
@@ -688,6 +694,8 @@ const ReportsTab = ({ token }: { token: string }) => {
           {reports.map((r) => {
             const target = r.mangaCustom || r.joint;
             const targetUrl = r.mangaCustom ? `/${r.mangaCustom.organization?.slug}/manga/${r.mangaCustom.manga?.slug}` : r.joint ? `/joint/manga/${r.joint.slug}` : '#';
+            // La obra está oculta al público si tiene deletedAt (soft delete).
+            const isHidden = !!target?.deletedAt;
             return (
               <div key={r.id} className="flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-xl p-3">
                 {target?.imageUrl && <img src={target.imageUrl} alt="" className="w-10 h-14 object-cover rounded" />}
@@ -697,17 +705,24 @@ const ReportsTab = ({ token }: { token: string }) => {
                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${r.category === 'menores' ? 'bg-red-500/20 text-red-400' : 'bg-zinc-800 text-zinc-400'}`}>{catLabel[r.category] || r.category}</span>
                     {r.reportsForTarget > 1 && <span className="text-[10px] text-zinc-500">{r.reportsForTarget} reportes</span>}
                     {r.status !== 'pending' && <span className="text-[10px] text-zinc-600">{r.status}</span>}
+                    {isHidden && <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">Oculta</span>}
                   </div>
                   <p className="text-zinc-500 text-xs">{r.mangaCustom?.organization?.name} · por @{r.reporter?.slug}</p>
                   {r.details && <p className="text-zinc-400 text-xs mt-1 truncate">{r.details}</p>}
                 </div>
-                {r.status === 'pending' && (
+                {r.status === 'pending' ? (
                   <div className="flex items-center gap-2 shrink-0">
                     <button onClick={() => act(r.id, 'delete_notify')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra y avisa al scan (correo + notificación) con la razón">Borrar y notificar</button>
                     <button onClick={() => act(r.id, 'hide_content')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra sin avisar al scan">Ocultar</button>
                     <button onClick={() => act(r.id, 'dismiss')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">Descartar</button>
                   </div>
-                )}
+                ) : isHidden ? (
+                  /* Reporte ya atendido y la obra sigue oculta: permitir deshacerlo
+                     cuando el reporte resultó falso o el tema se aclaró. */
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => act(r.id, 'restore')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 border border-green-500/25 hover:bg-green-500 hover:text-zinc-950 text-[10px] font-black uppercase tracking-widest transition-colors" title="Vuelve a hacer visible la obra para los lectores">Reactivar</button>
+                  </div>
+                ) : null}
               </div>
             );
           })}
