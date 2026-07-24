@@ -143,7 +143,7 @@ const ScansDirectoryPage: React.FC<Props> = ({ user, logged, nsfwMode = false })
       <main className="pt-20">
         {/* Header */}
         <section className="border-b border-zinc-900 bg-gradient-to-b from-zinc-900/30 to-transparent">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-16">
+          <div className="max-w-7xl mx-auto px-3 md:px-8 py-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
               Directorio Completo
             </div>
@@ -158,7 +158,7 @@ const ScansDirectoryPage: React.FC<Props> = ({ user, logged, nsfwMode = false })
 
         {/* Controls */}
         <section className="border-b border-zinc-900 bg-zinc-950 sticky top-16 z-20 backdrop-blur-xl">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center gap-3">
+          <div className="max-w-7xl mx-auto px-3 md:px-8 py-4 flex flex-col md:flex-row md:items-center gap-3">
             <div className="relative flex-1">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
@@ -203,7 +203,7 @@ const ScansDirectoryPage: React.FC<Props> = ({ user, logged, nsfwMode = false })
         </section>
 
         {/* Grid */}
-        <section className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+        <section className="max-w-7xl mx-auto px-3 md:px-8 py-12">
           {loading && scans.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (

@@ -264,7 +264,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         user={user}
         logged={logged}
       />
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 py-12">
         {/* Top Three with independent skeleton */}
         {loadingTopThree ? (
           <div className="space-y-6">
@@ -285,7 +285,7 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         )}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 py-12">
         <div className="grid lg:grid-cols-12 gap-10">
           {/* COLUMNA PRINCIPAL */}
           <div className="lg:col-span-8 space-y-20">

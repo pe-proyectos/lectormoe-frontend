@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import { uploadFile } from '../../util/uploadFile';
 import Autocomplete from './ui/Autocomplete';
 import { AdminChapterDialog } from './AdminChapterDialog';
@@ -3238,7 +3238,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
       `}} />
-      <ToastContainer theme="dark" position="bottom-right" />
     </div>
   );
 };

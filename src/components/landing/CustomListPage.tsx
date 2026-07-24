@@ -43,7 +43,7 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
       <Navbar user={user} logged={logged} nsfwMode={nsfwMode} activeView="home"
         onOpenLogin={() => go('/login')} onOpenRegister={() => go('/register')}
         onGoHome={() => go(nsfwMode ? '/red' : '/')} onGoExplore={() => go('/scans')} onGoSearch={() => go('/search')} />
-      <main className="pt-24 pb-20 max-w-5xl mx-auto px-4 md:px-8">
+      <main className="pt-24 pb-20 max-w-5xl mx-auto px-3 md:px-8">
         <div className="flex items-start justify-between gap-4 mb-8">
           <div className="min-w-0">
             <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter break-words">{list.name}</h1>

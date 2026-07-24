@@ -1025,7 +1025,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-zinc-950">
-      <div className="max-w-6xl mx-auto px-4 md:px-8">
+      <div className="max-w-6xl mx-auto px-3 md:px-8">
 
         <div className="mb-12 space-y-1">
           <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter">

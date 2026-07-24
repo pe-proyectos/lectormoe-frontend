@@ -1102,7 +1102,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         {drawState?.eliminatedCount ? ` (${Math.min(10, drawState.eliminatedCount)} de ${drawState.eliminatedCount})` : ''}
       </p>
       {drawState?.recentEliminated && drawState.recentEliminated.length > 0 ? (
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="hscroll flex gap-1.5 overflow-x-auto pb-1">
           {drawState.recentEliminated.map((e) => (
             <div
               key={`recent-${e.id}`}
@@ -2029,7 +2029,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
           <img src={raffle.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-4 md:px-8 h-full flex items-end pb-8">
+        <div className="relative max-w-7xl mx-auto px-3 md:px-8 h-full flex items-end pb-8">
           <div>
             <a href="/luckys" className="text-yellow-400 text-xs font-black uppercase tracking-widest hover:text-yellow-300">← Luckys</a>
             <h1 className="mt-2 text-4xl md:text-5xl font-black text-white tracking-tighter">{raffle.title}</h1>
@@ -2037,7 +2037,7 @@ const RaffleDetailPage: React.FC<Props> = ({ raffle: initialRaffle, user, logged
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-stretch">
           <div className="lg:col-span-3 lg:h-full">{Sidebar}</div>
           <div className="lg:col-span-6 lg:h-full">{Center}</div>

@@ -217,6 +217,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "listas",
     "reclutamiento",
     "mensajes",
+    "descargas",
+    "app",
     "eliminar-cuenta",
   ];
 

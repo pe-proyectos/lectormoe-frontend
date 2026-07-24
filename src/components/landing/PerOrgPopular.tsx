@@ -46,7 +46,7 @@ const PerOrgPopular: React.FC<PerOrgPopularProps> = ({ user, logged, nsfwMode = 
 
   if (loading) {
     return (
-      <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
+      <section className="max-w-[1600px] mx-auto px-3 md:px-8 py-16">
         <div className="space-y-1 mb-8">
           <div className="flex items-center gap-2 text-orange-500 font-bold uppercase tracking-[0.2em] text-[10px]">
             <Flame size={12} fill="currentColor" /> Por Organizacion
@@ -70,7 +70,7 @@ const PerOrgPopular: React.FC<PerOrgPopularProps> = ({ user, logged, nsfwMode = 
   }
 
   return (
-    <section className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
+    <section className="max-w-[1600px] mx-auto px-3 md:px-8 py-16">
       <div className="space-y-1 mb-8">
         <div className="flex items-center gap-2 text-orange-500 font-bold uppercase tracking-[0.2em] text-[10px]">
           <Flame size={12} fill="currentColor" /> Por Organizacion

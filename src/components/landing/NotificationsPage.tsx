@@ -329,7 +329,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({ user, logged, nsf
         nsfwMode={nsfwMode}
       />
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 md:px-8 pt-28 pb-16">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-3 md:px-8 pt-28 pb-16">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
             <Bell size={18} className="text-cyan-400" />

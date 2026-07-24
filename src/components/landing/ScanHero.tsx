@@ -59,7 +59,7 @@ const ScanHero: React.FC<ScanHeroProps> = ({ mangas, organization }) => {
       ))}
 
       <div className="absolute bottom-12 left-0 right-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <div className="max-w-7xl mx-auto px-3 md:px-8">
           <div className={`relative bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5 md:p-6 max-w-2xl shadow-2xl transition-opacity ${isHovered ? 'opacity-100 duration-300 ease-in' : 'opacity-0 duration-700 ease-out'}`}>
             <h2 className="text-xl md:text-2xl font-black text-white mb-3 tracking-tight line-clamp-2">
               {currentFeatured.title}

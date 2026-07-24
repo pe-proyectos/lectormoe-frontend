@@ -24,7 +24,7 @@ const Footer: React.FC<FooterProps> = ({ organization }) => {
   };
   return (
     <footer className="bg-zinc-950 border-t border-zinc-900 pt-16 pb-8 relative">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+      <div className="max-w-7xl mx-auto px-3 md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1 space-y-4">
             <div className="flex items-center gap-2">

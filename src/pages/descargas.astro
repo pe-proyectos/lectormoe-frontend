@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import DownloadsLibrary from '../components/app/DownloadsLibrary';
+
+// @ts-ignore
+const { user, showAds } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Mis descargas" description="Tus mangas descargados para leer sin conexión" showAds={false}>
+  <DownloadsLibrary user={user} logged={logged} client:only="react" />
+</LandingLayout>

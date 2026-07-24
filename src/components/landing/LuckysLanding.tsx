@@ -193,7 +193,7 @@ const LuckysLanding: React.FC<Props> = ({ user, logged, nsfwMode }) => {
         <div className="absolute inset-0">
           {sparkles.map((s, i) => <Sparkle key={i} {...s} />)}
         </div>
-        <div className="relative max-w-5xl mx-auto px-4 md:px-8 text-center">
+        <div className="relative max-w-5xl mx-auto px-3 md:px-8 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-black uppercase tracking-widest mb-6">
             <Sparkles size={14} className="animate-pulse" /> Sorteos exclusivos
           </div>
@@ -211,7 +211,7 @@ const LuckysLanding: React.FC<Props> = ({ user, logged, nsfwMode }) => {
       </section>
 
       {/* Active */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
+      <section className="max-w-7xl mx-auto px-3 md:px-8 pb-16">
         <div className="flex items-center gap-3 mb-8">
           <Sparkles size={20} className="text-yellow-400" />
           <h2 className="text-2xl font-black text-white uppercase tracking-tight">Sorteos activos</h2>
@@ -239,7 +239,7 @@ const LuckysLanding: React.FC<Props> = ({ user, logged, nsfwMode }) => {
       </section>
 
       {/* Past */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 pb-32">
+      <section className="max-w-7xl mx-auto px-3 md:px-8 pb-32">
         <div className="flex items-center gap-3 mb-8">
           <Trophy size={20} className="text-amber-400" />
           <h2 className="text-2xl font-black text-white uppercase tracking-tight">Historial</h2>

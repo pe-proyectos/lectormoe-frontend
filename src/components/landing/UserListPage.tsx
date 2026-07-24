@@ -401,7 +401,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
 
       <main className="pt-20">
         <section className="border-b border-zinc-900 bg-gradient-to-b from-zinc-900/30 to-transparent">
-          <div className="max-w-5xl mx-auto px-4 md:px-8 py-12">
+          <div className="max-w-5xl mx-auto px-3 md:px-8 py-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] mb-3">
               <Bookmark size={10} /> {isOwner ? 'Biblioteca personal' : `Lista pública de @${profileSlug}`}
             </div>
@@ -423,7 +423,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
         {/* Controls: barra compacta, la única parte sticky. En móvil los filtros
             viven en el panel colapsable de abajo para no tapar las tarjetas. */}
         <section className="border-b border-zinc-900 bg-zinc-950 sticky top-16 z-20 backdrop-blur-xl">
-          <div className="max-w-5xl mx-auto px-4 md:px-8 py-3">
+          <div className="max-w-5xl mx-auto px-3 md:px-8 py-3">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="relative flex-1">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -472,7 +472,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
         {/* Panel de filtros: colapsable en móvil (empuja el contenido, no es
             overlay ni sticky), siempre visible en desktop. */}
         <section className={`border-b border-zinc-900 bg-zinc-950 ${filtersOpen ? 'block' : 'hidden'} md:block`}>
-          <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 space-y-3">
+          <div className="max-w-5xl mx-auto px-3 md:px-8 py-3 space-y-3">
             {/* Reading status pills — the user's own classification (owner-only filter) */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mr-1">Mi estado</span>
@@ -569,7 +569,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
         )}
 
         {/* List */}
-        <section className="max-w-5xl mx-auto px-4 md:px-8 py-8">
+        <section className="max-w-5xl mx-auto px-3 md:px-8 py-8">
           {loading && entries.length === 0 ? (
             <div className="flex flex-col gap-2">
               {[...Array(5)].map((_, i) => (

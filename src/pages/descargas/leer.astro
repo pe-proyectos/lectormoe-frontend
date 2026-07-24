@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import OfflineReader from '../../components/app/OfflineReader';
+
+// La clave de la obra llega por query (?w=). El lector es cliente puro (lee del
+// dispositivo), así que la resolvemos en el navegador.
+const wk = Astro.url.searchParams.get('w') || '';
+---
+
+<LandingLayout title="Lectura sin conexión" showAds={false} hideTabBar={true}>
+  <OfflineReader workKey={wk} client:only="react" />
+</LandingLayout>

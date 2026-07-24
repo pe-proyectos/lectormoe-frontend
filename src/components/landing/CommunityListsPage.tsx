@@ -28,7 +28,7 @@ const CommunityListsPage: React.FC<Props> = ({ user, logged, nsfwMode = false })
       <Navbar user={user} logged={logged} nsfwMode={nsfwMode} activeView="home"
         onOpenLogin={() => go('/login')} onOpenRegister={() => go('/register')}
         onGoHome={() => go(nsfwMode ? '/red' : '/')} onGoExplore={() => go('/scans')} onGoSearch={() => go('/search')} />
-      <main className="pt-24 pb-20 max-w-6xl mx-auto px-4 md:px-8">
+      <main className="pt-24 pb-20 max-w-6xl mx-auto px-3 md:px-8">
         <div className="mb-8">
           <div className="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-[0.2em] text-[10px] mb-1"><ListChecks size={12} /> Comunidad</div>
           <h1 className="text-4xl font-black text-white italic uppercase tracking-tighter">Mural de listas</h1>

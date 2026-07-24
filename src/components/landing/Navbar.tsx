@@ -392,7 +392,7 @@ const Navbar: React.FC<NavbarProps> = ({
           : "bg-transparent py-5"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 flex items-center justify-between">
         {/* Branding Area Contextual */}
         <div className="flex items-center gap-6">
           <div
@@ -686,11 +686,19 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Mobile Toggle — kept minimal: only the notification bell remains in
-            the top bar. Catálogo / Novelas / Luckys / +18 toggle / hamburger
-            menu all moved to the bottom bar + mega-menu. */}
-        <div className="flex items-center gap-3 md:hidden">
+        {/* Mobile top bar: campana + botón de menú que abre el mega-menú (catálogo,
+            novelas, directorio de scans, toggle +18). La navegación rápida vive en
+            el MobileTabBar inferior; este botón da acceso a la navegación amplia. */}
+        <div className="flex items-center gap-2 md:hidden">
           {logged && <NotificationBell logged={!!logged} variant="mobile" />}
+          <button
+            type="button"
+            onClick={() => setMegaMenuOpen(true)}
+            className="w-11 h-11 flex items-center justify-center text-white rounded-xl active:bg-zinc-800 transition-colors"
+            aria-label="Menú"
+          >
+            <Menu size={24} />
+          </button>
         </div>
       </div>
 
@@ -913,12 +921,16 @@ const Navbar: React.FC<NavbarProps> = ({
       </div>
     )}
 
-    {/* ─── Mobile bottom bar ──────────────────────────────────────────────
-        Fixed-bottom 3-action shortcut + center mega-menu opener. Hidden on
-        md+ where the regular Navbar is visible. */}
+    {/* ─── Mobile bottom bar (LEGACY, oculto) ─────────────────────────────
+        La barra inferior canónica es ahora MobileTabBar (montada globalmente en
+        LandingLayout, 5 destinos). Esta barra vieja de 3 acciones se duplicaba
+        con ella (dos barras inferiores apiladas). Se oculta con `hidden`; se
+        conserva el JSX porque aún alberga el opener del mega-menú, referenciado
+        más abajo. */}
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]"
+      className="hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegación móvil"
+      aria-hidden="true"
     >
       <div className="flex items-stretch justify-between max-w-md mx-auto px-2">
         {/* Left: My lists */}

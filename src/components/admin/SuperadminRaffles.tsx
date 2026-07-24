@@ -538,8 +538,8 @@ const SuperadminRaffles: React.FC<Props> = ({ token }) => {
       {!loading && raffles.length === 0 && <p className="text-zinc-500">Sin sorteos aún.</p>}
 
       {!loading && raffles.length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="bg-zinc-950 text-zinc-400 text-left text-xs uppercase tracking-widest">
                 <th className="px-4 py-3">Sorteo</th>

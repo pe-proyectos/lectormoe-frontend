@@ -545,7 +545,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       {/* Header */}
       {!focusMode && (
         <header style={{ background: palette.ui, borderBottom: `1px solid ${palette.border}`, position: 'sticky', top: 0, zIndex: 20 }}>
-          <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4">
+          <div className="max-w-6xl mx-auto px-3 md:px-8 py-3 flex items-center justify-between gap-4">
             <a href={mangaUrl} className="flex items-center gap-2 hover:opacity-70 transition-opacity min-w-0" style={{ color: palette.uiText }}>
               <Book size={16} className="shrink-0" />
               <span className="text-xs font-bold uppercase tracking-widest truncate">{mangaTitle}</span>

@@ -91,7 +91,7 @@ const ScansSection: React.FC<Props> = ({ onNavigate }) => {
   if (loading) {
     return (
       <section id="scans-section" className="bg-zinc-950 py-24 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-3 md:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 animate-pulse">
@@ -111,7 +111,7 @@ const ScansSection: React.FC<Props> = ({ onNavigate }) => {
       {/* Background Decorative Elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
       
-      <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-3 md:px-8 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">

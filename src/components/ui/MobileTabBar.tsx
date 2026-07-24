@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, Search, Bookmark, Bell, User, LogIn } from 'lucide-react';
+import { Home, Search, Bookmark, Bell, User, LogIn, Compass, BookOpen } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface Props {
@@ -25,14 +25,25 @@ const MobileTabBar: React.FC<Props> = ({ logged, organizationSlug, nsfwMode, pro
   const homeHref = organizationSlug ? `/${organizationSlug}` : nsfwMode ? '/red' : '/';
   const searchHref = organizationSlug ? `/${organizationSlug}/search` : '/search';
   const profileHref = logged ? (profileSlug ? `/profile/${profileSlug}` : '/settings') : '/login';
+  const writingsHref = nsfwMode ? '/red/writings' : '/writings';
 
-  const items = [
-    { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
-    { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
-    { key: 'list', label: 'Mi Lista', icon: Bookmark, href: '/list' },
-    { key: 'notif', label: 'Alertas', icon: Bell, href: '/notifications', badge: unread },
-    { key: 'profile', label: logged ? 'Perfil' : 'Entrar', icon: logged ? User : LogIn, href: profileHref },
-  ];
+  // Set logueado: navegación personal. Set anónimo: solo destinos públicos
+  // (nada de Mi Lista/Alertas que exigen cuenta y rebotan a /login).
+  const items = logged
+    ? [
+        { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
+        { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
+        { key: 'list', label: 'Mi Lista', icon: Bookmark, href: '/list' },
+        { key: 'notif', label: 'Alertas', icon: Bell, href: '/notifications', badge: unread },
+        { key: 'profile', label: 'Perfil', icon: User, href: profileHref },
+      ]
+    : [
+        { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
+        { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
+        { key: 'scans', label: 'Scans', icon: Compass, href: '/scans' },
+        { key: 'novels', label: 'Novelas', icon: BookOpen, href: writingsHref },
+        { key: 'profile', label: 'Entrar', icon: LogIn, href: profileHref },
+      ];
 
   const isActive = (href: string) => (href === '/' || href === '/red' ? path === href : path === href || path.startsWith(`${href}/`));
 

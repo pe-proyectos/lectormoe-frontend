@@ -407,7 +407,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-zinc-950">
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+      <div className="max-w-[1600px] mx-auto px-3 md:px-8">
         
         {/* Header Section */}
         <div className="mb-12 space-y-6">
