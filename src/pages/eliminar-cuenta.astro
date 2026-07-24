@@ -1,0 +1,12 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import DeleteAccountPage from '../components/landing/DeleteAccountPage';
+
+// @ts-ignore
+const { user } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout title="Eliminar mi cuenta" description="Solicita la eliminación de tu cuenta de CapibaraTraductor y los datos asociados." showAds={false}>
+  <DeleteAccountPage user={user} logged={logged} client:only="react" />
+</LandingLayout>
