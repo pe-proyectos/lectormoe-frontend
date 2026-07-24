@@ -1327,6 +1327,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                     <Save size={16} /> {isLoading ? 'Guardando...' : 'Guardar Cambios'}
                   </button>
                 </div>
+
+                {/* Zona de peligro: eliminar la cuenta y los datos asociados. */}
+                <div className="pt-6 border-t border-red-500/20">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">Zona de peligro</p>
+                  <p className="text-zinc-500 text-sm mb-3 max-w-md">Elimina tu cuenta y tus datos personales de forma permanente. Esta acción no se puede deshacer.</p>
+                  <a href="/eliminar-cuenta" className="inline-flex items-center gap-2 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-colors">
+                    Eliminar mi cuenta
+                  </a>
+                </div>
               </div>
             )}
 

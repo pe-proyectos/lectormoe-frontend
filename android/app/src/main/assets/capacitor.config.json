@@ -1,0 +1,32 @@
+{
+	"appId": "com.capibaratraductor.app",
+	"appName": "CapibaraTraductor",
+	"webDir": "capacitor-shell",
+	"backgroundColor": "#09090b",
+	"server": {
+		"url": "https://capibaratraductor.com",
+		"hostname": "capibaratraductor.com",
+		"androidScheme": "https",
+		"allowNavigation": [
+			"capibaratraductor.com",
+			"*.capibaratraductor.com",
+			"r2.capibaratraductor.com"
+		]
+	},
+	"android": {
+		"webContentsDebuggingEnabled": false,
+		"allowMixedContent": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 900,
+			"backgroundColor": "#09090b",
+			"androidSplashResourceName": "splash",
+			"showSpinner": false
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#09090b"
+		}
+	}
+}

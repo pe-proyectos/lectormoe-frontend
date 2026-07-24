@@ -8,8 +8,8 @@ Assets listos en esta carpeta:
 ## Nombre de la app
 CapibaraTraductor
 
-## Descripción corta (máx. 80 caracteres)
-Lee manga y novelas de tus scans favoritos, con descargas para leer sin conexión.
+## Descripción corta (máx. 80 caracteres) — 71 caracteres, validado
+Manga y novelas de tus scans favoritos. Descárgalos y lee sin conexión.
 
 ## Descripción completa (máx. 4000 caracteres)
 CapibaraTraductor es el hogar de tus scans de manga y novelas favoritos, ahora en tu bolsillo.
