@@ -150,6 +150,80 @@ const siteName =
     {adsProvider === 'adsterra' && (
       <script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
     )}
+    {/* Indicador de navegación: barra de progreso que aparece al instante al
+        tocar un enlace o iniciar una navegación, para que el cambio de pantalla
+        (carga SSR completa en el WebView) se sienta inmediato y fluido. */}
+    <div id="nav-progress" aria-hidden="true"></div>
+    <style is:global>
+      #nav-progress {
+        position: fixed;
+        top: env(safe-area-inset-top);
+        left: 0;
+        height: 3px;
+        width: 0;
+        background: linear-gradient(90deg, #0891b2, #22d3ee);
+        box-shadow: 0 0 8px #06b6d4;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: width 0.2s ease, opacity 0.25s ease;
+      }
+      #nav-progress.active { opacity: 1; }
+      [data-nsfw="true"] #nav-progress {
+        background: linear-gradient(90deg, #b91c1c, #f87171);
+        box-shadow: 0 0 8px #ef4444;
+      }
+    </style>
+    <script is:inline>
+      (function () {
+        var bar = document.getElementById('nav-progress');
+        var timer, w = 0;
+        function start() {
+          if (!bar) return;
+          clearTimeout(timer);
+          w = 8;
+          bar.classList.add('active');
+          bar.style.width = '8%';
+          void bar.offsetWidth;
+          (function step() {
+            w += (92 - w) * 0.14;
+            bar.style.width = w + '%';
+            timer = setTimeout(step, 180);
+          })();
+        }
+        function done() {
+          if (!bar) return;
+          clearTimeout(timer);
+          bar.style.width = '100%';
+          setTimeout(function () {
+            bar.classList.remove('active');
+            bar.style.width = '0';
+          }, 250);
+        }
+        document.addEventListener(
+          'click',
+          function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('a') : null;
+            if (!a) return;
+            var href = a.getAttribute('href');
+            if (!href || href.charAt(0) === '#') return;
+            if (a.target === '_blank' || a.hasAttribute('download')) return;
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            try {
+              var u = new URL(a.href, location.href);
+              if (u.origin !== location.origin) return;
+              if (u.pathname === location.pathname && u.search === location.search) return;
+            } catch (_) {
+              return;
+            }
+            start();
+          },
+          true
+        );
+        window.addEventListener('beforeunload', start);
+        window.addEventListener('pageshow', done);
+      })();
+    </script>
     <script is:inline>
       if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     </script>
@@ -179,6 +253,12 @@ const siteName =
     touch-action: manipulation;
   }
   @media (max-width: 767px) {
+    /* Barra de estado del teléfono (app Android/Capacitor): el WebView es
+       edge-to-edge, así que reservamos su altura para que el navbar y el
+       contenido no queden debajo. En navegador sin notch, el inset es 0. */
+    body {
+      padding-top: env(safe-area-inset-top);
+    }
     input,
     select,
     textarea {
@@ -212,15 +292,15 @@ const siteName =
   .momentum-scroll {
     -webkit-overflow-scrolling: touch;
   }
-  /* Carrusel horizontal con tacto nativo: inercia, snap suave, y touch-action
-     pan-x para que el swipe vertical pase a la página (no lo secuestre el riel)
-     y el horizontal mueva el carrusel. overscroll-x contain evita arrastrar
-     toda la vista al llegar al borde. */
+  /* Carrusel horizontal con tacto nativo: inercia y snap suave. NO fijamos
+     touch-action: con el valor por defecto (auto), el navegador decide por la
+     dirección del gesto: swipe horizontal mueve el riel, swipe vertical hace
+     scroll de la página (comportamiento nativo esperado). overscroll-x contain
+     evita arrastrar toda la vista al llegar al borde. */
   .hscroll {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
-    touch-action: pan-x;
   }
   .hscroll > * {
     scroll-snap-align: start;

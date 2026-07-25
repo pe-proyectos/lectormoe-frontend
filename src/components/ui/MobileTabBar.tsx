@@ -10,7 +10,7 @@ interface Props {
 }
 
 // Barra inferior de navegación, solo móvil, solo vistas de lector/usuario (Tarea 19b).
-const MobileTabBar: React.FC<Props> = ({ logged, organizationSlug, nsfwMode, profileSlug }) => {
+const MobileTabBar: React.FC<Props> = ({ logged, nsfwMode, profileSlug }) => {
   const [unread, setUnread] = useState(0);
   const [path, setPath] = useState('');
 
@@ -22,8 +22,11 @@ const MobileTabBar: React.FC<Props> = ({ logged, organizationSlug, nsfwMode, pro
       .catch(() => {});
   }, [logged]);
 
-  const homeHref = organizationSlug ? `/${organizationSlug}` : nsfwMode ? '/red' : '/';
-  const searchHref = organizationSlug ? `/${organizationSlug}/search` : '/search';
+  // La barra inferior es navegación GLOBAL de la app: Inicio y Buscar llevan
+  // siempre al inicio/búsqueda generales, no a los del scan que se esté viendo
+  // (salir de un scan sin esto resultaba frustrante). Se respeta el modo +18.
+  const homeHref = nsfwMode ? '/red' : '/';
+  const searchHref = nsfwMode ? '/red/search' : '/search';
   const profileHref = logged ? (profileSlug ? `/profile/${profileSlug}` : '/settings') : '/login';
   const writingsHref = nsfwMode ? '/red/writings' : '/writings';
 
