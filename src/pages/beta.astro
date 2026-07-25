@@ -1,0 +1,16 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import BetaSignupPage from '../components/landing/BetaSignupPage';
+
+// @ts-ignore
+const { user } = Astro.locals;
+const logged = !!user;
+---
+
+<LandingLayout
+  title="Sé verificador de CapibaraTraductor"
+  description="Ayúdanos a lanzar la app en Google Play y participa por un sorteo de $20 USD. Regístrate con tu correo de Gmail."
+  showAds={false}
+>
+  <BetaSignupPage user={user} logged={logged} client:only="react" />
+</LandingLayout>

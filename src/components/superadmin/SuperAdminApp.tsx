@@ -553,7 +553,7 @@ const ErrorMsg = ({ msg }: { msg: string }) => (
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles' | 'reports' | 'moderation';
+type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles' | 'reports' | 'moderation' | 'beta';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview', label: 'Vista general', icon: '📊' },
@@ -563,6 +563,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'users', label: 'Usuarios', icon: '👥' },
   { id: 'subscriptions', label: 'Suscripciones', icon: '💳' },
   { id: 'raffles', label: 'Sorteos', icon: '🎟️' },
+  { id: 'beta', label: 'Verificadores', icon: '🧪' },
   { id: 'requests', label: 'Solicitudes', icon: '📬' },
   { id: 'create-scan', label: 'Alta de Scan', icon: '➕' },
 ];
@@ -732,6 +733,116 @@ const ReportsTab = ({ token }: { token: string }) => {
   );
 };
 
+// ── Beta Testers Tab (verificadores de Google Play) ───────────────────────────
+const BETA_STATUS: Record<string, { text: string; cls: string }> = {
+  pending: { text: 'Pendiente', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  added: { text: 'Agregado', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+  rejected: { text: 'Descartado', cls: 'bg-red-500/15 text-red-400 border-red-500/30' },
+};
+
+const BetaTestersTab = ({ token }: { token: string }) => {
+  const [testers, setTesters] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    saFetch('/api/superadmin/beta-testers', token)
+      .then((d: any) => { setTesters(d.testers || []); setCounts(d.counts || {}); })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [token]);
+
+  const setStatus = async (id: number, status: string) => {
+    setBusyId(id);
+    try {
+      await saFetch(`/api/superadmin/beta-testers/${id}`, token, { method: 'PATCH', body: JSON.stringify({ status }) });
+      load();
+    } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm('¿Eliminar este registro de verificador?')) return;
+    setBusyId(id);
+    try {
+      await saFetch(`/api/superadmin/beta-testers/${id}`, token, { method: 'DELETE' });
+      load();
+    } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
+  };
+
+  // Correos para pegar en Play Console (lista de verificadores). Se copian los
+  // que aún no fueron descartados.
+  const copyEmails = async () => {
+    const emails = testers.filter((t) => t.status !== 'rejected').map((t) => t.gmail);
+    try {
+      await navigator.clipboard.writeText(emails.join(', '));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert(emails.join('\n'));
+    }
+  };
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMsg msg={error} />;
+
+  const total = testers.length;
+  const usable = testers.filter((t) => t.status !== 'rejected').length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-xl font-black text-white">Verificadores de Google Play</h2>
+        <button
+          onClick={copyEmails}
+          className="px-3 py-1.5 rounded-lg bg-cyan-500 text-zinc-950 hover:bg-cyan-400 text-[11px] font-black uppercase tracking-widest transition-colors"
+          title="Copia los correos (menos los descartados) separados por coma para pegarlos en Play Console"
+        >
+          {copied ? '¡Copiado!' : `Copiar correos (${usable})`}
+        </button>
+      </div>
+
+      {/* Contadores. Meta: 12 verificadores. */}
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 font-bold">{total} registrados</span>
+        <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-bold">{counts.added || 0} agregados</span>
+        <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 font-bold">{counts.pending || 0} pendientes</span>
+        {(counts.rejected || 0) > 0 && <span className="px-3 py-1 rounded-full bg-red-500/15 text-red-400 font-bold">{counts.rejected} descartados</span>}
+        <span className="px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-400 font-bold">Meta: 12</span>
+      </div>
+
+      {testers.length === 0 ? (
+        <p className="text-zinc-500 text-sm">Aún no hay registros. Comparte el enlace /beta.</p>
+      ) : (
+        <div className="space-y-2">
+          {testers.map((t) => (
+            <div key={t.id} className="flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-white truncate">{t.name}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${BETA_STATUS[t.status]?.cls || BETA_STATUS.pending.cls}`}>{BETA_STATUS[t.status]?.text || t.status}</span>
+                </div>
+                <p className="text-cyan-400 text-xs font-mono truncate">{t.gmail}</p>
+                <p className="text-zinc-600 text-[11px]">cuenta: @{t.user?.slug} · {new Date(t.createdAt).toLocaleDateString('es')}</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {t.status !== 'added' && <button onClick={() => setStatus(t.id, 'added')} disabled={busyId === t.id} className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500 hover:text-zinc-950 text-[10px] font-black uppercase tracking-widest transition-colors" title="Márcalo cuando ya lo agregaste en Play Console">Agregado</button>}
+                {t.status !== 'pending' && <button onClick={() => setStatus(t.id, 'pending')} disabled={busyId === t.id} className="px-2.5 py-1.5 rounded-lg text-amber-400 hover:text-amber-300 text-[10px] font-black uppercase tracking-widest">Pendiente</button>}
+                {t.status !== 'rejected' && <button onClick={() => setStatus(t.id, 'rejected')} disabled={busyId === t.id} className="px-2.5 py-1.5 rounded-lg text-zinc-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest">Descartar</button>}
+                <button onClick={() => remove(t.id)} disabled={busyId === t.id} className="px-2.5 py-1.5 rounded-lg text-zinc-600 hover:text-red-500 text-[10px] font-black uppercase tracking-widest" title="Eliminar registro">✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SuperAdminApp = () => {
   const [token, setToken] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
@@ -796,6 +907,7 @@ const SuperAdminApp = () => {
         {tab === 'raffles' && <SuperadminRaffles token={token} />}
         {tab === 'reports' && <ReportsTab token={token} />}
         {tab === 'moderation' && <ModerationLogTab token={token} />}
+        {tab === 'beta' && <BetaTestersTab token={token} />}
       </div>
     </div>
   );
