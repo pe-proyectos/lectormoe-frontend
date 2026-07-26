@@ -257,37 +257,61 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     // Verificar autenticación si hay token (pero sin requerir organización específica)
     if (context.locals.token) {
+      // IMPORTANTE: NO asignar organizationIdentifier en landing page
+      // Debe permanecer null para que callAPI no envíe x-organization header
+      let authCheck: any = null;
+      let transient = false;
       try {
-        // IMPORTANTE: NO asignar organizationIdentifier en landing page
-        // Debe permanecer null para que callAPI no envíe x-organization header
-        // organizationIdentifier = null; // Ya es null por defecto
-
-        const authCheck = await callAPI("/api/auth/check");
-
-        if (authCheck?.token && authCheck?.user) {
-          // Token válido, actualizar cookies con datos frescos
-          context.locals.token = authCheck.token;
-          context.locals.user = authCheck.user;
-
-          // Set Cookies
-          context.cookies.set("token", authCheck.token, {
-            maxAge: 60 * 60 * 24 * 7,
-            path: "/",
-            sameSite: "lax",
-          });
-          context.cookies.set("user", JSON.stringify(minimalCookieUser(authCheck.user)), {
-            maxAge: 60 * 60 * 24 * 7,
-            path: "/",
-            sameSite: "lax",
-          });
-
-          // Calcular showAds para landing pages (sin organización)
-          context.locals.showAds = calculateShowAds(context.locals.user, null);
-
-          return await next();
-        }
+        authCheck = await callAPI("/api/auth/check");
       } catch (error) {
-        // Si el check falla matar sesion
+        // Error de transporte (API caído durante un deploy, o sin red en la app):
+        // NO es prueba de que el token sea inválido.
+        transient = true;
+      }
+
+      if (authCheck?.token && authCheck?.user) {
+        // Token válido, actualizar cookies con datos frescos
+        context.locals.token = authCheck.token;
+        context.locals.user = authCheck.user;
+
+        // Set Cookies
+        context.cookies.set("token", authCheck.token, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+          sameSite: "lax",
+        });
+        context.cookies.set("user", JSON.stringify(minimalCookieUser(authCheck.user)), {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+          sameSite: "lax",
+        });
+
+        // Calcular showAds para landing pages (sin organización)
+        context.locals.showAds = calculateShowAds(context.locals.user, null);
+
+        return await next();
+      }
+
+      // Solo cerramos sesión ante CONFIRMACIÓN de token inválido: auth/check
+      // respondió (no transitorio) con el mensaje de sesión inválida. Cualquier
+      // otro fallo (red, 5xx, downtime de deploy) conserva la sesión para no
+      // desloguear a la gente por cortes momentáneos (bug reportado en la app).
+      const definitiveInvalid =
+        !transient &&
+        authCheck?.status === false &&
+        authCheck?.message === "Sesión no válida";
+
+      if (!definitiveInvalid) {
+        // Transitorio: conservar la sesión con la cookie de usuario cacheada y
+        // sin borrar el token (se revalida en la próxima carga).
+        let cachedUser: any = null;
+        try {
+          const raw = context.cookies.get("user")?.value;
+          if (raw) cachedUser = JSON.parse(raw);
+        } catch {}
+        context.locals.user = cachedUser;
+        context.locals.showAds = calculateShowAds(cachedUser, null);
+        return await next();
       }
     }
     context.locals.token = null;

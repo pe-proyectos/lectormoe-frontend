@@ -219,7 +219,9 @@ export function Reader({
 
   const shouldRenderSideBySide = useCallback(
     (pageIndex, pages, median) => {
-      if (!settings.useDoublePages) return false;
+      // En móvil forzamos página simple: dos páginas lado a lado se ven
+      // diminutas en un teléfono y no hay zoom cómodo.
+      if (!settings.useDoublePages || screenIsMobile) return false;
 
       const currentPage = pages[pageIndex];
       const nextPage = pages[pageIndex + 1];
@@ -231,7 +233,7 @@ export function Reader({
 
       return currentIsSingle && nextIsSingle;
     },
-    [settings.useDoublePages, isSinglePage]
+    [settings.useDoublePages, isSinglePage, screenIsMobile]
   );
 
   // Memoizar qué páginas mostrar para evitar recalcular en cada render
@@ -1021,8 +1023,8 @@ export function Reader({
 
     const isCascade = settings.readType === readTypes.CASCADE;
 
-    // Sin páginas dobles
-    if (!settings.useDoublePages) {
+    // Sin páginas dobles (o móvil: siempre simple para que se lea bien)
+    if (!settings.useDoublePages || screenIsMobile) {
       return chapterData.pages.map((page) => {
         const shouldShow = shouldShowPage(page.number);
         const PageImageComponent = (
@@ -1141,6 +1143,7 @@ export function Reader({
     chapterData.pages,
     settings.readType,
     settings.useDoublePages,
+    screenIsMobile,
     readTypes.CASCADE,
     shouldShowPage,
     shouldRenderSideBySide,
@@ -1292,19 +1295,22 @@ export function Reader({
                     )}
                   </div>
 
-                  {/* Usar páginas dobles */}
-                  <div className="flex items-center gap-3 mx-4">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={settings.useDoublePages}
-                        onChange={handleToggleUseDoublePages}
-                      />
-                      <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
-                      <span className="ms-3 text-sm font-medium text-gray-100">{_('use_double_pages')}</span>
-                    </label>
-                  </div>
+                  {/* Usar páginas dobles — oculto en móvil (allí siempre es
+                      página simple para que se lea bien). */}
+                  {!screenIsMobile && (
+                    <div className="flex items-center gap-3 mx-4">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={settings.useDoublePages}
+                          onChange={handleToggleUseDoublePages}
+                        />
+                        <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                        <span className="ms-3 text-sm font-medium text-gray-100">{_('use_double_pages')}</span>
+                      </label>
+                    </div>
+                  )}
 
                   {/* Espacio entre páginas — now available in all read modes */}
                   <div className="mx-4">
