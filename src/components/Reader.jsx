@@ -973,7 +973,7 @@ export function Reader({
                     : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
                 }
               />
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                 {chapter?.previousChapter
                   ? _("click_to_previous_chapter")
                   : _("you_are_in_first_chapter")}
@@ -1004,7 +1004,7 @@ export function Reader({
                     : "h-16 w-16 text-white opacity-20 cursor-not-allowed"
                 }
               />
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                 {chapter?.nextChapter
                   ? _("click_to_next_chapter")
                   : _("you_are_in_last_chapter")}

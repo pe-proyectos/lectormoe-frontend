@@ -79,6 +79,9 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ user, logged, organiz
         </div>
       ) : (
         <div className="min-h-[280px]">
+          {!loading && mangas.length === 0 ? (
+            <p className="text-zinc-600 text-sm py-8 text-center">Sin datos para este período.</p>
+          ) : (
           <ScrollableCardRow desktopCols="sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
             {loading ? (
               [...Array(10)].map((_, i) => (
@@ -87,8 +90,6 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ user, logged, organiz
                   <div className="p-4"><div className="h-4 bg-zinc-800 rounded mb-2" /><div className="h-3 bg-zinc-800 rounded" /></div>
                 </div>
               ))
-            ) : mangas.length === 0 ? (
-              <p className="text-zinc-600 text-sm col-span-full py-8 text-center">Sin datos para este período.</p>
             ) : (
               mangas.map((manga) => {
                 const userHasSubscription =
@@ -121,6 +122,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ user, logged, organiz
               })
             )}
           </ScrollableCardRow>
+          )}
         </div>
       )}
     </section>

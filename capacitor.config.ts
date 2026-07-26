@@ -17,8 +17,17 @@ const config: CapacitorConfig = {
     url: 'https://capibaratraductor.com',
     hostname: 'capibaratraductor.com',
     androidScheme: 'https',
-    // Orígenes a los que la app puede navegar conservando el bridge.
-    allowNavigation: ['capibaratraductor.com', '*.capibaratraductor.com', 'r2.capibaratraductor.com'],
+    // Orígenes a los que la app puede navegar sin salir del WebView. Incluye
+    // discord.com para que el login/OAuth de "vincular Discord" ocurra DENTRO de
+    // la app y el callback vuelva a capibaratraductor.com sin abrir el navegador
+    // del sistema (si no, el OAuth se completa fuera y la app queda sin vincular).
+    allowNavigation: [
+      'capibaratraductor.com',
+      '*.capibaratraductor.com',
+      'r2.capibaratraductor.com',
+      'discord.com',
+      '*.discord.com',
+    ],
   },
   android: {
     // Permite que el service worker de la PWA sirva el offline dentro del WebView.
