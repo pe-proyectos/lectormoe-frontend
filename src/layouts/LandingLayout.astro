@@ -5,6 +5,7 @@ import DiscordInviteModal from '../components/landing/DiscordInviteModal';
 import MobileTabBar from '../components/ui/MobileTabBar';
 import GlobalToaster from '../components/ui/GlobalToaster';
 import PullToRefresh from '../components/ui/PullToRefresh';
+import AppNative from '../components/app/AppNative';
 import { resolveAdsProvider } from '../util/ads-provider';
 
 interface Props {
@@ -139,6 +140,7 @@ const siteName =
   <body>
     <slot />
     <GlobalToaster client:only="react" />
+    <AppNative client:only="react" />
     {!hideTabBar && <PullToRefresh client:only="react" />}
     {!hideTabBar && <div class="h-16 md:hidden" aria-hidden="true"></div>}
     {!hideTabBar && (

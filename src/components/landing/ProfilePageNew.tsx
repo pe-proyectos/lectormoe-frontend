@@ -1107,17 +1107,17 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                 <div className={`grid grid-cols-1 ${isOwner ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
                   {followedScans.filter(s => nsfwMode ? s.isNSFW : !s.isNSFW).map((scan) => (
                     <a key={scan.id} href={nsfwMode ? `/red/${scan.slug}` : `/${scan.slug}`} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-[32px] group hover:bg-zinc-900 transition-all shadow-xl block">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-zinc-800 bg-zinc-950">
+                      <div className="flex items-start justify-between mb-4 gap-2">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-16 h-16 shrink-0 rounded-2xl overflow-hidden border-2 border-zinc-800 bg-zinc-950">
                             <img
                               src={scan.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(scan.name)}&background=27272a&color=fff&size=64`}
                               className="w-full h-full object-cover"
                               alt={scan.name}
                             />
                           </div>
-                          <div>
-                            <h4 className="text-white font-black italic text-lg leading-tight uppercase group-hover:text-cyan-400 transition-colors">
+                          <div className="min-w-0">
+                            <h4 className="text-white font-black italic text-lg leading-tight uppercase group-hover:text-cyan-400 transition-colors truncate">
                               {scan.name}
                             </h4>
                             <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mt-1">

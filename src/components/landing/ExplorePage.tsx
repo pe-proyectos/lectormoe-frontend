@@ -574,7 +574,8 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                     // displaying the "En emisión" badge.
                     status: ((): 'Ongoing' | 'Completed' | 'Hiatus' => {
                       const s = (manga.status || '').toLowerCase();
-                      if (s === 'completed') return 'Completed';
+                      // "finished" y "completed" son sinónimos de finalizado.
+                      if (s === 'completed' || s === 'finished') return 'Completed';
                       if (s === 'hiatus') return 'Hiatus';
                       return 'Ongoing';
                     })(),

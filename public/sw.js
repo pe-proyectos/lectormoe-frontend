@@ -1,6 +1,6 @@
 // Service worker conservador (Tarea 19f).
 // Cache-first SOLO para estáticos inmutables; NUNCA /api/ ni HTML de páginas.
-const CACHE = 'capibara-static-v1';
+const CACHE = 'capibara-static-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -40,10 +40,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navegaciones (HTML): network-first, fallback a offline. NO se cachea HTML.
+  // Navegaciones (HTML): network-first SIN caché HTTP del WebView. Usamos
+  // cache:'reload' para saltarnos la caché del WebView de Android, que si no
+  // sirve HTML viejo con hashes de bundles viejos → la app muestra comportamiento
+  // desactualizado aunque prod ya esté al día. Fallback a offline sin conexión.
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req).catch(() => caches.match(OFFLINE_URL))
+      fetch(new Request(req, { cache: 'reload' })).catch(() =>
+        fetch(req).catch(() => caches.match(OFFLINE_URL))
+      )
     );
   }
 });
