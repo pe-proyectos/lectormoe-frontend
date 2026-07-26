@@ -20,6 +20,7 @@ import {
   Heart,
   LogIn,
   UserPlus,
+  HardDriveDownload,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
@@ -1054,6 +1055,9 @@ const Navbar: React.FC<NavbarProps> = ({
               { icon: <Bookmark size={18} />, label: 'Novelas',   href: nsfwMode ? '/red/writings' : '/writings' },
               ...(logged && user?.slug ? [
                 { icon: <ListIcon size={18} />, label: 'Mi lista', href: `${nsfwPrefix}/list/${user.slug}` },
+              ] : []),
+              ...(logged ? [
+                { icon: <HardDriveDownload size={18} />, label: 'Descargas', href: '/descargas' },
               ] : []),
               ...(activeScan && onGoSubscriptions ? [
                 { icon: <Crown size={18} />,  label: 'Suscripciones', action: onGoSubscriptions as any },

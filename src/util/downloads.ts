@@ -137,10 +137,18 @@ export async function canDownloadNewWork(isPremium: boolean, existingKey?: strin
   return { ok: isExisting || used < limit, used, limit };
 }
 
-async function fetchAsBuffer(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url, { credentials: 'omit' });
+async function fetchAsBuffer(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {
+  const res = await fetch(url, { credentials: 'omit', signal });
   if (!res.ok) throw new Error(`No se pudo descargar una imagen (${res.status})`);
   return res.arrayBuffer();
+}
+
+// Error que se lanza al cancelar una descarga (el UI lo trata como no-error).
+export class DownloadCancelled extends Error {
+  constructor() {
+    super('cancelled');
+    this.name = 'DownloadCancelled';
+  }
 }
 
 async function toSmallCover(url: string): Promise<string> {
@@ -164,11 +172,13 @@ export async function downloadChapter(args: {
   chapter: { number: number; title: string };
   pageUrls: string[];
   onProgress?: (done: number, total: number) => void;
+  signal?: AbortSignal;
 }): Promise<void> {
-  const { work, chapter, pageUrls } = args;
+  const { work, chapter, pageUrls, signal } = args;
   let bytes = 0;
   for (let i = 0; i < pageUrls.length; i++) {
-    const buf = await fetchAsBuffer(pageUrls[i]);
+    if (signal?.aborted) throw new DownloadCancelled();
+    const buf = await fetchAsBuffer(pageUrls[i], signal);
     const enc = await encrypt(buf);
     bytes += enc.byteLength;
     await tx(STORE_PAGES, 'readwrite', (s) => s.put(enc, pageId(work.key, chapter.number, i)));
