@@ -33,6 +33,13 @@ const {
 // Single source of truth for which ad network to render. Pages may pass a
 // `manga` prop to also gate on per-manga isNSFW. /red/* always Adsterra,
 // `/` + auth always none.
+// Detecta si la petición viene de la app (WebView). 'CapibaraApp' es la marca
+// que agrega Capacitor (APK v4+); '; wv' cubre el WebView de Android en el APK
+// actual y otros navegadores embebidos. En la app NO cargamos los formatos
+// intrusivos (popunder / social bar): molestan y son riesgo de política de Play.
+const uaString = Astro.request.headers.get('user-agent') || '';
+const isNativeApp = uaString.includes('CapibaraApp') || /;\s*wv\b/i.test(uaString);
+
 const adsProvider = resolveAdsProvider({
   pathname: Astro.url.pathname,
   nsfwMode,
@@ -85,7 +92,7 @@ const siteName =
         crossorigin="anonymous"
       />
     )}
-    {adsProvider === 'adsterra' && (
+    {adsProvider === 'adsterra' && !isNativeApp && (
       <script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
     )}
 
@@ -146,8 +153,9 @@ const siteName =
     <DiscordInviteModal client:only="react" />
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
-    {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider). */}
-    {adsProvider === 'adsterra' && (
+    {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider).
+        Se omite en la app (isNativeApp): es el "emergente" con cerrar difícil. */}
+    {adsProvider === 'adsterra' && !isNativeApp && (
       <script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
     )}
     {/* Indicador de navegación: barra de progreso que aparece al instante al

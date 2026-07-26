@@ -8,6 +8,10 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.capibaratraductor.app',
   appName: 'CapibaraTraductor',
+  // Marca en el User-Agent para que el servidor (SSR) sepa que la petición viene
+  // de la app y pueda, por ejemplo, no cargar anuncios intrusivos (pop-ups) que
+  // molestan y arriesgan la política de Google Play. Toma efecto en el APK v4+.
+  appendUserAgent: 'CapibaraApp',
   // webDir es el shell local de arranque/offline (se genera en public/app-shell).
   webDir: 'capacitor-shell',
   backgroundColor: '#09090b',
