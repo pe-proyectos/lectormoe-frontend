@@ -89,13 +89,14 @@ const siteName =
     {/* Ad provider switch: see util/ads-provider.ts for the rule chain. */}
     {adsProvider === 'google' && (
       <script
+        is:inline
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052"
         crossorigin="anonymous"
       />
     )}
     {adsProvider === 'adsterra' && !isNativeApp && (
-      <script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
+      <script is:inline src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
     )}
 
     {/* Open Graph / Facebook */}
@@ -165,7 +166,7 @@ const siteName =
     {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider).
         Se omite en la app (isNativeApp): es el "emergente" con cerrar difícil. */}
     {adsProvider === 'adsterra' && !isNativeApp && (
-      <script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
+      <script is:inline src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
     )}
     {/* Indicador de navegación: barra de progreso que aparece al instante al
         tocar un enlace o iniciar una navegación, para que el cambio de pantalla
