@@ -10,15 +10,17 @@
       img { width: 96px; height: 96px; object-fit: contain; opacity: .9; margin-bottom: 20px; }
       h1 { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
       p { color: #a1a1aa; margin: 0 0 20px; max-width: 320px; }
-      button { background: #06b6d4; color: #09090b; border: 0; border-radius: 12px; padding: 12px 24px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; }
+      button, a.btn { background: #06b6d4; color: #09090b; border: 0; border-radius: 12px; padding: 12px 24px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; text-decoration: none; display: inline-block; }
+      a.ghost { background: transparent; color: #06b6d4; border: 1px solid #27272a; margin-top: 10px; }
     </style>
   </head>
   <body>
-    <div class="wrap">
+    <div class="wrap" style="padding-top: calc(24px + env(safe-area-inset-top)); padding-bottom: calc(24px + env(safe-area-inset-bottom));">
       <img src="/icons/icon-192.png" alt="CapibaraTraductor" />
       <h1>Sin conexión</h1>
-      <p>Revisa tu internet e intenta de nuevo.</p>
-      <button onclick="location.reload()">Reintentar</button>
+      <p>No hay internet. Igual puedes leer los mangas que descargaste en este dispositivo.</p>
+      <a class="btn" href="/descargas">Mis descargas</a>
+      <a class="ghost btn" href="#" onclick="location.reload();return false;">Reintentar</a>
     </div>
   </body>
 </html>

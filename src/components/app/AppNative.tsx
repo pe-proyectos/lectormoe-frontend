@@ -1,20 +1,22 @@
 import { useEffect } from 'react';
 
 // Configuración nativa de la app (Capacitor). Solo corre dentro de la app.
-// Problema: en Android el WebView es edge-to-edge y se dibuja BAJO la barra de
-// estado; `env(safe-area-inset-top)` no lo compensa como en iOS (suele ser 0),
-// así que el contenido queda tapado por la barra. Solución: pedirle al plugin
-// StatusBar que NO superponga el WebView, de modo que el sistema reserve el
-// espacio de la barra. Se aplica al primer render y persiste toda la sesión.
+//
+// Android 15+ (targetSdk 35+) fuerza edge-to-edge: el WebView se dibuja de borde
+// a borde, bajo las barras de sistema. Lo correcto es ABRAZARLO (Capacitor 8 ya
+// popula `env(safe-area-inset-*)` vía WindowInsets) y compensar con CSS, en vez
+// de usar `setOverlaysWebView(false)` / `setBackgroundColor`, que son las APIs
+// que Android 15 deprecó (causaban el warning de Play y, al desactivar el
+// edge-to-edge, dejaban los insets en 0). Aquí solo ajustamos el color de los
+// íconos de la barra con la API moderna (setAppearanceLightStatusBars) para que
+// se vean claros sobre el fondo oscuro.
 export default function AppNative() {
   useEffect(() => {
     const cap = (window as any).Capacitor;
     if (!cap?.isNativePlatform?.()) return;
     import('@capacitor/status-bar')
       .then(({ StatusBar, Style }) => {
-        StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
-        StatusBar.setStyle({ style: Style.Dark }).catch(() => {}); // texto/íconos claros sobre fondo oscuro
-        StatusBar.setBackgroundColor({ color: '#09090b' }).catch(() => {});
+        StatusBar.setStyle({ style: Style.Dark }).catch(() => {}); // íconos claros
       })
       .catch(() => {});
   }, []);

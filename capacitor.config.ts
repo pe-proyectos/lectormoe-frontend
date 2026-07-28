@@ -45,9 +45,12 @@ const config: CapacitorConfig = {
       androidSplashResourceName: 'splash',
       showSpinner: false,
     },
+    // Edge-to-edge (Android 15+): NO fijamos backgroundColor (mapea a
+    // setStatusBarColor, deprecada). El WebView va de borde a borde y el
+    // contenido se separa de las barras con env(safe-area-inset-*) en CSS.
+    // Solo el estilo de íconos (API moderna).
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#09090b',
     },
   },
 };
