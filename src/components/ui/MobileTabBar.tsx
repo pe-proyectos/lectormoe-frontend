@@ -36,6 +36,12 @@ const MobileTabBar: React.FC<Props> = ({ logged, nsfwMode, profileSlug }) => {
   const homeHref = nsfwMode ? '/red' : '/';
   const searchHref = nsfwMode ? '/red/search' : '/search';
   const profileHref = logged ? (profileSlug ? `/profile/${profileSlug}` : '/settings') : '/login';
+  // La lista personal vive en /list/{slug} (NO /list): sin el slug la pestaña
+  // quedaba en una ruta inexistente y "no se veía nada". Es gratis (lo de
+  // suscriptores es crear listas de comunidad en /listas, otra función).
+  const listHref = profileSlug
+    ? (nsfwMode ? `/red/list/${profileSlug}` : `/list/${profileSlug}`)
+    : '/settings';
   const writingsHref = nsfwMode ? '/red/writings' : '/writings';
 
   // Set logueado: navegación personal. Set anónimo: solo destinos públicos
@@ -44,7 +50,7 @@ const MobileTabBar: React.FC<Props> = ({ logged, nsfwMode, profileSlug }) => {
     ? [
         { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
         { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
-        { key: 'list', label: 'Mi Lista', icon: Bookmark, href: '/list' },
+        { key: 'list', label: 'Mi Lista', icon: Bookmark, href: listHref },
         { key: 'notif', label: 'Alertas', icon: Bell, href: '/notifications', badge: unread },
         { key: 'profile', label: 'Perfil', icon: User, href: profileHref },
       ]
