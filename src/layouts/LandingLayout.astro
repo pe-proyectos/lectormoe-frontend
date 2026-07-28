@@ -261,7 +261,16 @@ const siteName =
     color: #f4f4f5;
     overflow-x: hidden;
     margin: 0;
-    padding: 0;
+    /* Edge-to-edge (Android 15 / notch): separa el contenido de las barras del
+       sistema en CUALQUIER orientación. En vertical actúa el inset de arriba; al
+       voltear (horizontal), el notch y la barra de navegación quedan a los lados
+       y actúan los insets izquierdo/derecho, así el contenido queda CENTRADO en
+       el área útil y no descentrado bajo el notch. En desktop/sin notch los
+       insets son 0, así que no afecta. (Antes esto estaba bajo @media max-width
+       767px, que NO aplica en horizontal porque el ancho pasa de 767px.) */
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   /* Fundamentos de interacción móvil (Tarea 19a) */
@@ -274,12 +283,6 @@ const siteName =
     touch-action: manipulation;
   }
   @media (max-width: 767px) {
-    /* Barra de estado del teléfono (app Android/Capacitor): el WebView es
-       edge-to-edge, así que reservamos su altura para que el navbar y el
-       contenido no queden debajo. En navegador sin notch, el inset es 0. */
-    body {
-      padding-top: env(safe-area-inset-top);
-    }
     input,
     select,
     textarea {
