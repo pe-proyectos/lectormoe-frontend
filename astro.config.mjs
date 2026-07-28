@@ -11,7 +11,11 @@ export default defineConfig({
   },
   adapter: bun(),
   output: "server",
-  prefetch: false,
+  // Prefetch: al empezar a tocar un enlace ya se descarga la página siguiente,
+  // así el cambio de vista se siente instantáneo. 'hover' = touchstart en móvil
+  // (bajo consumo de datos). Combinado con ClientRouter (transiciones de vista)
+  // la navegación no recarga toda la página ni parpadea.
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
   devToolbar: {
     enabled: false
   },

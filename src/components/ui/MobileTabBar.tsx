@@ -14,8 +14,16 @@ const MobileTabBar: React.FC<Props> = ({ logged, nsfwMode, profileSlug }) => {
   const [unread, setUnread] = useState(0);
   const [path, setPath] = useState('');
 
+  // La barra se persiste entre transiciones de vista (no se re-monta), así que
+  // el resaltado de la pestaña activa debe actualizarse en cada navegación.
   useEffect(() => {
-    setPath(window.location.pathname);
+    const update = () => setPath(window.location.pathname);
+    update();
+    document.addEventListener('astro:page-load', update);
+    return () => document.removeEventListener('astro:page-load', update);
+  }, []);
+
+  useEffect(() => {
     if (!logged) return;
     callAPI('/api/notifications/unread-count')
       .then((d: any) => { if (typeof d?.count === 'number') setUnread(d.count); })

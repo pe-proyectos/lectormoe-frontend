@@ -7,6 +7,7 @@ import GlobalToaster from '../components/ui/GlobalToaster';
 import PullToRefresh from '../components/ui/PullToRefresh';
 import AppNative from '../components/app/AppNative';
 import { resolveAdsProvider } from '../util/ads-provider';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title?: string;
@@ -136,23 +137,29 @@ const siteName =
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+
+    {/* Transiciones de vista: intercepta la navegación y hace un swap suave del
+        DOM en vez de recargar toda la página (se siente como app nativa). El
+        indicador #nav-progress se engancha a los eventos astro:* más abajo. */}
+    <ClientRouter />
   </head>
   <body>
     <slot />
-    <GlobalToaster client:only="react" />
-    <AppNative client:only="react" />
-    {!hideTabBar && <PullToRefresh client:only="react" />}
+    <GlobalToaster client:only="react" transition:persist="toaster" />
+    <AppNative client:only="react" transition:persist="appnative" />
+    {!hideTabBar && <PullToRefresh client:only="react" transition:persist="ptr" />}
     {!hideTabBar && <div class="h-16 md:hidden" aria-hidden="true"></div>}
     {!hideTabBar && (
       <MobileTabBar
         client:only="react"
+        transition:persist="tabbar"
         logged={logged}
         organizationSlug={organization?.slug ?? null}
         nsfwMode={nsfwMode}
         profileSlug={user?.slug ?? null}
       />
     )}
-    <DiscordInviteModal client:only="react" />
+    <DiscordInviteModal client:only="react" transition:persist="discord-modal" />
     <!-- Sorteo ended — hidden until next giveaway -->
     <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
     {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider).
@@ -163,7 +170,7 @@ const siteName =
     {/* Indicador de navegación: barra de progreso que aparece al instante al
         tocar un enlace o iniciar una navegación, para que el cambio de pantalla
         (carga SSR completa en el WebView) se sienta inmediato y fluido. */}
-    <div id="nav-progress" aria-hidden="true"></div>
+    <div id="nav-progress" aria-hidden="true" transition:persist="nav-progress"></div>
     <style is:global>
       #nav-progress {
         position: fixed;
@@ -186,52 +193,55 @@ const siteName =
     </style>
     <script is:inline>
       (function () {
-        var bar = document.getElementById('nav-progress');
+        if (window.__navProgInit) return;
+        window.__navProgInit = true;
         var timer, w = 0;
+        function bar() { return document.getElementById('nav-progress'); }
         function start() {
-          if (!bar) return;
-          clearTimeout(timer);
-          w = 8;
-          bar.classList.add('active');
-          bar.style.width = '8%';
-          void bar.offsetWidth;
+          var b = bar(); if (!b) return;
+          clearTimeout(timer); w = 8;
+          b.classList.add('active'); b.style.width = '8%'; void b.offsetWidth;
           (function step() {
             w += (92 - w) * 0.14;
-            bar.style.width = w + '%';
+            var el = bar(); if (el) el.style.width = w + '%';
             timer = setTimeout(step, 180);
           })();
         }
         function done() {
-          if (!bar) return;
-          clearTimeout(timer);
-          bar.style.width = '100%';
-          setTimeout(function () {
-            bar.classList.remove('active');
-            bar.style.width = '0';
-          }, 250);
+          var b = bar(); if (!b) return;
+          clearTimeout(timer); b.style.width = '100%';
+          setTimeout(function () { var el = bar(); if (el) { el.classList.remove('active'); el.style.width = '0'; } }, 250);
         }
-        document.addEventListener(
-          'click',
-          function (e) {
-            var a = e.target && e.target.closest ? e.target.closest('a') : null;
-            if (!a) return;
-            var href = a.getAttribute('href');
-            if (!href || href.charAt(0) === '#') return;
-            if (a.target === '_blank' || a.hasAttribute('download')) return;
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-            try {
-              var u = new URL(a.href, location.href);
-              if (u.origin !== location.origin) return;
-              if (u.pathname === location.pathname && u.search === location.search) return;
-            } catch (_) {
-              return;
-            }
-            start();
-          },
-          true
-        );
+        // Transiciones de vista (ClientRouter): empieza al preparar la nav, termina al cargar.
+        document.addEventListener('astro:before-preparation', start);
+        document.addEventListener('astro:page-load', done);
+        // Fallback para navegaciones completas (form posts, enlaces sin transición).
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a') : null;
+          if (!a) return;
+          var href = a.getAttribute('href');
+          if (!href || href.charAt(0) === '#') return;
+          if (a.target === '_blank' || a.hasAttribute('download')) return;
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          try {
+            var u = new URL(a.href, location.href);
+            if (u.origin !== location.origin) return;
+            if (u.pathname === location.pathname && u.search === location.search) return;
+          } catch (_) { return; }
+          start();
+        }, true);
         window.addEventListener('beforeunload', start);
         window.addEventListener('pageshow', done);
+
+        // Anuncios AdSense: tras cada swap de vista el body cambia sin recargar,
+        // así que pedimos anuncio para los slots nuevos aún sin llenar.
+        document.addEventListener('astro:page-load', function () {
+          try {
+            if (!window.adsbygoogle) return;
+            var slots = document.querySelectorAll('ins.adsbygoogle:not([data-adsbygoogle-status])');
+            for (var i = 0; i < slots.length; i++) (window.adsbygoogle = window.adsbygoogle || []).push({});
+          } catch (_) {}
+        });
       })();
     </script>
     <script is:inline>
