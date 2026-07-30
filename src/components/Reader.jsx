@@ -1609,12 +1609,20 @@ export function Reader({
 
           {settings.readType === readTypes.CASCADE && chapterData.pages.length > 0 && (
             <div className="flex justify-center mt-3">
-              <a
-                href="#manga-pages-top"
+              <button
+                type="button"
+                onClick={() => {
+                  // scrollIntoView directo en vez de href="#..." — con las
+                  // transiciones de vista, el ancla disparaba una navegación (el
+                  // "F5" al primer clic). Un botón evita eso por completo.
+                  const top = document.getElementById('manga-pages-top');
+                  if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  else window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-800 hover:border-cyan-500/40 text-zinc-400 hover:text-cyan-400 text-[10px] font-black uppercase tracking-widest transition-colors"
               >
                 <ArrowUpIcon className="h-3.5 w-3.5" /> Volver arriba
-              </a>
+              </button>
             </div>
           )}
         </div>

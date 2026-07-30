@@ -155,6 +155,9 @@ const buildItemUrl = (n: NotificationItem): string | null => {
       return `/${n.organization.slug}/admin/finance`;
     case 'scan_message_reply':
       return '/mensajes';
+    case 'scan_message':
+      if (!n.organization?.slug) return null;
+      return `/${n.organization.slug}/admin/messages`;
     case 'content_removed':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/mangas`;
@@ -207,6 +210,10 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         title: `Pago fallido en ${orgName}`,
         subtitle: `Suscripción #${subId} · ${rel}`,
       };
+    }
+    case 'scan_message': {
+      const orgName = n.organization?.name || 'tu scan';
+      return { title: `Nuevo mensaje para ${orgName}`, subtitle: rel };
     }
     case 'scan_message_reply': {
       const orgName = n.organization?.name || 'El scan';

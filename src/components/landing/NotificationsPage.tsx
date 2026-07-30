@@ -154,6 +154,9 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
       return `/${n.organization.slug}/admin/finance`;
     case 'scan_message_reply':
       return '/mensajes';
+    case 'scan_message':
+      if (!n.organization?.slug) return null;
+      return `/${n.organization.slug}/admin/messages`;
     case 'content_removed':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/mangas`;
@@ -212,6 +215,13 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
       return {
         title: `${orgName} respondió tu mensaje`,
         subtitle: `Toca para ver la conversación · ${rel}`,
+      };
+    }
+    case 'scan_message': {
+      const orgName = n.organization?.name || 'tu scan';
+      return {
+        title: `Nuevo mensaje para ${orgName}`,
+        subtitle: `Toca para verlo en tu panel · ${rel}`,
       };
     }
     case 'content_removed': {
