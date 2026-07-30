@@ -1555,7 +1555,8 @@ export function Reader({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Previous */}
             {chapter?.previousChapter ? (
-              new Date(chapter.previousChapter?.releasedAt).getTime() < new Date().getTime() ? (
+              // Sin releasedAt (p. ej. joints) = disponible. Con fecha, solo si ya pasó.
+              (!chapter.previousChapter?.releasedAt || new Date(chapter.previousChapter.releasedAt).getTime() < Date.now()) ? (
                 <button
                   onClick={() => resolvedPrevChapterUrl && (location.href = resolvedPrevChapterUrl)}
                   className="group flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-900 text-zinc-200 hover:text-cyan-400 text-xs font-black uppercase tracking-widest transition-all"
@@ -1586,7 +1587,8 @@ export function Reader({
 
             {/* Next */}
             {chapter?.nextChapter ? (
-              new Date(chapter.nextChapter?.releasedAt).getTime() < new Date().getTime() ? (
+              // Sin releasedAt (p. ej. joints) = disponible. Con fecha, solo si ya pasó.
+              (!chapter.nextChapter?.releasedAt || new Date(chapter.nextChapter.releasedAt).getTime() < Date.now()) ? (
                 <button
                   onClick={() => resolvedNextChapterUrl && (location.href = resolvedNextChapterUrl)}
                   className="group flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-900 text-zinc-200 hover:text-cyan-400 text-xs font-black uppercase tracking-widest transition-all"
