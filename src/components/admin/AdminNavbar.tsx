@@ -19,6 +19,7 @@ import {
   Link2,
   CornerDownLeft,
 } from 'lucide-react';
+import { callAPI } from '../../util/callApi';
 
 interface AdminNavbarProps {
   organization: {
@@ -97,6 +98,22 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Conversaciones con mensajes entrantes sin leer (para la burbuja de "Mensajes").
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    if (!organizationSlug) return;
+    let alive = true;
+    const load = () => {
+      callAPI('/api/organization/messages/unread-count', { headers: { 'x-organization': organizationSlug } })
+        .then((d: any) => { if (alive && typeof d?.count === 'number') setUnreadMessages(d.count); })
+        .catch(() => {});
+    };
+    load();
+    const onVis = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { alive = false; document.removeEventListener('visibilitychange', onVis); };
+  }, [organizationSlug]);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -176,11 +193,14 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
         {/* Fila 1: identidad + acciones */}
         <div className="px-4 md:px-6 h-14 flex items-center justify-between gap-3">
           <button
-            className="md:hidden min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all"
+            className="md:hidden relative min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Abrir secciones del panel"
+            aria-label={unreadMessages > 0 ? `Abrir secciones del panel (${unreadMessages} mensajes sin leer)` : 'Abrir secciones del panel'}
           >
             <Menu size={22} />
+            {unreadMessages > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-zinc-950" aria-hidden="true" />
+            )}
           </button>
 
           <a
@@ -257,6 +277,11 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
                       style={{ animationDelay: `${(gi * 4 + ii) * 20}ms` }}
                     >
                       {item.label}
+                      {item.id === 'messages' && unreadMessages > 0 && (
+                        <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black align-middle">
+                          {unreadMessages > 9 ? '9+' : unreadMessages}
+                        </span>
+                      )}
                       {!isActive && <span className="an-underline" aria-hidden="true" />}
                     </a>
                   );
@@ -311,6 +336,11 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
                       >
                         <Icon size={17} className={isActive ? '' : 'text-zinc-500'} />
                         {item.label}
+                        {item.id === 'messages' && unreadMessages > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black">
+                            {unreadMessages > 9 ? '9+' : unreadMessages}
+                          </span>
+                        )}
                       </a>
                     );
                   })}
