@@ -32,6 +32,7 @@ const PageImage = memo((props) => {
     <LazyImage
       id={`page-${page.number}-img`}
       src={page.imageUrl}
+      retryable
       className={`${getImageClassName(isSideBySide)} ${
         isSideBySide && (isLeft ? "object-left" : "object-right")
       }`}
