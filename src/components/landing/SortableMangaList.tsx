@@ -6,7 +6,8 @@ import {
   type DragEndEvent,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -411,8 +412,13 @@ const SortableMangaList: React.FC<Props> = ({
   onToggleFavorite,
 }) => {
   const sensors = useSensors(
-    // Require 5px of movement before starting drag so clicks on the row link still work.
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // Ratón: 5px de movimiento antes de arrastrar (así el click en el enlace de
+    // la fila sigue funcionando).
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Táctil: mantener presionado ~180ms activa el arrastre; un swipe rápido
+    // (dentro de la tolerancia) hace scroll normal. PointerSensor era poco
+    // fiable en el WebView de Android (arrancaba y se soltaba solo).
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 

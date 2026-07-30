@@ -49,6 +49,11 @@ export const LazyImage = ({ src, alt, retryable = false, className, style, ...re
           gap: 12,
           background: '#18181b',
           color: '#a1a1aa',
+          // El lector paginado pone una capa de toque (z-10) para pasar de
+          // página ENCIMA de las hojas; sin esto, el tap iría a esa capa y no al
+          // botón. Lo elevamos por encima.
+          position: 'relative',
+          zIndex: 30,
         }}
       >
         <span style={{ fontSize: 13, fontWeight: 600 }}>Esta página no cargó</span>
