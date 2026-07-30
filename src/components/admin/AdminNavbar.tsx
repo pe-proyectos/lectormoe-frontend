@@ -172,7 +172,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
         }}
       />
 
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/80">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/80 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         {/* Fila 1: identidad + acciones */}
         <div className="px-4 md:px-6 h-14 flex items-center justify-between gap-3">
           <button

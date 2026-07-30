@@ -15,7 +15,7 @@ const { organization } = Astro.locals;
         page={page}
         client:load
     />
-    <div class="w-full h-full bg-zinc-950 overflow-x-hidden pt-16 md:pt-[116px]">
+    <div class="w-full h-full bg-zinc-950 overflow-x-hidden pt-16 md:pt-[116px] pb-[env(safe-area-inset-bottom)]">
         <slot />
     </div>
 </LandingLayout>

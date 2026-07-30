@@ -333,8 +333,8 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                 size="xl"
             >
                 <div className="flex flex-col gap-6">
-                    <div className="flex gap-4">
-                        <div className="w-[30%] flex flex-col gap-4 min-w-0 flex-shrink-0">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="w-full md:w-[30%] flex flex-col gap-4 min-w-0 md:flex-shrink-0">
                             <h3 className="text-lg font-black text-white uppercase tracking-tight">
                                 {_("details")}
                             </h3>
