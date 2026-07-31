@@ -169,10 +169,19 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [joints, setJoints] = useState<any[]>([]);
   const showNSFW = nsfwMode;
 
+  // Debounce del texto de búsqueda: la petición se dispara ~350ms después de
+  // dejar de escribir, no en cada tecla. Reduce el aluvión de requests y el
+  // parpadeo. (El guard de reqId asegura además que solo aplique la última.)
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, selectedStatus, selectedGenre, sortBy, authorSlug]);
+  }, [debouncedSearch, selectedStatus, selectedGenre, sortBy, authorSlug]);
 
   // Look up the author's display name when filtering by author (so the pill
   // shows "Por: Akasaka Aka" instead of the raw slug). Best-effort — falls back
@@ -291,8 +300,8 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           nsfw: nsfwMode ? 'true' : 'false',
         });
 
-        if (search) {
-          queryParams.set('search', search);
+        if (debouncedSearch) {
+          queryParams.set('search', debouncedSearch);
         }
 
         if (selectedStatus !== 'All') {
@@ -356,7 +365,16 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               isNSFW: m.isNSFW || mangaOrg?.isNSFW || false,
             };
           });
-          setMangas(mappedMangas);
+          // Dedup por URL/slug: evita que la misma obra aparezca repetida y que
+          // colisionen los keys de React.
+          const seen = new Set<string>();
+          const deduped = mappedMangas.filter((m: any) => {
+            const k = m.mangaUrl || String(m.id);
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+          setMangas(deduped);
           setMaxPage(result.maxPage || 1);
         }
       } catch (error) {
@@ -369,7 +387,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     };
 
     fetchMangas();
-  }, [search, selectedStatus, selectedGenre, sortBy, authorSlug, page, organizationSlug, organization, user, logged]);
+  }, [debouncedSearch, selectedStatus, selectedGenre, sortBy, authorSlug, page, organizationSlug, organization, user, logged]);
 
   // Load genres: from API for org-specific pages, from all loaded mangas for global
   useEffect(() => {
@@ -448,8 +466,12 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               <div className="absolute inset-y-0 left-4 flex items-center text-zinc-500 group-focus-within:text-cyan-500 transition-colors">
                 <Search size={20} />
               </div>
-              <input 
+              <input
                 type="text"
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="off"
+                autoComplete="off"
                 placeholder={`Buscar en ${selectedScan !== 'All' ? selectedScan : 'la biblioteca'}...`}
                 className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 transition-all shadow-xl"
                 value={search}
@@ -576,7 +598,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                 <MangaCard3D
                   user={user}
                   organization={organization}
-                  key={manga.id}
+                  key={manga.mangaUrl || manga.id}
                   nsfwMode={nsfwMode}
                   manga={{
                     ...manga,
@@ -598,7 +620,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           ) : (
             <div className="flex flex-col gap-4">
               {filteredMangas.map((manga) => (
-                <MangaListItem key={manga.id} manga={manga} hideScan={!!isScanBranded} nsfwMode={nsfwMode} />
+                <MangaListItem key={manga.mangaUrl || manga.id} manga={manga} hideScan={!!isScanBranded} nsfwMode={nsfwMode} />
               ))}
             </div>
           )

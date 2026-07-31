@@ -1672,10 +1672,13 @@ export function Reader({
                       if (settings.readType === readTypes.PAGINATED) {
                         setCurrentPage(page.number);
                       }
-                      location.href =
+                      // scrollIntoView en vez de location.href="#..." para no
+                      // disparar una navegación (el "F5") con las transiciones de vista.
+                      const targetId =
                         settings.readType === readTypes.PAGINATED
-                          ? "#manga-pages-top"
-                          : `#page-${page.number}`;
+                          ? 'manga-pages-top'
+                          : `page-${page.number}`;
+                      document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
 
                       handlePagesDialog();
                     }}
