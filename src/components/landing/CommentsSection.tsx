@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notify } from '../../util/feedback';
 import { ThumbsUp, ThumbsDown, MessageCircle, LogIn, Edit2, Trash2, EyeOff, X, Send, Image as ImageIcon, ShieldBan } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
@@ -432,12 +433,12 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Solo se permiten imágenes');
+      notify.error('Solo se permiten imágenes');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('La imagen no puede ser mayor a 5MB');
+      notify.error('La imagen no puede ser mayor a 5MB');
       return;
     }
 
@@ -516,11 +517,11 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const postComment = async () => {
     if (!logged) return;
     if (commentText.length < 1) {
-      alert('El comentario no puede estar vacío');
+      notify.error('El comentario no puede estar vacío');
       return;
     }
     if (commentText.length > 200) {
-      alert('El comentario no puede tener más de 200 caracteres');
+      notify.error('El comentario no puede tener más de 200 caracteres');
       return;
     }
 
@@ -547,7 +548,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       getComments();
     } catch (error) {
       console.error('Error al comentar', error);
-      alert('Error al comentar');
+      notify.error('Error al comentar');
     } finally {
       setIsPosting(false);
     }
@@ -556,7 +557,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const handleDeleteComment = async (commentId: number) => {
     try {
       if (user?.id !== comments.find((c) => c.id === commentId)?.userId && !userPermissions?.canDeleteComment) {
-        alert('No tienes permisos para eliminar este comentario');
+        notify.error('No tienes permisos para eliminar este comentario');
         return;
       }
 
@@ -565,7 +566,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       getComments();
     } catch (error) {
       console.error('Error al eliminar comentario', error);
-      alert('Error al eliminar el comentario');
+      notify.error('Error al eliminar el comentario');
     }
   };
 
@@ -578,7 +579,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       getComments();
     } catch (error) {
       console.error('Error al editar comentario', error);
-      alert('Error al editar el comentario');
+      notify.error('Error al editar el comentario');
     }
   };
 
@@ -591,7 +592,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       getComments();
     } catch (error) {
       console.error('Error al votar comentario', error);
-      alert('Error al votar el comentario');
+      notify.error('Error al votar el comentario');
     }
   };
 
@@ -610,7 +611,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       setSelectedCommentToHide(null);
     } catch (error) {
       console.error('Error al ocultar comentario', error);
-      alert('Error al ocultar el comentario');
+      notify.error('Error al ocultar el comentario');
     } finally {
       setIsHidingComment(false);
     }
@@ -649,7 +650,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       setBanDialogOpen(false);
       getComments();
     } catch (error: any) {
-      alert(error?.message || 'Error al aplicar sanción');
+      notify.error(error?.message || 'Error al aplicar sanción');
     } finally {
       setIsBanning(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { notify } from '../../util/feedback';
 import {
   Star,
   Bookmark,
@@ -1029,7 +1030,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
 
     if (!userCanDownload()) {
-      alert("No tienes permisos para descargar capítulos. Necesitas una suscripción activa con acceso a descargas.");
+      notify.error("No tienes permisos para descargar capítulos. Necesitas una suscripción activa con acceso a descargas.");
       return;
     }
 
@@ -1044,7 +1045,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
       if (!Array.isArray(chapterPages) || chapterPages.length === 0) {
         console.error("No se encontraron páginas para este capítulo");
-        alert("No se pudieron obtener las páginas del capítulo. Por favor, intenta de nuevo.");
+        notify.error("No se pudieron obtener las páginas del capítulo. Por favor, intenta de nuevo.");
         return;
       }
 
@@ -1087,7 +1088,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     } catch (error: any) {
       console.error("Failed to download chapter", error);
       const errorMessage = error?.message || "Error al descargar el capítulo. Por favor, verifica que tengas acceso y vuelve a intentar.";
-      alert(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setIsDownloadingChapter(null);
     }

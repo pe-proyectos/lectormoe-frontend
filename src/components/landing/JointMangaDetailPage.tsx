@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notify } from '../../util/feedback';
 import { Heart } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
@@ -37,7 +38,7 @@ const JointMangaDetailPage: React.FC<JointMangaDetailPageProps> = ({ joint, user
         setIsFavorite(true);
       }
     } catch (e: any) {
-      alert(e?.message || 'Error al actualizar favoritos');
+      notify.error(e?.message || 'Error al actualizar favoritos');
     } finally {
       setLoadingFav(false);
     }

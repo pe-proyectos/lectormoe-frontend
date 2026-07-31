@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { notify } from '../../util/feedback';
 import { Trash2, ShieldAlert, Loader2, CheckCircle2, LogIn, Eraser } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
@@ -20,9 +21,9 @@ const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
     setClearingData(true);
     try {
       await callAPI('/api/user/delete-data', { method: 'POST' });
-      alert('Tus datos de actividad fueron eliminados. Tu cuenta sigue activa.');
+      notify.success('Tus datos de actividad fueron eliminados. Tu cuenta sigue activa.');
     } catch (e: any) {
-      alert(e?.message || 'No se pudieron borrar los datos.');
+      notify.error(e?.message || 'No se pudieron borrar los datos.');
     } finally {
       setClearingData(false);
     }

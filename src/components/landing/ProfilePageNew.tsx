@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { notify } from '../../util/feedback';
 import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, ChevronDown, BookOpen, BookMarked, Users, Pause, PlayCircle, X, Camera, Image as ImageIcon, AlignLeft, Upload, Lock, Unlock, User as UserIcon, Info, Sparkles, Crown, Calendar, Flame, Trophy, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
@@ -718,11 +719,11 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       if (result) {
         window.location.reload();
       } else {
-        alert('Error al actualizar el perfil');
+        notify.error('Error al actualizar el perfil');
       }
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      alert(error?.message || 'Error al actualizar el perfil');
+      notify.error(error?.message || 'Error al actualizar el perfil');
     } finally {
       setUploading(false);
     }
@@ -741,7 +742,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       const result = await callAPI("/api/organization/followed");
       setFollowedScans(Array.isArray(result) ? result : []);
     } catch (error: any) {
-      alert(error?.message || 'No se pudo actualizar la suscripción.');
+      notify.error(error?.message || 'No se pudo actualizar la suscripción.');
     } finally {
       setTogglingScanId(null);
     }

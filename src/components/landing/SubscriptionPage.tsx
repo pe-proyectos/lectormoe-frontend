@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { notify } from '../../util/feedback';
 import { Check, Shield, Crown, Trophy, MessageSquare, Heart, ExternalLink } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
@@ -373,22 +374,22 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
               });
 
               if (!result?.status) {
-                alert(result?.message || 'Error al guardar la suscripción. Por favor, contacta con soporte.');
+                notify.error(result?.message || 'Error al guardar la suscripción. Por favor, contacta con soporte.');
                 return;
               }
 
-              alert('¡Te has suscrito exitosamente!');
+              notify.success('¡Te has suscrito exitosamente!');
               setTimeout(() => {
                 window.location.reload();
               }, 1000);
             } catch (err: any) {
               console.error('Error saving subscription:', err);
-              alert(err?.message || err || 'Ocurrió un error al guardar tu suscripción.');
+              notify.error(err?.message || err || 'Ocurrió un error al guardar tu suscripción.');
             }
           },
           onError: function (err: any) {
             console.error('Error creating subscription:', err);
-            alert(err?.message || err || 'Ocurrió un error al procesar tu suscripción.');
+            notify.error(err?.message || err || 'Ocurrió un error al procesar tu suscripción.');
           },
         })
         .render(`#${containerId}`);

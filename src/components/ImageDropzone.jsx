@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { notify } from '../util/feedback';
 import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/solid';
 
 export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
@@ -47,7 +48,7 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
         if (files.length > 0) {
             const file = files[0];
             if (file.size > 25 * 1024 * 1024) {
-                alert('El archivo es demasiado grande. Máximo 25MB');
+                notify.error('El archivo es demasiado grande. Máximo 25MB');
                 return;
             }
             onChange([file]);
@@ -59,7 +60,7 @@ export function ImageDropzone({ value, label, alt, onChange, onDelete }) {
         if (files.length > 0) {
             const file = files[0];
             if (file.size > 25 * 1024 * 1024) {
-                alert('El archivo es demasiado grande. Máximo 25MB');
+                notify.error('El archivo es demasiado grande. Máximo 25MB');
                 return;
             }
             onChange([file]);

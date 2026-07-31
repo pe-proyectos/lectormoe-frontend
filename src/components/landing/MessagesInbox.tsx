@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { notify } from '../../util/feedback';
 import { Loader2, Inbox, Send, ArrowLeft, LogIn } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
@@ -71,7 +72,7 @@ const MessagesInbox: React.FC<Props> = ({ logged }) => {
       setReply('');
       const res = await callAPI(`/api/messages/${active.id}`);
       setMessages(res.messages || []);
-    } catch (e: any) { alert(e?.message || 'No se pudo enviar.'); } finally { setSending(false); }
+    } catch (e: any) { notify.error(e?.message || 'No se pudo enviar.'); } finally { setSending(false); }
   };
 
   if (!logged) {

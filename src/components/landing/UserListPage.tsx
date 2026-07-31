@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { notify } from '../../util/feedback';
 import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Bookmark, X, SlidersHorizontal, Trash2 } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -111,7 +112,7 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
       setPage(1);
       setShowClearListModal(false);
     } catch {
-      alert('No se pudo vaciar la lista. Intenta de nuevo.');
+      notify.error('No se pudo vaciar la lista. Intenta de nuevo.');
     } finally {
       setClearingList(false);
     }

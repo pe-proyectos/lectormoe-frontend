@@ -1,5 +1,6 @@
 
 import React, { useRef, useState } from 'react';
+import { notify } from '../../util/feedback';
 import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard, AlertTriangle } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 
@@ -219,7 +220,7 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
     e.stopPropagation();
     const reason = getAccessReason(chapter);
     if (reason) {
-      alert(reason);
+      notify.error(reason);
     }
   };
 
