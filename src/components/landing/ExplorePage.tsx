@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import MangaCard3D from './MangaCard3D';
 import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User, X } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
@@ -271,8 +271,15 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     fetchJoints();
   }, [isScanBranded]);
 
+  // Contador de peticiones: solo se aplica la respuesta de la ÚLTIMA búsqueda.
+  // Sin esto, una petición vieja que resuelve tarde sobreescribe con resultados
+  // que no corresponden (resultados que "se quedan", se repiten o salen cosas
+  // ajenas al escribir rápido).
+  const reqIdRef = useRef(0);
+
   // Fetch mangas
   useEffect(() => {
+    const myReqId = ++reqIdRef.current;
     const fetchMangas = async () => {
       try {
         setLoading(true);
@@ -304,6 +311,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
         }
 
         const result = await callAPI(`/api/manga-custom?${queryParams}`);
+
+        // Respuesta obsoleta (llegó otra búsqueda después): descartar.
+        if (myReqId !== reqIdRef.current) return;
 
         // El API retorna { items: [...], maxPage: X, total: Y }
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {
@@ -350,9 +360,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           setMaxPage(result.maxPage || 1);
         }
       } catch (error) {
+        if (myReqId !== reqIdRef.current) return;
         console.error('Error fetching mangas:', error);
       } finally {
-        setLoading(false);
+        // Solo la última petición controla el spinner.
+        if (myReqId === reqIdRef.current) setLoading(false);
       }
     };
 
