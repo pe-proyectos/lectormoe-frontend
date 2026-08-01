@@ -239,6 +239,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
     effectiveSlug = pathSegments[1] || ""; // "" si solo es /red
   }
 
+  // +18 PERSISTENTE: si el usuario activó el modo adulto (cookie `nsfw=1`), las
+  // raíces globales (inicio / búsqueda / novelas) redirigen a su versión /red,
+  // para que la preferencia se mantenga al volver al inicio en vez de perderse.
+  // Acotado a rutas EXACTAS: sus gemelas empiezan con /red (nsfwMode=true), así
+  // que no hay bucle. La preferencia solo cambia al pulsar el toggle.
+  if (!nsfwMode && context.cookies.get("nsfw")?.value === "1") {
+    const twin: Record<string, string> = {
+      "/": "/red",
+      "/search": "/red/search",
+      "/writings": "/red/writings",
+    };
+    const target = twin[context.url.pathname];
+    if (target) {
+      return context.redirect(target + context.url.search, 302);
+    }
+  }
+
   context.locals.nsfwMode = nsfwMode;
 
   // Determinar si es landing page

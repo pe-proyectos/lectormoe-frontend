@@ -382,6 +382,15 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  // Togglea el +18 y PERSISTE la preferencia en una cookie, para que se mantenga
+  // al volver al inicio (el middleware redirige las raíces globales a /red cuando
+  // está activo). Solo cambia al pulsar el toggle, no por navegar.
+  const handleNsfwToggle = () => {
+    if (nsfwMode) document.cookie = 'nsfw=; Path=/; Max-Age=0; SameSite=Lax';
+    else document.cookie = 'nsfw=1; Path=/; Max-Age=31536000; SameSite=Lax';
+    window.location.href = getNsfwToggleTarget();
+  };
+
   return (
     <>
     <nav
@@ -907,7 +916,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => {
                 setNsfwModalOpen(false);
-                window.location.href = getNsfwToggleTarget();
+                handleNsfwToggle();
               }}
               className={`flex-1 px-4 py-3 rounded-2xl font-black text-sm transition-colors cursor-pointer ${
                 nsfwMode
@@ -1133,7 +1142,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="px-5 mt-5 mb-3">
             <button
               type="button"
-              onClick={() => { window.location.href = getNsfwToggleTarget(); }}
+              onClick={handleNsfwToggle}
               className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors ${
                 nsfwMode
                   ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
