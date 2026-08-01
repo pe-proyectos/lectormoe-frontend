@@ -53,8 +53,15 @@ interface NotificationItem {
     id: number;
     name: string;
     slug: string;
+    isNSFW?: boolean;
   } | null;
 }
+
+// Prefijo /red según el contenido de la notificación (manga/org +18), NO el path
+// actual: si no, un comentario/capítulo de un manga +18 abierto desde una vista
+// normal (o al revés) daba una URL equivocada => pantalla negra.
+const notifIsNsfw = (n: NotificationItem): boolean =>
+  !!(n.mangaCustom?.isNSFW || n.mangaCustom?.organization?.isNSFW || n.organization?.isNSFW);
 
 interface NotificationBellProps {
   logged: boolean;
@@ -117,8 +124,7 @@ const buildCommentThreadUrl = (n: NotificationItem): string | null => {
 
   if (!n.organization) return null;
   const orgSlug = n.organization.slug;
-  const isNsfwPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/red');
-  const prefix = isNsfwPath ? '/red' : '';
+  const prefix = notifIsNsfw(n) ? '/red' : '';
   const lastUnderscore = identifier.lastIndexOf('_');
   if (lastUnderscore > 0 && /^\d+(\.\d+)?$/.test(identifier.slice(lastUnderscore + 1))) {
     const mangaSlug = identifier.slice(0, lastUnderscore);
@@ -135,8 +141,7 @@ const buildItemUrl = (n: NotificationItem): string | null => {
       if (chapterNumber === undefined || chapterNumber === null) return null;
       if (n.joint) return `/joint/manga/${n.joint.slug}/chapters/${chapterNumber}`;
       if (n.mangaCustom?.organization?.slug && n.mangaCustom?.manga?.slug) {
-        const isNsfwPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/red');
-        const prefix = isNsfwPath ? '/red' : '';
+        const prefix = notifIsNsfw(n) ? '/red' : '';
         return `${prefix}/${n.mangaCustom.organization.slug}/manga/${n.mangaCustom.manga.slug}/chapters/${chapterNumber}`;
       }
       return null;
@@ -144,9 +149,11 @@ const buildItemUrl = (n: NotificationItem): string | null => {
     case 'comment_reply':
     case 'comment_on_owned_content':
       return buildCommentThreadUrl(n);
-    case 'new_manga':
+    case 'new_manga': {
       if (!n.mangaCustom?.manga?.slug) return null;
-      return `/${n.organization?.slug || n.mangaCustom.organization?.slug}/manga/${n.mangaCustom.manga.slug}`;
+      const prefix = notifIsNsfw(n) ? '/red' : '';
+      return `${prefix}/${n.organization?.slug || n.mangaCustom.organization?.slug}/manga/${n.mangaCustom.manga.slug}`;
+    }
     case 'new_subscriber':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/subscription-plans`;
