@@ -85,8 +85,9 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
 
   const toggleFavorite = async () => {
     if (!logged) {
-      setFeedback({ message: 'Inicia sesión para agregar a favoritos', type: 'error' });
-      setTimeout(() => setFeedback(null), 3000);
+      // Llevar al login conservando el retorno, en vez de un toast que se
+      // corta contra el borde derecho en móvil.
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       return;
     }
 
@@ -152,7 +153,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
           <div className="lg:col-span-7 space-y-6">
             <div className="space-y-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-cyan-500 text-black font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-widest">Featured</span>
+                <span className="bg-cyan-500 text-black font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-widest">Destacado</span>
                 <span className="text-cyan-500 font-bold text-[10px] uppercase tracking-[0.3em]">{current.scan || current.scanName || 'Capibara Traductor'}</span>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white italic leading-tight tracking-tighter uppercase drop-shadow-2xl line-clamp-2">
@@ -163,7 +164,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
 
             <div className="flex items-center gap-4 text-xs">
               {current.chapter && (
-                <span className="text-zinc-300 font-bold bg-zinc-800/50 px-3 py-1 rounded-full border border-zinc-700/50">Chapter {current.chapter}</span>
+                <span className="text-zinc-300 font-bold bg-zinc-800/50 px-3 py-1 rounded-full border border-zinc-700/50">Cap. {current.chapter}</span>
               )}
               {current.lastUpdate && (
                 <span className="text-zinc-500 font-bold uppercase tracking-widest">{current.lastUpdate}</span>
@@ -211,8 +212,8 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
                   )}
                 </button>
                 {feedback && (
-                  <div className={`absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-white text-xs font-bold uppercase tracking-widest whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 z-10 ${
-                    feedback.type === 'success' ? 'bg-green-500/90' : 'bg-red-500/90'
+                  <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 max-w-[calc(100vw-2rem)] text-center px-4 py-2 rounded-lg text-white text-xs font-bold uppercase tracking-widest shadow-xl z-[95] ${
+                    feedback.type === 'success' ? 'bg-green-500/95' : 'bg-red-500/95'
                   }`}>
                     {feedback.message}
                   </div>
@@ -245,10 +246,11 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
       <div className="absolute bottom-2 translate-y-2 right-8 z-20 flex items-center gap-4">
         <div className="flex gap-2 mr-4">
           {mangas.map((_, i) => (
-            <button 
+            <button
               key={i}
               onClick={() => setActive(i)}
-              className={`h-1 transition-all duration-500 rounded-full ${active === i ? 'w-8 bg-cyan-500' : 'w-2 bg-zinc-800 hover:bg-zinc-600'}`}
+              aria-label={`Ir al destacado ${i + 1}`}
+              className={`h-2 py-2 transition-all duration-500 rounded-full bg-clip-content ${active === i ? 'w-8 bg-cyan-500' : 'w-3 bg-zinc-700 hover:bg-zinc-500'}`}
             />
           ))}
         </div>

@@ -151,14 +151,17 @@ interface ExplorePageProps {
 }
 
 const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlug, user, logged, nsfwMode = false }) => {
-  const initialAuthor = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('author') ?? '' : '';
-  const [search, setSearch] = useState('');
+  // Estado inicial desde la URL: al recargar, volver atrás o compartir el
+  // enlace se conservan la búsqueda y los filtros.
+  const initialParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const initialAuthor = initialParams.get('author') ?? '';
+  const [search, setSearch] = useState(initialParams.get('q') ?? '');
   const [selectedScan, setSelectedScan] = useState('All');
-  const [selectedStatus, setSelectedStatus] = useState('All');
-  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState(initialParams.get('status') ?? 'All');
+  const [selectedGenre, setSelectedGenre] = useState(initialParams.get('genre') ?? 'All');
   const [authorSlug, setAuthorSlug] = useState<string>(initialAuthor);
   const [authorName, setAuthorName] = useState<string>('');
-  const [sortBy, setSortBy] = useState('latest');
+  const [sortBy, setSortBy] = useState(initialParams.get('sort') ?? 'latest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,6 +169,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [genres, setGenres] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [maxPage, setMaxPage] = useState(1);
+  const [total, setTotal] = useState<number | null>(null);
   const [joints, setJoints] = useState<any[]>([]);
   const showNSFW = nsfwMode;
 
@@ -201,6 +205,32 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     else u.searchParams.delete('author');
     window.history.replaceState({}, '', u.toString());
   }, [authorSlug]);
+
+  // Sync search text and filters into the URL (recargar/compartir/volver atrás
+  // conservan el estado). Cada efecto toca solo sus propios params, así que no
+  // se pisan entre sí.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const u = new URL(window.location.href);
+    const setOrDel = (key: string, val: string, empty: string) => {
+      if (val && val !== empty) u.searchParams.set(key, val);
+      else u.searchParams.delete(key);
+    };
+    setOrDel('q', debouncedSearch, '');
+    setOrDel('status', selectedStatus, 'All');
+    setOrDel('genre', selectedGenre, 'All');
+    setOrDel('sort', sortBy, 'latest');
+    window.history.replaceState({}, '', u.toString());
+  }, [debouncedSearch, selectedStatus, selectedGenre, sortBy]);
+
+  // Al cambiar de página, volver arriba: paginar dejaba la vista al fondo de la
+  // lista y había que subir a mano. Se salta el primer render.
+  const didMountPageRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!didMountPageRef.current) { didMountPageRef.current = true; return; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   const isScanBranded = organization && organizationSlug;
 
@@ -376,6 +406,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           });
           setMangas(deduped);
           setMaxPage(result.maxPage || 1);
+          setTotal(typeof result.total === 'number' ? result.total : null);
         }
       } catch (error) {
         if (myReqId !== reqIdRef.current) return;
@@ -560,7 +591,14 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
         {/* Results Info & View Toggle */}
         <div className="flex items-center justify-between mb-8">
           <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-            {loading ? 'Cargando...' : `${filteredMangas.length} Resultados encontrados`}
+            {loading ? 'Cargando...' : (() => {
+              // Total real del servidor (todas las páginas), no el tamaño de
+              // página. Si hay un filtro de scan client-side activo, ese total ya
+              // no aplica, así que caemos al conteo visible.
+              const showServerTotal = total != null && (isScanBranded || selectedScan === 'All');
+              const n = showServerTotal ? (total as number) : filteredMangas.length;
+              return `${n} ${n === 1 ? 'resultado' : 'resultados'}`;
+            })()}
           </p>
           <div className="flex items-center p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
             <button 

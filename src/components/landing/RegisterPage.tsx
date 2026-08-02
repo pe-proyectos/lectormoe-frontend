@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import 'cookie-store';
 
 interface RegisterPageProps {
@@ -16,6 +16,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Track page view
   useEffect(() => {
@@ -208,16 +209,24 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Contraseña</label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-cyan-500 transition-colors" size={18} />
-                  <input 
-                    type="password" 
-                    required 
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     minLength={4}
                     maxLength={30}
-                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500 transition-all"
+                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-12 text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500 transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-cyan-400 transition-colors p-1"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
                 <p className="text-[9px] text-zinc-600 font-bold ml-1">Mínimo 4 caracteres</p>
               </div>

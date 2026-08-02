@@ -62,7 +62,7 @@ const SinglePageContainer = memo((props) => {
       key={page.number}
       id={`page-${page.number}`}
       className={getPageContainerClassName(isCascade, false, shouldShow)}
-      style={getPageContainerStyle(isCascade)}
+      style={getPageContainerStyle(isCascade, page)}
     >
       {PageImageComponent}
     </div>
@@ -594,10 +594,20 @@ export function Reader({
   }, []);
 
   const getPageContainerStyle = useCallback(
-    (_isCascade) => ({
-      marginBottom: `${getGapValue(settings.pageGap)}px`,
-    }),
-    [settings.pageGap, getGapValue]
+    (_isCascade, page) => {
+      const style = { marginBottom: `${getGapValue(settings.pageGap)}px` };
+      // Reservar la altura de la hoja ANTES de que cargue la imagen: sin esto,
+      // cada hoja mide ~0px mientras carga y el contenido salta al aparecer (y
+      // el usuario "llega al final" sobre un hueco negro). Solo en ajuste
+      // "ancho" (default en móvil) el alto se deriva del ancho, así que el
+      // aspect-ratio calza exacto; en otros modos se deja como estaba.
+      if (settings.fitMode === 'width' && page?.imageWidth > 0 && page?.imageHeight > 0) {
+        style.aspectRatio = `${page.imageWidth} / ${page.imageHeight}`;
+        style.width = '100%';
+      }
+      return style;
+    },
+    [settings.pageGap, getGapValue, settings.fitMode]
   );
 
   const getPageContainerClassName = useCallback(
@@ -1156,8 +1166,27 @@ export function Reader({
     _,
   ]);
 
+  // Índice legible de la página actual (1..N) para el contador flotante. En
+  // cascada se sigue el scroll; en paginado, la página activa.
+  const currentReadableIndex = (() => {
+    if (!chapterData.pages.length) return 0;
+    const num =
+      settings.readType === readTypes.CASCADE
+        ? scrollInfo.currentPageNumber ?? currentPage
+        : currentPage;
+    const idx = chapterData.pages.findIndex((p) => p.number === num);
+    return idx >= 0 ? idx + 1 : 1;
+  })();
+
   return (
     <div id="reader-top">
+      {/* Contador de progreso: "página X / N". Antes no había forma de saber
+          cuánto faltaba salvo la barra fina. */}
+      {chapterData.pages.length > 0 && !accessError && (
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[80] pointer-events-none bg-zinc-900/85 backdrop-blur border border-zinc-700 rounded-full px-3 py-1 text-[11px] font-bold text-zinc-200 tabular-nums shadow-lg">
+          {currentReadableIndex} / {chapterData.pages.length}
+        </div>
+      )}
       {fitToast && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] bg-zinc-900 border border-zinc-700 rounded-full px-4 py-2 text-xs font-bold text-white shadow-xl pointer-events-none">
           {fitToast}

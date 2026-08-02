@@ -14,6 +14,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
 } from "lucide-react";
 import { callAPI } from "../../util/callApi";
 import { translateStatus } from "../../util/landing/translateStatus";
@@ -1143,12 +1144,24 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               </div>
             </div>
 
+            {/* CTA primario: leer. Antes el botón dominante era Favoritos
+                (amarillo) y los accesos de lectura quedaban enterrados abajo. */}
+            {firstChapter && (
+              <a
+                href={getChapterUrl(firstChapter)}
+                className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 bg-cyan-500 hover:bg-cyan-400 text-zinc-950 transition-all active:scale-95"
+              >
+                <BookOpen size={18} />
+                Empezar a leer
+              </a>
+            )}
+
             <button
               onClick={toggleFavorite}
-              className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl transition-all active:scale-95 ${
+              className={`w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border-2 transition-all active:scale-95 ${
                 isFavorite
-                  ? "bg-yellow-400 hover:bg-yellow-300 text-zinc-950 shadow-yellow-400/10"
-                  : "bg-yellow-400 hover:bg-yellow-300 text-zinc-950 shadow-yellow-400/10"
+                  ? "bg-yellow-400/10 border-yellow-400/50 text-yellow-400 hover:bg-yellow-400/20"
+                  : "bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:border-yellow-400/50 hover:text-yellow-400"
               }`}
             >
               <Star size={18} fill={isFavorite ? "currentColor" : "none"} />
@@ -1522,6 +1535,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   <div className="flex-1 space-y-4 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:overflow-x-hidden min-w-0">
                     {(() => {
                       const sorted = [...currentChapters].sort((a, b) => b.number - a.number);
+                      // Solo tiene sentido marcar capítulos como "Desbloqueado"
+                      // cuando la obra realmente tiene alguno bloqueado; si todos
+                      // son de acceso libre, el candado verde es ruido repetido.
+                      const anyLocked = sorted.some((c) => !userHasAccessToChapter(c));
                       const groupByVol = (manga as any).groupChaptersByVolume === true;
                       const volumes: any[] = (manga as any).volumes || [];
                       const volMeta = (n: number | null) => (n != null ? volumes.find((v: any) => v.number === n) : null);
@@ -1588,6 +1605,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2 min-w-0">
                                     {/* Lock/Unlock Icon with Tooltip */}
+                                    {(!hasAccess || anyLocked) && (
                                     <div className="relative group/lock shrink-0">
                                       {hasAccess && (
                                         <>
@@ -1616,7 +1634,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                         </>
                                       )}
                                     </div>
-
+                                    )}
 
                                     <h4 className="text-white font-bold text-sm md:text-lg truncate">
                                       Capítulo {chapter.number}

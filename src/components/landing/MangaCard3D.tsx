@@ -329,7 +329,7 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
                 e.stopPropagation();
               }}
             >
-               <Book size={12} /> Ir al Manga
+               <Book size={12} /> Leer
             </a>
 
             {/* Last 2 Chapters */}
