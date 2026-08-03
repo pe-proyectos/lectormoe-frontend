@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Inbox,
   Megaphone,
+  Star,
   Settings,
   Tag,
   UserCircle,
@@ -93,6 +94,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ page, organizationSlug }) =
       label: 'Reclutamiento',
       icon: Megaphone,
       href: `/${organizationSlug}/admin/recruitment`,
+    },
+    {
+      id: 'recommendations',
+      label: 'Recomendaciones',
+      icon: Star,
+      href: `/${organizationSlug}/admin/recommendations`,
     },
     {
       id: 'settings',

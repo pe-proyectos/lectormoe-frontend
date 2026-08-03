@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Hero from './Hero';
 import TrendingSection from './TrendingSection';
 import RecentlyAdded from './RecentlyAdded';
+import GlobalRecommendations from './GlobalRecommendations';
 import RecruitmentSpotlight from './RecruitmentSpotlight';
 import LatestUpdates from './LatestUpdates';
 import PerOrgPopular from './PerOrgPopular';
@@ -112,6 +113,9 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
 
             {/* Últimos añadidos a la plataforma */}
             <RecentlyAdded user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
+
+            {/* Recomendaciones curadas por los scans (cross-promo) */}
+            {!isWritings && <GlobalRecommendations nsfwMode={nsfwMode} />}
 
             <LatestUpdates user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 

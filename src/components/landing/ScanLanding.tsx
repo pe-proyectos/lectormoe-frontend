@@ -7,6 +7,7 @@ import ScanPopular24h from "./ScanPopular24h";
 import ScanRecentUpdates from "./ScanRecentUpdates";
 import ScanSidebar from "./ScanSidebar";
 import RecruitmentSpotlight from "./RecruitmentSpotlight";
+import ScanRecommendations from "./ScanRecommendations";
 import Footer from "./Footer";
 import { callAPI } from "../../util/callApi";
 
@@ -264,6 +265,11 @@ const ScanLanding: React.FC<ScanLandingProps> = ({
         user={user}
         logged={logged}
       />
+
+      {/* Estante curado por el scan: "La recomendación de la casa" */}
+      {organization?.slug && (
+        <ScanRecommendations scanSlug={organization.slug} orgPrefix={orgPrefix} scanName={organization?.name} />
+      )}
       <div className="max-w-7xl mx-auto px-3 md:px-8 py-12">
         {/* Top Three with independent skeleton */}
         {loadingTopThree ? (

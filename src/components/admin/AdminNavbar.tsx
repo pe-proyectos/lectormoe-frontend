@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Inbox,
   Megaphone,
+  Star,
   Settings,
   Tag,
   UserCircle,
@@ -71,6 +72,7 @@ const buildGroups = (slug: string): NavGroup[] => [
       { id: 'messages', label: 'Mensajes', icon: Inbox, href: `/${slug}/admin/messages`, keywords: 'mensajes bandeja lectores' },
       { id: 'users', label: 'Usuarios', icon: Users, href: `/${slug}/admin/users`, keywords: 'usuarios staff permisos roles' },
       { id: 'recruitment', label: 'Reclutamiento', icon: Megaphone, href: `/${slug}/admin/recruitment`, keywords: 'reclutamiento anuncios vacantes' },
+      { id: 'recommendations', label: 'Recomendaciones', icon: Star, href: `/${slug}/admin/recommendations`, keywords: 'recomendaciones destacados recomendacion de la casa estante' },
     ],
   },
   {
