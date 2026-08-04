@@ -423,7 +423,11 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
 
         {/* Controls: barra compacta, la única parte sticky. En móvil los filtros
             viven en el panel colapsable de abajo para no tapar las tarjetas. */}
-        <section className="border-b border-zinc-900 bg-zinc-950 sticky top-16 z-20 backdrop-blur-xl">
+        {/* En móvil el navbar superior es `relative` (se va con el scroll), así
+            que la barra debe anclarse justo bajo la barra de estado; en desktop
+            el navbar es fijo (~64px) y va debajo de él. Antes usaba top-16 fijo,
+            lo que dejaba un hueco de 64px arriba en móvil. */}
+        <section className="border-b border-zinc-900 bg-zinc-950 sticky top-[env(safe-area-inset-top)] md:top-16 z-20 backdrop-blur-xl">
           <div className="max-w-5xl mx-auto px-3 md:px-8 py-3">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="relative flex-1">
