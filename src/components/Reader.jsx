@@ -5,6 +5,8 @@ import {
   ChevronRightIcon,
   ListBulletIcon as ListIcon,
   ArrowUpIcon,
+  ArrowPathIcon,
+  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
@@ -27,12 +29,13 @@ import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 // Componente memoizado para imágenes individuales
 // @ts-ignore
 const PageImage = memo((props) => {
-  const { page, isSideBySide, isLeft, getImageClassName, getImageStyle, _ } = props;
+  const { page, isSideBySide, isLeft, getImageClassName, getImageStyle, reloadNonce, _ } = props;
   return (
     <LazyImage
       id={`page-${page.number}-img`}
       src={page.imageUrl}
       retryable
+      reloadNonce={reloadNonce}
       className={`${getImageClassName(isSideBySide)} ${
         isSideBySide && (isLeft ? "object-left" : "object-right")
       }`}
@@ -142,6 +145,11 @@ export function Reader({
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [openPagesDialog, setOpenPagesDialog] = useState(false);
+  // Recarga manual de hojas: global (todo el capítulo) y por página. Cada bump
+  // cambia el nonce que recibe LazyImage, que recarga con cache-buster aunque la
+  // imagen no haya dado error (a veces "carga mal" sin disparar onError).
+  const [reloadAllNonce, setReloadAllNonce] = useState(0);
+  const [pageNonces, setPageNonces] = useState({});
   const [lastSaveUrl, setLastSaveUrl] = useState("");
   const [screenIsMobile, setScreenIsMobile] = useState(false);
 
@@ -337,6 +345,29 @@ export function Reader({
     if (fitToastTimerRef.current) clearTimeout(fitToastTimerRef.current);
     fitToastTimerRef.current = setTimeout(() => setFitToast(null), 1500);
   }, [settings.fitMode, handleFitMode]);
+
+  // Nonce combinado por página: cambia si se recarga el capítulo entero o esa
+  // página en concreto (las sumas solo crecen, así que cualquier bump lo altera).
+  const nonceFor = useCallback(
+    (num) => reloadAllNonce + (pageNonces[num] || 0),
+    [reloadAllNonce, pageNonces]
+  );
+
+  const flashToast = useCallback((msg) => {
+    setFitToast(msg);
+    if (fitToastTimerRef.current) clearTimeout(fitToastTimerRef.current);
+    fitToastTimerRef.current = setTimeout(() => setFitToast(null), 1500);
+  }, []);
+
+  const reloadAllPages = useCallback(() => {
+    setReloadAllNonce((n) => n + 1);
+    flashToast('Recargando capítulo…');
+  }, [flashToast]);
+
+  const reloadPage = useCallback((num) => {
+    setPageNonces((p) => ({ ...p, [num]: (p[num] || 0) + 1 }));
+    flashToast(`Recargando página ${num}…`);
+  }, [flashToast]);
 
   const handlePageFitLimitPx = useCallback((value) => {
     const px = Math.max(100, Math.min(3000, parseInt(value, 10) || 900));
@@ -1045,6 +1076,7 @@ export function Reader({
             isSideBySide={false}
             getImageClassName={getImageClassName}
             getImageStyle={getImageStyle}
+            reloadNonce={nonceFor(page.number)}
             _={_}
           />
         );
@@ -1090,6 +1122,7 @@ export function Reader({
             isLeft={true}
             getImageClassName={getImageClassName}
             getImageStyle={getImageStyle}
+            reloadNonce={nonceFor(page.number)}
             _={_}
           />
         );
@@ -1102,6 +1135,7 @@ export function Reader({
             isLeft={false}
             getImageClassName={getImageClassName}
             getImageStyle={getImageStyle}
+            reloadNonce={nonceFor(nextPage.number)}
             _={_}
           />
         );
@@ -1130,6 +1164,7 @@ export function Reader({
             isSideBySide={false}
             getImageClassName={getImageClassName}
             getImageStyle={getImageStyle}
+            reloadNonce={nonceFor(page.number)}
             _={_}
           />
         );
@@ -1163,6 +1198,7 @@ export function Reader({
     getPageContainerStyle,
     getImageClassName,
     getImageStyle,
+    nonceFor,
     _,
   ]);
 
@@ -1262,6 +1298,22 @@ export function Reader({
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={reloadAllPages}
+                  title="Recargar capítulo (si alguna hoja cargó mal)"
+                  aria-label="Recargar capítulo"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition-all"
+                >
+                  <ArrowPathIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+                </button>
+                <button
+                  onClick={handlePagesDialog}
+                  title="Lista de páginas (ir o recargar una)"
+                  aria-label="Lista de páginas"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition-all"
+                >
+                  <Squares2X2Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                </button>
                 <button
                   onClick={cycleFitMode}
                   title="Ajuste de imagen (ancho / alto / original)"
@@ -1693,27 +1745,48 @@ export function Reader({
                 {_("chapter")} {chapter?.number}
               </span>
               <span className="text-base text-white">{chapter?.title}</span>
-              <div className="flex flex-wrap gap-2 my-2">
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="text-xs text-gray-400">Toca el número para ir; el icono ↻ recarga esa hoja si cargó mal.</p>
+                <button
+                  onClick={reloadAllPages}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold"
+                >
+                  <ArrowPathIcon className="h-4 w-4" /> Recargar todo
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 my-2 max-h-[45vh] overflow-y-auto">
                 {chapterData.pages.map((page) => (
                   <span
                     key={page.number}
-                    onClick={() => {
-                      if (settings.readType === readTypes.PAGINATED) {
-                        setCurrentPage(page.number);
-                      }
-                      // scrollIntoView en vez de location.href="#..." para no
-                      // disparar una navegación (el "F5") con las transiciones de vista.
-                      const targetId =
-                        settings.readType === readTypes.PAGINATED
-                          ? 'manga-pages-top'
-                          : `page-${page.number}`;
-                      document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
-
-                      handlePagesDialog();
-                    }}
-                    className="px-4 text-white bg-gray-800 odd:bg-gray-700 hover:bg-orange-900 hover:cursor-pointer shadow-sm rounded-md"
+                    className="inline-flex items-center bg-gray-800 odd:bg-gray-700 shadow-sm rounded-md overflow-hidden"
                   >
-                    {`${_("page")} ${page.number}`}
+                    <button
+                      onClick={() => {
+                        if (settings.readType === readTypes.PAGINATED) {
+                          setCurrentPage(page.number);
+                        }
+                        // scrollIntoView en vez de location.href="#..." para no
+                        // disparar una navegación (el "F5") con las transiciones de vista.
+                        const targetId =
+                          settings.readType === readTypes.PAGINATED
+                            ? 'manga-pages-top'
+                            : `page-${page.number}`;
+                        document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
+
+                        handlePagesDialog();
+                      }}
+                      className="px-3 py-1 text-white hover:bg-orange-900 cursor-pointer"
+                    >
+                      {`${_("page")} ${page.number}`}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); reloadPage(page.number); }}
+                      title={`Recargar página ${page.number}`}
+                      aria-label={`Recargar página ${page.number}`}
+                      className="px-2 py-1 text-gray-300 hover:text-white hover:bg-orange-900 border-l border-black/30 cursor-pointer"
+                    >
+                      <ArrowPathIcon className="h-3.5 w-3.5" />
+                    </button>
                   </span>
                 ))}
               </div>

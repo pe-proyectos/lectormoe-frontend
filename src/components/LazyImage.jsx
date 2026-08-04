@@ -1,9 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 // Imagen con reintento opcional. Cuando `retryable` está activo (p. ej. las
 // páginas del lector) y la imagen falla al cargar, muestra un botón para
 // recargar SOLO esa hoja (con cache-buster para saltarse la caché del fallo).
-export const LazyImage = ({ src, alt, retryable = false, className, style, ...rest }) => {
+// `reloadNonce`: al cambiar de valor, fuerza una recarga de la imagen aunque no
+// haya dado error (para el botón "Recargar capítulo" y la recarga por página,
+// cuando una hoja "cargó mal" sin disparar onError).
+export const LazyImage = ({ src, alt, retryable = false, reloadNonce = 0, className, style, ...rest }) => {
   const [tick, setTick] = useState(0);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
 
@@ -18,6 +21,15 @@ export const LazyImage = ({ src, alt, retryable = false, className, style, ...re
     setStatus('loading');
     setTick((t) => t + 1);
   }, []);
+
+  // Recarga forzada externa: se salta el primer render (no recarga al montar).
+  const lastNonce = useRef(reloadNonce);
+  useEffect(() => {
+    if (reloadNonce === lastNonce.current) return;
+    lastNonce.current = reloadNonce;
+    setStatus('loading');
+    setTick((t) => t + 1);
+  }, [reloadNonce]);
 
   const noSelect = {
     onContextMenu: (e) => {
