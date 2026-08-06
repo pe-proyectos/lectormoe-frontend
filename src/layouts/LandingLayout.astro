@@ -325,7 +325,9 @@ const siteName =
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+    scrollbar-width: none; /* Firefox */
   }
+  .hscroll::-webkit-scrollbar { display: none; } /* WebKit/Chrome/Android */
   .hscroll > * {
     scroll-snap-align: start;
   }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Star, BookOpen } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import HShelf from './HShelf';
 
 interface Props {
   scanSlug: string;
@@ -79,7 +80,8 @@ const ScanRecommendations: React.FC<Props> = ({ scanSlug, orgPrefix }) => {
 
       {/* Otras recomendaciones (fila horizontal) */}
       {rest.length > 0 && (
-        <div className="hscroll flex gap-4 mt-5 pb-2">
+        <div className="mt-5">
+        <HShelf>
           {rest.map((r) => {
             const w = workOf(r);
             if (!w) return null;
@@ -97,6 +99,7 @@ const ScanRecommendations: React.FC<Props> = ({ scanSlug, orgPrefix }) => {
               </a>
             );
           })}
+        </HShelf>
         </div>
       )}
     </div>

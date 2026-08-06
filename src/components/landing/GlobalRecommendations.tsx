@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import HShelf from './HShelf';
 
 interface Props {
   nsfwMode?: boolean;
@@ -47,7 +48,7 @@ const GlobalRecommendations: React.FC<Props> = ({ nsfwMode = false }) => {
         <Sparkles size={20} className="text-cyan-400" />
         <h2 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter">Recomendado por los scans</h2>
       </div>
-      <div className="hscroll flex gap-4 pb-2">
+      <HShelf>
         {recos.map((r) => {
           const w = workOf(r);
           if (!w) return null;
@@ -67,7 +68,7 @@ const GlobalRecommendations: React.FC<Props> = ({ nsfwMode = false }) => {
             </a>
           );
         })}
-      </div>
+      </HShelf>
     </div>
   );
 };

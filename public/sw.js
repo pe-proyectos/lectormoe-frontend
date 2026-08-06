@@ -1,6 +1,6 @@
 // Service worker conservador (Tarea 19f).
 // Cache-first SOLO para estáticos inmutables; NUNCA /api/ ni HTML de páginas.
-const CACHE = 'capibara-static-v3';
+const CACHE = 'capibara-static-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Rutas que deben funcionar SIN conexión (leer descargas). Se cachean al
@@ -12,9 +12,18 @@ function isOfflineRoute(pathname) {
   return OFFLINE_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'));
 }
 
+// Precache: además del offline.html, los SHELLS de las páginas offline. Antes
+// solo se cacheaban "al visitarlas", así que si el usuario descargaba y se iba
+// sin abrir el lector online, /descargas/leer no estaba en caché y al leer sin
+// red rebotaba a offline. Estas páginas son client-only (leen de IndexedDB), así
+// que el shell sin query sirve para cualquier ?w=.
+const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/descargas', '/descargas/leer', '/app/offline'];
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll([OFFLINE_URL, '/icons/icon-192.png'])).then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) =>
+      // Resiliente: si alguna ruta no existe, no rompe la instalación.
+      Promise.allSettled(PRECACHE.map((u) => cache.add(new Request(u, { cache: 'reload' }))))
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -66,9 +75,11 @@ self.addEventListener('fetch', (event) => {
           return res;
         })
         .catch(() =>
-          // Sin conexión: sirve la versión cacheada de esta ruta (si se visitó
-          // antes) y, si no, la página de "sin conexión".
-          caches.match(req).then((cached) => cached || caches.match(OFFLINE_URL))
+          // Sin conexión: sirve la versión cacheada de esta ruta. Para rutas
+          // offline se ignora el query (?w=), así que el shell precacheado de
+          // /descargas/leer sirve para leer cualquier obra descargada. Si no hay
+          // nada, cae a la página de "sin conexión".
+          caches.match(req, { ignoreSearch: offlineRoute }).then((cached) => cached || caches.match(OFFLINE_URL))
         )
     );
   }

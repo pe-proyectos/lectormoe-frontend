@@ -4,6 +4,7 @@ import type { Manga } from '../../util/landing/types';
 import MangaCard3D from './MangaCard3D';
 import ScrollableCardRow from './ScrollableCardRow';
 import { callAPI } from '../../util/callApi';
+import { nsfwUrl } from '../../util/nsfw-url';
 
 interface RecentlyAddedProps {
   user?: any;
@@ -64,8 +65,9 @@ const RecentlyAdded: React.FC<RecentlyAddedProps> = ({ user, organization, nsfwM
             ))
           ) : (
             mangas.map((manga) => {
-              const firstChapterUrl = (manga as any).firstChapterUrl as string | null;
+              const firstChapterUrl = nsfwUrl((manga as any).firstChapterUrl, nsfwMode);
               const firstChapterNumber = (manga as any).firstChapterNumber as number | null;
+              const mUrl = nsfwUrl(manga.mangaUrl && !manga.mangaUrl.includes('undefined') ? manga.mangaUrl : undefined, nsfwMode);
               return (
                 <div key={manga.id} className="flex flex-col gap-2">
                   <MangaCard3D
@@ -79,13 +81,13 @@ const RecentlyAdded: React.FC<RecentlyAddedProps> = ({ user, organization, nsfwM
                       scan: manga.scanName,
                       scanName: manga.scanName,
                       scanUrl: manga.scanUrl,
-                      mangaUrl: manga.mangaUrl && !manga.mangaUrl.includes('undefined') ? manga.mangaUrl : undefined,
+                      mangaUrl: mUrl,
                       status: 'Ongoing',
                       chapters: [],
                       organizationId: (manga as any).organizationId,
                       isNSFW: (manga as any).isNSFW || false,
                     }}
-                    onClick={() => { if (manga.mangaUrl) window.location.href = manga.mangaUrl; }}
+                    onClick={() => { if (mUrl) window.location.href = mUrl; }}
                   />
                   {firstChapterUrl && (
                     <a

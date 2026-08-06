@@ -1,6 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { notify } from '../../util/feedback';
+import { nsfwUrl } from '../../util/nsfw-url';
 import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard, AlertTriangle } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 
@@ -69,7 +70,9 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
     return manga.scanUrl || '#';
   };
   
-  const safeMangaUrl = getMangaUrl();
+  // En +18 prefijamos /red para no provocar un redirect del servidor (que
+  // rompía la transición SPA y la barra de progreso). nsfwUrl es idempotente.
+  const safeMangaUrl = nsfwUrl(getMangaUrl(), nsfwMode) || '#';
   const shouldBlur = !nsfwMode && manga.isNSFW === true;
 
   const formatChapterDate = (dateStr: string) => {
@@ -243,10 +246,10 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
       onClick();
     } else if (manga.mangaUrl) {
       // Prefer direct link to manga page
-      window.location.href = manga.mangaUrl;
+      window.location.href = nsfwUrl(manga.mangaUrl, nsfwMode) || manga.mangaUrl;
     } else if (manga.scanUrl) {
       // Fallback to scan page
-      window.location.href = manga.scanUrl;
+      window.location.href = nsfwUrl(manga.scanUrl, nsfwMode) || manga.scanUrl;
     }
   };
 
@@ -353,11 +356,11 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
               const mangaSlug = getMangaSlug();
               const organizationSlug = manga.scanUrl?.replace('/', '') || organization?.slug || '';
               
-              const href = canRead 
-                ? chapter.chapterUrl 
-                : (needsSubscription && organizationSlug && mangaSlug 
-                  ? `/${organizationSlug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapter.number}` 
-                  : '#');
+              const href = nsfwUrl(canRead
+                ? chapter.chapterUrl
+                : (needsSubscription && organizationSlug && mangaSlug
+                  ? `/${organizationSlug}/subscriptions?mangaSlug=${mangaSlug}&chapterNumber=${chapter.number}`
+                  : '#'), nsfwMode) || '#';
               
               return (
                 <a

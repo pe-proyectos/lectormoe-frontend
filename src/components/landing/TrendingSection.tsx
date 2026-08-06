@@ -4,6 +4,7 @@ import type { Manga } from '../../util/landing/types';
 import MangaCard3D from './MangaCard3D';
 import ScrollableCardRow from './ScrollableCardRow';
 import { callAPI } from '../../util/callApi';
+import { nsfwUrl } from '../../util/nsfw-url';
 
 interface TrendingSectionProps {
   user?: any;
@@ -96,6 +97,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ user, logged, organiz
                   (logged && manga.organizationId && user?.subscriptions?.some(
                     (sub: any) => sub.active === true && sub?.subscriptionPlan?.organizationId === manga.organizationId,
                   )) || false;
+                const mUrl = nsfwUrl(manga.mangaUrl && !manga.mangaUrl.includes('undefined') ? manga.mangaUrl : undefined, nsfwMode);
                 return (
                   <MangaCard3D
                     user={user}
@@ -109,14 +111,14 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ user, logged, organiz
                       scan: manga.scanName,
                       scanName: manga.scanName,
                       scanUrl: manga.scanUrl,
-                      mangaUrl: manga.mangaUrl && !manga.mangaUrl.includes('undefined') ? manga.mangaUrl : undefined,
+                      mangaUrl: mUrl,
                       status: 'Ongoing',
                       chapters: manga.chapters,
                       userHasSubscription,
                       organizationId: (manga as any).organizationId,
                       isNSFW: (manga as any).isNSFW || false,
                     }}
-                    onClick={() => { if (manga.mangaUrl) window.location.href = manga.mangaUrl; }}
+                    onClick={() => { if (mUrl) window.location.href = mUrl; }}
                   />
                 );
               })
