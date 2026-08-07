@@ -31,12 +31,17 @@ const GlobalRecommendations: React.FC<Props> = ({ nsfwMode = false }) => {
 
   if (!loaded || recos.length === 0) return null;
 
-  const nsfwPrefix = nsfwMode ? '/red' : '';
   const workOf = (r: Reco) => r.mangaCustom || r.joint;
+  // El prefijo /red depende del NSFW de la OBRA, no del modo de la página: en
+  // /red pueden mezclarse recos no-NSFW, cuyo enlace correcto es sin /red (con
+  // /red redirigirían 302). Los joints son globales (sin /red).
+  const isNsfwWork = (r: Reco) =>
+    !!((r.mangaCustom as any)?.isNSFW || (r.mangaCustom?.organization as any)?.isNSFW || (r.organization as any)?.isNSFW);
   const urlOf = (r: Reco) => {
     if (r.mangaCustom?.manga?.slug) {
       const os = r.mangaCustom.organization?.slug || r.organization?.slug;
-      return os ? `${nsfwPrefix}/${os}/manga/${r.mangaCustom.manga.slug}` : '#';
+      if (!os) return '#';
+      return `${isNsfwWork(r) ? '/red' : ''}/${os}/manga/${r.mangaCustom.manga.slug}`;
     }
     if (r.joint?.slug) return `/joint/manga/${r.joint.slug}`;
     return '#';
