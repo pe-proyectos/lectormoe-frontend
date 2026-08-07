@@ -24,11 +24,20 @@ const HShelf: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!el) return;
     el.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
-    // Recalcular tras cargar imágenes (cambia el ancho total del riel).
+    // Recalcular cuando cambie el tamaño del contenido (las imágenes cargan
+    // después del montaje y crecen el ancho del riel; sin esto la flecha
+    // derecha podía no aparecer en conexiones lentas hasta hacer scroll).
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(el);
+      for (const child of Array.from(el.children)) ro.observe(child);
+    }
     const t = setTimeout(update, 400);
     return () => {
       el.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
+      if (ro) ro.disconnect();
       clearTimeout(t);
     };
   }, []);
