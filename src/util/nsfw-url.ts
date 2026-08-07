@@ -8,5 +8,8 @@ export function nsfwUrl(url: string | null | undefined, nsfwMode: boolean): stri
   if (!nsfwMode) return url;
   if (url === '#' || !url.startsWith('/')) return url;
   if (url === '/red' || url.startsWith('/red/')) return url;
+  // Los joints son GLOBALES (viven en /joint/..., sin variante /red). Prefijarlos
+  // los rompía (302). Cualquier ruta ya global sin equivalente /red va aquí.
+  if (url.startsWith('/joint/')) return url;
   return '/red' + url;
 }
