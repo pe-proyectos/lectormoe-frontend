@@ -4,7 +4,7 @@ import {
   Settings2, Layers, GripVertical, ZoomIn, ZoomOut,
   Map as MapIcon, CheckCircle2,
   Camera, List, Info, Edit3, Download, ImageIcon, Clock, Users,
-  ArrowRight, Check, Loader2,
+  ArrowRight, Check, Loader2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { getTranslator } from '../../util/translate';
@@ -903,12 +903,24 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const removePage = (index: number) => {
     const newPages = pages.filter((_, i) => i !== index);
     setPages(newPages);
-    
+
     // Actualizar los índices de páginas simples después de eliminar
     const newSinglePageIndexes = singlePageIndexes
       .filter(i => i !== index)
       .map(i => i > index ? i - 1 : i);
     setSinglePageIndexes(newSinglePageIndexes);
+  };
+
+  // Mover una página una posición. El arrastre HTML5 no funciona con el dedo
+  // (móvil/app), así que estos botones permiten reordenar también desde el
+  // celular. dir = -1 (antes) o +1 (después).
+  const movePage = (index: number, dir: number) => {
+    const target = index + dir;
+    if (target < 0 || target >= pages.length) return;
+    const next = [...pages];
+    [next[index], next[target]] = [next[target], next[index]];
+    setPages(next);
+    setSinglePageIndexes(singlePageIndexes.map(i => (i === index ? target : i === target ? index : i)));
   };
 
   const startAutoscroll = (container: HTMLDivElement, direction: number, speed: number) => {
@@ -2067,10 +2079,36 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                                     draggable={true}
                                     onDragStart={handleDrag}
                                     onDragEnd={handleDragEnd}
-                                    src={getPageUrl(pages[pageIdx])} 
-                                    className="w-full h-full object-contain cursor-move rounded-lg bg-zinc-950" 
+                                    src={getPageUrl(pages[pageIdx])}
+                                    className="w-full h-full object-contain cursor-move rounded-lg bg-zinc-950"
                                     alt={`Página ${pageIdx + 1}`}
                                   />
+
+                                  {/* Reordenar (siempre visible): el arrastre no
+                                      funciona con el dedo en la app, así que estos
+                                      botones permiten mover la página al tocar. */}
+                                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-md rounded-full px-1.5 py-1 border border-white/10">
+                                    <button
+                                      type="button"
+                                      aria-label="Mover antes"
+                                      title="Mover antes"
+                                      disabled={pageIdx === 0}
+                                      onClick={(e) => { e.stopPropagation(); movePage(pageIdx, -1); }}
+                                      className="p-1 rounded-full text-white disabled:opacity-30 hover:bg-white/10 active:scale-95"
+                                    >
+                                      <ChevronLeft size={16} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      aria-label="Mover después"
+                                      title="Mover después"
+                                      disabled={pageIdx === pages.length - 1}
+                                      onClick={(e) => { e.stopPropagation(); movePage(pageIdx, 1); }}
+                                      className="p-1 rounded-full text-white disabled:opacity-30 hover:bg-white/10 active:scale-95"
+                                    >
+                                      <ChevronRight size={16} />
+                                    </button>
+                                  </div>
                                   
                                   {/* Numeración y nombre del archivo */}
                                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-10">

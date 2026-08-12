@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ToastContainer, toast } from 'react-toastify';
-import { Loader2, X, GripVertical } from 'lucide-react';
+import { Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Input from './ui/Input';
@@ -130,6 +130,20 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
         setSinglePageIndexes(prev =>
             prev.filter(i => i !== index).map(i => (i > index ? i - 1 : i))
         );
+    }, []);
+
+    // Mover una página una posición (antes/después). El arrastre HTML5 no
+    // funciona con el dedo (móvil/app), así que estos botones permiten reordenar
+    // también desde el celular. dir = -1 (antes) o +1 (después).
+    const movePage = useCallback((index, dir) => {
+        const target = index + dir;
+        setPages(prev => {
+            if (target < 0 || target >= prev.length) return prev;
+            const next = [...prev];
+            [next[index], next[target]] = [next[target], next[index]];
+            return next;
+        });
+        setSinglePageIndexes(prev => prev.map(i => (i === index ? target : i === target ? index : i)));
     }, []);
 
     const togglePageType = useCallback((index) => {
@@ -440,12 +454,28 @@ export function AdminChapterDialog({ language, open, setOpen, mangaCustom, chapt
                                     </div>
                                     <div className="p-2 flex flex-col gap-2">
                                         <div className="flex justify-between items-center gap-2">
-                                            <button
-                                                className="p-1 hover:bg-zinc-800 rounded-lg transition-colors"
-                                                disabled
-                                            >
-                                                <GripVertical size={16} className="text-zinc-500" />
-                                            </button>
+                                            <div className="flex items-center">
+                                                <button
+                                                    type="button"
+                                                    title="Mover antes"
+                                                    aria-label="Mover antes"
+                                                    disabled={index === 0}
+                                                    onClick={() => movePage(index, -1)}
+                                                    className="p-1 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 text-zinc-300"
+                                                >
+                                                    <ChevronLeft size={16} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    title="Mover después"
+                                                    aria-label="Mover después"
+                                                    disabled={index === pages.length - 1}
+                                                    onClick={() => movePage(index, 1)}
+                                                    className="p-1 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 text-zinc-300"
+                                                >
+                                                    <ChevronRight size={16} />
+                                                </button>
+                                            </div>
                                             <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                                                 {_("page")} {index + 1}
                                             </span>
