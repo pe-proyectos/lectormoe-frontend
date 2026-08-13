@@ -7,6 +7,10 @@ import {
   ArrowUpIcon,
   ArrowPathIcon,
   Squares2X2Icon,
+  PlayIcon,
+  PauseIcon,
+  PlusIcon,
+  MinusIcon,
 } from "@heroicons/react/24/outline";
 import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
@@ -150,6 +154,28 @@ export function Reader({
   // imagen no haya dado error (a veces "carga mal" sin disparar onError).
   const [reloadAllNonce, setReloadAllNonce] = useState(0);
   const [pageNonces, setPageNonces] = useState({});
+  // "Lectura sin toques" (auto): en paginado avanza cada N segundos; en cascada
+  // hace auto-scroll a una velocidad; mantener presionado acelera (tipo TikTok).
+  const [autoOn, setAutoOn] = useState(false);
+  const [autoSecPerPage, setAutoSecPerPage] = useState(() => {
+    const v = parseFloat(localStorage.getItem("autoSecPerPage"));
+    return Number.isFinite(v) && v > 0 ? v : 8;
+  });
+  const [autoScrollSpeed, setAutoScrollSpeed] = useState(() => {
+    const v = parseFloat(localStorage.getItem("autoScrollSpeed"));
+    return Number.isFinite(v) && v > 0 ? v : 1.5;
+  });
+  const holdRef = useRef(false);
+  const setSecPerPage = useCallback((v) => {
+    const n = Math.max(1, Math.min(60, Math.round(v)));
+    localStorage.setItem("autoSecPerPage", String(n));
+    setAutoSecPerPage(n);
+  }, []);
+  const setScrollSpeed = useCallback((v) => {
+    const n = Math.max(0.4, Math.min(8, Math.round(v * 10) / 10));
+    localStorage.setItem("autoScrollSpeed", String(n));
+    setAutoScrollSpeed(n);
+  }, []);
   const [lastSaveUrl, setLastSaveUrl] = useState("");
   const [screenIsMobile, setScreenIsMobile] = useState(false);
 
@@ -996,6 +1022,57 @@ export function Reader({
     ? mangaUrl
     : getOrgPath(`/manga/${mangaSlug}`, orgSlug);
 
+  // AUTO (paginado): avanza una página cada N segundos. Se reprograma en cada
+  // cambio de página, así que tocar para avanzar reinicia el temporizador. Al
+  // llegar al final encadena al siguiente capítulo (o se apaga).
+  useEffect(() => {
+    if (!autoOn || loading) return;
+    if (settings.readType !== readTypes.PAGINATED) return;
+    if (!chapterData.pages.length) return;
+    const idx = chapterData.pages.findIndex((p) => p.number === currentPage);
+    const t = setTimeout(() => {
+      if (idx >= 0 && idx < chapterData.pages.length - 1) {
+        stepPaginated(true);
+      } else if (resolvedNextChapterUrl) {
+        window.location.href = resolvedNextChapterUrl;
+      } else {
+        setAutoOn(false);
+      }
+    }, autoSecPerPage * 1000);
+    return () => clearTimeout(t);
+  }, [autoOn, loading, settings.readType, readTypes.PAGINATED, chapterData.pages, currentPage, autoSecPerPage, stepPaginated, resolvedNextChapterUrl]);
+
+  // AUTO (cascada): auto-scroll continuo. Mantener presionado (tocar y sostener)
+  // acelera x3, tipo TikTok. Al llegar al fondo encadena al siguiente capítulo.
+  useEffect(() => {
+    if (!autoOn || loading) return;
+    if (settings.readType !== readTypes.CASCADE) return;
+    let raf;
+    const tick = () => {
+      const speed = autoScrollSpeed * (holdRef.current ? 3 : 1);
+      window.scrollBy(0, speed);
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (atBottom) {
+        if (resolvedNextChapterUrl) { window.location.href = resolvedNextChapterUrl; return; }
+        setAutoOn(false);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    const down = () => { holdRef.current = true; };
+    const up = () => { holdRef.current = false; };
+    window.addEventListener('pointerdown', down);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('pointerdown', down);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+  }, [autoOn, loading, settings.readType, readTypes.CASCADE, autoScrollSpeed, resolvedNextChapterUrl]);
+
   // Memoizar componentes de navegación
   const PreviousChapterArrow = useMemo(
     () =>
@@ -1216,6 +1293,28 @@ export function Reader({
 
   return (
     <div id="reader-top">
+      {/* Control de lectura automática (aparece al activar el auto): ajustar
+          tiempo/velocidad y pausar sin salir del lector. */}
+      {autoOn && chapterData.pages.length > 0 && !accessError && (
+        <div className="fixed bottom-11 left-1/2 -translate-x-1/2 z-[85] flex items-center gap-1.5 bg-zinc-900/95 backdrop-blur border border-cyan-500/40 rounded-full px-2 py-1.5 shadow-xl">
+          {settings.readType === readTypes.PAGINATED ? (
+            <>
+              <button onClick={() => setSecPerPage(autoSecPerPage - 1)} aria-label="Menos tiempo" className="p-1 rounded-full text-zinc-300 hover:text-white"><MinusIcon className="h-4 w-4" /></button>
+              <span className="text-[11px] font-black text-cyan-300 tabular-nums min-w-[3.5rem] text-center">{autoSecPerPage}s/pág</span>
+              <button onClick={() => setSecPerPage(autoSecPerPage + 1)} aria-label="Más tiempo" className="p-1 rounded-full text-zinc-300 hover:text-white"><PlusIcon className="h-4 w-4" /></button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setScrollSpeed(autoScrollSpeed - 0.3)} aria-label="Más lento" className="p-1 rounded-full text-zinc-300 hover:text-white"><MinusIcon className="h-4 w-4" /></button>
+              <span title="Mantén presionado para acelerar" className="text-[11px] font-black text-cyan-300 tabular-nums min-w-[4rem] text-center">Vel. {autoScrollSpeed.toFixed(1)}</span>
+              <button onClick={() => setScrollSpeed(autoScrollSpeed + 0.3)} aria-label="Más rápido" className="p-1 rounded-full text-zinc-300 hover:text-white"><PlusIcon className="h-4 w-4" /></button>
+            </>
+          )}
+          <span className="w-px h-4 bg-zinc-700 mx-0.5" />
+          <button onClick={() => setAutoOn(false)} aria-label="Pausar lectura automática" className="p-1 rounded-full text-cyan-300 hover:text-white"><PauseIcon className="h-4 w-4" /></button>
+        </div>
+      )}
+
       {/* Contador de progreso: "página X / N". Antes no había forma de saber
           cuánto faltaba salvo la barra fina. */}
       {chapterData.pages.length > 0 && !accessError && (
@@ -1298,6 +1397,16 @@ export function Reader({
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={() => setAutoOn((v) => !v)}
+                  title={autoOn ? "Detener lectura automática" : "Lectura sin toques (automática)"}
+                  aria-label={autoOn ? "Detener lectura automática" : "Lectura automática"}
+                  className={`p-1.5 rounded-lg transition-all ${autoOn ? 'text-cyan-400 hover:text-cyan-300' : 'text-zinc-400 hover:text-white'}`}
+                >
+                  {autoOn
+                    ? <PauseIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+                    : <PlayIcon className="h-6 w-6 sm:h-7 sm:w-7" />}
+                </button>
                 <button
                   onClick={reloadAllPages}
                   title="Recargar capítulo (si alguna hoja cargó mal)"
