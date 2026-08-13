@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
-import HShelf from './HShelf';
+import ScrollableCardRow from './ScrollableCardRow';
 
 interface Props {
   nsfwMode?: boolean;
@@ -53,27 +53,30 @@ const GlobalRecommendations: React.FC<Props> = ({ nsfwMode = false }) => {
         <Sparkles size={20} className="text-cyan-400" />
         <h2 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter">Recomendado por los scans</h2>
       </div>
-      <HShelf>
+      {/* Mismo contenedor que "Últimos añadidos" / "Últimas actualizaciones"
+          para que las tarjetas se vean del mismo tamaño (grilla en desktop,
+          tira deslizable en móvil), no más chicas. */}
+      <ScrollableCardRow desktopCols="sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
         {recos.map((r) => {
           const w = workOf(r);
           if (!w) return null;
           const scanName = r.mangaCustom?.organization?.name || r.organization?.name;
           return (
-            <a key={r.id} href={urlOf(r)} className="group shrink-0 w-40 md:w-48">
+            <a key={r.id} href={urlOf(r)} className="group block">
               <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border border-zinc-800 group-hover:border-cyan-500/50 transition-all bg-zinc-900">
                 {w.imageUrl && <img src={w.imageUrl} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
                 <div className="absolute inset-x-0 top-0 p-2">
-                  <span className="inline-block bg-cyan-500 text-zinc-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider truncate max-w-full">{r.label}</span>
+                  <span className="inline-block bg-cyan-500 text-zinc-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider truncate max-w-full">{r.label}</span>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-2.5 pt-8">
-                  <p className="text-white font-black text-sm italic uppercase tracking-tight line-clamp-2">{w.title}</p>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 pt-10">
+                  <p className="text-white font-black text-sm md:text-base italic uppercase tracking-tight line-clamp-2">{w.title}</p>
                   {scanName && <p className="text-cyan-300 text-[10px] font-bold uppercase tracking-widest truncate mt-0.5">{scanName}</p>}
                 </div>
               </div>
             </a>
           );
         })}
-      </HShelf>
+      </ScrollableCardRow>
     </div>
   );
 };
