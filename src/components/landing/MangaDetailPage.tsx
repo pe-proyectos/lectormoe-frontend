@@ -51,6 +51,7 @@ interface MangaDetailPageProps {
     id: number;
     slug: string;
     title: string;
+    alternativeTitle?: string | null;
     description?: string | null;
     shortDescription?: string | null;
     imageUrl?: string | null;
@@ -1464,6 +1465,11 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
                 {manga.title}
               </h1>
+              {manga.alternativeTitle && (
+                <p className="text-zinc-400 text-sm md:text-base font-semibold italic tracking-tight -mt-1">
+                  {manga.alternativeTitle}
+                </p>
+              )}
               {(() => {
                 // Authors live on the underlying manga model (mangaCustom.manga.authors),
                 // not on the per-org mangaCustom. Fall back to root .authors to be safe

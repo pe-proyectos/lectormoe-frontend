@@ -317,6 +317,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
     return {
       title: initialResource?.title || '',
+      alternativeTitle: initialResource?.alternativeTitle || '',
       shortDescription: initialResource?.shortDescription || '',
       description: initialResource?.description || '',
       status: initialResource?.status || 'ongoing',
@@ -620,6 +621,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
       setFormData({
         title: initialResource?.title || '',
+        alternativeTitle: initialResource?.alternativeTitle || '',
         shortDescription: initialResource?.shortDescription || '',
         description: initialResource?.description || '',
         status: initialResource?.status || 'ongoing',
@@ -1357,6 +1359,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       // (backend would ignore them but we keep the payload clean).
       const patchBody: any = {
         title: formData.title,
+        alternativeTitle: formData.alternativeTitle?.trim() || null,
         shortDescription: formData.shortDescription || null,
         description: formData.description || null,
         status: formData.status,
@@ -2724,6 +2727,19 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-white text-xl font-black italic tracking-tighter uppercase focus:border-cyan-500 transition-all outline-none"
                       placeholder="One Punch-Man"
                     />
+                  </div>
+
+                  {/* Título alternativo / original */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Título alternativo / original (Opcional)</label>
+                    <input
+                      type="text"
+                      value={formData.alternativeTitle}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, alternativeTitle: e.target.value }))}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-6 text-white text-base font-semibold italic focus:border-cyan-500 transition-all outline-none"
+                      placeholder="One Punch Man / ワンパンマン"
+                    />
+                    <p className="text-[10px] text-zinc-600 ml-1">Nombre original o alterno (p. ej. en japonés/romaji). Aparece debajo del título en la ficha y ayuda a que se encuentre en Google.</p>
                   </div>
 
                   {/* Descripción corta */}

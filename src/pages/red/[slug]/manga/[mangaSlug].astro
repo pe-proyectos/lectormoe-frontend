@@ -34,8 +34,8 @@ const absoluteImageUrl = manga.bannerUrl || manga.imageUrl;
 ---
 
 <LandingLayout
-  title={`${manga.title} | ${organization.name}`}
-  description={manga.shortDescription || manga.description || `Lee ${manga.title} en ${organization.name}`}
+  title={`${manga.title}${manga.alternativeTitle ? ` (${manga.alternativeTitle})` : ''} | ${organization.name}`}
+  description={manga.shortDescription || manga.description || `Lee ${manga.title}${manga.alternativeTitle ? ` (${manga.alternativeTitle})` : ''} en ${organization.name}`}
   imageUrl={absoluteImageUrl}
   organization={organization}
   showAds={showAds}
