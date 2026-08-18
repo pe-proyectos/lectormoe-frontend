@@ -27,6 +27,13 @@ if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
 }
 
+// Un manga que NO es +18 (en un scan normal) no debe vivir en /red: mandarlo al
+// azul. Así "todo lo +18 en rojo y todo lo que no es +18 en el azul".
+if (!manga?.isNSFW && !organization?.isNSFW && nsfwMode) {
+  const bluePath = Astro.url.pathname.replace(/^\/red/, '') || '/';
+  return Astro.redirect(`${bluePath}${Astro.url.search}`);
+}
+
 // We're already under /red, so resolveAdsProvider will pick Adsterra anyway,
 // but pass `manga` so the per-manga isNSFW signal is also visible to the layout.
 const showAds = showAdsFromMiddleware;

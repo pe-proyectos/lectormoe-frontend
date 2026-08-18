@@ -30,11 +30,9 @@ function calculateShowAds(user: any, organization: any): boolean {
     return true;
   }
 
-  // Org-level toggles still gate ads off entirely (covers orgs that opted out of
-  // every network); resolveAdsProvider then decides which provider to render.
-  if (!organization.enableGoogleAds && !organization.enableAdsterraAds) {
-    return false;
-  }
+  // Los anuncios son decisión de la PLATAFORMA, no del scan: siempre activos por
+  // defecto. El proveedor (AdSense normal / Adsterra +18) lo decide
+  // resolveAdsProvider. Los scans ya no controlan si salen o cuáles.
 
   // Sin usuario autenticado, mostrar anuncios
   if (!user) {
