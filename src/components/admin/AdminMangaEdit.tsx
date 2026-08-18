@@ -251,9 +251,33 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const canEditJoint = isLeader || !!myMember?.canEditJoint;
   const canUpload = isLeader || myMember?.role === 'UPLOADER';
   const canInviteJoint = isLeader || !!myMember?.canInvite;
-  const [inviteSlug, setInviteSlug] = useState('');
+  const [inviteSlug, setInviteSlug] = useState(''); // slug del scan elegido (lo que se envía)
+  const [inviteSearch, setInviteSearch] = useState(''); // texto visible en el buscador
+  const [inviteResults, setInviteResults] = useState<any[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteSearching, setInviteSearching] = useState(false);
+  const inviteSearchTimer = useRef<any>(null);
   const [inviteRole, setInviteRole] = useState<'UPLOADER' | 'VIEWER'>('UPLOADER');
   const [inviting, setInviting] = useState(false);
+
+  // Autocompletado de scans por nombre. El usuario ya no necesita saber el slug
+  // exacto: busca por nombre y elige de la lista (se guarda el slug real).
+  useEffect(() => {
+    if (!isJointMode) return;
+    if (inviteSearchTimer.current) clearTimeout(inviteSearchTimer.current);
+    const q = inviteSearch.trim();
+    if (!q) { setInviteResults([]); return; }
+    // Si el texto ya coincide exactamente con el scan elegido, no re-buscar.
+    inviteSearchTimer.current = setTimeout(async () => {
+      setInviteSearching(true);
+      try {
+        const res = await callAPI(`/api/landing/scans?search=${encodeURIComponent(q)}&limit=8&sort=name`);
+        const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
+        setInviteResults(items);
+      } catch { setInviteResults([]); } finally { setInviteSearching(false); }
+    }, 250);
+    return () => { if (inviteSearchTimer.current) clearTimeout(inviteSearchTimer.current); };
+  }, [inviteSearch, isJointMode]);
   // Joint chapter worked-by selector (accepted member orgs that contributed)
   const [workedByIds, setWorkedByIds] = useState<number[]>([]);
 
@@ -1588,6 +1612,9 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       });
       toast.success('Invitación enviada', { position: 'bottom-right' });
       setInviteSlug('');
+      setInviteSearch('');
+      setInviteResults([]);
+      setInviteOpen(false);
       await reloadResource();
     } catch (e: any) {
       toast.error(e?.message || 'Error al invitar', { position: 'bottom-right' });
@@ -2471,13 +2498,43 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     <Plus size={14} className="text-cyan-500" /> Invitar scan
                   </h3>
                   <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={inviteSlug}
-                      onChange={e => setInviteSlug(e.target.value)}
-                      placeholder="Slug del scan (ej: senshimanga)"
-                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-5 text-white text-sm focus:border-cyan-500 transition-all outline-none"
-                    />
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={inviteSearch}
+                        onChange={e => { setInviteSearch(e.target.value); setInviteSlug(''); setInviteOpen(true); }}
+                        onFocus={() => { if (inviteResults.length) setInviteOpen(true); }}
+                        onBlur={() => setTimeout(() => setInviteOpen(false), 150)}
+                        placeholder="Busca el scan por nombre…"
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-5 text-white text-sm focus:border-cyan-500 transition-all outline-none"
+                      />
+                      {inviteOpen && (inviteSearching || inviteResults.length > 0 || inviteSearch.trim()) && (
+                        <div className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl">
+                          {inviteSearching && inviteResults.length === 0 && (
+                            <div className="px-4 py-3 text-xs text-zinc-500">Buscando…</div>
+                          )}
+                          {inviteResults.map((s: any) => {
+                            const slug = s.slug || s.id || (s.url || '').replace('/', '');
+                            return (
+                              <button
+                                key={slug}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { setInviteSlug(slug); setInviteSearch(s.name || slug); setInviteOpen(false); setInviteResults([]); }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-zinc-800 transition-colors"
+                              >
+                                {s.logoUrl && <img src={s.logoUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />}
+                                <span className="text-sm text-white truncate">{s.name || slug}</span>
+                                <span className="ml-auto text-[10px] text-zinc-500 truncate">/{slug}</span>
+                              </button>
+                            );
+                          })}
+                          {!inviteSearching && inviteResults.length === 0 && inviteSearch.trim() && (
+                            <div className="px-4 py-3 text-xs text-zinc-500">Sin resultados</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <select
                       value={inviteRole}
                       onChange={e => setInviteRole(e.target.value as 'UPLOADER' | 'VIEWER')}
@@ -2488,7 +2545,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     </select>
                     <button
                       onClick={handleInviteMember}
-                      disabled={inviting || !inviteSlug.trim()}
+                      disabled={inviting || !inviteSlug}
                       className="bg-cyan-500 hover:bg-cyan-400 text-black font-black py-3 px-6 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-50 whitespace-nowrap"
                     >
                       {inviting ? '...' : 'Invitar'}
