@@ -4,7 +4,6 @@ import {
   Info,
   Globe,
   Share2,
-  Zap,
   Image as ImageIcon,
   Bell,
   Save,
@@ -640,13 +639,6 @@ const AdminSettings: React.FC<AdminSettingsProps> = ({ language: translatorLangu
         </div>
       </Accordion>
 
-      {/* Publicidad: la gestiona la plataforma, ya no el scan. */}
-      <Accordion title="Publicidad y contenido +18" icon={<Zap size={20} />}>
-        <div className="space-y-3 text-sm text-zinc-400">
-          <p>Los anuncios los gestiona la plataforma automáticamente: no hay nada que configurar aquí. Todos los scans muestran anuncios.</p>
-          <p>La clasificación <strong className="text-zinc-200">+18 es por obra</strong>: marca cada manga como +18 desde su edición. Los +18 aparecen en la sección roja (/red) y usan Adsterra; el resto usa Google.</p>
-        </div>
-      </Accordion>
 
       {/* Save Button Bottom */}
       <Card>
