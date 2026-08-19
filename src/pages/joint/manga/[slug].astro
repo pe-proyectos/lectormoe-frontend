@@ -25,6 +25,9 @@ const mangaFromJoint = {
   imageUrl: joint.imageUrl || joint.manga?.imageUrl || null,
   bannerUrl: joint.bannerUrl || joint.imageUrl || joint.manga?.bannerUrl || joint.manga?.imageUrl || null,
   status: joint.status || 'ongoing',
+  // Vistas totales del joint: sin esto la ficha mostraba 0 (el objeto sintético
+  // no traía el contador). Es la suma real de lecturas de la obra colaborativa.
+  views: joint.views || 0,
   demography: joint.manga?.demography || null,
   genres: joint.manga?.genres || [],
   authors: joint.manga?.authors || [],

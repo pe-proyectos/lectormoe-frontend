@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { notify } from '../../util/feedback';
-import { Heart, Eye, BookOpen } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface JointMangaDetailPageProps {
@@ -104,21 +104,6 @@ const JointMangaDetailPage: React.FC<JointMangaDetailPageProps> = ({ joint, user
 
             <h1 className="text-3xl font-black text-white">{joint.title}</h1>
             <p className="text-zinc-400 text-sm leading-relaxed">{joint.shortDescription || joint.description}</p>
-
-            {/* Estadísticas: vistas totales del joint (suma de todas las lecturas
-                de la obra colaborativa) y número de capítulos. */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
-              <span className="flex items-center gap-1.5" title="Vistas totales">
-                <Eye size={16} className="text-cyan-400" />
-                <span className="font-bold text-white">{(joint.views || 0).toLocaleString()}</span>
-                vistas
-              </span>
-              <span className="flex items-center gap-1.5">
-                <BookOpen size={16} className="text-cyan-400" />
-                <span className="font-bold text-white">{chapters.length}</span>
-                capítulos
-              </span>
-            </div>
 
             {/* Add to favorites */}
             <button
