@@ -69,8 +69,11 @@ const AdminRecommendations: React.FC<Props> = () => {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await callAPI(`/api/manga-custom?search=${encodeURIComponent(search)}&limit=20&order=alphabetical&nsfw=true`);
-        setResults(Array.isArray(res?.items) ? res.items : []);
+        // El endpoint devuelve { data, maxPage, total } (NO { items }). Y NO se
+        // filtra por nsfw: el scan debe poder recomendar cualquiera de sus obras
+        // (con nsfw=true solo salían las +18, por eso el selector salía vacío).
+        const res = await callAPI(`/api/manga-custom?search=${encodeURIComponent(search)}&limit=20&order=alphabetical`);
+        setResults(Array.isArray(res?.data) ? res.data : []);
       } catch { setResults([]); } finally { setSearching(false); }
     }, 300);
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
@@ -141,9 +144,9 @@ const AdminRecommendations: React.FC<Props> = () => {
 
   return (
     <div className="mt-4">
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <p className="text-zinc-400 text-sm max-w-xl">Elige las obras que quieres destacar en grande en tu página ("La recomendación de la casa"). Puedes marcar algunas para que también salgan en el inicio global. Máximo 6.</p>
-        <button onClick={openCreate} className="inline-flex items-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-4 py-2.5 font-black text-xs uppercase tracking-widest hover:bg-white transition-colors shrink-0"><Plus size={16} /> Nueva recomendación</button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <p className="text-zinc-400 text-sm max-w-xl break-words">Elige las obras que quieres destacar en grande en tu página ("La recomendación de la casa"). Puedes marcar algunas para que también salgan en el inicio global. Máximo 6.</p>
+        <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-4 py-2.5 font-black text-xs uppercase tracking-widest hover:bg-white transition-colors shrink-0 self-start sm:self-auto"><Plus size={16} /> Nueva recomendación</button>
       </div>
 
       {loading ? (
