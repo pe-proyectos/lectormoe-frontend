@@ -418,6 +418,9 @@ const UserListPage: React.FC<Props> = ({ user, logged, nsfwMode = false, profile
                   ? 'Aún no tienes mangas en tu lista. Agrégalos desde la página de cada manga.'
                   : 'Este usuario aún no tiene mangas en su lista.')}
             </p>
+            <a href="/listas" className="inline-flex items-center gap-2 mt-4 bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 rounded-xl px-4 py-2.5 text-white font-black text-[11px] uppercase tracking-widest transition-colors">
+              <Bookmark size={14} className="text-cyan-400" /> Listas de la comunidad
+            </a>
           </div>
         </section>
 

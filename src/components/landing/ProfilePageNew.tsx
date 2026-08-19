@@ -4,6 +4,7 @@ import { Bookmark, Clock, Heart, Award, Zap, ChevronRight, ChevronDown, BookOpen
 import { callAPI } from '../../util/callApi';
 import { uploadFile } from '../../util/uploadFile';
 import SortableMangaList from './SortableMangaList';
+import ProfileCustomLists from './ProfileCustomLists';
 
 interface ProfilePageProps {
   user?: any;
@@ -1385,6 +1386,11 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               </>
               )}
             </section>
+
+            {/* Listas públicas del usuario (CustomList) */}
+            {(profileSlug || user?.slug) && (
+              <ProfileCustomLists profileSlug={(profileSlug || user?.slug) as string} isOwner={!!isOwner} nsfwMode={nsfwMode} />
+            )}
 
             {/* Marcadores Section — owner only */}
             {isOwner && (

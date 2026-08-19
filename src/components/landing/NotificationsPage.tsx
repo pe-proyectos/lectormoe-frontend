@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Bell, ChevronLeft, ChevronRight, CheckCheck, Loader2, MessageSquare, BookPlus, User, AlertCircle, Mail } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, CheckCheck, Loader2, MessageSquare, BookPlus, User, AlertCircle, Mail, ListChecks } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { callAPI } from '../../util/callApi';
@@ -17,6 +17,13 @@ interface NotificationItem {
   parentCommentId?: number | null;
   subscriptionId?: number | null;
   organizationId?: number | null;
+  listId?: number | null;
+  details?: string | null;
+  customList?: {
+    slug: string;
+    name: string;
+    user?: { slug: string };
+  } | null;
   mangaCustom?: {
     id: number;
     title: string;
@@ -170,6 +177,10 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
     case 'content_removed':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/mangas`;
+    case 'list_updated':
+      if (n.customList?.user?.slug && n.customList?.slug)
+        return `/list/${n.customList.user.slug}/${n.customList.slug}`;
+      return '/listas';
     default:
       return null;
   }
@@ -242,6 +253,14 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: reason ? `Razón: ${reason} · ${rel}` : rel,
       };
     }
+    case 'list_updated': {
+      const listName = n.customList?.name || n.details || 'una lista';
+      const work = n.mangaCustom?.title || n.joint?.title;
+      return {
+        title: `Nueva obra en "${truncate(listName, 40)}"`,
+        subtitle: work ? `${work} · ${rel}` : `Toca para ver la lista · ${rel}`,
+      };
+    }
     case 'new_chapter':
     default: {
       const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
@@ -270,6 +289,8 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 
       return <Mail size={size} className="text-cyan-400" />;
     case 'content_removed':
       return <AlertCircle size={size} className="text-red-400" />;
+    case 'list_updated':
+      return <ListChecks size={size} className="text-cyan-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
   }
