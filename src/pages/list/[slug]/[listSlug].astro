@@ -7,16 +7,18 @@ const { user, showAds, nsfwMode, callAPI } = Astro.locals;
 const logged = !!user;
 const { slug, listSlug } = Astro.params;
 
-let result: any = null;
+// El callAPI del middleware YA desenvuelve `.data` cuando status===true (retorna
+// el objeto completo solo si status===false). Antes se validaba result.data, que
+// siempre era undefined -> la ficha de lista SIEMPRE caía a /404.
+let list: any = null;
 try {
-  result = await callAPI(`/api/lists/${slug}/${listSlug}`);
+  list = await callAPI(`/api/lists/${slug}/${listSlug}`);
 } catch (e) {
   return Astro.redirect('/404');
 }
-if (!result || result.status === false || !result.data) {
+if (!list || list.status === false || !list.id) {
   return Astro.redirect('/404');
 }
-const list = result.data;
 const owner = list.owner;
 const isOwner = !!(logged && user && owner && user.id === owner.id);
 const firstCover = (list.items || [])[0]?.mangaCustom?.imageUrl || (list.items || [])[0]?.mangaCustom?.manga?.imageUrl || null;
