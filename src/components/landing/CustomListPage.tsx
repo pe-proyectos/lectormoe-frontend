@@ -21,11 +21,14 @@ const STATUSES: { v: string; label: string; cls: string }[] = [
 ];
 
 const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logged, nsfwMode = false, isOwner = false }) => {
-  const nsfwFilter = (it: any) => {
+  // Un item es +18 si su obra o su scan lo son.
+  const itemIsNsfw = (it: any) => {
     const src = it.mangaCustom;
-    const isNSFW = src?.isNSFW || src?.organization?.isNSFW || false;
-    return nsfwMode ? isNSFW : !isNSFW;
+    return !!(src?.isNSFW || src?.organization?.isNSFW);
   };
+  // En el modo normal (la ficha de lista no tiene /red) NO escondemos la obra +18:
+  // mostramos su nombre pero SIN portada.
+  const hideCover = (it: any) => itemIsNsfw(it) && !nsfwMode;
 
   const [list, setList] = useState(initialList);
   const [editing, setEditing] = useState(false);
@@ -36,8 +39,9 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
   const [following, setFollowing] = useState(!!initialList?.isFollowing);
   const [followBusy, setFollowBusy] = useState(false);
   const [cloneBusy, setCloneBusy] = useState(false);
-  // Solo los items visibles en este modo (azul/rojo), ya ordenados por el backend.
-  const [items, setItems] = useState<any[]>((initialList?.items || []).filter(nsfwFilter));
+  // Todos los items de la lista, ya ordenados por el backend (los +18 se muestran
+  // sin portada en modo normal; ver hideCover).
+  const [items, setItems] = useState<any[]>(initialList?.items || []);
   const go = (p: string) => { window.location.href = p; };
 
   const subscriber = isSubscriber(user);
@@ -101,7 +105,7 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
       await callAPI(`/api/lists/${list.id}/items`, { method: 'DELETE', body: JSON.stringify(keyBody(it)) });
     } catch (e: any) {
       notify.error(e?.message || 'No se pudo quitar la obra.');
-      setItems((initialList?.items || []).filter(nsfwFilter));
+      setItems((initialList?.items || []));
     }
   };
 
@@ -128,7 +132,7 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
       ? { ids: next.map((it) => it.id) }
       : { items: next.map((it) => keyBody(it)) };
     try { await callAPI(endpoint, { method: 'PATCH', body: JSON.stringify(body) }); }
-    catch { setItems((initialList?.items || []).filter(nsfwFilter)); }
+    catch { setItems((initialList?.items || [])); }
   };
 
   const canReorder = canEdit || isFollower;
@@ -206,8 +210,8 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
                     <button onClick={() => moveItem(i, -1)} disabled={i === 0} className="p-0.5 rounded hover:bg-zinc-800 text-zinc-500 disabled:opacity-30"><ArrowUp size={14} /></button>
                     <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1} className="p-0.5 rounded hover:bg-zinc-800 text-zinc-500 disabled:opacity-30"><ArrowDown size={14} /></button>
                   </div>
-                  <a href={url} className="w-10 h-14 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
-                    {cover && <img src={cover} alt={title} className="w-full h-full object-cover" />}
+                  <a href={url} className="w-10 h-14 rounded-lg overflow-hidden bg-zinc-800 shrink-0 flex items-center justify-center">
+                    {hideCover(it) ? <Lock size={14} className="text-zinc-600" /> : (cover && <img src={cover} alt={title} className="w-full h-full object-cover" />)}
                   </a>
                   <a href={url} className="min-w-0 flex-1">
                     <p className="text-white font-bold text-sm truncate hover:text-cyan-400">{title}</p>
@@ -236,8 +240,13 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
               return (
                 <div key={it.id} className="group relative">
                   <a href={url}>
-                    <div className="aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-cyan-500/50 transition-all">
-                      {cover && <img src={cover} alt={title} className="w-full h-full object-cover" />}
+                    <div className="aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-cyan-500/50 transition-all flex items-center justify-center">
+                      {hideCover(it) ? (
+                        <div className="text-center text-zinc-600 px-2">
+                          <Lock size={22} className="mx-auto" />
+                          <span className="block text-[9px] font-black mt-1 tracking-widest">+18</span>
+                        </div>
+                      ) : (cover && <img src={cover} alt={title} className="w-full h-full object-cover" />)}
                     </div>
                     <p className="text-zinc-300 text-xs font-bold mt-1.5 truncate group-hover:text-cyan-400">{title}</p>
                   </a>

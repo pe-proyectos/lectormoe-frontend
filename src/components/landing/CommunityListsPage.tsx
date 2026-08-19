@@ -12,7 +12,9 @@ type Tab = 'explore' | 'mine' | 'saved';
 const SUBSCRIBE_CTA = '/scans';
 
 const ListCard: React.FC<{ l: any }> = ({ l }) => {
+  // Se ocultan las portadas +18 (solo cuentan las obras no-+18 para la miniatura).
   const covers = (l.items || [])
+    .filter((it: any) => !(it.mangaCustom?.isNSFW || it.mangaCustom?.organization?.isNSFW))
     .map((it: any) => it.mangaCustom?.imageUrl || it.mangaCustom?.manga?.imageUrl || it.joint?.imageUrl)
     .filter(Boolean)
     .slice(0, 4);

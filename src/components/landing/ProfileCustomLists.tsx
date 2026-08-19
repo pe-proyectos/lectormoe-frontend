@@ -50,6 +50,7 @@ const ProfileCustomLists: React.FC<Props> = ({ profileSlug, isOwner, nsfwMode = 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {lists.map((l) => {
               const covers = (l.items || [])
+                .filter((it: any) => !(it.mangaCustom?.isNSFW || it.mangaCustom?.organization?.isNSFW))
                 .map((it: any) => it.mangaCustom?.imageUrl || it.mangaCustom?.manga?.imageUrl || it.joint?.imageUrl)
                 .filter(Boolean).slice(0, 4);
               return (
