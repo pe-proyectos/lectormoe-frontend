@@ -1348,6 +1348,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   })()}
               </div>
 
+              {/* Vistas totales. Cuando la obra está en un joint, el backend ya
+                  suma las lecturas del joint para que no se vea "congelada" en 0. */}
+              <div>
+                <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-2">
+                  Vistas:
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 border border-zinc-700 rounded-xl text-xs font-black text-white">
+                  <Eye size={14} className="text-cyan-400" />
+                  {((manga as any).views || 0).toLocaleString()}
+                </div>
+              </div>
+
               {manga.demography && (
                 <div>
                   <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-2">
