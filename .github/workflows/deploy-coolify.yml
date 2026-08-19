@@ -1,0 +1,34 @@
+name: Deploy to Coolify
+
+# Dispara el despliegue del frontend en Coolify en cada push a main.
+# Reemplaza al webhook viejo de CapRover (captain.sotf-mods.com), que quedo
+# apagado (503) tras migrar a Coolify y dejo de auto-desplegar el 2026-08-07.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: coolify-deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify deployment
+        env:
+          COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS -w $'\n%{http_code}' -X GET \
+            "https://coolify.sotf-mods.com/api/v1/deploy?uuid=qog4kgs&force=false" \
+            -H "Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}" \
+            -H "Accept: application/json")
+          code=$(printf '%s' "$resp" | tail -n1)
+          body=$(printf '%s' "$resp" | sed '$d')
+          echo "Coolify HTTP ${code}: ${body}"
+          if [ "${code}" != "200" ]; then
+            echo "::error::Coolify deploy trigger failed (HTTP ${code})"
+            exit 1
+          fi
