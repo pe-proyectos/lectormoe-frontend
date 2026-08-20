@@ -69,11 +69,11 @@ const AdminRecommendations: React.FC<Props> = () => {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        // El endpoint devuelve { data, maxPage, total } (NO { items }). Y NO se
-        // filtra por nsfw: el scan debe poder recomendar cualquiera de sus obras
-        // (con nsfw=true solo salían las +18, por eso el selector salía vacío).
+        // callAPI ya desenvuelve el envelope: devuelve { items, maxPage, total }.
+        // (El bug era filtrar nsfw=true, que ahora significa "solo +18" y dejaba
+        // el selector vacío en scans normales.) Se lee res.items.
         const res = await callAPI(`/api/manga-custom?search=${encodeURIComponent(search)}&limit=20&order=alphabetical`);
-        setResults(Array.isArray(res?.data) ? res.data : []);
+        setResults(Array.isArray(res?.items) ? res.items : []);
       } catch { setResults([]); } finally { setSearching(false); }
     }, 300);
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
