@@ -89,6 +89,18 @@ const userHasAccessToChapter = (chapter: any) => {
       }
       return false;
     } else {
+      // subscriptionPlansCanReadUnreleased vacío → la obra no restringe planes:
+      // cualquier suscriptor con un plan ACTIVO del MISMO scan y
+      // canReadUnreleased=true puede leer el adelanto (espeja el backend).
+      if (!logged) return false;
+      for (const subscription of user?.subscriptions || []) {
+        if (subscription.active !== true) continue;
+        const plan = subscription?.subscriptionPlan;
+        if (!plan?.active) continue;
+        if (plan.canReadUnreleased !== true) continue;
+        if (plan.organizationId !== organization?.id) continue;
+        return true;
+      }
       return false;
     }
   }

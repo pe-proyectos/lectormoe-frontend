@@ -483,10 +483,23 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
       }
 
       // Solo puede leer si tiene acceso exclusivo O acceso anticipado (o ambos)
-      // Si solo tiene acceso anticipado, puede leerlo
-      // Si solo tiene acceso exclusivo, puede leerlo
-      // Si tiene ambos, puede leerlo
-      return hasExclusiveAccess || hasUnreleasedAccess;
+      if (hasExclusiveAccess || hasUnreleasedAccess) return true;
+
+      // Fallback: si la obra no restringe planes para el adelanto (lista vacía),
+      // cualquier suscriptor con un plan ACTIVO del MISMO scan y
+      // canReadUnreleased=true puede leerlo (espeja el backend).
+      const unreleasedListEmpty = (manga.subscriptionPlansCanReadUnreleased?.length ?? 0) === 0;
+      if (unreleasedListEmpty) {
+        for (const subscription of user?.subscriptions || []) {
+          if (subscription.active !== true) continue;
+          const plan = subscription?.subscriptionPlan as any;
+          if (!plan?.active) continue;
+          if (plan.canReadUnreleased !== true) continue;
+          if (plan.organizationId !== organization?.id) continue;
+          return true;
+        }
+      }
+      return false;
     }
 
     // Lógica normal para capítulos no bloqueados
@@ -539,7 +552,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         }
         return false;
       } else {
-        // subscriptionPlansCanReadUnreleased está vacío → Nadie puede leer antes de la fecha
+        // subscriptionPlansCanReadUnreleased vacío → la obra no restringe planes:
+        // cualquier suscriptor con un plan ACTIVO del MISMO scan y
+        // canReadUnreleased=true puede leer el adelanto (espeja el backend).
+        if (!logged) return false;
+        for (const subscription of user?.subscriptions || []) {
+          if (subscription.active !== true) continue;
+          const plan = subscription?.subscriptionPlan as any;
+          if (!plan?.active) continue;
+          if (plan.canReadUnreleased !== true) continue;
+          if (plan.organizationId !== organization?.id) continue;
+          return true;
+        }
         return false;
       }
     }
