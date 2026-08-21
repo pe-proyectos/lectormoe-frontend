@@ -374,7 +374,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
               });
 
               if (!result?.status) {
-                notify.error(result?.message || 'Error al guardar la suscripción. Por favor, contacta con soporte.');
+                notify.error(result?.message || 'Hubo un problema al activar tu suscripción tras el pago. Usa el botón "Pedir ayuda" para escribirnos en Discord y te la activamos enseguida.');
                 return;
               }
 
@@ -509,6 +509,14 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
             <p className="text-zinc-400 text-lg font-medium">
               ¡Accede a contenido exclusivo y olvídate de los anuncios! Compra un plan de suscripción para apoyar al scan.
             </p>
+            <a
+              href="http://capibaratraductor.com/discord"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752c4] text-white rounded-xl px-5 py-2.5 font-black text-xs uppercase tracking-widest transition-colors"
+            >
+              <MessageSquare size={16} /> ¿Problemas con el pago? Pedir ayuda
+            </a>
           </div>
 
           {/* Pricing Cards */}
