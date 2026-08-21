@@ -11,6 +11,7 @@ import {
   PauseIcon,
   PlusIcon,
   MinusIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
@@ -1293,6 +1294,23 @@ export function Reader({
 
   return (
     <div id="reader-top">
+      {/* Aviso para DESLOGUEADOS cuando la obra es loggedInOnly (páginas
+          difuminadas): la API marca cada página con blurred=true. Banner fijo
+          arriba + botón de iniciar sesión para verla completa. */}
+      {!logged && chapterData.pages?.some((p) => p?.blurred) && (
+        <div className="fixed top-0 inset-x-0 z-[95] bg-amber-500 text-zinc-950 px-3 py-2.5 flex items-center justify-center gap-2 md:gap-3 shadow-lg">
+          <LockClosedIcon className="h-4 w-4 shrink-0" />
+          <span className="text-[11px] md:text-sm font-black text-center leading-tight">
+            Estás viendo esta obra difuminada. Inicia sesión para verla completa.
+          </span>
+          <a
+            href={`/login?redirect=${typeof window !== "undefined" ? encodeURIComponent(window.location.pathname) : ""}`}
+            className="shrink-0 bg-zinc-950 text-white rounded-full px-3 py-1 text-[10px] md:text-[11px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+          >
+            Iniciar sesión
+          </a>
+        </div>
+      )}
       {/* Control de lectura automática (aparece al activar el auto): ajustar
           tiempo/velocidad y pausar sin salir del lector. */}
       {autoOn && chapterData.pages.length > 0 && !accessError && (
