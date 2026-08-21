@@ -352,6 +352,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       requireLogin: initialResource?.requireLogin || false,
       isSimulRelease: initialResource?.isSimulRelease || false,
       isNSFW: initialResource?.isNSFW || false,
+      isPublic: initialResource?.isPublic !== false,
       hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
       finalChapterNumber: initialResource?.finalChapterNumber ?? null,
       groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
@@ -655,6 +656,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         requireLogin: initialResource?.requireLogin || false,
         isSimulRelease: initialResource?.isSimulRelease || false,
         isNSFW: initialResource?.isNSFW || false,
+        isPublic: initialResource?.isPublic !== false,
         hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
         finalChapterNumber: initialResource?.finalChapterNumber ?? null,
         groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
@@ -1399,6 +1401,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.requireLogin = formData.requireLogin;
         patchBody.isSimulRelease = formData.isSimulRelease;
         patchBody.isNSFW = formData.isNSFW;
+        patchBody.isPublic = formData.isPublic;
         patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
         patchBody.finalChapterNumber = formData.finalChapterNumber ?? null;
         patchBody.groupChaptersByVolume = formData.groupChaptersByVolume;
@@ -3023,6 +3026,22 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </p>
                     </div>
                     )}
+
+                    {/* Obra pública / privada (retiro por copyright) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Obra pública</span>
+                        <div
+                          onClick={() => setFormData((prev: any) => ({ ...prev, isPublic: !prev.isPublic }))}
+                          className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isPublic ? 'bg-green-500' : 'bg-amber-500'}`}
+                        >
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isPublic ? 'right-1' : 'left-1'}`} />
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
+                        Si la desactivas (privada), la obra desaparece del sitio, la búsqueda y el inicio; solo tu equipo la ve y se apagan los anuncios. Úsalo para retirar contenido con copyright sin borrarlo.
+                      </p>
+                    </div>
 
                     {/* Requiere inicio de sesión */}
                     <div className="space-y-3">

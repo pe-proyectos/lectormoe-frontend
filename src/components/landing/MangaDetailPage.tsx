@@ -1116,6 +1116,18 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 overflow-x-hidden">
+      {/* Aviso: obra en privado. Solo el staff llega aquí (el resto recibe 404). */}
+      {(manga as any)?.isPublic === false && (
+        <div className="max-w-7xl mx-auto px-3 md:px-8 pt-2">
+          <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+            <Lock size={18} className="shrink-0 mt-0.5 text-amber-400" />
+            <div className="text-sm">
+              <p className="font-black uppercase tracking-wider text-amber-300">Obra en privado · no pública</p>
+              <p className="text-amber-200/80 mt-0.5">Solo tu equipo del scan puede verla. No aparece en el sitio, la búsqueda ni el inicio, y los anuncios están desactivados. Vuélvela pública desde la edición cuando el tema de copyright esté resuelto.</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* NSFW Age Verification Modal */}
       {showNSFWModal && (
         <NSFWAgeModal onConfirm={() => setShowNSFWModal(false)} />
