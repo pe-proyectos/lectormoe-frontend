@@ -44,7 +44,7 @@ interface ResolveAdsProviderInput {
   pathname: string;
   nsfwMode?: boolean;
   organization?: { isNSFW?: boolean | null } | null;
-  manga?: { isNSFW?: boolean | null } | null;
+  manga?: { isNSFW?: boolean | null; loggedInOnly?: boolean | null } | null;
   /** True when the middleware/page already decided no ads should render
    *  (e.g. a paying user with hideAds, ads globally disabled for the org). */
   showAds?: boolean;
@@ -64,6 +64,11 @@ export function resolveAdsProvider({
   // Luckys (raffles) is an ad-free zone — paid prizes shouldn't share screen
   // real estate with ads, and PayPal smart buttons + ad scripts collide.
   if (pathname === '/luckys' || pathname.startsWith('/luckys/')) return 'none';
+
+  // Caso copyright (loggedInOnly): NUNCA AdSense — la obra tiene contenido con
+  // copyright en disputa; mostrar Google ahí arriesga la cuenta de toda la
+  // plataforma. Se usa Adsterra (igual que el contenido adulto).
+  if (manga?.loggedInOnly) return 'adsterra';
 
   const adultContext = !!(
     pathname.startsWith('/red') ||

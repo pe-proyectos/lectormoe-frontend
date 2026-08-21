@@ -181,6 +181,12 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
       if (n.customList?.user?.slug && n.customList?.slug)
         return `/list/${n.customList.user.slug}/${n.customList.slug}`;
       return '/listas';
+    case 'copyright_strike': {
+      const os = n.organization?.slug || n.mangaCustom?.organization?.slug;
+      const ms = n.mangaCustom?.manga?.slug;
+      if (os && ms) return `/${os}/manga/${ms}`;
+      return null;
+    }
     default:
       return null;
   }
@@ -253,6 +259,13 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: reason ? `Razón: ${reason} · ${rel}` : rel,
       };
     }
+    case 'copyright_strike': {
+      // Mensaje importante: se muestra completo (no truncado) para que el scan lo lea.
+      return {
+        title: 'Aviso de copyright · Strike 1/3',
+        subtitle: n.details || `Contenido con copyright detectado · ${rel}`,
+      };
+    }
     case 'list_updated': {
       const listName = n.customList?.name || n.details || 'una lista';
       const work = n.mangaCustom?.title || n.joint?.title;
@@ -291,6 +304,8 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 
       return <AlertCircle size={size} className="text-red-400" />;
     case 'list_updated':
       return <ListChecks size={size} className="text-cyan-400" />;
+    case 'copyright_strike':
+      return <AlertCircle size={size} className="text-red-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
   }
