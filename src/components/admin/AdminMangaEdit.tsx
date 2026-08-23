@@ -2848,6 +2848,18 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       onChange={(_, newValue) => setFormData((prev) => ({ ...prev, genres: newValue as any[] }))}
                       getOptionLabel={(option: any) => option.name || option.title || String(option)}
                       isOptionEqualToValue={(option: any, value: any) => option.id === value.id}
+                      renderOption={(props: any, option: any) => (
+                        <li
+                          key={option.id}
+                          {...props}
+                          className="px-4 py-2 cursor-pointer hover:bg-zinc-800 transition-colors border-b border-zinc-800/40 last:border-0"
+                        >
+                          <div className="text-white text-sm font-medium">{option.name}</div>
+                          {option.description ? (
+                            <div className="text-zinc-500 text-xs mt-0.5">{option.description}</div>
+                          ) : null}
+                        </li>
+                      )}
                       placeholder="Géneros..."
                       label=""
                     />
