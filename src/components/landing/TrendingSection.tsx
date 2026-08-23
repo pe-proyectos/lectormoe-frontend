@@ -117,6 +117,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({ user, logged, organiz
                       userHasSubscription,
                       organizationId: (manga as any).organizationId,
                       isNSFW: (manga as any).isNSFW || false,
+                      views: (manga as any).views,
                     }}
                     onClick={() => { if (mUrl) window.location.href = mUrl; }}
                   />

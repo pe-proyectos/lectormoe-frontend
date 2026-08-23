@@ -64,6 +64,7 @@ const LatestUpdates: React.FC<LatestUpdatesProps> = ({ user, logged, nsfwMode = 
               organizationId: m.organization?.id,
               isNSFW: m.isNSFW || m.organization?.isNSFW || false,
               contentKind: isWritingItem ? 'writing' : 'manga',
+              views: m.views,
               userHasSubscription: logged && user?.subscriptions?.some(
                 (sub: any) => sub?.subscriptionPlan?.organizationId === m.organization?.id
               ) || false,

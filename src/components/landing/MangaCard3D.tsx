@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { notify } from '../../util/feedback';
 import { nsfwUrl } from '../../util/nsfw-url';
-import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard, AlertTriangle } from 'lucide-react';
+import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard, AlertTriangle, Eye } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 
 interface Chapter {
@@ -38,7 +38,15 @@ interface Manga {
   subscriptionPlansCanReadReleased?: Array<{ id: number; name: string }>;
   isNSFW?: boolean;
   contentKind?: 'manga' | 'writing';
+  views?: number; // Vistas totales (efectivas: incluye joint). Para el badge de la portada.
 }
+
+// Formato compacto de vistas: 1234 -> "1.2k", 1200000 -> "1.2M"
+const formatViews = (n: number): string => {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
+  return String(n);
+};
 
 interface Props {
   user?: any;
@@ -303,6 +311,15 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
             
             return null;
           })()}
+
+          {/* Vistas totales (incluye joints). */}
+          {typeof manga.views === 'number' && manga.views > 0 && (
+            <div className="absolute top-3 left-3 z-10">
+              <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-black/70 text-white flex items-center gap-1 backdrop-blur-[2px]" title={`${manga.views.toLocaleString()} vistas`}>
+                <Eye size={10} /> {formatViews(manga.views)}
+              </span>
+            </div>
+          )}
 
           {/* Status badge */}
           {manga.status && (
