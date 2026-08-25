@@ -739,20 +739,27 @@ export function Reader({
     }).catch(console.error);
   }, [settings, mangaSlug, chapterNumber, isJoint]);
 
+  // URL de progreso de la pagina actual, para poder "flushearla" al salir.
+  const historyUrlRef = useRef(null);
+
   // Save chapter history - con debounce
   useEffect(() => {
-    if (!logged || !chapterNumber) return;
-    if (!isJoint && !mangaSlug) return;
+    if (!logged || !chapterNumber) { historyUrlRef.current = null; return; }
+    if (!isJoint && !mangaSlug) { historyUrlRef.current = null; return; }
 
     const historyUrl = isJoint
       ? `/api/user-chapter-history/joint/${jointSlug}/chapter/${chapterNumber}/pages/${currentPage}`
       : `/api/user-chapter-history/manga-custom/${mangaSlug}/chapter/${chapterNumber}/pages/${currentPage}`;
 
+    // Guardar siempre la URL actual para el flush de salida (aunque el debounce
+    // aun no haya corrido).
+    historyUrlRef.current = historyUrl;
+
     if (lastSaveUrl === historyUrl) return;
 
     const timeoutId = setTimeout(() => {
       setLastSaveUrl(historyUrl);
-      callAPI(historyUrl, { method: 'POST' }).catch((error) => {
+      callAPI(historyUrl, { method: 'POST', keepalive: true }).catch((error) => {
         // Solo loggear errores que no sean 404 (recurso no encontrado)
         if (error?.message && !error.message.includes('No se encontró el recurso')) {
           console.error("Failed to save chapter history", error);
@@ -762,6 +769,32 @@ export function Reader({
 
     return () => clearTimeout(timeoutId);
   }, [currentPage, logged, mangaSlug, chapterNumber, lastSaveUrl, isJoint, jointSlug]);
+
+  // Flush de la marca de leido al salir/navegar/backgroundear. BUG en la app:
+  // al tocar "siguiente capitulo" el componente se desmontaba y el debounce de
+  // 500ms se cancelaba, asi que la ultima pagina (la que marca finishedAt) nunca
+  // se guardaba. En desktop la gente se queda >500ms en la ultima pagina, por eso
+  // ahi si funcionaba. `keepalive:true` permite que el POST sobreviva a la
+  // navegacion. Se dispara en pagehide, al pasar a segundo plano y al desmontar.
+  useEffect(() => {
+    const flush = () => {
+      const url = historyUrlRef.current;
+      if (!url) return;
+      try {
+        callAPI(url, { method: 'POST', keepalive: true }).catch(() => {});
+      } catch { /* noop */ }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+      flush();
+    };
+  }, []);
 
   // Track view - solo una vez
   useEffect(() => {
