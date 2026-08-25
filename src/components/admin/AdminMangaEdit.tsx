@@ -354,6 +354,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       isSimulRelease: initialResource?.isSimulRelease || false,
       isNSFW: initialResource?.isNSFW || false,
       isPublic: initialResource?.isPublic !== false,
+      isOneShot: initialResource?.isOneShot ?? false,
+      demographyId: initialResource?.manga?.demographyId ?? initialResource?.demographyId ?? null,
       hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
       finalChapterNumber: initialResource?.finalChapterNumber ?? null,
       groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
@@ -402,6 +404,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [updatingChapterDate, setUpdatingChapterDate] = useState<number | null>(null); // Chapter ID being updated
 
   const [genres, setGenres] = useState<any[]>([]);
+  const [demographies, setDemographies] = useState<any[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const [infoLoading, setInfoLoading] = useState(false);
 
@@ -676,6 +679,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   useEffect(() => {
     if (activeTab === 'info') {
       loadGenres();
+      loadDemographies();
       loadSubscriptionPlans();
     }
   }, [activeTab]);
@@ -700,6 +704,15 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       }
     } catch (error: any) {
       console.error('Error loading genres:', error);
+    }
+  };
+
+  const loadDemographies = async () => {
+    try {
+      const result = await callAPI('/api/demography');
+      if (Array.isArray(result)) setDemographies(result);
+    } catch (error: any) {
+      console.error('Error loading demographies:', error);
     }
   };
 
@@ -1403,6 +1416,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.isSimulRelease = formData.isSimulRelease;
         patchBody.isNSFW = formData.isNSFW;
         patchBody.isPublic = formData.isPublic;
+        patchBody.isOneShot = formData.isOneShot;
+        patchBody.demographyId = formData.demographyId ?? null;
         patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
         patchBody.finalChapterNumber = formData.finalChapterNumber ?? null;
         patchBody.groupChaptersByVolume = formData.groupChaptersByVolume;
@@ -3039,6 +3054,42 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         Si la desactivas (privada), la obra desaparece del sitio, la búsqueda y el inicio; solo tu equipo la ve y se apagan los anuncios. Úsalo para retirar contenido con copyright sin borrarlo.
                       </p>
                     </div>
+
+                    {/* One-shot */}
+                    {!isJointMode && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">One-shot</span>
+                        <div
+                          onClick={() => setFormData((prev: any) => ({ ...prev, isOneShot: !prev.isOneShot }))}
+                          className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isOneShot ? 'bg-cyan-500' : 'bg-zinc-800'}`}
+                        >
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isOneShot ? 'right-1' : 'left-1'}`} />
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
+                        Actívalo si la obra es de un solo capítulo (one-shot).
+                      </p>
+                    </div>
+                    )}
+
+                    {/* Demografía (del manga base) */}
+                    {!isJointMode && (
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">Demografía</span>
+                      <select
+                        value={formData.demographyId ?? ''}
+                        onChange={(e) => setFormData((prev: any) => ({ ...prev, demographyId: e.target.value ? Number(e.target.value) : null }))}
+                        className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="">Sin demografía</option>
+                        {demographies.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      </select>
+                      <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
+                        Shōnen, Shōjo, Seinen, Josei o Kodomo. Pertenece al manga base (se comparte entre scans).
+                      </p>
+                    </div>
+                    )}
 
                     {/* Requiere inicio de sesión */}
                     <div className="space-y-3">
