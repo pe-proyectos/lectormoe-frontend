@@ -29,7 +29,8 @@ const mangaFromJoint = {
   // no traía el contador). Es la suma real de lecturas de la obra colaborativa.
   views: joint.views || 0,
   demography: joint.manga?.demography || null,
-  genres: joint.manga?.genres || [],
+  // Géneros propios del joint (relación M2M); si no tuviera, cae a los del manga base.
+  genres: (joint.genres && joint.genres.length ? joint.genres : joint.manga?.genres) || [],
   authors: joint.manga?.authors || [],
   chapters: (joint.chapters || []).map((ch: any) => ({
     id: ch.id,

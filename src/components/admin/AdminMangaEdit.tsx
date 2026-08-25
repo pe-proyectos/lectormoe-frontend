@@ -1409,6 +1409,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         image: coverKey,
         banner: bannerKey,
       };
+      // Géneros: aplica a manga individual y a joint (el joint tiene su propia lista).
+      patchBody.genreIds = formData.genres.map((g: any) => g.id);
       if (!isJointMode) {
         patchBody.mangaCustomId = mangaCustom?.id;
         patchBody.releasedAt = localDatetimeStringToUTC(formData.releasedAt);
@@ -1423,7 +1425,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
         patchBody.finalChapterNumber = formData.finalChapterNumber ?? null;
         patchBody.groupChaptersByVolume = formData.groupChaptersByVolume;
-        patchBody.genreIds = formData.genres.map((g: any) => g.id);
         patchBody.subscriptionPlanIdsCanReadUnreleased = formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [];
         patchBody.subscriptionPlanIdsCanReadReleased = formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [];
       }
@@ -2855,8 +2856,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     />
                   </div>
 
-                  {/* Géneros (manga only — joints inherit from base manga) */}
-                  {!isJointMode && (
+                  {/* Géneros — el joint tiene su propia lista de géneros */}
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Géneros</label>
                     <GenreCategoryPicker
@@ -2866,7 +2866,6 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       showNsfw={true}
                     />
                   </div>
-                  )}
 
                   {/* Suscripciones — solo manga */}
                   {!isJointMode && (
@@ -3058,22 +3057,28 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                     </div>
 
                     {/* One-shot */}
-                    {!isJointMode && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">One-shot</span>
-                        <div
-                          onClick={() => setFormData((prev: any) => ({ ...prev, isOneShot: !prev.isOneShot }))}
-                          className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isOneShot ? 'bg-cyan-500' : 'bg-zinc-800'}`}
-                        >
-                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isOneShot ? 'right-1' : 'left-1'}`} />
+                    {!isJointMode && (() => {
+                      const chapterCount = (initialResource?.chapters?.length) || 0;
+                      const canBeOneShot = formData.isOneShot || chapterCount <= 1;
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest">One-shot</span>
+                            <div
+                              onClick={() => canBeOneShot && setFormData((prev: any) => ({ ...prev, isOneShot: !prev.isOneShot }))}
+                              className={`w-10 h-5 rounded-full relative transition-colors ${formData.isOneShot ? 'bg-cyan-500' : 'bg-zinc-800'} ${canBeOneShot ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'}`}
+                            >
+                              <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isOneShot ? 'right-1' : 'left-1'}`} />
+                            </div>
+                          </div>
+                          <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
+                            {canBeOneShot
+                              ? 'Actívalo si la obra es de un solo capítulo. Al activarlo, no se podrán subir más capítulos.'
+                              : 'No disponible: la obra tiene más de un capítulo. Un one-shot solo puede tener uno.'}
+                          </p>
                         </div>
-                      </div>
-                      <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
-                        Actívalo si la obra es de un solo capítulo (one-shot).
-                      </p>
-                    </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Demografía (del manga base) */}
                     {!isJointMode && (
