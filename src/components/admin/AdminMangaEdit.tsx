@@ -661,6 +661,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         isSimulRelease: initialResource?.isSimulRelease || false,
         isNSFW: initialResource?.isNSFW || false,
         isPublic: initialResource?.isPublic !== false,
+        isOneShot: initialResource?.isOneShot ?? false,
+        demographyId: initialResource?.manga?.demographyId ?? initialResource?.demographyId ?? null,
         hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
         finalChapterNumber: initialResource?.finalChapterNumber ?? null,
         groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,

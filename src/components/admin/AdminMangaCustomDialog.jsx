@@ -119,7 +119,10 @@ export function AdminMangaCustomDialog({
     callAPI(`/api/manga/${mangaProfile.slug}`)
       .then((result) => {
         if (mangaCustom) return;
-        setStatus(result.status);
+        // OJO: el Manga base NO tiene `status` (result.status es undefined), y el
+        // status es propio de cada scan. Pre-rellenar el status desde aqui borraba
+        // el "Finalizado" que el usuario elegia al crear la ficha (se guardaba como
+        // "En emision"). Solo pre-rellenamos titulo/descripcion.
         setTitle(result.title);
         setShortDescription(result.shortDescription);
         setDescription(result.description);

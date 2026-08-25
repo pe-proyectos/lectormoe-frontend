@@ -1349,8 +1349,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest mb-2">
                   Estado:
                 </p>
-                <div
-                  className={`inline-flex px-4 py-2 border rounded-xl text-xs font-black uppercase tracking-widest ${
+                <a
+                  href={`${nsfwMode ? '/red/search' : '/search'}?status=${encodeURIComponent(manga.status)}`}
+                  className={`inline-flex px-4 py-2 border rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-125 transition-all ${
                     manga.status === "ongoing"
                       ? "bg-green-500/20 border-green-500/30 text-green-400"
                       : manga.status === "hiatus"
@@ -1359,7 +1360,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   }`}
                 >
                   {translateStatus(manga.status)}
-                </div>
+                </a>
                 {manga.nextChapterAt &&
                   (() => {
                     const nextChapterDate = new Date(manga.nextChapterAt);
@@ -1418,12 +1419,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {manga.genres.map((genre) => (
-                      <span
+                      <a
                         key={genre.id}
-                        className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider"
+                        href={`${nsfwMode ? '/red/search' : '/search'}?genre=${encodeURIComponent(genre.name)}`}
+                        className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:border-cyan-500/50 hover:text-cyan-400 transition-colors"
                       >
                         {genre.name}
-                      </span>
+                      </a>
                     ))}
                   </div>
                 </div>
