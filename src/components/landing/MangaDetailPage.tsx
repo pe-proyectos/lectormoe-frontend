@@ -1329,7 +1329,8 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
               {(() => {
                 const typeBadge = getBookTypeBadge((manga as any).manga?.bookType?.name);
                 const demoBadge = getDemographyBadge(manga.demography?.name || (manga as any).manga?.demography?.name);
-                if (!typeBadge && !demoBadge) return null;
+                const isOneShot = (manga as any).isOneShot === true;
+                if (!typeBadge && !demoBadge && !isOneShot) return null;
                 return (
                   <div className="flex items-center gap-2 flex-wrap">
                     {typeBadge && (
@@ -1337,6 +1338,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                     )}
                     {demoBadge && (
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${demoBadge.className}`}>{demoBadge.label}</span>
+                    )}
+                    {isOneShot && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border bg-cyan-500/20 border-cyan-500/30 text-cyan-300">One-shot</span>
                     )}
                   </div>
                 );
