@@ -72,7 +72,6 @@ const GenreCategoryPicker: React.FC<Props> = ({ options, value, onChange, showNs
                     } ${g.nsfw && !on ? 'border-pink-500/40 text-pink-300' : ''}`}
                   >
                     {g.name}
-                    {g.nsfw ? ' 🔞' : ''}
                   </button>
                 );
               })}

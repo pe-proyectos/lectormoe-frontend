@@ -583,7 +583,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                   }
                   return CAT_ORDER.filter(c => byCat[c]?.length).map(c => (
                     <optgroup key={c} label={CAT_LABEL[c]}>
-                      {byCat[c].map(g => <option key={g.name} value={g.name}>{g.name}{g.nsfw ? ' 🔞' : ''}</option>)}
+                      {byCat[c].map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
                     </optgroup>
                   ));
                 })()}
