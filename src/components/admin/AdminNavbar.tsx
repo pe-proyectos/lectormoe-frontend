@@ -385,7 +385,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
               />
               <kbd className="hidden md:block text-[9px] font-bold bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5 text-zinc-500 shrink-0">Esc</kbd>
             </div>
-            <div className="max-h-[46vh] overflow-y-auto py-1.5">
+            <div className="max-h-[75vh] overflow-y-auto py-1.5">
               {results.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-zinc-600">
                   Nada coincide con "{query}". Prueba con "mangas" o "finanzas".
