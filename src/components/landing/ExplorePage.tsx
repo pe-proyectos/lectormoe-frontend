@@ -159,6 +159,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [selectedScan, setSelectedScan] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState(initialParams.get('status') ?? 'All');
   const [selectedGenre, setSelectedGenre] = useState(initialParams.get('genre') ?? 'All');
+  const [oneShotOnly, setOneShotOnly] = useState(initialParams.get('isOneShot') === 'true');
   const [authorSlug, setAuthorSlug] = useState<string>(initialAuthor);
   const [authorName, setAuthorName] = useState<string>('');
   const [sortBy, setSortBy] = useState(initialParams.get('sort') ?? 'latest');
@@ -219,9 +220,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     setOrDel('q', debouncedSearch, '');
     setOrDel('status', selectedStatus, 'All');
     setOrDel('genre', selectedGenre, 'All');
+    setOrDel('isOneShot', oneShotOnly ? 'true' : '', '');
     setOrDel('sort', sortBy, 'latest');
     window.history.replaceState({}, '', u.toString());
-  }, [debouncedSearch, selectedStatus, selectedGenre, sortBy]);
+  }, [debouncedSearch, selectedStatus, selectedGenre, oneShotOnly, sortBy]);
 
   // Al cambiar de página, volver arriba: paginar dejaba la vista al fondo de la
   // lista y había que subir a mano. Se salta el primer render.
@@ -345,6 +347,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           queryParams.set('genre', selectedGenre);
         }
 
+        if (oneShotOnly) {
+          queryParams.set('isOneShot', 'true');
+        }
+
         if (authorSlug) {
           queryParams.set('author', authorSlug);
         }
@@ -418,7 +424,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
     };
 
     fetchMangas();
-  }, [debouncedSearch, selectedStatus, selectedGenre, sortBy, authorSlug, page, organizationSlug, organization, user, logged]);
+  }, [debouncedSearch, selectedStatus, selectedGenre, oneShotOnly, sortBy, authorSlug, page, organizationSlug, organization, user, logged]);
 
   // Cargar géneros: SIEMPRE desde el catálogo global (/api/genre), tanto en las
   // páginas de scan como en la búsqueda global. Antes, la búsqueda global armaba
@@ -549,6 +555,15 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               <option value="Completed">Finalizado</option>
               <option value="Hiatus">En pausa</option>
             </select>
+
+            <button
+              type="button"
+              onClick={() => setOneShotOnly(v => !v)}
+              aria-pressed={oneShotOnly}
+              className={`text-xs font-bold rounded-xl px-4 py-2 border transition-all ${oneShotOnly ? 'bg-cyan-500 text-zinc-950 border-cyan-500' : 'bg-zinc-800/50 text-zinc-300 border-zinc-700/50 hover:border-cyan-500/50'}`}
+            >
+              One-shot
+            </button>
 
             {genres.length > 0 && (
               <select 
