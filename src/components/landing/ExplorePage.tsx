@@ -166,7 +166,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(true);
   const [scans, setScans] = useState<any[]>([]);
-  const [genres, setGenres] = useState<string[]>([]);
+  const [genres, setGenres] = useState<Array<{ name: string; category?: string | null; nsfw?: boolean }>>([]);
   const [page, setPage] = useState(1);
   const [maxPage, setMaxPage] = useState(1);
   const [total, setTotal] = useState<number | null>(null);
@@ -429,7 +429,11 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
       try {
         const result = await callAPI('/api/genre');
         if (Array.isArray(result)) {
-          setGenres(result.map((g: any) => g.name).sort((a: string, b: string) => a.localeCompare(b)));
+          setGenres(
+            result
+              .map((g: any) => ({ name: g.name, category: g.category, nsfw: !!g.nsfw }))
+              .sort((a, b) => a.name.localeCompare(b.name))
+          );
           return;
         }
       } catch {
@@ -439,7 +443,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
       mangas.forEach(manga => {
         manga.genres?.forEach(genre => uniqueGenres.add(genre));
       });
-      setGenres(Array.from(uniqueGenres).sort());
+      setGenres(Array.from(uniqueGenres).sort().map((name) => ({ name })));
     };
     fetchGenres();
   }, []);
@@ -553,7 +557,21 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                 className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-xs font-bold rounded-xl px-4 py-2 hover:border-cyan-500/50 focus:outline-none transition-all cursor-pointer"
               >
                 <option value="All">Géneros</option>
-                {genres.map(genre => <option key={genre} value={genre}>{genre}</option>)}
+                {(() => {
+                  const CAT_ORDER = ['FORMAT', 'GENRE', 'THEME', 'CONTENT'];
+                  const CAT_LABEL: Record<string, string> = { FORMAT: 'Formato', GENRE: 'Género', THEME: 'Temática', CONTENT: 'Contenido' };
+                  const visible = genres.filter(g => nsfwMode || !g.nsfw);
+                  const byCat: Record<string, typeof visible> = {};
+                  for (const g of visible) {
+                    const c = g.category && CAT_ORDER.includes(g.category) ? g.category : 'GENRE';
+                    (byCat[c] = byCat[c] || []).push(g);
+                  }
+                  return CAT_ORDER.filter(c => byCat[c]?.length).map(c => (
+                    <optgroup key={c} label={CAT_LABEL[c]}>
+                      {byCat[c].map(g => <option key={g.name} value={g.name}>{g.name}{g.nsfw ? ' 🔞' : ''}</option>)}
+                    </optgroup>
+                  ));
+                })()}
               </select>
             )}
 
