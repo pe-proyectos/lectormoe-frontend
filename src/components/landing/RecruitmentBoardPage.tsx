@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Zap, Search, Users, Megaphone, ChevronDown, X } from 'lucide-react';
+import { Loader2, Zap, Search, Users, Megaphone, ChevronDown, X, MessageCircle } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { callAPI } from '../../util/callApi';
@@ -22,7 +22,7 @@ interface Post {
   status: string;
   createdAt: string;
   updatedAt: string;
-  organization: { name: string; slug: string; logoUrl: string | null; _count?: { followers: number } };
+  organization: { name: string; slug: string; logoUrl: string | null; discordUrl?: string | null; _count?: { followers: number } };
 }
 
 const ROLE_LABEL: Record<string, string> = { cleaner: 'Cleaner', typer: 'Typer', traductor: 'Traductor', redrawer: 'Redrawer', proofreader: 'Proofreader', editor: 'Editor', otro: 'Otro' };
@@ -158,13 +158,25 @@ const RecruitmentBoardPage: React.FC<Props> = ({ user, logged, nsfwMode = false 
                           <p className="text-sm text-zinc-400 whitespace-pre-wrap">{p.requirements}</p>
                         </div>
                       )}
-                      {p.status === 'open' && (
-                        logged ? (
-                          <button onClick={() => setApplyPost(p)} className="inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-5 py-2.5 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors">Postularme</button>
-                        ) : (
-                          <a href="/login" className="inline-flex items-center justify-center gap-2 bg-zinc-800 text-zinc-300 rounded-xl px-5 py-2.5 font-black text-[10px] uppercase tracking-widest hover:bg-zinc-700 transition-colors">Inicia sesión para postularte</a>
-                        )
-                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {p.status === 'open' && (
+                          logged ? (
+                            <button onClick={() => setApplyPost(p)} className="inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-5 py-2.5 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors">Postularme</button>
+                          ) : (
+                            <a href="/login" className="inline-flex items-center justify-center gap-2 bg-zinc-800 text-zinc-300 rounded-xl px-5 py-2.5 font-black text-[10px] uppercase tracking-widest hover:bg-zinc-700 transition-colors">Inicia sesión para postularte</a>
+                          )
+                        )}
+                        {p.organization.discordUrl && (
+                          <a
+                            href={p.organization.discordUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 bg-[#5865F2] text-white rounded-xl px-5 py-2.5 font-black text-[10px] uppercase tracking-widest hover:brightness-110 transition-all"
+                          >
+                            <MessageCircle size={14} /> Discord del scan
+                          </a>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
