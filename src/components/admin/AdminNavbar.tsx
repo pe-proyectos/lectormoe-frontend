@@ -4,6 +4,7 @@ import {
   Menu,
   Search,
   ExternalLink,
+  Home,
   LayoutDashboard,
   BookOpen,
   BookText,
@@ -239,11 +240,17 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
             </button>
             <button
               onClick={() => { setPaletteOpen(true); setQuery(''); setSelected(0); }}
-              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all"
+              className="md:hidden inline-flex items-center gap-1.5 px-3 min-h-[44px] rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all text-xs font-bold"
               aria-label="Ir a una sección"
             >
-              <Search size={20} />
+              <Search size={18} /> Ir a una sección
             </button>
+            <a
+              href="/"
+              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs font-bold transition-colors"
+            >
+              <Home size={13} /> Inicio
+            </a>
             <a
               href={`/${organizationSlug}`}
               className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs font-bold transition-colors"
@@ -349,6 +356,9 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({ organization, organizationSlu
                 </div>
               ))}
               <div className="px-2 mt-2 pt-2 border-t border-zinc-900">
+                <a href="/" className="flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-sm font-bold text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors">
+                  <Home size={17} className="text-zinc-500" /> Inicio
+                </a>
                 <a href={`/${organizationSlug}`} className="flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-sm font-bold text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors">
                   <ExternalLink size={17} className="text-zinc-500" /> Ver mi scan
                 </a>
