@@ -924,6 +924,37 @@ const DiscordSection: React.FC<{ user: User }> = ({ user }) => {
   )
 }
 
+// Botón para que un usuario no verificado pida un nuevo correo de verificación.
+// Usa POST /api/auth/send-verification (logueado, rate-limit 3/hora en el backend).
+const EmailVerifyButton: React.FC = () => {
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const send = async () => {
+    setBusy(true); setMsg(null)
+    try {
+      const r: any = await callAPI('/api/auth/send-verification', { method: 'POST' })
+      setMsg({ ok: true, text: r?.message || 'Correo de verificación enviado. Revisa tu bandeja (y spam).' })
+    } catch (err: any) {
+      setMsg({ ok: false, text: err?.message || 'No se pudo enviar el correo. Intenta más tarde.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      <button
+        type="button"
+        onClick={send}
+        disabled={busy}
+        className="inline-flex items-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-4 py-2 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {busy ? 'Enviando…' : 'Reenviar correo de verificación'}
+      </button>
+      {msg && <p className={`text-xs ${msg.ok ? 'text-green-500' : 'text-amber-500'}`}>{msg.text}</p>}
+    </div>
+  )
+}
+
 const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizationSlug, isStaff = false }) => {
   const [activeTab, setActiveTab] = useState('account')
   const [isLoading, setIsLoading] = useState(false)
@@ -1086,6 +1117,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                         <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">No verificado</span>
                       )}
                     </div>
+                    {!user.emailVerified && <EmailVerifyButton />}
                   </div>
                 </div>
 
