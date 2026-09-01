@@ -1,7 +1,7 @@
 ---
-// Sorteo ended — hidden until next giveaway
-// import SorteoModal from '../components/landing/SorteoModal';
+import SorteoModal from '../components/landing/SorteoModal';
 import DiscordInviteModal from '../components/landing/DiscordInviteModal';
+import SorteoBanner from '../components/landing/SorteoBanner';
 import MobileTabBar from '../components/ui/MobileTabBar';
 import GlobalToaster from '../components/ui/GlobalToaster';
 import PullToRefresh from '../components/ui/PullToRefresh';
@@ -145,6 +145,7 @@ const siteName =
     <ClientRouter />
   </head>
   <body>
+    <SorteoBanner client:only="react" transition:persist="sorteo-banner" />
     <slot />
     <GlobalToaster client:only="react" transition:persist="toaster" />
     <AppNative client:only="react" transition:persist="appnative" />
@@ -161,8 +162,7 @@ const siteName =
       />
     )}
     <DiscordInviteModal client:only="react" transition:persist="discord-modal" />
-    <!-- Sorteo ended — hidden until next giveaway -->
-    <!-- <SorteoModal organization={organization} logged={logged} client:only="react" /> -->
+    <SorteoModal client:only="react" transition:persist="sorteo-modal" />
     {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider).
         Se omite en la app (isNativeApp): es el "emergente" con cerrar difícil. */}
     {adsProvider === 'adsterra' && !isNativeApp && (
