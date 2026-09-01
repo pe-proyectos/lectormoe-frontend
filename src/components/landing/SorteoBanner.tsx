@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
+import { X } from 'lucide-react'
 import {
   drawLabels,
   money,
@@ -15,10 +16,16 @@ import {
 // empuja navbar/contenido con la variable CSS --promo-h. En reposo late; al
 // hacer hover se expande con los detalles del sorteo.
 const LOGO = 'https://qori.cc/logo.png'
+const DISMISS_KEY = 'sorteo_dismissed_until'
+const DISMISS_MS = 8 * 60 * 60 * 1000 // 8 horas
 
 const SorteoBanner: React.FC = () => {
   const { raffle, skew, ready } = useFeaturedRaffle()
   const [now, setNow] = useState(() => Date.now())
+  const [dismissedUntil, setDismissedUntil] = useState(0)
+  const [pathname, setPathname] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/'
+  )
   const rowRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -26,9 +33,33 @@ const SorteoBanner: React.FC = () => {
     return () => clearInterval(id)
   }, [])
 
+  // Respeta el "ocultar por 8 horas".
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DISMISS_KEY)
+      if (raw) setDismissedUntil(Number(raw) || 0)
+    } catch {
+      // localStorage no disponible.
+    }
+  }, [])
+
+  // Mantiene la ruta actual al vuelo (view transitions no recargan la pagina).
+  useEffect(() => {
+    const sync = () => setPathname(window.location.pathname)
+    window.addEventListener('astro:page-load', sync)
+    window.addEventListener('popstate', sync)
+    return () => {
+      window.removeEventListener('astro:page-load', sync)
+      window.removeEventListener('popstate', sync)
+    }
+  }, [])
+
   const endMs = raffle ? Date.parse(raffle.endsAt) : 0
   const diff = raffle ? endMs - (now + skew) : 0
-  const active = !!raffle && diff > 0
+  const isAdmin =
+    /(^|\/)admin(\/|$)/.test(pathname) || pathname.startsWith('/superadmin')
+  const dismissed = dismissedUntil > Date.now()
+  const active = !!raffle && diff > 0 && !isAdmin && !dismissed
 
   // Publica la altura compacta de la tira en --promo-h (solo desktop la usa
   // para desplazar navbar/contenido). Se mide sobre la fila compacta, no sobre
@@ -52,7 +83,19 @@ const SorteoBanner: React.FC = () => {
   }, [active])
 
   // No renderizamos hasta tener datos, sin sorteo abierto, o si ya cerro.
-  if (!ready || !raffle || diff <= 0) return null
+  if (!ready || !active) return null
+
+  const dismiss = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const until = Date.now() + DISMISS_MS
+    try {
+      localStorage.setItem(DISMISS_KEY, String(until))
+    } catch {
+      // localStorage no disponible.
+    }
+    setDismissedUntil(until)
+  }
 
   const total = Math.floor(diff / 1000)
   const units = [
@@ -169,6 +212,17 @@ const SorteoBanner: React.FC = () => {
         <span className='ml-1 hidden shrink-0 items-center rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white transition-all duration-300 group-hover:bg-emerald-500 group-hover:shadow-[0_0_16px_rgba(16,185,129,0.5)] md:inline-flex'>
           Participar
         </span>
+
+        {/* Ocultar por 8 horas */}
+        <button
+          type='button'
+          onClick={dismiss}
+          aria-label='Ocultar aviso por 8 horas'
+          title='Ocultar por 8 horas'
+          className='z-10 -mr-1 ml-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-emerald-200/50 transition-colors hover:bg-white/10 hover:text-white'
+        >
+          <X size={14} />
+        </button>
       </div>
 
       {/* Panel de detalles: se despliega al hacer hover (grid-rows trick) */}
