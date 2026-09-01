@@ -1,36 +1,34 @@
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
+import {
+  drawLabels,
+  money,
+  oddsLabel,
+  pad,
+  prizeTitle,
+  useFeaturedRaffle
+} from '../../util/useFeaturedRaffle'
 
-// Tira del sorteo activo de qori.cc. En movil va en el flujo normal (el navbar
-// es relative, ambos se desplazan al hacer scroll). En desktop el navbar es
-// fixed, asi que la tira se fija arriba de todo y empuja navbar y contenido con
-// la variable CSS --promo-h. En reposo late para llamar la atencion; al hacer
-// hover se expande con los detalles del sorteo.
-// El countdown apunta al cierre: 5 de setiembre 14:02 hora Peru (UTC-5).
-const TARGET = Date.UTC(2026, 8, 5, 19, 2, 0) // mes 8 = setiembre
-const HREF = 'https://qori.cc/sorteos/primer-sorteo-gta-6-ultimate-edition'
+// Tira del sorteo destacado de qori.cc. Los datos vienen del endpoint publico
+// (ver useFeaturedRaffle): cambiar el sorteo en qori actualiza esto solo. En
+// movil va en el flujo normal; en desktop (navbar fixed) se fija arriba y
+// empuja navbar/contenido con la variable CSS --promo-h. En reposo late; al
+// hacer hover se expande con los detalles del sorteo.
 const LOGO = 'https://qori.cc/logo.png'
 
-function pad(n: number) {
-  return n.toString().padStart(2, '0')
-}
-
-interface Unit {
-  value: string
-  label: string
-}
-
 const SorteoBanner: React.FC = () => {
-  const [now, setNow] = useState<number | null>(null)
+  const { raffle, skew, ready } = useFeaturedRaffle()
+  const [now, setNow] = useState(() => Date.now())
   const rowRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    setNow(Date.now())
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
 
-  const active = now !== null && TARGET - now > 0
+  const endMs = raffle ? Date.parse(raffle.endsAt) : 0
+  const diff = raffle ? endMs - (now + skew) : 0
+  const active = !!raffle && diff > 0
 
   // Publica la altura compacta de la tira en --promo-h (solo desktop la usa
   // para desplazar navbar/contenido). Se mide sobre la fila compacta, no sobre
@@ -53,28 +51,23 @@ const SorteoBanner: React.FC = () => {
     }
   }, [active])
 
-  // El tiempo solo existe en cliente; no renderizamos en SSR ni cuando el
-  // sorteo ya cerro.
-  if (now === null) return null
-  const diff = TARGET - now
-  if (diff <= 0) return null
+  // No renderizamos hasta tener datos, sin sorteo abierto, o si ya cerro.
+  if (!ready || !raffle || diff <= 0) return null
 
   const total = Math.floor(diff / 1000)
-  const days = Math.floor(total / 86400)
-  const hours = Math.floor((total % 86400) / 3600)
-  const mins = Math.floor((total % 3600) / 60)
-  const secs = total % 60
-
-  const units: Unit[] = [
-    { value: pad(days), label: 'dias' },
-    { value: pad(hours), label: 'hrs' },
-    { value: pad(mins), label: 'min' },
-    { value: pad(secs), label: 'seg' }
+  const units = [
+    { value: pad(Math.floor(total / 86400)), label: 'dias' },
+    { value: pad(Math.floor((total % 86400) / 3600)), label: 'hrs' },
+    { value: pad(Math.floor((total % 3600) / 60)), label: 'min' },
+    { value: pad(total % 60), label: 'seg' }
   ]
+
+  const title = prizeTitle(raffle.prize.name)
+  const draw = drawLabels(raffle.endsAt, raffle.drawTimezone)
 
   return (
     <a
-      href={HREF}
+      href={raffle.url}
       target='_blank'
       rel='noopener noreferrer'
       className='qori-bar group relative z-[60] block w-full overflow-hidden border-b border-emerald-400/15 bg-[#04140d] transition-[background-color,border-color,box-shadow] duration-300 hover:border-emerald-400/40 hover:bg-[#06200f] hover:shadow-[0_10px_34px_-12px_rgba(16,185,129,0.5)] md:fixed md:inset-x-0 md:top-0'
@@ -145,7 +138,7 @@ const SorteoBanner: React.FC = () => {
             Sorteo qori.cc
           </span>
           <span className='whitespace-nowrap text-[12px] font-bold tracking-tight text-emerald-50'>
-            GTA 6 Ultimate Edition
+            {title}
           </span>
         </span>
 
@@ -188,7 +181,7 @@ const SorteoBanner: React.FC = () => {
                   Valor del premio
                 </span>
                 <span className='text-[11px] font-semibold text-emerald-50'>
-                  USD 100
+                  {money(raffle.prize.valueAmount, raffle.prize.currency)}
                 </span>
               </span>
               <span className='flex flex-col leading-tight'>
@@ -196,7 +189,8 @@ const SorteoBanner: React.FC = () => {
                   Se sortea
                 </span>
                 <span className='text-[11px] font-semibold text-emerald-50'>
-                  Sabado 5 Set.
+                  {draw.day}
+                  {draw.time ? `, ${draw.time}` : ''}
                 </span>
               </span>
               <span className='flex flex-col leading-tight'>
@@ -204,7 +198,7 @@ const SorteoBanner: React.FC = () => {
                   Costo por ticket
                 </span>
                 <span className='text-[11px] font-semibold text-emerald-50'>
-                  USD 1
+                  {money(raffle.ticketPriceAmount, raffle.prize.currency)}
                 </span>
               </span>
               <span className='flex flex-col leading-tight'>
@@ -212,13 +206,16 @@ const SorteoBanner: React.FC = () => {
                   Probabilidades
                 </span>
                 <span className='text-[11px] font-semibold text-emerald-50'>
-                  1/50 a 1/150 por ticket
+                  {oddsLabel(raffle.minTickets, raffle.maxTickets)}
                 </span>
               </span>
             </div>
             <p className='mt-2 text-center text-[10px] text-emerald-200/50'>
-              Ganas el premio o su valor en dolares, con entrega el mismo dia.
-              Solo mayores de 18. Juega con responsabilidad.
+              {raffle.cashAlternative
+                ? 'Ganas el premio o su valor en dolares'
+                : 'Ganas el premio'}
+              {raffle.sameDayDelivery ? ', con entrega el mismo dia' : ''}. Solo
+              mayores de {raffle.minAge}. Juega con responsabilidad.
             </p>
           </div>
         </div>

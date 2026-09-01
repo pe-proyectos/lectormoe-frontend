@@ -1,54 +1,60 @@
 import { CalendarClock, Gift, Percent, Ticket, Trophy, X } from 'lucide-react'
 import type React from 'react'
 import { useEffect, useState } from 'react'
+import {
+  drawLabels,
+  money,
+  oddsLabel,
+  pad,
+  useFeaturedRaffle
+} from '../../util/useFeaturedRaffle'
 
-// Modal del sorteo activo de qori.cc (GTA 6 Ultimate Edition). Se abre por el
-// evento 'open-sorteo-modal' y ademas se muestra una vez por sesion como
-// promocion. El countdown apunta al cierre: 5 de setiembre 14:02 hora Peru.
-const TARGET = Date.UTC(2026, 8, 5, 19, 2, 0) // mes 8 = setiembre
-const HREF = 'https://qori.cc/sorteos/primer-sorteo-gta-6-ultimate-edition'
-const IMAGE =
-  'https://r2.qori.cc/raffles/c71fe453-32ce-481b-85dc-aa82bd457f7d.jpg'
-const SEEN_KEY = 'sorteo_gta6_seen'
-
-function pad(n: number) {
-  return n.toString().padStart(2, '0')
-}
-
+// Modal del sorteo destacado de qori.cc. Los datos vienen del endpoint publico
+// (ver useFeaturedRaffle). Se abre por el evento 'open-sorteo-modal' y ademas
+// se muestra una vez por sesion como promocion. Si no hay sorteo abierto, no
+// renderiza. El countdown se sincroniza con serverNow (skew).
 interface SorteoModalProps {
   organization?: any
   logged?: boolean
 }
 
 const SorteoModal: React.FC<SorteoModalProps> = () => {
+  const { raffle, skew, ready } = useFeaturedRaffle()
   const [isOpen, setIsOpen] = useState(false)
   const [now, setNow] = useState(() => Date.now())
+
+  // La clave "visto" depende del sorteo, asi cada sorteo nuevo se muestra una vez.
+  const seenKey = raffle ? `sorteo_seen_${raffle.id}` : 'sorteo_seen'
 
   useEffect(() => {
     const open = () => setIsOpen(true)
     const close = () => setIsOpen(false)
     window.addEventListener('open-sorteo-modal', open)
     window.addEventListener('close-sorteo-modal', close)
+    return () => {
+      window.removeEventListener('open-sorteo-modal', open)
+      window.removeEventListener('close-sorteo-modal', close)
+    }
+  }, [])
 
+  // Auto-apertura una vez por sesion, cuando ya tenemos un sorteo abierto.
+  useEffect(() => {
+    if (!ready || !raffle) return
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
-      const seen = sessionStorage.getItem(SEEN_KEY)
-      if (!seen && Date.now() < TARGET) {
+      if (!sessionStorage.getItem(seenKey)) {
         timer = setTimeout(() => {
           setIsOpen(true)
-          sessionStorage.setItem(SEEN_KEY, '1')
+          sessionStorage.setItem(seenKey, '1')
         }, 1200)
       }
     } catch {
       // sessionStorage no disponible: sin apertura automatica.
     }
-
     return () => {
-      window.removeEventListener('open-sorteo-modal', open)
-      window.removeEventListener('close-sorteo-modal', close)
       if (timer) clearTimeout(timer)
     }
-  }, [])
+  }, [ready, raffle, seenKey])
 
   // Bloquea el scroll del fondo y permite cerrar con Escape mientras esta abierto.
   useEffect(() => {
@@ -70,14 +76,14 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || !raffle) return null
 
   const close = () => {
     setIsOpen(false)
     window.dispatchEvent(new Event('close-sorteo-modal'))
   }
 
-  const diff = Math.max(0, TARGET - now)
+  const diff = Math.max(0, Date.parse(raffle.endsAt) - (now + skew))
   const total = Math.floor(diff / 1000)
   const units = [
     { value: pad(Math.floor(total / 86400)), label: 'Dias' },
@@ -86,11 +92,30 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
     { value: pad(total % 60), label: 'Seg' }
   ]
 
+  const draw = drawLabels(raffle.endsAt, raffle.drawTimezone)
   const facts = [
-    { icon: CalendarClock, label: 'Se sortea', value: 'Sabado 5 Set.' },
-    { icon: Ticket, label: 'Costo por ticket', value: 'USD 1' },
-    { icon: Percent, label: 'Probabilidades', value: '1/50 a 1/150 por ticket' }
+    {
+      icon: CalendarClock,
+      label: 'Se sortea',
+      value: draw.day || 'Proximamente'
+    },
+    {
+      icon: Ticket,
+      label: 'Costo por ticket',
+      value: money(raffle.ticketPriceAmount, raffle.prize.currency)
+    },
+    {
+      icon: Percent,
+      label: 'Probabilidades',
+      value: oddsLabel(raffle.minTickets, raffle.maxTickets)
+    }
   ]
+
+  const claimText =
+    (raffle.cashAlternative
+      ? 'Al ganar reclamas el premio o su valor en dolares.'
+      : 'Al ganar reclamas el premio.') +
+    (raffle.sameDayDelivery ? ' La entrega es el mismo dia del sorteo.' : '')
 
   return (
     <div
@@ -102,7 +127,6 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
       <style>{`
         @keyframes sorteoIn { from { opacity: 0; transform: translateY(20px) scale(.96); } to { opacity: 1; transform: none; } }
         @keyframes sorteoShine { 0% { transform: translateX(-140%) skewX(-16deg); } 60%, 100% { transform: translateX(360%) skewX(-16deg); } }
-        @keyframes sorteoGlow { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
       `}</style>
 
       <div
@@ -124,15 +148,12 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
         <div className='relative'>
           <div className='relative aspect-[16/10] w-full overflow-hidden'>
             <img
-              src={IMAGE}
-              alt='GTA 6 Ultimate Edition'
+              src={raffle.prize.imageUrl}
+              alt={raffle.prize.name}
               className='h-full w-full object-cover object-center'
             />
-            {/* Fundido inferior hacia el cuerpo */}
             <div className='absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/35 to-transparent' />
-            {/* Vineta lateral para foco */}
             <div className='absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_55%,rgba(0,0,0,0.45))]' />
-            {/* Destello que barre el arte */}
             <span
               aria-hidden='true'
               className='pointer-events-none absolute inset-y-0 -left-1/4 w-1/3 bg-gradient-to-r from-transparent via-white/12 to-transparent'
@@ -150,7 +171,7 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
                 </span>
               </div>
               <h2 className='mt-1 text-[22px] font-black leading-none tracking-tight text-white'>
-                GTA 6 Ultimate Edition
+                {raffle.prize.name}
               </h2>
             </div>
             <div className='shrink-0 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-right backdrop-blur-md'>
@@ -158,7 +179,7 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
                 Valor
               </p>
               <p className='text-base font-black leading-none text-emerald-50'>
-                USD 100
+                {money(raffle.prize.valueAmount, raffle.prize.currency)}
               </p>
             </div>
           </div>
@@ -216,14 +237,13 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
               <Gift size={14} />
             </span>
             <p className='text-[12px] leading-snug text-emerald-50/90'>
-              Al ganar reclamas el premio o su valor en dolares. La entrega es
-              el mismo dia del sorteo.
+              {claimText}
             </p>
           </div>
 
           {/* CTA */}
           <a
-            href={HREF}
+            href={raffle.url}
             target='_blank'
             rel='noopener noreferrer'
             className='group relative mt-5 flex w-full items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 px-6 py-3.5 text-sm font-black uppercase tracking-wide text-emerald-950 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.99]'
@@ -236,8 +256,9 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
             <span className='relative'>Conseguir mi ticket</span>
           </a>
           <p className='mt-3 text-center text-[10.5px] leading-relaxed text-zinc-600'>
-            Si no se alcanza el minimo de tickets se reembolsa. Solo mayores de
-            18. Juega con responsabilidad.
+            {raffle.provablyFair ? 'Sorteo verificable (provably-fair). ' : ''}
+            Si no se alcanza el minimo de tickets se reembolsa. Solo mayores de{' '}
+            {raffle.minAge}. Juega con responsabilidad.
           </p>
         </div>
       </div>
