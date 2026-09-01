@@ -273,6 +273,12 @@ const siteName =
     padding-right: env(safe-area-inset-right);
   }
 
+
+  /* Reserva el alto de la tira de promo (fixed en desktop) para no tapar el
+     navbar ni el contenido. En movil la tira va en flujo y --promo-h no se usa. */
+  @media (min-width: 768px) {
+    body { padding-top: calc(env(safe-area-inset-top) + var(--promo-h, 0px)); }
+  }
   /* Fundamentos de interacción móvil (Tarea 19a) */
   html {
     -webkit-tap-highlight-color: transparent;

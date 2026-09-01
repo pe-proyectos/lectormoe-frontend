@@ -396,7 +396,7 @@ const Navbar: React.FC<NavbarProps> = ({
     <nav
       className={`${
         isSticky ? "md:fixed relative" : "relative"
-      } top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      } top-0 md:top-[var(--promo-h,0px)] left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled || activeView !== "home"
           ? "bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800 py-3 shadow-2xl shadow-black/50"
           : "bg-transparent py-5"

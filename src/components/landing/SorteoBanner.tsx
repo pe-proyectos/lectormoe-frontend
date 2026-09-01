@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-// Tira superior (no sticky, poca altura) que anuncia el sorteo activo y enlaza
-// a la landing del sorteo en qori.cc. En reposo late suavemente para llamar la
-// atencion; al hacer hover se expande y muestra los detalles del sorteo.
+// Tira del sorteo activo de qori.cc. En movil va en el flujo normal (el navbar
+// es relative, ambos se desplazan al hacer scroll). En desktop el navbar es
+// fixed, asi que la tira se fija arriba de todo y empuja navbar y contenido con
+// la variable CSS --promo-h. En reposo late para llamar la atencion; al hacer
+// hover se expande con los detalles del sorteo.
 // El countdown apunta al cierre: 5 de setiembre 14:02 hora Peru (UTC-5).
 const TARGET = Date.UTC(2026, 8, 5, 19, 2, 0) // mes 8 = setiembre
 const HREF = 'https://qori.cc/sorteos/primer-sorteo-gta-6-ultimate-edition'
@@ -17,26 +20,38 @@ interface Unit {
   label: string
 }
 
-interface Detail {
-  label: string
-  value: string
-}
-
-const DETAILS: Detail[] = [
-  { label: 'Valor del premio', value: 'USD 100' },
-  { label: 'Se sortea en vivo', value: 'Sabado 5 set, 14:02 Peru' },
-  { label: 'Tickets', value: '150 en total, minimo 50' },
-  { label: 'Transparencia', value: 'Verificable (provably-fair)' }
-]
-
 const SorteoBanner: React.FC = () => {
   const [now, setNow] = useState<number | null>(null)
+  const rowRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     setNow(Date.now())
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
+
+  const active = now !== null && TARGET - now > 0
+
+  // Publica la altura compacta de la tira en --promo-h (solo desktop la usa
+  // para desplazar navbar/contenido). Se mide sobre la fila compacta, no sobre
+  // el panel expandido del hover, para que el layout no salte.
+  useEffect(() => {
+    const root = document.documentElement
+    if (!active) {
+      root.style.setProperty('--promo-h', '0px')
+      return
+    }
+    const measure = () => {
+      const h = rowRef.current?.offsetHeight ?? 0
+      root.style.setProperty('--promo-h', `${h}px`)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('resize', measure)
+      root.style.setProperty('--promo-h', '0px')
+    }
+  }, [active])
 
   // El tiempo solo existe en cliente; no renderizamos en SSR ni cuando el
   // sorteo ya cerro.
@@ -60,9 +75,9 @@ const SorteoBanner: React.FC = () => {
   return (
     <a
       href={HREF}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="qori-bar group relative block w-full overflow-hidden border-b border-emerald-400/15 bg-[#04140d] transition-[background-color,border-color,box-shadow] duration-300 hover:border-emerald-400/40 hover:bg-[#06200f] hover:shadow-[0_10px_34px_-12px_rgba(16,185,129,0.5)]"
+      target='_blank'
+      rel='noopener noreferrer'
+      className='qori-bar group relative z-[60] block w-full overflow-hidden border-b border-emerald-400/15 bg-[#04140d] transition-[background-color,border-color,box-shadow] duration-300 hover:border-emerald-400/40 hover:bg-[#06200f] hover:shadow-[0_10px_34px_-12px_rgba(16,185,129,0.5)] md:fixed md:inset-x-0 md:top-0'
     >
       {/* Keyframes y clases de animacion propias del banner */}
       <style>{`
@@ -91,57 +106,66 @@ const SorteoBanner: React.FC = () => {
 
       {/* Brillo esmeralda difuso a la izquierda, latiendo en reposo */}
       <span
-        aria-hidden="true"
-        className="qori-glow pointer-events-none absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-emerald-500/20 to-transparent"
+        aria-hidden='true'
+        className='qori-glow pointer-events-none absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-emerald-500/20 to-transparent'
       />
       {/* Destello que barre la tira para captar la vista */}
       <span
-        aria-hidden="true"
-        className="qori-shimmer pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-transparent via-emerald-300/20 to-transparent"
+        aria-hidden='true'
+        className='qori-shimmer pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-transparent via-emerald-300/20 to-transparent'
       />
       {/* Filo superior de luz que se intensifica en hover */}
       <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/40 to-transparent transition-opacity duration-300 group-hover:via-emerald-200/70"
+        aria-hidden='true'
+        className='pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/40 to-transparent transition-opacity duration-300 group-hover:via-emerald-200/70'
       />
 
-      {/* Fila compacta siempre visible */}
-      <div className="relative mx-auto flex max-w-6xl items-center justify-center gap-x-2.5 px-3 py-1.5 sm:gap-x-3">
+      {/* Fila compacta siempre visible (su altura define --promo-h) */}
+      <div
+        ref={rowRef}
+        className='relative mx-auto flex max-w-6xl items-center justify-center gap-x-2.5 px-3 py-1.5 sm:gap-x-3'
+      >
         {/* Indicador en vivo */}
-        <span className="relative hidden h-2 w-2 shrink-0 sm:flex">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        <span className='relative hidden h-2 w-2 shrink-0 sm:flex'>
+          <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
+          <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-400' />
         </span>
 
         {/* Logo oficial de qori.cc, sin borde */}
         <img
           src={LOGO}
-          alt="qori.cc"
-          loading="lazy"
-          className="qori-logo h-6 w-6 shrink-0 object-contain drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+          alt='qori.cc'
+          loading='lazy'
+          className='qori-logo h-6 w-6 shrink-0 object-contain drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]'
         />
 
         {/* Marca + premio */}
-        <span className="flex min-w-0 flex-col leading-tight">
-          <span className="text-[8px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
+        <span className='flex min-w-0 flex-col leading-tight'>
+          <span className='text-[8px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80'>
             Sorteo qori.cc
           </span>
-          <span className="whitespace-nowrap text-[12px] font-bold tracking-tight text-emerald-50">
+          <span className='whitespace-nowrap text-[12px] font-bold tracking-tight text-emerald-50'>
             GTA 6 Ultimate Edition
           </span>
         </span>
 
         {/* Separador */}
-        <span aria-hidden="true" className="hidden h-6 w-px shrink-0 bg-emerald-400/15 sm:block" />
+        <span
+          aria-hidden='true'
+          className='hidden h-6 w-px shrink-0 bg-emerald-400/15 sm:block'
+        />
 
         {/* Countdown */}
-        <span className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+        <span className='flex shrink-0 items-center gap-1.5 sm:gap-2.5'>
           {units.map((u) => (
-            <span key={u.label} className="flex w-6 flex-col items-center leading-none sm:w-7">
-              <span className="font-mono text-[13px] font-bold tabular-nums text-emerald-50 transition-transform duration-300 group-hover:scale-110">
+            <span
+              key={u.label}
+              className='flex w-6 flex-col items-center leading-none sm:w-7'
+            >
+              <span className='font-mono text-[13px] font-bold tabular-nums text-emerald-50 transition-transform duration-300 group-hover:scale-110'>
                 {u.value}
               </span>
-              <span className="mt-0.5 text-[7px] font-medium uppercase tracking-[0.12em] text-emerald-400/60">
+              <span className='mt-0.5 text-[7px] font-medium uppercase tracking-[0.12em] text-emerald-400/60'>
                 {u.label}
               </span>
             </span>
@@ -149,27 +173,52 @@ const SorteoBanner: React.FC = () => {
         </span>
 
         {/* CTA: sutil en reposo, se rellena en hover, letras blancas */}
-        <span className="ml-1 hidden shrink-0 items-center rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white transition-all duration-300 group-hover:bg-emerald-500 group-hover:shadow-[0_0_16px_rgba(16,185,129,0.5)] md:inline-flex">
+        <span className='ml-1 hidden shrink-0 items-center rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white transition-all duration-300 group-hover:bg-emerald-500 group-hover:shadow-[0_0_16px_rgba(16,185,129,0.5)] md:inline-flex'>
           Participar
         </span>
       </div>
 
       {/* Panel de detalles: se despliega al hacer hover (grid-rows trick) */}
-      <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]">
-        <div className="overflow-hidden">
-          <div className="mx-auto max-w-6xl border-t border-emerald-400/10 px-4 py-2.5">
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-              {DETAILS.map((d) => (
-                <span key={d.label} className="flex flex-col leading-tight">
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.18em] text-emerald-400/70">
-                    {d.label}
-                  </span>
-                  <span className="text-[11px] font-semibold text-emerald-50">{d.value}</span>
+      <div className='grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]'>
+        <div className='overflow-hidden'>
+          <div className='mx-auto max-w-6xl border-t border-emerald-400/10 px-4 py-2.5'>
+            <div className='flex flex-wrap items-center justify-center gap-x-6 gap-y-2'>
+              <span className='flex flex-col leading-tight'>
+                <span className='text-[8px] font-semibold uppercase tracking-[0.18em] text-emerald-400/70'>
+                  Valor del premio
                 </span>
-              ))}
+                <span className='text-[11px] font-semibold text-emerald-50'>
+                  USD 100
+                </span>
+              </span>
+              <span className='flex flex-col leading-tight'>
+                <span className='text-[8px] font-semibold uppercase tracking-[0.18em] text-emerald-400/70'>
+                  Se sortea
+                </span>
+                <span className='text-[11px] font-semibold text-emerald-50'>
+                  Sabado 5 Set.
+                </span>
+              </span>
+              <span className='flex flex-col leading-tight'>
+                <span className='text-[8px] font-semibold uppercase tracking-[0.18em] text-emerald-400/70'>
+                  Costo por ticket
+                </span>
+                <span className='text-[11px] font-semibold text-emerald-50'>
+                  USD 1
+                </span>
+              </span>
+              <span className='flex flex-col leading-tight'>
+                <span className='text-[8px] font-semibold uppercase tracking-[0.18em] text-emerald-400/70'>
+                  Probabilidades
+                </span>
+                <span className='text-[11px] font-semibold text-emerald-50'>
+                  1/50 a 1/150 por ticket
+                </span>
+              </span>
             </div>
-            <p className="mt-2 text-center text-[10px] text-emerald-200/50">
-              Si no se alcanza el minimo de tickets se reembolsa. Solo mayores de 18. Juega con responsabilidad.
+            <p className='mt-2 text-center text-[10px] text-emerald-200/50'>
+              Ganas el premio o su valor en dolares, con entrega el mismo dia.
+              Solo mayores de 18. Juega con responsabilidad.
             </p>
           </div>
         </div>
