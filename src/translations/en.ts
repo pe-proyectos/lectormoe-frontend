@@ -1,4 +1,10 @@
 export const translations: Record<string, string> = {
+  birthdate: "Date of birth",
+  forgot_password_title: "Reset password",
+  nota: "Use the following variables to personalize your message.",
+  text_DiscordWebhookNewChapter: "Discord webhook URL for new chapter",
+  text_DiscordWebhookNewSubscription: "Discord webhook URL for new subscriber",
+  url_DiscordWebhookNewSubscription: "Enable Discord webhook (new subscriber)",
   login_to_read_published_chapter: "Login to read published chapter",
   require_login: "Require login",
   require_login_description:
