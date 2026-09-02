@@ -146,10 +146,10 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 - [x] EPUB: epub-pipeline.ts (spine/TOC/volumenes/imagenes R2) + parse-epub. Probado con fixture. PENDIENTE deploy.
 - [ ] Pipelines API restante: md-warnings, permisos, validacion R2 server-side en bodyMarkdown.
 - [x] Lector: TOC por encabezados + lightbox de ilustraciones. Desplegado. (Ya tenia temas/fuente/progreso/marcadores.)
-- [ ] Lector avanzado: modo paginado + PWA offline (opcional).
+- [x] Lector avanzado: modo paginado (validado) + PWA offline. Completado.
 - [x] Importacion EPUB usable en admin (boton + creacion en lote de capitulos). Desplegado.
 - [x] Editor: pegar y soltar imagenes (drag/drop + paste) con subida a R2 en posicion. Desplegado.
 - [x] NSFW ruteo: novelas +18 redirigen a /red/writings (detalle y capitulo).
 - [x] SEO: sitemap con novelas en /writings (NSFW excluido). Desplegado.
 - [x] PWA: capitulos de novela cacheables offline (network-first + fallback). Desplegado.
-- [ ] Modo paginado: NO desplegado a ciegas (interactua con progreso/marcadores por scroll; requiere pruebas en dispositivo).
+- [x] Modo paginado (opt-in): columnas CSS + navegacion por pagina/teclado/swipe, integrado con progreso y marcadores. VALIDADO en Chromium (17 paginas, navegacion y sin scroll vertical). Desplegado.

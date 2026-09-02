@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft, ChevronRight, Settings as SettingsIcon, X, Book,
   Type, Palette, Layout as LayoutIcon, Eye, RotateCcw, Maximize2,
@@ -56,6 +56,7 @@ interface Prefs {
   dropCaps: boolean;
   showProgress: boolean;
   rememberScroll: boolean;
+  paginated: boolean;
 }
 
 interface ThemePalette {
@@ -147,6 +148,7 @@ const DEFAULT_PREFS: Prefs = {
   dropCaps: false,
   showProgress: true,
   rememberScroll: true,
+  paginated: false,
 };
 
 const PREFS_KEY = 'novel-reader-prefs-v2';
@@ -254,6 +256,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const toggleRef = useRef<HTMLButtonElement | null>(null);
 
   const scrollKey = `${SCROLL_KEY_PREFIX}${mangaUrl}#${chapter.number}`;
+  const pctKey = `${scrollKey}:pct`;
+  const paginatedGoRef = useRef<((pct: number) => void) | null>(null);
 
   useEffect(() => {
     try {
@@ -313,6 +317,10 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     const pct = Math.max(1, Math.min(100, parseInt(target, 10)));
     if (Number.isNaN(pct)) return;
     requestAnimationFrame(() => {
+      if (prefs.paginated) {
+        paginatedGoRef.current?.(pct);
+        return;
+      }
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       window.scrollTo({ top: (max * pct) / 100, behavior: 'auto' });
@@ -327,6 +335,10 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const isOnBookmarkedChapter = !!workBookmark && workBookmark.chapterId === chapter?.id;
 
   const scrollToPercent = (pct: number) => {
+    if (prefs.paginated) {
+      paginatedGoRef.current?.(pct);
+      return;
+    }
     const doc = document.documentElement;
     const max = doc.scrollHeight - doc.clientHeight;
     window.scrollTo({ top: (max * pct) / 100, behavior: 'smooth' });
@@ -391,9 +403,9 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     setBookmarkModalOpen(true);
   };
 
-  // Scroll progress + remember position
+  // Scroll progress + remember position (solo en modo continuo)
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || prefs.paginated) return;
     const onScroll = () => {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
@@ -411,9 +423,9 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     return () => window.removeEventListener('scroll', onScroll);
   }, [hydrated, prefs.rememberScroll, scrollKey]);
 
-  // Restore scroll on mount (after hydration)
+  // Restore scroll on mount (after hydration; solo modo continuo)
   useEffect(() => {
-    if (!hydrated || !prefs.rememberScroll) return;
+    if (!hydrated || !prefs.rememberScroll || prefs.paginated) return;
     try {
       const saved = localStorage.getItem(scrollKey);
       if (saved) {
@@ -511,6 +523,10 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     maxWidth: '100%',
   };
 
+  const escHtml = (x: string) =>
+    x.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
+  const pagedTitleHtml = `<h1 style="font-family:${prefs.family};font-size:${Math.round(prefs.fontSize * 1.9)}px;line-height:1.15;font-weight:800;letter-spacing:-0.01em;margin:0 0 0.35em;">${escHtml(chapter.title || `Capítulo ${chapter.number}`)}</h1><div style="font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;opacity:0.65;margin-bottom:2em;">${wordCount.toLocaleString('es')} palabras · ${readingMinutes} min de lectura</div>`;
+
   const dynamicCss = `
     .nr-article p { margin: 0 0 ${prefs.paragraphSpacing}em 0; ${prefs.paragraphIndent ? 'text-indent: 1.5em;' : ''} }
     .nr-article p:first-of-type { text-indent: 0; }
@@ -576,6 +592,23 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       )}
 
       {/* Content */}
+      {prefs.paginated ? (
+        <PaginatedView
+          maxWidth={WIDTH_PX[prefs.width]}
+          titleHtml={pagedTitleHtml}
+          html={html}
+          articleStyle={articleStyle}
+          palette={palette}
+          prevHref={prevHref}
+          nextHref={nextHref}
+          mangaUrl={mangaUrl}
+          rememberScroll={prefs.rememberScroll}
+          storageKey={pctKey}
+          onProgress={setScrollProgress}
+          registerGo={(fn) => { paginatedGoRef.current = fn; }}
+          onImageClick={(src) => setLightbox(src)}
+        />
+      ) : (
       <main style={{ maxWidth: WIDTH_PX[prefs.width], margin: '0 auto', padding: '3rem 1rem' }}>
         <div className="px-2 md:px-4">
           <h1 style={{
@@ -653,6 +686,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           </div>
         </div>
       </main>
+      )}
 
       {/* Reactions + Comments */}
       {mangaSlug && html && (
@@ -697,6 +731,20 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           aria-label="Modo enfoque"
         >
           <Maximize2 size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setPrefs((p) => ({ ...p, paginated: !p.paginated }))}
+          style={{
+            background: prefs.paginated ? palette.accent : palette.ui,
+            color: prefs.paginated ? '#0a0a0b' : palette.uiText,
+            border: prefs.paginated ? '1px solid transparent' : `1px solid ${palette.border}`,
+          }}
+          className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+          title={prefs.paginated ? 'Cambiar a modo continuo' : 'Cambiar a modo paginado'}
+          aria-label="Alternar modo paginado"
+        >
+          <Book size={18} />
         </button>
         <button
           type="button"
@@ -1264,5 +1312,186 @@ const Toggle: React.FC<{ label: string; value: boolean; onChange: (v: boolean) =
     </span>
   </label>
 );
+
+interface PaginatedViewProps {
+  maxWidth: string;
+  titleHtml: string;
+  html: string;
+  articleStyle: React.CSSProperties;
+  palette: { text: string; subtle: string; border: string; ui: string; uiText: string; accent: string; [k: string]: string };
+  prevHref: string | null;
+  nextHref: string | null;
+  mangaUrl: string;
+  rememberScroll: boolean;
+  storageKey: string;
+  onProgress: (pct: number) => void;
+  registerGo: (fn: (pct: number) => void) => void;
+  onImageClick: (src: string) => void;
+}
+
+// Modo paginado (opt-in): pagina el contenido con columnas CSS y navega por
+// paginas. Reporta el progreso al padre (barra + marcadores) y persiste la
+// posicion por porcentaje. No toca el modo continuo.
+const PaginatedView: React.FC<PaginatedViewProps> = ({
+  maxWidth, titleHtml, html, articleStyle, palette, prevHref, nextHref, mangaUrl,
+  rememberScroll, storageKey, onProgress, registerGo, onImageClick,
+}) => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+  const [width, setWidth] = useState(0);
+  const GAP = 48;
+  const restoredRef = useRef(false);
+
+  const recompute = useCallback(() => {
+    const wrap = wrapRef.current;
+    const content = contentRef.current;
+    if (!wrap || !content) return;
+    const w = wrap.clientWidth;
+    const total = Math.max(1, Math.round((content.scrollWidth + GAP) / (w + GAP)));
+    setWidth(w);
+    setPageCount(total);
+    setPage((p) => Math.min(p, total - 1));
+  }, []);
+
+  useLayoutEffect(() => {
+    restoredRef.current = false;
+    // Dos pasadas: la primera fija el ancho de columna, la segunda mide paginas.
+    recompute();
+    const t = setTimeout(recompute, 60);
+    return () => clearTimeout(t);
+  }, [html, titleHtml, recompute]);
+
+  useEffect(() => {
+    const onR = () => recompute();
+    window.addEventListener('resize', onR);
+    return () => window.removeEventListener('resize', onR);
+  }, [recompute]);
+
+  // Restaura la posicion guardada una vez conocido el numero de paginas.
+  useEffect(() => {
+    if (restoredRef.current || pageCount <= 1 || !rememberScroll) return;
+    restoredRef.current = true;
+    try {
+      const saved = Number(localStorage.getItem(storageKey));
+      if (saved > 0) setPage(Math.min(pageCount - 1, Math.round((saved / 100) * (pageCount - 1))));
+    } catch {
+      // localStorage no disponible.
+    }
+  }, [pageCount, rememberScroll, storageKey]);
+
+  // Reporta progreso al padre y persiste el porcentaje.
+  useEffect(() => {
+    const pct = pageCount > 1 ? (page / (pageCount - 1)) * 100 : 0;
+    onProgress(pct);
+    if (rememberScroll) {
+      try { localStorage.setItem(storageKey, String(Math.round(pct))); } catch { /* noop */ }
+    }
+  }, [page, pageCount, onProgress, rememberScroll, storageKey]);
+
+  // Permite al padre saltar a un porcentaje (marcadores / ?page).
+  useEffect(() => {
+    registerGo((pct: number) => {
+      setPage(pageCount > 1 ? Math.max(0, Math.min(pageCount - 1, Math.round((pct / 100) * (pageCount - 1)))) : 0);
+    });
+  }, [registerGo, pageCount]);
+
+  const go = useCallback((d: number) => {
+    setPage((p) => {
+      const n = p + d;
+      if (n < 0) { if (prevHref) window.location.href = prevHref; return p; }
+      if (n >= pageCount) { if (nextHref) window.location.href = nextHref; return p; }
+      return n;
+    });
+  }, [pageCount, prevHref, nextHref]);
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && el.closest('input, textarea')) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [go]);
+
+  const touchX = useRef<number | null>(null);
+  const step = width + GAP;
+
+  return (
+    <div style={{ maxWidth, margin: '0 auto', padding: '1.25rem 1rem' }}>
+      <style>{`.nr-paged h1,.nr-paged h2,.nr-paged h3,.nr-paged img,.nr-paged figure,.nr-paged blockquote{break-inside:avoid}.nr-paged .nr-img{max-height:78vh;width:auto;cursor:zoom-in}`}</style>
+      <div
+        ref={wrapRef}
+        data-nr-page={page}
+        data-nr-pagecount={pageCount}
+        onClick={(e) => {
+          const t = e.target as HTMLElement;
+          if (t.tagName === 'IMG' && t.classList.contains('nr-img')) {
+            const img = t as HTMLImageElement;
+            onImageClick(img.currentSrc || img.src);
+          }
+        }}
+        onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          if (touchX.current == null) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+          touchX.current = null;
+        }}
+        style={{ height: 'calc(100vh - 200px)', overflow: 'hidden', position: 'relative' }}
+      >
+        <div
+          ref={contentRef}
+          className="nr-article nr-paged"
+          style={{
+            ...articleStyle,
+            height: '100%',
+            columnWidth: width ? `${width}px` : 'auto',
+            columnGap: `${GAP}px`,
+            columnFill: 'auto',
+            transform: `translateX(-${page * step}px)`,
+            transition: 'transform 0.3s ease',
+            willChange: 'transform',
+          }}
+          dangerouslySetInnerHTML={{ __html: titleHtml + html }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between mt-4 gap-3">
+        <button
+          type="button"
+          onClick={() => go(-1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold hover:opacity-80 transition-opacity"
+          style={{ background: palette.ui, borderColor: palette.border, color: palette.uiText }}
+        >
+          <ChevronLeft size={16} /> Anterior
+        </button>
+        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: palette.subtle }}>
+          {page + 1} / {pageCount}
+        </span>
+        <button
+          type="button"
+          onClick={() => go(1)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold hover:opacity-80 transition-opacity"
+          style={{ background: palette.ui, borderColor: palette.border, color: palette.uiText }}
+        >
+          Siguiente <ChevronRight size={16} />
+        </button>
+      </div>
+      <div className="flex justify-center mt-3">
+        <a
+          href={mangaUrl}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-opacity hover:opacity-90"
+          style={{ background: palette.accent, color: '#0a0a0b' }}
+        >
+          <List size={14} /> Lista de capítulos
+        </a>
+      </div>
+    </div>
+  );
+};
 
 export default NovelReader;
