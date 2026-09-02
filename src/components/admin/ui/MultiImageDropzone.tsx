@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { PhotoIcon } from '@heroicons/react/24/solid';
+import { toast } from 'react-toastify';
 
 // Algunos navegadores/SO devuelven `file.type` vacío para imágenes perfectamente
 // válidas (según cómo se guardó el archivo, extensiones como .jfif, etc.). El
@@ -64,7 +65,7 @@ export const MultiImageDropzone: React.FC<MultiImageDropzoneProps> = ({
     if (rejectedSize.length) {
       msgs.push(`Superan ${maxFileSize / (1024 * 1024)}MB: ${rejectedSize.join(', ')}`);
     }
-    if (msgs.length) alert(msgs.join('\n\n'));
+    if (msgs.length) toast.error(msgs.join(' '));
     if (accepted.length) onDrop(accepted);
   };
 

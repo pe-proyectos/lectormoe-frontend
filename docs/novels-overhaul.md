@@ -153,3 +153,14 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 - [x] SEO: sitemap con novelas en /writings (NSFW excluido). Desplegado.
 - [x] PWA: capitulos de novela cacheables offline (network-first + fallback). Desplegado.
 - [x] Modo paginado (opt-in): columnas CSS + navegacion por pagina/teclado/swipe, integrado con progreso y marcadores. VALIDADO en Chromium (17 paginas, navegacion y sin scroll vertical). Desplegado.
+
+## Pulido de calidad (senior level) — iteracion 2
+- [x] Sin dialogos nativos en el admin de novelas: tamano de imagen, reemplazo de
+  contenido, enlace y confirmacion de import EPUB ahora son modales in-app.
+- [x] Vista previa fiel en el editor: render con el MISMO motor del lector
+  (util/novelMarkdown.ts), con fuente serif y ancho de lectura. Control
+  segmentado Editor / Vista previa / Markdown. Validado en Chromium.
+- [x] Barrido alert() -> toast en paneles admin (Recruitment, Recommendations,
+  Messages, JointGrid, MultiImageDropzone).
+- [ ] Pendiente mayor: editor EPUB visual tipo e-booka (proyecto aparte).
+- [ ] Pendiente: auditoria i18n completa (traducciones faltantes).

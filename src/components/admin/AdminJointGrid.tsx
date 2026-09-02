@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { callAPI } from '@/util/callApi';
 import { Users, Plus, Clock, Search, X, Check } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 interface AdminJointGridProps {
   organization: any;
@@ -79,7 +80,7 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
       closeCreateForm();
       load();
     } catch (e: any) {
-      alert(e?.message || 'Error al crear el joint');
+      toast.error(e?.message || 'Error al crear el joint');
     } finally {
       setCreating(false);
     }
@@ -99,7 +100,7 @@ const AdminJointGrid: React.FC<AdminJointGridProps> = ({ organization, organizat
       });
       load();
     } catch (e: any) {
-      alert(e?.message || 'Error al responder la invitación');
+      toast.error(e?.message || 'Error al responder la invitación');
     }
   };
 

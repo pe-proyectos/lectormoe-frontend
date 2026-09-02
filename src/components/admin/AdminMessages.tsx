@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Inbox, Send, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import { toast } from 'react-toastify';
 
 interface Props {
   organization: any;
@@ -77,7 +78,7 @@ const AdminMessages: React.FC<Props> = () => {
       setReply('');
       const res = await callAPI(`/api/messages/${active.id}`);
       setMessages(res.messages || []);
-    } catch (e: any) { alert(e?.message || 'No se pudo enviar.'); } finally { setSending(false); }
+    } catch (e: any) { toast.error(e?.message || 'No se pudo enviar.'); } finally { setSending(false); }
   };
 
   const closeThread = async () => {

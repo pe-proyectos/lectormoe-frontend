@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -11,10 +11,11 @@ import {
   Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Minus, Link as LinkIcon,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Undo, Redo, Upload, FileText, Eye, EyeOff, Image as ImageIcon, Loader2,
+  Undo, Redo, Upload, FileText, Eye, Image as ImageIcon, Loader2,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { uploadFile } from '../../util/uploadFile';
+import { renderNovelHtml } from '../../util/novelMarkdown';
 
 // Las ilustraciones se guardan en markdown como ![alt](url "wNN"), donde el
 // title codifica el ancho: "w40" (40%), "w70" (70%) o "w100" (100%). El lector
@@ -54,8 +55,29 @@ const ToolbarButton: React.FC<{
 
 const Divider = () => <div className="w-px h-6 bg-zinc-800 mx-1" />;
 
+const NovelPreview: React.FC<{ markdown: string }> = ({ markdown }) => {
+  const html = useMemo(() => renderNovelHtml(markdown).html, [markdown]);
+  return (
+    <div className="bg-[#0a0a0b] px-6 py-8 min-h-[400px]">
+      <style>{`.nr-preview .nr-img{display:block;margin:1.5rem auto;border-radius:12px;height:auto}.nr-preview .nr-img-w40{max-width:40%}.nr-preview .nr-img-w70{max-width:70%}.nr-preview .nr-img-w100{max-width:100%}@media(max-width:767px){.nr-preview .nr-img{max-width:100%!important}}`}</style>
+      {html ? (
+        <article
+          className="nr-preview prose prose-invert max-w-[680px] mx-auto"
+          style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '18px', lineHeight: 1.7, color: '#e6e6e6' }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ) : (
+        <p className="text-zinc-500 text-center text-sm">Nada que previsualizar todavía.</p>
+      )}
+    </div>
+  );
+};
+
 const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = false }) => {
-  const [showSource, setShowSource] = useState(false);
+  const [view, setView] = useState<'editor' | 'preview' | 'source'>('editor');
+  const [sizePickerFile, setSizePickerFile] = useState<File | null>(null);
+  const [pendingReplace, setPendingReplace] = useState<{ file: File; endpoint: string } | null>(null);
+  const [linkModal, setLinkModal] = useState<{ value: string } | null>(null);
   const [chars, setChars] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const docxInputRef = useRef<HTMLInputElement>(null);
@@ -154,13 +176,7 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
 
   const isEmpty = editor.isEmpty;
 
-  const handleUpload = async (file: File, endpoint: string) => {
-    if (!isEmpty) {
-      const ok = window.confirm(
-        'El editor ya tiene contenido. ¿Reemplazarlo con el archivo subido?'
-      );
-      if (!ok) return;
-    }
+  const doUpload = async (file: File, endpoint: string) => {
     try {
       const API_URL = import.meta.env['PUBLIC_API_URL'];
       const cookies = document.cookie.split(';').reduce((acc, c) => {
@@ -198,6 +214,14 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
     }
   };
 
+  const handleUpload = (file: File, endpoint: string) => {
+    if (!isEmpty) {
+      setPendingReplace({ file, endpoint });
+      return;
+    }
+    doUpload(file, endpoint);
+  };
+
   const onPickDocx = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) handleUpload(f, '/api/files/parse-docx');
@@ -233,19 +257,22 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
   };
   uploadInsertRef.current = uploadAndInsertImage;
 
-  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const marker = SIZE_OPTIONS[Number.parseInt(window.prompt('Tamaño de la imagen:\n1 = Pequeña (40%)\n2 = Mediana (70%)\n3 = Completa (100%)', '2') || '2', 10) - 1]?.marker || 'w70';
-    await uploadAndInsertImage(file, marker);
+    setSizePickerFile(file);
   };
 
   const promptLink = () => {
-    const previous = editor.getAttributes('link').href;
-    const url = window.prompt('URL del enlace (vacío = quitar):', previous || 'https://');
-    if (url === null) return;
-    if (url === '') {
+    const previous = editor.getAttributes('link').href || '';
+    setLinkModal({ value: previous || 'https://' });
+  };
+
+  const applyLink = (raw: string) => {
+    const url = raw.trim();
+    setLinkModal(null);
+    if (!url) {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
@@ -321,9 +348,9 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
 
       {/* Editor body */}
       <div className="bg-zinc-950">
-        {!showSource ? (
-          <EditorContent editor={editor} />
-        ) : (
+        {view === 'editor' && <EditorContent editor={editor} />}
+        {view === 'preview' && <NovelPreview markdown={editor.storage.markdown.getMarkdown()} />}
+        {view === 'source' && (
           <pre className="px-6 py-6 text-sm text-zinc-300 whitespace-pre-wrap break-words overflow-x-auto min-h-[400px]">
             {editor.storage.markdown.getMarkdown()}
           </pre>
@@ -354,16 +381,95 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
           <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">
             Caracteres: {chars}
           </span>
-          <button
-            type="button"
-            onClick={() => setShowSource((s) => !s)}
-            className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 font-bold uppercase tracking-wider transition-colors"
-          >
-            {showSource ? <EyeOff size={12} /> : <Eye size={12} />}
-            {showSource ? 'Ver editor' : 'Ver markdown'}
-          </button>
+          <div className="flex items-center rounded-lg border border-zinc-800 bg-zinc-900 p-0.5">
+            {([
+              { k: 'editor', label: 'Editor' },
+              { k: 'preview', label: 'Vista previa' },
+              { k: 'source', label: 'Markdown' },
+            ] as { k: 'editor' | 'preview' | 'source'; label: string }[]).map((opt) => (
+              <button
+                key={opt.k}
+                type="button"
+                onClick={() => setView(opt.k)}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${view === opt.k ? 'bg-cyan-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'}`}
+              >
+                {opt.k === 'preview' ? <Eye size={11} className="inline mr-1 -mt-0.5" /> : null}
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Modal: tamaño de la ilustración */}
+      {sizePickerFile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setSizePickerFile(null)}>
+          <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-white font-black text-base mb-1">Tamaño de la ilustración</h3>
+            <p className="text-zinc-400 text-xs mb-5">Elige cómo se mostrará en el lector.</p>
+            <div className="flex flex-col gap-2">
+              {SIZE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.marker}
+                  type="button"
+                  onClick={() => { const f = sizePickerFile; setSizePickerFile(null); if (f) uploadAndInsertImage(f, opt.marker); }}
+                  className="w-full text-left px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-950 hover:border-cyan-500 hover:bg-zinc-900 transition-colors text-sm font-bold text-zinc-200"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setSizePickerFile(null)} className="mt-4 w-full text-center text-xs text-zinc-500 hover:text-zinc-300 font-bold uppercase tracking-wider">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: enlace */}
+      {linkModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setLinkModal(null)}>
+          <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-white font-black text-base mb-1">Enlace</h3>
+            <p className="text-zinc-400 text-xs mb-4">Pega la URL. Déjala vacía para quitar el enlace.</p>
+            <input
+              autoFocus
+              type="url"
+              value={linkModal.value}
+              onChange={(e) => setLinkModal({ value: e.target.value })}
+              onKeyDown={(e) => { if (e.key === 'Enter') applyLink(linkModal.value); }}
+              placeholder="https://"
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-cyan-500"
+            />
+            <div className="flex gap-3 mt-5">
+              <button type="button" onClick={() => setLinkModal(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-800 text-zinc-300 text-sm font-bold hover:bg-zinc-800 transition-colors">
+                Cancelar
+              </button>
+              <button type="button" onClick={() => applyLink(linkModal.value)} className="flex-1 px-4 py-2.5 rounded-xl bg-cyan-500 text-zinc-950 text-sm font-black hover:bg-cyan-400 transition-colors">
+                Aplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: confirmar reemplazo de contenido */}
+      {pendingReplace && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setPendingReplace(null)}>
+          <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-white font-black text-base mb-1">Reemplazar contenido</h3>
+            <p className="text-zinc-400 text-sm mb-5">El editor ya tiene contenido. ¿Reemplazarlo con el archivo subido?</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setPendingReplace(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-800 text-zinc-300 text-sm font-bold hover:bg-zinc-800 transition-colors">
+                Cancelar
+              </button>
+              <button type="button" onClick={() => { const pr = pendingReplace; setPendingReplace(null); if (pr) doUpload(pr.file, pr.endpoint); }} className="flex-1 px-4 py-2.5 rounded-xl bg-cyan-500 text-zinc-950 text-sm font-black hover:bg-cyan-400 transition-colors">
+                Reemplazar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

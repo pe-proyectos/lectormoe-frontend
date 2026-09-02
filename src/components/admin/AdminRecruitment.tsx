@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Zap, Trash2, Pencil, X, CheckCircle2, RotateCcw, Ban } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import { toast } from 'react-toastify';
 
 interface Props {
   organization: any;
@@ -50,16 +51,16 @@ const AdminRecruitment: React.FC<Props> = () => {
   const toggleRole = (r: string) => setForm((f) => ({ ...f, roles: f.roles.includes(r) ? f.roles.filter((x) => x !== r) : [...f.roles, r] }));
 
   const save = async () => {
-    if (form.title.trim().length < 3) return alert('El título debe tener al menos 3 caracteres.');
-    if (form.description.trim().length < 10) return alert('La descripción debe tener al menos 10 caracteres.');
-    if (form.roles.length === 0) return alert('Selecciona al menos un rol.');
+    if (form.title.trim().length < 3) { toast.error('El título debe tener al menos 3 caracteres.'); return; }
+    if (form.description.trim().length < 10) { toast.error('La descripción debe tener al menos 10 caracteres.'); return; }
+    if (form.roles.length === 0) { toast.error('Selecciona al menos un rol.'); return; }
     setSaving(true);
     const payload = { title: form.title.trim(), description: form.description.trim(), requirements: form.requirements.trim() || undefined, roles: form.roles.join(','), language: form.language, urgent: form.urgent };
     try {
       if (editing) await callAPI(`/api/organization/recruitment/${editing.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
       else await callAPI('/api/organization/recruitment', { method: 'POST', body: JSON.stringify(payload) });
       setShowForm(false); load();
-    } catch (e: any) { alert(e?.message || 'No se pudo guardar.'); } finally { setSaving(false); }
+    } catch (e: any) { toast.error(e?.message || 'No se pudo guardar.'); } finally { setSaving(false); }
   };
 
   const setStatus = async (p: Post, status: string) => {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Loader2, Plus, Trash2, Pencil, X, Search, ArrowUp, ArrowDown, Globe, EyeOff, Star } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import { toast } from 'react-toastify';
 
 interface Props {
   organization: any;
@@ -103,8 +104,8 @@ const AdminRecommendations: React.FC<Props> = () => {
   };
 
   const save = async () => {
-    if (!editing && !form.mangaCustomId) return alert('Elige un manga de tu scan.');
-    if (!form.label.trim()) return alert('Escribe una etiqueta (ej. La recomendación de la casa).');
+    if (!editing && !form.mangaCustomId) { toast.error('Elige un manga de tu scan.'); return; }
+    if (!form.label.trim()) { toast.error('Escribe una etiqueta (ej. La recomendación de la casa).'); return; }
     setSaving(true);
     try {
       const common = {
@@ -121,7 +122,7 @@ const AdminRecommendations: React.FC<Props> = () => {
         await callAPI('/api/organization/recommendation', { method: 'POST', body: JSON.stringify({ ...common, mangaCustomId: form.mangaCustomId }) });
       }
       setShowForm(false); load();
-    } catch (e: any) { alert(e?.message || 'No se pudo guardar.'); } finally { setSaving(false); }
+    } catch (e: any) { toast.error(e?.message || 'No se pudo guardar.'); } finally { setSaving(false); }
   };
 
   const remove = async (r: Reco) => {
