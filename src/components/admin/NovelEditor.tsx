@@ -74,7 +74,7 @@ const NovelPreview: React.FC<{ markdown: string }> = ({ markdown }) => {
 };
 
 const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = false }) => {
-  const [view, setView] = useState<'editor' | 'preview' | 'source'>('editor');
+  const [view, setView] = useState<'editor' | 'split' | 'preview' | 'source'>('editor');
   const [sizePickerFile, setSizePickerFile] = useState<File | null>(null);
   const [pendingReplace, setPendingReplace] = useState<{ file: File; endpoint: string } | null>(null);
   const [linkModal, setLinkModal] = useState<{ value: string } | null>(null);
@@ -349,6 +349,16 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
       {/* Editor body */}
       <div className="bg-zinc-950">
         {view === 'editor' && <EditorContent editor={editor} />}
+        {view === 'split' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-zinc-800">
+            <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <EditorContent editor={editor} />
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto custom-scrollbar border-t md:border-t-0 border-zinc-800">
+              <NovelPreview markdown={editor.storage.markdown.getMarkdown()} />
+            </div>
+          </div>
+        )}
         {view === 'preview' && <NovelPreview markdown={editor.storage.markdown.getMarkdown()} />}
         {view === 'source' && (
           <pre className="px-6 py-6 text-sm text-zinc-300 whitespace-pre-wrap break-words overflow-x-auto min-h-[400px]">
@@ -384,9 +394,10 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
           <div className="flex items-center rounded-lg border border-zinc-800 bg-zinc-900 p-0.5">
             {([
               { k: 'editor', label: 'Editor' },
+              { k: 'split', label: 'Dividido' },
               { k: 'preview', label: 'Vista previa' },
               { k: 'source', label: 'Markdown' },
-            ] as { k: 'editor' | 'preview' | 'source'; label: string }[]).map((opt) => (
+            ] as { k: 'editor' | 'split' | 'preview' | 'source'; label: string }[]).map((opt) => (
               <button
                 key={opt.k}
                 type="button"
