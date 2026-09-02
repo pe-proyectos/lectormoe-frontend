@@ -171,3 +171,19 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
   (9 joint), SuperAdminApp, SuperadminRaffles, MangaReviews, DeleteAccountPage,
   CustomListPage, DownloadsLibrary, AdminRecruitment, AdminRecommendations,
   AdminGenreGrid, AdminChaptersTable. Barrido final: 0 nativos en la app.
+
+## i18n del lector (iteracion 4)
+- [x] El lector recibe `language` (hilado desde la pagina de capitulo y su
+  espejo /red) y traduce su chrome: palabras, tiempo de lectura, lista de
+  capitulos, volver arriba, indice, marcador, controles de paginado, atajos,
+  enfoque, etc. Claves reader_* en es y en. Validado en Chromium (EN).
+- [ ] Pendiente: panel de ajustes (nombres de tema/fuente, tabs) y el editor
+  admin (siguiente lote de i18n).
+
+## Editor de libro + i18n (iteracion 5)
+- [x] Exportar novela a EPUB (boton en el admin) - round-trip con el importador.
+  Probado en local (build -> parse).
+- [x] Vista dividida (editor + preview en vivo) en el editor. Validado en Chromium.
+- [x] i18n del lector: chrome + labels de tabs del panel. Validado (EN).
+- [ ] Pendiente menor: strings internos del panel de ajustes (nombres de
+  tema/fuente) y editor admin - siguiente lote de i18n.

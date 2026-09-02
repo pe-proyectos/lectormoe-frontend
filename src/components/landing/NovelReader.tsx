@@ -941,10 +941,10 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           {/* Tabs */}
           <div style={{ display: 'flex', borderBottom: `1px solid ${palette.border}`, padding: '8px 8px 0' }}>
             {([
-              { k: 'text',    label: 'Texto',    icon: <Type size={14} /> },
-              { k: 'layout',  label: 'Diseño',   icon: <LayoutIcon size={14} /> },
-              { k: 'theme',   label: 'Tema',     icon: <Palette size={14} /> },
-              { k: 'reading', label: 'Lectura',  icon: <Eye size={14} /> },
+              { k: 'text',    label: t('reader_tab_text'),    icon: <Type size={14} /> },
+              { k: 'layout',  label: t('reader_tab_layout'),   icon: <LayoutIcon size={14} /> },
+              { k: 'theme',   label: t('reader_tab_theme'),     icon: <Palette size={14} /> },
+              { k: 'reading', label: t('reader_tab_reading'),  icon: <Eye size={14} /> },
             ] as { k: TabKey; label: string; icon: React.ReactNode }[]).map(({ k, label, icon }) => (
               <button
                 key={k}

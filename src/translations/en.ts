@@ -1,4 +1,8 @@
 export const translations: Record<string, string> = {
+  reader_tab_text: "Text",
+  reader_tab_layout: "Layout",
+  reader_tab_theme: "Theme",
+  reader_tab_reading: "Reading",
   reader_words: "words",
   reader_reading_time: "min read",
   reader_min: "min",

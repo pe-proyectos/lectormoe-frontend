@@ -842,6 +842,50 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     await loadChapters();
   };
 
+  const handleEpubExport = async () => {
+    const exportSlug = mangaCustom?.manga?.slug || mangaCustom?.slug;
+    if (!exportSlug) {
+      toast.error('Guarda la novela antes de exportar.');
+      return;
+    }
+    const toastId = toast.loading('Exportando EPUB...');
+    try {
+      const API_URL = import.meta.env['PUBLIC_API_URL'];
+      const cookies = document.cookie.split(';').reduce((acc, c) => {
+        const [k, v] = c.trim().split('=');
+        if (k && v) acc[k] = decodeURIComponent(v);
+        return acc;
+      }, {} as Record<string, string>);
+      const token = cookies['token'];
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const orgSlug = parts[0] === 'red' ? parts[1] : parts[0];
+      const res = await fetch(`${API_URL}/api/manga-custom/${exportSlug}/epub`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(orgSlug ? { 'x-organization': orgSlug } : {}),
+        },
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        throw new Error(j?.message || 'No se pudo exportar el EPUB');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${exportSlug}.epub`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.dismiss(toastId);
+      toast.success('EPUB exportado.');
+    } catch (e: any) {
+      toast.dismiss(toastId);
+      toast.error(e?.message || 'Error al exportar el EPUB');
+    }
+  };
+
   const handleDownloadChapter = async (chapter: any) => {
     toast.info(`Descargando capítulo ${chapter.number}...`);
     try {
@@ -2112,6 +2156,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                               className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
                             >
                               {epubImporting ? 'Importando...' : 'Importar EPUB'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleEpubExport}
+                              className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+                            >
+                              Exportar EPUB
                             </button>
                             {epubReport && (
                               <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setEpubReport(null)}>
