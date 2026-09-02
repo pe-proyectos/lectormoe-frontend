@@ -138,12 +138,16 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         return acc;
       }, {} as Record<string, string>);
       const token = cookies['token'];
+      // El slug de la org sale del path admin: /{slug}/admin/... o /red/{slug}/admin/...
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const orgSlug = parts[0] === 'red' ? parts[1] : parts[0];
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(orgSlug ? { 'x-organization': orgSlug } : {}),
         },
         body: formData,
       });
@@ -152,7 +156,12 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         throw new Error(json?.message || 'Error al subir archivo');
       }
       replaceContent(json.data.markdown);
-      toast.success(`Archivo cargado (${json.data.chars} caracteres).`);
+      const imgCount = json.data.images ?? 0;
+      toast.success(
+        `Archivo cargado (${json.data.chars} caracteres${imgCount ? `, ${imgCount} imagenes` : ''}).`
+      );
+      const warnings: string[] = json.data.warnings || [];
+      if (warnings.length) toast(`Aviso: ${warnings[0]}`);
     } catch (e: any) {
       toast.error(e?.message || 'Error al subir archivo');
     }
