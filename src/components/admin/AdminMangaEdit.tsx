@@ -630,15 +630,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     }));
   }, [chapters, isEditingChapter, suggestedNext]);
 
-  // Writings have only one sensible read-direction (continuous text) and never
-  // contain adult content (separate +18 system would mean a different surface).
-  // Force these whenever isWriting flips on or the form data drifts.
+  // Las novelas solo tienen una direccion de lectura sensata (texto continuo):
+  // fijamos workType a 'text'. El flag +18 (isNSFW) SI se permite; las novelas
+  // +18 viven en el lado /red/writings.
   useEffect(() => {
     if (!isWriting) return;
     setFormData((prev) => {
-      const needsUpdate = prev.workType !== 'text' || prev.isNSFW;
-      if (!needsUpdate) return prev;
-      return { ...prev, workType: 'text', isNSFW: false };
+      if (prev.workType === 'text') return prev;
+      return { ...prev, workType: 'text' };
     });
   }, [isWriting]);
 
@@ -3022,11 +3021,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </p>
                     </div>
 
-                    {/* +18 — hidden for writings (no NSFW writings surface yet) */}
-                    {!isWriting && (
+                    {/* +18 — las novelas +18 viven en el lado /red/writings */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Manga +18</span>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{isWriting ? 'Novela +18' : 'Manga +18'}</span>
                         <div
                           onClick={() => setFormData((prev) => ({ ...prev, isNSFW: !formData.isNSFW }))}
                           className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${formData.isNSFW ? 'bg-red-500' : 'bg-zinc-800'}`}
@@ -3035,10 +3033,11 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         </div>
                       </div>
                       <p className="text-[9px] text-zinc-500 font-medium leading-relaxed">
-                        Si se activa, este manga contendrá contenido para adultos y será marcado como +18
+                        {isWriting
+                          ? 'Si se activa, la novela se marca como +18 y solo se mostrará en el lado /red.'
+                          : 'Si se activa, este manga contendrá contenido para adultos y será marcado como +18'}
                       </p>
                     </div>
-                    )}
 
                     {/* Obra pública / privada (retiro por copyright) */}
                     <div className="space-y-3">

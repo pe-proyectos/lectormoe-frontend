@@ -41,6 +41,8 @@ try {
 } catch (e) { return Astro.redirect('/404'); }
 
 if (!manga || !chapter) return Astro.redirect('/404');
+// Novela +18: si la obra es NSFW y no estamos en el lado /red, redirigir alli.
+if (manga?.isNSFW) return Astro.redirect(`/red/writings/${slug}/${type}/${mangaSlug}/chapter/${chapterNumber}`);
 
 const actualBookTypeCode = manga.manga?.bookType?.code;
 if (actualBookTypeCode && actualBookTypeCode !== type) {

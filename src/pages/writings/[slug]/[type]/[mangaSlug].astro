@@ -40,6 +40,8 @@ try {
   manga = json?.data || json;
 } catch (e) { return Astro.redirect('/404'); }
 if (!manga || !manga.manga?.slug) return Astro.redirect('/404');
+// Novela +18: si la obra es NSFW y no estamos en el lado /red, redirigir alli.
+if (manga?.isNSFW) return Astro.redirect(`/red/writings/${slug}/${type}/${mangaSlug}`);
 
 // Validate the type segment matches the manga's bookType code; redirect to canonical otherwise.
 const actualBookTypeCode = manga.manga?.bookType?.code;
