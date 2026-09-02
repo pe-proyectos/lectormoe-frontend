@@ -142,7 +142,8 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 - [x] Genero "Contemporaneo" sembrado (seed-genres.ts; +xianxia, litrpg).
 - [x] +18 habilitado en novelas (frontend + ruteo a /red). Desplegado.
 - [ ] Migracion Prisma aditiva aplicada.
-- [ ] Pipelines API (docx fix + epub).
+- [x] docx fix: imagenes a R2 (pipeline + parse-docx + editor). Commit hecho, PENDIENTE deploy.
+- [ ] Pipelines API: EPUB, md-warnings, permisos, validacion R2 server-side.
 - [ ] Lector refactor.
 - [ ] Editor + import dialog.
 - [ ] NSFW ruteo/SEO.
