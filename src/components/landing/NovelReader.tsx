@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
+import { getTranslator } from '../../util/translate';
 import CommentsSection from './CommentsSection';
 import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
@@ -33,6 +34,7 @@ interface NovelReaderProps {
   logged?: boolean;
   organization?: any;
   organizationSlug?: string;
+  language?: string;
 }
 
 type Theme = 'dark' | 'sepia' | 'cream' | 'paper' | 'gray' | 'midnight' | 'highContrast' | 'custom';
@@ -231,8 +233,9 @@ function shadeColor(hex: string, percent: number): string {
 
 const NovelReader: React.FC<NovelReaderProps> = ({
   chapter, mangaTitle, mangaUrl, mangaSlug, chapterUrlPattern,
-  user, logged, organization, organizationSlug,
+  user, logged, organization, organizationSlug, language = 'es',
 }) => {
+  const t = getTranslator(language);
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('text');
@@ -525,7 +528,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
 
   const escHtml = (x: string) =>
     x.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
-  const pagedTitleHtml = `<h1 style="font-family:${prefs.family};font-size:${Math.round(prefs.fontSize * 1.9)}px;line-height:1.15;font-weight:800;letter-spacing:-0.01em;margin:0 0 0.35em;">${escHtml(chapter.title || `Capítulo ${chapter.number}`)}</h1><div style="font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;opacity:0.65;margin-bottom:2em;">${wordCount.toLocaleString('es')} palabras · ${readingMinutes} min de lectura</div>`;
+  const pagedTitleHtml = `<h1 style="font-family:${prefs.family};font-size:${Math.round(prefs.fontSize * 1.9)}px;line-height:1.15;font-weight:800;letter-spacing:-0.01em;margin:0 0 0.35em;">${escHtml(chapter.title || `Capítulo ${chapter.number}`)}</h1><div style="font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;opacity:0.65;margin-bottom:2em;">${wordCount.toLocaleString(language)} ${t('reader_words')} · ${readingMinutes} ${t('reader_reading_time')}</div>`;
 
   const dynamicCss = `
     .nr-article p { margin: 0 0 ${prefs.paragraphSpacing}em 0; ${prefs.paragraphIndent ? 'text-indent: 1.5em;' : ''} }
@@ -581,7 +584,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             </a>
             <div className="flex items-center gap-3 shrink-0">
               <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold opacity-60" style={{ color: palette.uiText }}>
-                <Clock size={12} /> {readingMinutes} min
+                <Clock size={12} /> {readingMinutes} {t('reader_min')}
               </span>
               <span className="text-xs font-bold opacity-70" style={{ color: palette.uiText }}>
                 Cap. {chapter.number}
@@ -594,6 +597,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       {/* Content */}
       {prefs.paginated ? (
         <PaginatedView
+          t={t}
           maxWidth={WIDTH_PX[prefs.width]}
           titleHtml={pagedTitleHtml}
           html={html}
@@ -623,7 +627,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             {chapter.title || `Capítulo ${chapter.number}`}
           </h1>
           <div style={{ color: palette.subtle, fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2.5em' }}>
-            {wordCount.toLocaleString('es')} palabras · {readingMinutes} min de lectura
+            {wordCount.toLocaleString(language)} {t('reader_words')} · {readingMinutes} {t('reader_reading_time')}
           </div>
 
           {html ? (
@@ -643,7 +647,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
               />
             </>
           ) : (
-            <p style={{ color: palette.subtle }}>Este capítulo aún no tiene contenido.</p>
+            <p style={{ color: palette.subtle }}>{t('reader_no_content')}</p>
           )}
 
           {/* Footer nav */}
@@ -658,7 +662,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             )}
             <a href={mangaUrl} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-opacity hover:opacity-90"
                style={{ background: palette.accent, color: '#0a0a0b' }}>
-              <List size={16} /> Lista de capítulos
+              <List size={16} /> {t('reader_chapters_list')}
             </a>
             {nextHref ? (
               <a href={nextHref} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border hover:opacity-80 transition-opacity font-bold text-sm"
@@ -677,12 +681,12 @@ const NovelReader: React.FC<NovelReaderProps> = ({
               className="flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-opacity"
               style={{ background: 'transparent', borderColor: palette.border, color: palette.subtle }}
             >
-              <ArrowUp size={14} /> Volver arriba
+              <ArrowUp size={14} /> {t('reader_back_to_top')}
             </button>
           </div>
 
           <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: 11, color: palette.subtle, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Atajos: ← anterior · → siguiente · S ajustes · F enfoque · Esc salir
+            {t('reader_shortcuts')}
           </div>
         </div>
       </main>
@@ -717,8 +721,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           onClick={() => setPanelOpen((o) => !o)}
           style={{ background: palette.accent, color: '#0a0a0b' }}
           className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-          title="Preferencias de lectura (S)"
-          aria-label="Preferencias de lectura"
+          title={`${t('reader_prefs')} (S)`}
+          aria-label={t('reader_prefs')}
         >
           {panelOpen ? <X size={20} /> : <SettingsIcon size={20} />}
         </button>
@@ -727,8 +731,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           onClick={() => setFocusMode((o) => !o)}
           style={{ background: palette.ui, color: palette.uiText, border: `1px solid ${palette.border}` }}
           className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-          title={focusMode ? 'Salir de modo enfoque (F)' : 'Modo enfoque (F)'}
-          aria-label="Modo enfoque"
+          title={focusMode ? `${t('reader_focus_exit')} (F)` : `${t('reader_focus')} (F)`}
+          aria-label={t('reader_focus')}
         >
           <Maximize2 size={18} />
         </button>
@@ -741,7 +745,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             border: prefs.paginated ? '1px solid transparent' : `1px solid ${palette.border}`,
           }}
           className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-          title={prefs.paginated ? 'Cambiar a modo continuo' : 'Cambiar a modo paginado'}
+          title={prefs.paginated ? t('reader_paginated_off') : t('reader_paginated_on')}
           aria-label="Alternar modo paginado"
         >
           <Book size={18} />
@@ -757,8 +761,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             opacity: bookmarkLoading ? 0.6 : 1,
           }}
           className="relative w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform disabled:cursor-not-allowed"
-          title="Marcador"
-          aria-label="Marcador"
+          title={t('reader_bookmark')}
+          aria-label={t('reader_bookmark')}
         >
           <Bookmark size={18} fill={workBookmark ? 'currentColor' : 'none'} />
         </button>
@@ -768,8 +772,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             onClick={() => setTocOpen(true)}
             style={{ background: palette.ui, color: palette.uiText, border: `1px solid ${palette.border}` }}
             className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
-            title="Índice del capítulo"
-            aria-label="Índice del capítulo"
+            title={t('reader_chapter_index')}
+            aria-label={t('reader_chapter_index')}
           >
             <List size={18} />
           </button>
@@ -785,8 +789,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-sm uppercase tracking-widest" style={{ color: palette.uiText }}>Índice</h3>
-              <button type="button" onClick={() => setTocOpen(false)} style={{ color: palette.subtle }} aria-label="Cerrar">
+              <h3 className="font-black text-sm uppercase tracking-widest" style={{ color: palette.uiText }}>{t('reader_index')}</h3>
+              <button type="button" onClick={() => setTocOpen(false)} style={{ color: palette.subtle }} aria-label={t('reader_close')}>
                 <X size={18} />
               </button>
             </div>
@@ -823,7 +827,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             type="button"
             onClick={() => setLightbox(null)}
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
-            aria-label="Cerrar"
+            aria-label={t('reader_close')}
           >
             <X size={20} />
           </button>
@@ -1274,7 +1278,7 @@ const ReadingTab: React.FC<TabProps> = ({ prefs, setPrefs, palette }) => (
         <kbd style={kbdStyle(palette)}>←</kbd><span>Capítulo anterior</span>
         <kbd style={kbdStyle(palette)}>→</kbd><span>Capítulo siguiente</span>
         <kbd style={kbdStyle(palette)}>S</kbd><span>Abrir/cerrar ajustes</span>
-        <kbd style={kbdStyle(palette)}>F</kbd><span>Modo enfoque</span>
+        <kbd style={kbdStyle(palette)}>F</kbd><span>{t('reader_focus')}</span>
         <kbd style={kbdStyle(palette)}>Esc</kbd><span>Cerrar / salir</span>
       </div>
     </div>
@@ -1314,6 +1318,7 @@ const Toggle: React.FC<{ label: string; value: boolean; onChange: (v: boolean) =
 );
 
 interface PaginatedViewProps {
+  t: (k: string) => string;
   maxWidth: string;
   titleHtml: string;
   html: string;
@@ -1333,6 +1338,7 @@ interface PaginatedViewProps {
 // paginas. Reporta el progreso al padre (barra + marcadores) y persiste la
 // posicion por porcentaje. No toca el modo continuo.
 const PaginatedView: React.FC<PaginatedViewProps> = ({
+  t,
   maxWidth, titleHtml, html, articleStyle, palette, prevHref, nextHref, mangaUrl,
   rememberScroll, storageKey, onProgress, registerGo, onImageClick,
 }) => {
@@ -1467,7 +1473,7 @@ const PaginatedView: React.FC<PaginatedViewProps> = ({
           className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold hover:opacity-80 transition-opacity"
           style={{ background: palette.ui, borderColor: palette.border, color: palette.uiText }}
         >
-          <ChevronLeft size={16} /> Anterior
+          <ChevronLeft size={16} /> {t('reader_prev')}
         </button>
         <span className="text-xs font-bold uppercase tracking-widest" style={{ color: palette.subtle }}>
           {page + 1} / {pageCount}
@@ -1478,7 +1484,7 @@ const PaginatedView: React.FC<PaginatedViewProps> = ({
           className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-bold hover:opacity-80 transition-opacity"
           style={{ background: palette.ui, borderColor: palette.border, color: palette.uiText }}
         >
-          Siguiente <ChevronRight size={16} />
+          {t('reader_next')} <ChevronRight size={16} />
         </button>
       </div>
       <div className="flex justify-center mt-3">
@@ -1487,7 +1493,7 @@ const PaginatedView: React.FC<PaginatedViewProps> = ({
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-opacity hover:opacity-90"
           style={{ background: palette.accent, color: '#0a0a0b' }}
         >
-          <List size={14} /> Lista de capítulos
+          <List size={14} /> {t('reader_chapters_list')}
         </a>
       </div>
     </div>

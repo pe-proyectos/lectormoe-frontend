@@ -5,6 +5,7 @@ import NovelReader from './NovelReader';
 import { callAPI } from '../../util/callApi';
 
 interface NovelReaderContainerProps {
+  language?: string;
   manga: any;
   chapter: any;
   organization: any;
@@ -14,7 +15,7 @@ interface NovelReaderContainerProps {
   type: string;
 }
 
-const NovelReaderContainer: React.FC<NovelReaderContainerProps> = ({ manga, chapter, organization, user, logged, nsfwMode = false, type }) => {
+const NovelReaderContainer: React.FC<NovelReaderContainerProps> = ({ manga, chapter, organization, user, logged, nsfwMode = false, type, language = 'es' }) => {
   const orgPrefix = nsfwMode ? `/red/${organization?.slug}` : `/${organization?.slug}`;
   const writingsRoot = nsfwMode ? '/red/writings' : '/writings';
   const mangaSlug = manga?.manga?.slug || manga?.slug;
@@ -70,6 +71,7 @@ const NovelReaderContainer: React.FC<NovelReaderContainerProps> = ({ manga, chap
       />
 
       <NovelReader
+        language={language}
         chapter={chapter}
         mangaTitle={manga?.title || mangaSlug}
         mangaUrl={mangaUrl}

@@ -3,7 +3,7 @@ import LandingLayout from "../../../../../../../layouts/LandingLayout.astro";
 import NovelReaderContainer from "../../../../../../../components/landing/NovelReaderContainer";
 
 // @ts-ignore
-const { user, showAds } = Astro.locals;
+const { user, showAds , language} = Astro.locals;
 const { slug, type, mangaSlug, chapterNumber } = Astro.params;
 const logged = !!user;
 
@@ -63,6 +63,7 @@ if (actualBookTypeCode && actualBookTypeCode !== type) {
     logged={logged}
     nsfwMode={true}
     type={type}
+    language={language}
     client:only="react"
   />
 </LandingLayout>
