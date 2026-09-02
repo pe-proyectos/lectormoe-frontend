@@ -146,5 +146,6 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 - [x] EPUB: epub-pipeline.ts (spine/TOC/volumenes/imagenes R2) + parse-epub. Probado con fixture. PENDIENTE deploy.
 - [ ] Pipelines API restante: md-warnings, permisos, validacion R2 server-side en bodyMarkdown.
 - [ ] Lector refactor.
-- [ ] Editor + import dialog.
+- [x] Importacion EPUB usable en admin (boton + creacion en lote de capitulos). Desplegado.
+- [ ] Editor: NodeView de imagen (reordenar/redimensionar/pegar).
 - [ ] NSFW ruteo/SEO.

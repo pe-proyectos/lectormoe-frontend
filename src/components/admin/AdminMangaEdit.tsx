@@ -756,6 +756,89 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     }
   };
 
+  const epubInputRef = useRef<HTMLInputElement>(null);
+  const [epubImporting, setEpubImporting] = useState(false);
+
+  // Importa un EPUB completo: lo parsea en el backend (spine + TOC + imagenes a
+  // R2) y crea los capitulos en lote, numerando a partir del ultimo existente.
+  const handleEpubImport = async (file: File) => {
+    setEpubImporting(true);
+    const toastId = toast.loading('Importando EPUB...');
+    try {
+      const API_URL = import.meta.env['PUBLIC_API_URL'];
+      const cookies = document.cookie.split(';').reduce((acc, c) => {
+        const [k, v] = c.trim().split('=');
+        if (k && v) acc[k] = decodeURIComponent(v);
+        return acc;
+      }, {} as Record<string, string>);
+      const token = cookies['token'];
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const orgSlug = parts[0] === 'red' ? parts[1] : parts[0];
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${API_URL}/api/files/parse-epub`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(orgSlug ? { 'x-organization': orgSlug } : {}),
+        },
+        body: fd,
+      });
+      const json = await res.json();
+      if (!res.ok || json.status === false) {
+        throw new Error(json?.message || 'Error al parsear el EPUB');
+      }
+      const parsed: Array<{ number: number; title: string; volumeNumber: number | null; bodyMarkdown: string }> =
+        json.data.chapters || [];
+      if (parsed.length === 0) throw new Error('El EPUB no contiene capitulos con texto.');
+      const base = chapters.reduce((mx: number, c: any) => Math.max(mx, Number(c.number) || 0), 0);
+      toast.dismiss(toastId);
+      const ok = window.confirm(
+        `Se importaran ${parsed.length} capitulos${json.data.images ? ` y ${json.data.images} imagenes` : ''} a partir del numero ${base + 1}. Continuar?`
+      );
+      if (!ok) {
+        setEpubImporting(false);
+        return;
+      }
+      const progressId = toast.loading(`Importando capitulos... 0/${parsed.length}`);
+      let created = 0;
+      const errors: string[] = [];
+      for (const ch of parsed) {
+        const number = base + ch.number;
+        try {
+          await callAPI(chapterListUrl(), {
+            method: 'POST',
+            body: JSON.stringify({
+              title: ch.title || `Capitulo ${number}`,
+              number,
+              releasedAt: new Date().toISOString(),
+              pages: [],
+              singlePages: [],
+              bodyMarkdown: ch.bodyMarkdown,
+              isUnreleased: false,
+              volumeNumber: ch.volumeNumber ?? null,
+            }),
+          });
+          created += 1;
+          toast.loading(`Importando capitulos... ${created}/${parsed.length}`, { id: progressId });
+        } catch (e: any) {
+          errors.push(`#${number}: ${e?.message || 'error'}`);
+        }
+      }
+      toast.dismiss(progressId);
+      if (created) toast.success(`Importados ${created} capitulos del EPUB.`);
+      if (errors.length) toast.error(`Fallaron ${errors.length} capitulos. ${errors[0]}`);
+      const warnings: string[] = json.data.warnings || [];
+      if (warnings.length) toast(`Aviso: ${warnings[0]}`);
+      await loadChapters();
+    } catch (e: any) {
+      toast.dismiss(toastId);
+      toast.error(e?.message || 'Error al importar el EPUB');
+    } finally {
+      setEpubImporting(false);
+    }
+  };
+
   const handleDownloadChapter = async (chapter: any) => {
     toast.info(`Descargando capítulo ${chapter.number}...`);
     try {
@@ -2004,7 +2087,32 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
                         <Layers size={16} className="text-cyan-500" /> {isWriting ? 'Contenido' : 'Páginas'}
                       </h3>
-                      <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{isWriting ? 'Markdown · texto' : 'Máximo 25MB por archivo'}</span>
+                      <div className="flex items-center gap-3">
+                        {isWriting && (
+                          <>
+                            <input
+                              ref={epubInputRef}
+                              type="file"
+                              accept=".epub,application/epub+zip"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) handleEpubImport(f);
+                                e.target.value = '';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => epubInputRef.current?.click()}
+                              disabled={epubImporting}
+                              className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {epubImporting ? 'Importando...' : 'Importar EPUB'}
+                            </button>
+                          </>
+                        )}
+                        <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{isWriting ? 'Markdown · texto' : 'Máximo 25MB por archivo'}</span>
+                      </div>
                     </div>
 
                     {isWriting ? (
