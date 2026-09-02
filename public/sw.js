@@ -1,6 +1,6 @@
 // Service worker conservador (Tarea 19f).
 // Cache-first SOLO para estáticos inmutables; NUNCA /api/ ni HTML de páginas.
-const CACHE = 'capibara-static-v4';
+const CACHE = 'capibara-static-v5';
 const OFFLINE_URL = '/offline.html';
 
 // Rutas que deben funcionar SIN conexión (leer descargas). Se cachean al
@@ -10,6 +10,13 @@ const OFFLINE_URL = '/offline.html';
 const OFFLINE_ROUTES = ['/descargas', '/app/offline'];
 function isOfflineRoute(pathname) {
   return OFFLINE_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'));
+}
+
+// Capitulos de novela: /writings/{scan}/{tipo}/{obra}/chapter/{n} (y su espejo
+// /red/...). Se cachean al leerlos en linea (network-first: frescos con red) y
+// se sirven desde cache sin conexion para poder reabrirlos offline.
+function isNovelChapter(pathname) {
+  return /^\/(red\/)?writings\/[^/]+\/[^/]+\/[^/]+\/chapter\/[^/]+\/?$/.test(pathname);
 }
 
 // Precache: además del offline.html, los SHELLS de las páginas offline. Antes
@@ -64,11 +71,12 @@ self.addEventListener('fetch', (event) => {
   // desactualizado aunque prod ya esté al día. Fallback a offline sin conexión.
   if (req.mode === 'navigate') {
     const offlineRoute = isOfflineRoute(url.pathname);
+    const cacheable = offlineRoute || isNovelChapter(url.pathname);
     event.respondWith(
       fetch(new Request(req, { cache: 'reload' }))
         .then((res) => {
           // Guarda las rutas offline al visitarlas para poder servirlas sin red.
-          if (offlineRoute && res && res.ok) {
+          if (cacheable && res && res.ok) {
             const copy = res.clone();
             caches.open(CACHE).then((cache) => cache.put(req, copy));
           }

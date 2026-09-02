@@ -25,6 +25,7 @@ export const GET: APIRoute = async () => {
   for (const p of STATIC_PATHS) add(p);
   for (const o of data.orgs || []) add(`/${o.slug}`, o.updatedAt);
   for (const m of data.mangas || []) add(`/${m.orgSlug}/manga/${m.mangaSlug}`, m.updatedAt);
+  for (const w of data.writings || []) add(`/writings/${w.orgSlug}/${w.type}/${w.mangaSlug}`, w.updatedAt);
   for (const l of data.lists || []) add(`/list/${l.userSlug}/${l.listSlug}`, l.updatedAt);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;

@@ -150,4 +150,6 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 - [x] Importacion EPUB usable en admin (boton + creacion en lote de capitulos). Desplegado.
 - [x] Editor: pegar y soltar imagenes (drag/drop + paste) con subida a R2 en posicion. Desplegado.
 - [x] NSFW ruteo: novelas +18 redirigen a /red/writings (detalle y capitulo).
-- [ ] SEO opcional: excluir writings NSFW del sitemap (mejora menor pendiente).
+- [x] SEO: sitemap con novelas en /writings (NSFW excluido). Desplegado.
+- [x] PWA: capitulos de novela cacheables offline (network-first + fallback). Desplegado.
+- [ ] Modo paginado: NO desplegado a ciegas (interactua con progreso/marcadores por scroll; requiere pruebas en dispositivo).
