@@ -141,12 +141,13 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 - [x] Plan escrito.
 - [x] Genero "Contemporaneo" sembrado (seed-genres.ts; +xianxia, litrpg).
 - [x] +18 habilitado en novelas (frontend + ruteo a /red). Desplegado.
-- [ ] Migracion Prisma aditiva aplicada.
+- [x] Migracion Prisma: NO necesaria. El TOC y el conteo de palabras se calculan en el cliente; marcadores y progreso reutilizan el modelo existente (UserPageBookmark / historial). NovelImport se pospone (el import ya reporta inline).
 - [x] docx fix: imagenes a R2 (pipeline + parse-docx + editor). Commit hecho, PENDIENTE deploy.
 - [x] EPUB: epub-pipeline.ts (spine/TOC/volumenes/imagenes R2) + parse-epub. Probado con fixture. PENDIENTE deploy.
 - [ ] Pipelines API restante: md-warnings, permisos, validacion R2 server-side en bodyMarkdown.
 - [x] Lector: TOC por encabezados + lightbox de ilustraciones. Desplegado. (Ya tenia temas/fuente/progreso/marcadores.)
 - [ ] Lector avanzado: modo paginado + PWA offline (opcional).
 - [x] Importacion EPUB usable en admin (boton + creacion en lote de capitulos). Desplegado.
-- [ ] Editor: NodeView de imagen (reordenar/redimensionar/pegar).
-- [ ] NSFW ruteo/SEO.
+- [x] Editor: pegar y soltar imagenes (drag/drop + paste) con subida a R2 en posicion. Desplegado.
+- [x] NSFW ruteo: novelas +18 redirigen a /red/writings (detalle y capitulo).
+- [ ] SEO opcional: excluir writings NSFW del sitemap (mejora menor pendiente).

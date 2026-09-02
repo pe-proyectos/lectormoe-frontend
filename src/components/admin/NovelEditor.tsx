@@ -62,6 +62,7 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
   const mdInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastValueRef = useRef<string | null>(value);
+  const uploadInsertRef = useRef<((file: File) => void) | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -92,6 +93,36 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
       attributes: {
         class:
           'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[400px] px-6 py-6',
+      },
+      // Pegar imagen desde el portapapeles -> sube a R2 e inserta en posicion.
+      handlePaste: (_view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        for (const it of Array.from(items)) {
+          if (it.type.startsWith('image/')) {
+            const file = it.getAsFile();
+            if (file && uploadInsertRef.current) {
+              event.preventDefault();
+              uploadInsertRef.current(file);
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+      // Soltar imagen (drag and drop) -> sube a R2 e inserta.
+      handleDrop: (_view, event) => {
+        const files = event.dataTransfer?.files;
+        if (files && files.length) {
+          for (const f of Array.from(files)) {
+            if (f.type.startsWith('image/') && uploadInsertRef.current) {
+              event.preventDefault();
+              uploadInsertRef.current(f);
+              return true;
+            }
+          }
+        }
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -179,19 +210,15 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
     e.target.value = '';
   };
 
-  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      toast.error('Solo se permiten imágenes JPG, PNG o WEBP.');
+  const uploadAndInsertImage = async (file: File, marker = 'w70') => {
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      toast.error('Solo se permiten imágenes JPG, PNG, WEBP o GIF.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
       toast.error('La imagen no puede superar 5MB.');
       return;
     }
-    const marker = SIZE_OPTIONS[Number.parseInt(window.prompt('Tamaño de la imagen:\n1 = Pequeña (40%)\n2 = Mediana (70%)\n3 = Completa (100%)', '2') || '2', 10) - 1]?.marker || 'w70';
     setUploadingImage(true);
     try {
       const fileKey = await uploadFile(file, undefined, 'novels');
@@ -203,6 +230,15 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
     } finally {
       setUploadingImage(false);
     }
+  };
+  uploadInsertRef.current = uploadAndInsertImage;
+
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const marker = SIZE_OPTIONS[Number.parseInt(window.prompt('Tamaño de la imagen:\n1 = Pequeña (40%)\n2 = Mediana (70%)\n3 = Completa (100%)', '2') || '2', 10) - 1]?.marker || 'w70';
+    await uploadAndInsertImage(file, marker);
   };
 
   const promptLink = () => {
