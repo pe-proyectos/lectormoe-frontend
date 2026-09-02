@@ -7,6 +7,7 @@ import {
   ArrowRight, Check, Loader2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import { useDialog } from '../ui/useDialog';
 import { getTranslator } from '../../util/translate';
 import { toast } from 'react-toastify';
 import { uploadFile } from '../../util/uploadFile';
@@ -759,6 +760,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const epubInputRef = useRef<HTMLInputElement>(null);
   const [epubImporting, setEpubImporting] = useState(false);
   const [epubReport, setEpubReport] = useState<{ parsed: any[]; base: number; images: number; warnings: string[] } | null>(null);
+  const dlg = useDialog();
 
   // Importa un EPUB completo: lo parsea en el backend (spine + TOC + imagenes a
   // R2) y crea los capitulos en lote, numerando a partir del ultimo existente.
@@ -1729,7 +1731,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   };
 
   const handleExpelMember = async (orgSlug: string) => {
-    if (!confirm('¿Expulsar a este scan del joint?')) return;
+    if (!(await dlg.confirm('¿Expulsar a este scan del joint?'))) return;
     try {
       await callAPI(`/api/joint/${resourceSlug}/member/${orgSlug}`, { method: 'DELETE' });
       toast.success('Miembro expulsado', { position: 'bottom-right' });
@@ -1740,7 +1742,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   };
 
   const handleTransferLeadership = async (orgSlug: string) => {
-    if (!confirm(`¿Transferir el liderazgo a ${orgSlug}? Tú pasarás a ser UPLOADER.`)) return;
+    if (!(await dlg.confirm(`¿Transferir el liderazgo a ${orgSlug}? Tú pasarás a ser UPLOADER.`))) return;
     try {
       await callAPI(`/api/joint/${resourceSlug}/transfer`, {
         method: 'PATCH',
@@ -1757,7 +1759,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     const myCount = (chapters || []).filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id).length;
     const otherCount = (chapters || []).length - myCount;
     const msg = `¿Disolver el joint?\nCaps a detach:\n  - tu org: ${myCount}\n  - otros miembros: ${otherCount}\nLos capítulos se moverán a cada scan que los subió.`;
-    if (!confirm(msg)) return;
+    if (!(await dlg.confirm(msg))) return;
     try {
       await callAPI(`/api/joint/${resourceSlug}`, { method: 'DELETE' });
       toast.success('Joint disuelto', { position: 'bottom-right' });
@@ -1770,7 +1772,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const handleLeaveJoint = async () => {
     const myCount = (chapters || []).filter((c: any) => (c.uploadedByOrganization?.id ?? c.uploadedByOrganizationId) === organization?.id).length;
     const msg = `¿Salir del joint?\nVas a sacar ${myCount} capítulos uploaded por tu scan, que volverán a tu MangaCustom.`;
-    if (!confirm(msg)) return;
+    if (!(await dlg.confirm(msg))) return;
     try {
       const res = await callAPI(`/api/joint/${resourceSlug}/leave`, { method: 'POST' });
       const moved = res?.moved ?? 0;
@@ -1784,7 +1786,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   };
 
   const handlePromoteChapter = async (chapterId: number) => {
-    if (!confirm('¿Mover este capítulo al joint? Será visible bajo el joint y dejará de estar en tu scan.')) return;
+    if (!(await dlg.confirm('¿Mover este capítulo al joint? Será visible bajo el joint y dejará de estar en tu scan.'))) return;
     try {
       await callAPI(`/api/joint/${resourceSlug}/chapters/${chapterId}/promote`, { method: 'POST' });
       toast.success('Capítulo movido al joint', { position: 'bottom-right' });
@@ -1799,7 +1801,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       const url = `/api/joint/${resourceSlug}/chapters/${chapterId}/demote${opts.replace ? '?replace=1' : ''}`;
       const res = await callAPI(url, { method: 'POST' });
       if (res?.conflict) {
-        if (confirm('Tu scan ya tiene un capítulo con ese número. ¿Reemplazarlo? El existente será movido a la papelera.')) {
+        if (await dlg.confirm('Tu scan ya tiene un capítulo con ese número. ¿Reemplazarlo? El existente será movido a la papelera.')) {
           return handleDemoteChapter(chapterId, { replace: true });
         }
         return;
@@ -1813,7 +1815,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   const handleBulkMove = async (direction: 'promote' | 'demote', chapterIds: number[]) => {
     if (chapterIds.length === 0) return;
-    if (!confirm(`¿Mover ${chapterIds.length} capítulos al ${direction === 'promote' ? 'joint' : 'scan'}?`)) return;
+    if (!(await dlg.confirm(`¿Mover ${chapterIds.length} capítulos al ${direction === 'promote' ? 'joint' : 'scan'}?`))) return;
     try {
       const res = await callAPI(`/api/joint/${resourceSlug}/chapters/bulk-move`, {
         method: 'POST',
@@ -1830,8 +1832,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   };
 
   const handleTransferAuthorship = async (chapterId: number, toOrganizationId: number) => {
-    if (!confirm('¿Transferir la autoría de este capítulo? Esta acción es destructiva.')) return;
-    if (!confirm('Confirma de nuevo: la autoría pasará a otra org y futuras detaches se basarán en eso.')) return;
+    if (!(await dlg.confirm('¿Transferir la autoría de este capítulo? Esta acción es destructiva.'))) return;
+    if (!(await dlg.confirm('Confirma de nuevo: la autoría pasará a otra org y futuras detaches se basarán en eso.'))) return;
     try {
       await callAPI(`/api/joint/${resourceSlug}/chapters/${chapterId}/transfer-authorship`, {
         method: 'POST',
@@ -1931,6 +1933,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   return (
     <div className="pt-20 min-h-screen bg-zinc-950">
+      <dlg.DialogHost />
       
       {/* Banner */}
       <div className="relative h-56 md:h-72 w-full overflow-hidden group">

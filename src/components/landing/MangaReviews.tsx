@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, EyeOff } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import StarRating from '../StarRating';
+import { useDialog } from '../ui/useDialog';
 
 interface Props {
   mangaSlug: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const MangaReviews: React.FC<Props> = ({ mangaSlug, user, logged, organization, scanSlug }) => {
+  const dlg = useDialog();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
@@ -54,7 +56,7 @@ const MangaReviews: React.FC<Props> = ({ mangaSlug, user, logged, organization, 
   };
 
   const hide = async (id: number) => {
-    if (!confirm('¿Ocultar esta reseña?')) return;
+    if (!(await dlg.confirm('¿Ocultar esta reseña?'))) return;
     try { await callAPI(`/api/manga-custom/${mangaSlug}/reviews/${id}/hide`, { method: 'PATCH' }); load(); } catch { /* noop */ }
   };
 
@@ -66,6 +68,7 @@ const MangaReviews: React.FC<Props> = ({ mangaSlug, user, logged, organization, 
 
   return (
     <div id="reviews" className="mt-10 space-y-6">
+      <dlg.DialogHost />
       <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Reseñas</h3>
 
       {/* Resumen */}

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Zap, Trash2, Pencil, X, CheckCircle2, RotateCcw, Ban } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { toast } from 'react-toastify';
+import { useDialog } from '../ui/useDialog';
 
 interface Props {
   organization: any;
@@ -27,6 +28,7 @@ const ROLES = Object.keys(ROLE_LABEL);
 const emptyForm = { title: '', description: '', requirements: '', roles: [] as string[], language: 'es', urgent: false };
 
 const AdminRecruitment: React.FC<Props> = () => {
+  const dlg = useDialog();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -69,13 +71,14 @@ const AdminRecruitment: React.FC<Props> = () => {
   };
 
   const remove = async (p: Post) => {
-    if (!confirm(`¿Eliminar el anuncio "${p.title}"? Esta acción no se puede deshacer.`)) return;
+    if (!(await dlg.confirm(`¿Eliminar el anuncio "${p.title}"? Esta acción no se puede deshacer.`))) return;
     await callAPI(`/api/organization/recruitment/${p.id}`, { method: 'DELETE' });
     load();
   };
 
   return (
     <div className="mt-4">
+      <dlg.DialogHost />
       <div className="flex items-center justify-between mb-4">
         <p className="text-zinc-400 text-sm">Publica los roles que tu scan busca. Aparecen en el mural público <a href="/reclutamiento" className="text-cyan-400 hover:underline">/reclutamiento</a>.</p>
         <button onClick={openCreate} className="inline-flex items-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-4 py-2.5 font-black text-xs uppercase tracking-widest hover:bg-white transition-colors"><Plus size={16} /> Nuevo anuncio</button>

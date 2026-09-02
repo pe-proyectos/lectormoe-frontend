@@ -3,6 +3,7 @@ import SuperadminCreateScan from '../admin/SuperadminCreateScan';
 import SuperadminUsers from '../admin/SuperadminUsers';
 import SuperadminSubscriptions from '../admin/SuperadminSubscriptions';
 import SuperadminRaffles from '../admin/SuperadminRaffles';
+import { useDialog } from '../ui/useDialog';
 
 const API = import.meta.env.PUBLIC_API_URL as string;
 
@@ -637,6 +638,7 @@ const ModerationLogTab = ({ token }: { token: string }) => {
 };
 
 const ReportsTab = ({ token }: { token: string }) => {
+  const dlg = useDialog();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -654,24 +656,24 @@ const ReportsTab = ({ token }: { token: string }) => {
 
   const act = async (id: number, action: 'dismiss' | 'hide_content' | 'delete_notify' | 'restore') => {
     let resolutionNote: string | undefined;
-    if (action === 'hide_content' && !confirm('Se ocultará el contenido al público y se marcarán los reportes como atendidos.')) return;
+    if (action === 'hide_content' && !(await dlg.confirm('Se ocultará el contenido al público y se marcarán los reportes como atendidos.'))) return;
     if (action === 'restore') {
-      if (!confirm('La obra volverá a ser visible para los lectores y el reporte quedará como descartado. ¿Continuar?')) return;
-      const motivo = prompt('Motivo de la reactivación (opcional, queda en el historial):', 'El reporte resultó falso; el tema se aclaró.');
+      if (!(await dlg.confirm('La obra volverá a ser visible para los lectores y el reporte quedará como descartado. ¿Continuar?'))) return;
+      const motivo = await dlg.prompt('Motivo de la reactivación (opcional, queda en el historial):', { defaultValue: 'El reporte resultó falso; el tema se aclaró.' });
       if (motivo === null) return;
       resolutionNote = motivo.trim() || undefined;
     }
     if (action === 'delete_notify') {
-      const reason = prompt('Razón del borrado (se enviará al scan por correo y notificación):');
+      const reason = await dlg.prompt('Razón del borrado (se enviará al scan por correo y notificación):', { required: true });
       if (reason === null) return;
-      if (!reason.trim()) { alert('La razón es obligatoria.'); return; }
+      if (!reason.trim()) { await dlg.alert('La razón es obligatoria.'); return; }
       resolutionNote = reason.trim();
     }
     setBusyId(id);
     try {
       await saFetch(`/api/superadmin/reports/${id}`, token, { method: 'PATCH', body: JSON.stringify({ action, ...(resolutionNote ? { resolutionNote } : {}) }) });
       load();
-    } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
+    } catch (e: any) { dlg.alert(e.message); } finally { setBusyId(null); }
   };
 
   const catLabel: Record<string, string> = { menores: 'Menores', ilegal: 'Ilegal', no_etiquetado: '+18 sin etiquetar', spam: 'Spam', otro: 'Otro' };
@@ -681,6 +683,7 @@ const ReportsTab = ({ token }: { token: string }) => {
 
   return (
     <div className="space-y-4">
+      <dlg.DialogHost />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-black text-white">Reportes {statusFilter === 'pending' && `(${reports.length} pendientes)`}</h2>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300">
@@ -741,6 +744,7 @@ const BETA_STATUS: Record<string, { text: string; cls: string }> = {
 };
 
 const BetaTestersTab = ({ token }: { token: string }) => {
+  const dlg = useDialog();
   const [testers, setTesters] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -762,16 +766,16 @@ const BetaTestersTab = ({ token }: { token: string }) => {
     try {
       await saFetch(`/api/superadmin/beta-testers/${id}`, token, { method: 'PATCH', body: JSON.stringify({ status }) });
       load();
-    } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
+    } catch (e: any) { dlg.alert(e.message); } finally { setBusyId(null); }
   };
 
   const remove = async (id: number) => {
-    if (!confirm('¿Eliminar este registro de verificador?')) return;
+    if (!(await dlg.confirm('¿Eliminar este registro de verificador?'))) return;
     setBusyId(id);
     try {
       await saFetch(`/api/superadmin/beta-testers/${id}`, token, { method: 'DELETE' });
       load();
-    } catch (e: any) { alert(e.message); } finally { setBusyId(null); }
+    } catch (e: any) { dlg.alert(e.message); } finally { setBusyId(null); }
   };
 
   // Correos para pegar en Play Console (lista de verificadores). Se copian los
@@ -783,7 +787,7 @@ const BetaTestersTab = ({ token }: { token: string }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert(emails.join('\n'));
+      dlg.alert(emails.join('\n'));
     }
   };
 
@@ -795,6 +799,7 @@ const BetaTestersTab = ({ token }: { token: string }) => {
 
   return (
     <div className="space-y-4">
+      <dlg.DialogHost />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-xl font-black text-white">Verificadores de Google Play</h2>
         <button

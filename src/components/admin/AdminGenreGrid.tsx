@@ -6,6 +6,7 @@ import AdminGenreDialog from './AdminGenreDialog';
 import { callAPI } from '../../util/callApi';
 import Button from './ui/Button';
 import Card from './ui/Card';
+import { useDialog } from '../ui/useDialog';
 
 interface AdminGenreGridProps {
   organization: any;
@@ -18,6 +19,7 @@ const AdminGenreGrid: React.FC<AdminGenreGridProps> = ({
   language,
   organizationSlug,
 }) => {
+  const dlg = useDialog();
   const [loading, setLoading] = useState(true);
   const [genres, setGenres] = useState<any[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<any>(null);
@@ -40,8 +42,8 @@ const AdminGenreGrid: React.FC<AdminGenreGridProps> = ({
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (genre: any) => {
-    if (!confirm(`¿Estás seguro de eliminar el género "${genre.name}"?`)) return;
+  const handleDelete = async (genre: any) => {
+    if (!(await dlg.confirm(`¿Estás seguro de eliminar el género "${genre.name}"?`))) return;
 
     callAPI(`/api/genre/${genre.slug}`, { method: 'DELETE' })
       .then(() => {
@@ -54,6 +56,7 @@ const AdminGenreGrid: React.FC<AdminGenreGridProps> = ({
 
   return (
     <div className="p-4 md:p-8 space-y-6">
+      <dlg.DialogHost />
       <AdminGenreDialog
         language={language}
         open={isDialogOpen}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { uploadFile } from '../../util/uploadFile';
+import { useDialog } from '../ui/useDialog';
 
 const API = import.meta.env.PUBLIC_API_URL as string;
 
@@ -452,6 +453,7 @@ const EditModal: React.FC<{ raffle: RaffleAdmin; onClose: () => void; onSaved: (
 };
 
 const SuperadminRaffles: React.FC<Props> = ({ token }) => {
+  const dlg = useDialog();
   const [raffles, setRaffles] = useState<RaffleAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -476,18 +478,18 @@ const SuperadminRaffles: React.FC<Props> = ({ token }) => {
   useEffect(() => { load(); }, [load]);
 
   const triggerDraw = async (slug: string) => {
-    if (!confirm(`¿Sortear ahora "${slug}"?`)) return;
+    if (!(await dlg.confirm(`¿Sortear ahora "${slug}"?`))) return;
     setBusyId(-1);
     try {
       await saFetch(`/api/superadmin/raffles/${slug}/draw-now`, token, { method: 'POST' });
       await load();
     } catch (err: any) {
-      alert(err?.message || 'Error al sortear.');
+      dlg.alert(err?.message || 'Error al sortear.');
     } finally { setBusyId(null); }
   };
 
   const cancelRaffle = async (slug: string) => {
-    const reason = prompt('Razón de cancelación:', 'cancelled-by-admin');
+    const reason = await dlg.prompt('Razón de cancelación:', { defaultValue: 'cancelled-by-admin' });
     if (!reason) return;
     setBusyId(-1);
     try {
@@ -497,23 +499,24 @@ const SuperadminRaffles: React.FC<Props> = ({ token }) => {
       });
       await load();
     } catch (err: any) {
-      alert(err?.message || 'Error al cancelar.');
+      dlg.alert(err?.message || 'Error al cancelar.');
     } finally { setBusyId(null); }
   };
 
   const deleteRaffle = async (slug: string) => {
-    if (!confirm(`¿Eliminar (soft delete) "${slug}"? Esto cancela y reembolsa.`)) return;
+    if (!(await dlg.confirm(`¿Eliminar (soft delete) "${slug}"? Esto cancela y reembolsa.`))) return;
     setBusyId(-1);
     try {
       await saFetch(`/api/superadmin/raffles/${slug}`, token, { method: 'DELETE' });
       await load();
     } catch (err: any) {
-      alert(err?.message || 'Error al eliminar.');
+      dlg.alert(err?.message || 'Error al eliminar.');
     } finally { setBusyId(null); }
   };
 
   return (
     <div className="space-y-4">
+      <dlg.DialogHost />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-white">Sorteos</h2>

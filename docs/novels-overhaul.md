@@ -164,3 +164,10 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
   Messages, JointGrid, MultiImageDropzone).
 - [ ] Pendiente mayor: editor EPUB visual tipo e-booka (proyecto aparte).
 - [ ] Pendiente: auditoria i18n completa (traducciones faltantes).
+
+## Reputacion: cero dialogos nativos (iteracion 3)
+- [x] Hook reutilizable useDialog (confirm/prompt/alert) con modal in-app.
+- [x] Migrados TODOS los window.confirm/prompt/alert restantes: AdminMangaEdit
+  (9 joint), SuperAdminApp, SuperadminRaffles, MangaReviews, DeleteAccountPage,
+  CustomListPage, DownloadsLibrary, AdminRecruitment, AdminRecommendations,
+  AdminGenreGrid, AdminChaptersTable. Barrido final: 0 nativos en la app.

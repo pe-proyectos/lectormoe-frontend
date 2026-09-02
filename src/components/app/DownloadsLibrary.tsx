@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { HardDriveDownload, Trash2, BookOpen, WifiOff, Crown } from 'lucide-react';
 import { notify } from '../../util/feedback';
 import { getDownloads, deleteWork, DOWNLOAD_LIMITS, type DownloadedWork } from '../../util/downloads';
+import { useDialog } from '../ui/useDialog';
 
 const isPremium = (user: any): boolean =>
   Array.isArray(user?.subscriptions) && user.subscriptions.some((s: any) => s?.active === true);
@@ -11,6 +12,7 @@ const fmtBytes = (b: number) => (b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e
 interface Props { user?: any; logged?: boolean }
 
 const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
+  const dlg = useDialog();
   const [works, setWorks] = useState<DownloadedWork[]>([]);
   const [loading, setLoading] = useState(true);
   const premium = isPremium(user);
@@ -23,7 +25,7 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
   useEffect(() => { load(); }, []);
 
   const remove = async (w: DownloadedWork) => {
-    if (!confirm(`¿Eliminar la descarga de "${w.title}"? Podrás volver a descargarla cuando tengas conexión.`)) return;
+    if (!(await dlg.confirm(`¿Eliminar la descarga de "${w.title}"? Podrás volver a descargarla cuando tengas conexión.`))) return;
     await deleteWork(w.key);
     await load();
     notify.success('Descarga eliminada.');
@@ -31,6 +33,7 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20 md:pb-8">
+      <dlg.DialogHost />
       <div className="max-w-3xl mx-auto px-4 pt-6">
         <div className="flex items-center gap-2 text-cyan-400 font-black text-[10px] uppercase tracking-[0.3em] mb-1">
           <HardDriveDownload size={14} /> En este dispositivo

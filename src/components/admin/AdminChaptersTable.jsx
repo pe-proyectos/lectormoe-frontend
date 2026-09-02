@@ -4,6 +4,7 @@ import Button from "./ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./ui/Table";
 import { callAPI } from "../../util/callApi";
 import { getTranslator } from "../../util/translate";
+import { useDialog } from "../ui/useDialog";
 
 export function AdminChaptersTable({
   language,
@@ -13,9 +14,10 @@ export function AdminChaptersTable({
   onChapterDelete,
 }) {
   const _ = getTranslator(language);
+  const dlg = useDialog();
 
   const deleteChapter = async (chapter) => {
-    if (!confirm(_("confirm_delete_chapter") || `¿Estás seguro de eliminar el capítulo ${chapter.number}?`)) {
+    if (!(await dlg.confirm(_("confirm_delete_chapter") || `¿Estás seguro de eliminar el capítulo ${chapter.number}?`))) {
       return;
     }
     callAPI(`/api/manga-custom/${mangaCustom.slug}/chapter/${chapter.number}`, {
@@ -37,6 +39,7 @@ export function AdminChaptersTable({
 
   return (
     <div className="overflow-x-auto">
+      <dlg.DialogHost />
       <Table>
         <TableHeader>
           <TableRow>

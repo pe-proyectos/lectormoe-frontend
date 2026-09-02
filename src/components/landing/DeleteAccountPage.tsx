@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { notify } from '../../util/feedback';
 import { Trash2, ShieldAlert, Loader2, CheckCircle2, LogIn, Eraser } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import { useDialog } from '../ui/useDialog';
 
 interface Props { user?: any; logged?: boolean }
 
@@ -9,6 +10,7 @@ interface Props { user?: any; logged?: boolean }
 // qué datos se borran y, si el usuario ha iniciado sesión, le permite eliminarla
 // él mismo confirmando con su contraseña.
 const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
+  const dlg = useDialog();
   const [password, setPassword] = useState('');
   const [confirmText, setConfirmText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -17,7 +19,7 @@ const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
   const [clearingData, setClearingData] = useState(false);
 
   const clearData = async () => {
-    if (!confirm('Se borrarán tu lista, favoritos, notificaciones e historial de lectura. Tu cuenta seguirá activa. ¿Continuar?')) return;
+    if (!(await dlg.confirm('Se borrarán tu lista, favoritos, notificaciones e historial de lectura. Tu cuenta seguirá activa. ¿Continuar?'))) return;
     setClearingData(true);
     try {
       await callAPI('/api/user/delete-data', { method: 'POST' });
@@ -47,6 +49,7 @@ const DeleteAccountPage: React.FC<Props> = ({ user, logged }) => {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-start justify-center px-4 py-16">
+      <dlg.DialogHost />
       <div className="w-full max-w-lg">
         <div className="flex items-center gap-2 text-red-400 font-black text-[10px] uppercase tracking-[0.3em] mb-2">
           <ShieldAlert size={14} /> Cuenta y datos

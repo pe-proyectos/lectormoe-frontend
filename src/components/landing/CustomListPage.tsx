@@ -5,6 +5,7 @@ import Footer from './Footer';
 import { callAPI } from '../../util/callApi';
 import { notify } from '../../util/feedback';
 import { isSubscriber } from '../../util/isSubscriber';
+import { useDialog } from '../ui/useDialog';
 
 interface Props { list: any; owner: any; user?: any; logged?: boolean; nsfwMode?: boolean; isOwner?: boolean; }
 
@@ -29,6 +30,8 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
   // En el modo normal (la ficha de lista no tiene /red) NO escondemos la obra +18:
   // mostramos su nombre pero SIN portada.
   const hideCover = (it: any) => itemIsNsfw(it) && !nsfwMode;
+
+  const dlg = useDialog();
 
   const [list, setList] = useState(initialList);
   const [editing, setEditing] = useState(false);
@@ -63,7 +66,7 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
     if (updated) setList({ ...list, isPublic: updated.isPublic });
   };
   const remove = async () => {
-    if (!confirm('¿Eliminar esta lista?')) return;
+    if (!(await dlg.confirm('¿Eliminar esta lista?'))) return;
     await callAPI(`/api/lists/${list.id}`, { method: 'DELETE' }).catch(() => {});
     go(`/list/${owner?.slug}`);
   };
@@ -139,6 +142,7 @@ const CustomListPage: React.FC<Props> = ({ list: initialList, owner, user, logge
 
   return (
     <div className="min-h-screen bg-zinc-950">
+      <dlg.DialogHost />
       <Navbar user={user} logged={logged} nsfwMode={nsfwMode} activeView="home"
         onOpenLogin={() => go('/login')} onOpenRegister={() => go('/register')}
         onGoHome={() => go(nsfwMode ? '/red' : '/')} onGoExplore={() => go('/scans')} onGoSearch={() => go('/search')} />

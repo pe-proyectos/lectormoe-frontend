@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Loader2, Plus, Trash2, Pencil, X, Search, ArrowUp, ArrowDown, Globe, EyeOff, Star } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { toast } from 'react-toastify';
+import { useDialog } from '../ui/useDialog';
 
 interface Props {
   organization: any;
@@ -43,6 +44,7 @@ const emptyForm = {
 };
 
 const AdminRecommendations: React.FC<Props> = () => {
+  const dlg = useDialog();
   const [recos, setRecos] = useState<Reco[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -126,7 +128,7 @@ const AdminRecommendations: React.FC<Props> = () => {
   };
 
   const remove = async (r: Reco) => {
-    if (!confirm(`¿Eliminar la recomendación "${r.mangaCustom?.title || r.joint?.title || ''}"?`)) return;
+    if (!(await dlg.confirm(`¿Eliminar la recomendación "${r.mangaCustom?.title || r.joint?.title || ''}"?`))) return;
     await callAPI(`/api/organization/recommendation/${r.id}`, { method: 'DELETE' });
     load();
   };
@@ -145,6 +147,7 @@ const AdminRecommendations: React.FC<Props> = () => {
 
   return (
     <div className="mt-4">
+      <dlg.DialogHost />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <p className="text-zinc-400 text-sm max-w-xl break-words">Elige las obras que quieres destacar en grande en tu página ("La recomendación de la casa"). Puedes marcar algunas para que también salgan en el inicio global. Máximo 6.</p>
         <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 bg-cyan-500 text-zinc-950 rounded-xl px-4 py-2.5 font-black text-xs uppercase tracking-widest hover:bg-white transition-colors shrink-0 self-start sm:self-auto"><Plus size={16} /> Nueva recomendación</button>
