@@ -1278,7 +1278,7 @@ const ReadingTab: React.FC<TabProps> = ({ prefs, setPrefs, palette }) => (
         <kbd style={kbdStyle(palette)}>←</kbd><span>Capítulo anterior</span>
         <kbd style={kbdStyle(palette)}>→</kbd><span>Capítulo siguiente</span>
         <kbd style={kbdStyle(palette)}>S</kbd><span>Abrir/cerrar ajustes</span>
-        <kbd style={kbdStyle(palette)}>F</kbd><span>{t('reader_focus')}</span>
+        <kbd style={kbdStyle(palette)}>F</kbd><span>Modo enfoque</span>
         <kbd style={kbdStyle(palette)}>Esc</kbd><span>Cerrar / salir</span>
       </div>
     </div>
