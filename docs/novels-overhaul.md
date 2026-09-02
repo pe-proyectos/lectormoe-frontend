@@ -139,8 +139,8 @@ F. NSFW/SEO: paginas writings (redirect) + `sitemap.xml.ts`; verificar middlewar
 
 ## Progreso de desarrollo
 - [x] Plan escrito.
-- [ ] Genero "Contemporaneo" sembrado.
-- [ ] +18 habilitado en novelas (frontend).
+- [x] Genero "Contemporaneo" sembrado (seed-genres.ts; +xianxia, litrpg).
+- [x] +18 habilitado en novelas (frontend + ruteo a /red). Desplegado.
 - [ ] Migracion Prisma aditiva aplicada.
 - [ ] Pipelines API (docx fix + epub).
 - [ ] Lector refactor.
