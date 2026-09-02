@@ -236,6 +236,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>('text');
   const [focusMode, setFocusMode] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   // ONE bookmark per work (manga/novel). Stored on the backend as a row in
@@ -462,19 +464,30 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     return () => document.removeEventListener('mousedown', onClick);
   }, [panelOpen]);
 
-  const html = useMemo(() => {
+  const { html, toc } = useMemo(() => {
     const raw = chapter?.bodyMarkdown || '';
-    if (!raw) return '';
+    if (!raw) return { html: '', toc: [] as { id: string; level: number; text: string }[] };
     const rendered = md.render(raw);
     const sanitized = DOMPurify.sanitize(rendered, {
       ALLOWED_TAGS, ALLOWED_ATTR, FORBID_TAGS, FORBID_ATTR,
       ALLOWED_URI_REGEXP: /^(https?:|mailto:|#)/i,
       ADD_ATTR: ['target', 'rel'],
     });
-    return sanitized.replace(/<a\s+([^>]*?)>/gi, (_m, attrs) => {
+    const withLinks = sanitized.replace(/<a\s+([^>]*?)>/gi, (_m, attrs) => {
       const cleaned = attrs.replace(/\s*(target|rel)\s*=\s*"[^"]*"/gi, '').trim();
       return `<a ${cleaned} target="_blank" rel="noopener noreferrer nofollow">`;
     });
+    // Inyecta ids en los encabezados (tras sanitizar, son ids propios) y arma el
+    // indice (TOC) por encabezado para el drawer de navegacion.
+    const toc: { id: string; level: number; text: string }[] = [];
+    let idx = 0;
+    const withIds = withLinks.replace(/<h([1-3])>([\s\S]*?)<\/h\1>/gi, (_m, lvl: string, inner: string) => {
+      const id = `nr-h-${idx++}`;
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      if (text) toc.push({ id, level: Number(lvl), text });
+      return `<h${lvl} id="${id}">${inner}</h${lvl}>`;
+    });
+    return { html: withIds, toc };
   }, [chapter?.bodyMarkdown]);
 
   const wordCount = useMemo(() => {
@@ -581,7 +594,21 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           </div>
 
           {html ? (
-            <article className="nr-article" style={articleStyle} dangerouslySetInnerHTML={{ __html: html }} />
+            <>
+              <style>{'.nr-img{cursor:zoom-in}'}</style>
+              <article
+                className="nr-article"
+                style={articleStyle}
+                onClick={(e) => {
+                  const t = e.target as HTMLElement;
+                  if (t.tagName === 'IMG' && t.classList.contains('nr-img')) {
+                    const img = t as HTMLImageElement;
+                    setLightbox(img.currentSrc || img.src);
+                  }
+                }}
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            </>
           ) : (
             <p style={{ color: palette.subtle }}>Este capítulo aún no tiene contenido.</p>
           )}
@@ -687,7 +714,73 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         >
           <Bookmark size={18} fill={workBookmark ? 'currentColor' : 'none'} />
         </button>
+        {toc.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setTocOpen(true)}
+            style={{ background: palette.ui, color: palette.uiText, border: `1px solid ${palette.border}` }}
+            className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            title="Índice del capítulo"
+            aria-label="Índice del capítulo"
+          >
+            <List size={18} />
+          </button>
+        )}
       </div>
+
+      {/* Índice (TOC) por encabezados */}
+      {tocOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm" onClick={() => setTocOpen(false)}>
+          <div
+            className="h-full w-80 max-w-[85vw] overflow-y-auto p-5"
+            style={{ background: palette.ui, borderLeft: `1px solid ${palette.border}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-sm uppercase tracking-widest" style={{ color: palette.uiText }}>Índice</h3>
+              <button type="button" onClick={() => setTocOpen(false)} style={{ color: palette.subtle }} aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+            <nav className="flex flex-col gap-1">
+              {toc.map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => {
+                    document.getElementById(h.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTocOpen(false);
+                  }}
+                  className="text-left rounded-lg px-3 py-2 text-sm hover:opacity-80 transition-opacity"
+                  style={{
+                    color: palette.uiText,
+                    paddingLeft: `${(h.level - 1) * 12 + 12}px`,
+                    opacity: h.level === 1 ? 1 : 0.85,
+                    fontWeight: h.level === 1 ? 700 : 500,
+                  }}
+                >
+                  {h.text}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox de ilustraciones */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
+            aria-label="Cerrar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
 
       {/* Bookmark actions modal — always opens on click; surfaces save / go-to / delete. */}
       {bookmarkModalOpen && (
