@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { useDialog } from '../ui/useDialog';
+import BookImportDialog, { type ParsedBook, type CreateRow } from './BookImportDialog';
 import { getTranslator } from '../../util/translate';
 import { toast } from 'react-toastify';
 import { uploadFile } from '../../util/uploadFile';
@@ -759,14 +760,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   const epubInputRef = useRef<HTMLInputElement>(null);
   const [epubImporting, setEpubImporting] = useState(false);
-  const [epubReport, setEpubReport] = useState<{ parsed: any[]; base: number; images: number; warnings: string[] } | null>(null);
+  const [bookData, setBookData] = useState<ParsedBook | null>(null);
   const dlg = useDialog();
 
-  // Importa un EPUB completo: lo parsea en el backend (spine + TOC + imagenes a
-  // R2) y crea los capitulos en lote, numerando a partir del ultimo existente.
-  const handleEpubImport = async (file: File) => {
+  // Importa un libro (epub/docx/md): lo parsea en el backend y abre el panel
+  // editable para ajustar titulo, tomo y numero por capitulo antes de crear.
+  const handleBookImport = async (file: File) => {
     setEpubImporting(true);
-    const toastId = toast.loading('Importando EPUB...');
+    const toastId = toast.loading('Analizando archivo...');
     try {
       const API_URL = import.meta.env['PUBLIC_API_URL'];
       const cookies = document.cookie.split(';').reduce((acc, c) => {
@@ -779,7 +780,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       const orgSlug = parts[0] === 'red' ? parts[1] : parts[0];
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch(`${API_URL}/api/files/parse-epub`, {
+      const res = await fetch(`${API_URL}/api/files/parse-book`, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -789,56 +790,50 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       });
       const json = await res.json();
       if (!res.ok || json.status === false) {
-        throw new Error(json?.message || 'Error al parsear el EPUB');
+        throw new Error(json?.message || 'No se pudo analizar el archivo');
       }
-      const parsed: Array<{ number: number; title: string; volumeNumber: number | null; bodyMarkdown: string }> =
-        json.data.chapters || [];
-      if (parsed.length === 0) throw new Error('El EPUB no contiene capitulos con texto.');
-      const base = chapters.reduce((mx: number, c: any) => Math.max(mx, Number(c.number) || 0), 0);
+      if (!json.data.chapters?.length) throw new Error('El archivo no contiene capitulos con texto.');
       toast.dismiss(toastId);
-      // Abre el modal de revision en vez de un confirm nativo.
-      setEpubReport({ parsed, base, images: json.data.images || 0, warnings: json.data.warnings || [] });
+      setBookData(json.data as ParsedBook);
     } catch (e: any) {
       toast.dismiss(toastId);
-      toast.error(e?.message || 'Error al importar el EPUB');
+      toast.error(e?.message || 'Error al importar el archivo');
     } finally {
       setEpubImporting(false);
     }
   };
 
-  // Confirmada la revision, crea los capitulos del EPUB en lote.
-  const runEpubImport = async () => {
-    if (!epubReport) return;
-    const { parsed, base } = epubReport;
-    setEpubReport(null);
-    const progressId = toast.loading(`Importando capitulos... 0/${parsed.length}`);
+  // Crea en lote los capitulos revisados en el panel editable.
+  const createBookChapters = async (rows: CreateRow[]) => {
+    setBookData(null);
+    const progressId = toast.loading(`Creando capitulos... 0/${rows.length}`);
     let created = 0;
     const errors: string[] = [];
-    for (const ch of parsed) {
-      const number = base + ch.number;
+    for (const r of rows) {
       try {
         await callAPI(chapterListUrl(), {
           method: 'POST',
           body: JSON.stringify({
-            title: ch.title || `Capitulo ${number}`,
-            number,
+            title: r.title,
+            number: r.number,
             releasedAt: new Date().toISOString(),
             pages: [],
             singlePages: [],
-            bodyMarkdown: ch.bodyMarkdown,
+            bodyMarkdown: r.bodyMarkdown,
             isUnreleased: false,
-            volumeNumber: ch.volumeNumber ?? null,
+            volumeNumber: r.volumeNumber,
+            displayNumber: r.displayNumber,
           }),
         });
         created += 1;
-        toast.loading(`Importando capitulos... ${created}/${parsed.length}`, { id: progressId });
+        toast.loading(`Creando capitulos... ${created}/${rows.length}`, { id: progressId });
       } catch (e: any) {
-        errors.push(`#${number}: ${e?.message || 'error'}`);
+        errors.push(`#${r.number}: ${e?.message || 'error'}`);
       }
     }
     toast.dismiss(progressId);
-    if (created) toast.success(`Importados ${created} capitulos del EPUB.`);
-    if (errors.length) toast.error(`Fallaron ${errors.length} capitulos. ${errors[0]}`);
+    if (created) toast.success(`Creados ${created} capitulos.`);
+    if (errors.length) toast.error(`Fallaron ${errors.length}. ${errors[0]}`);
     await loadChapters();
   };
 
@@ -2141,11 +2136,11 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             <input
                               ref={epubInputRef}
                               type="file"
-                              accept=".epub,application/epub+zip"
+                              accept=".epub,.docx,.md,.markdown,.txt"
                               className="hidden"
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f) handleEpubImport(f);
+                                if (f) handleBookImport(f);
                                 e.target.value = '';
                               }}
                             />
@@ -2155,7 +2150,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                               disabled={epubImporting}
                               className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
                             >
-                              {epubImporting ? 'Importando...' : 'Importar EPUB'}
+                              {epubImporting ? 'Analizando...' : 'Importar libro'}
                             </button>
                             <button
                               type="button"
@@ -2164,42 +2159,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             >
                               Exportar EPUB
                             </button>
-                            {epubReport && (
-                              <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setEpubReport(null)}>
-                                <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                                  <h3 className="text-white font-black text-lg mb-1">Importar EPUB</h3>
-                                  <p className="text-zinc-400 text-sm mb-4">Revisa antes de crear los capítulos.</p>
-                                  <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2">
-                                      <p className="text-[9px] font-black uppercase tracking-widest text-cyan-400/70">Capítulos</p>
-                                      <p className="text-lg font-black text-white">{epubReport.parsed.length}</p>
-                                    </div>
-                                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2">
-                                      <p className="text-[9px] font-black uppercase tracking-widest text-cyan-400/70">Imágenes</p>
-                                      <p className="text-lg font-black text-white">{epubReport.images}</p>
-                                    </div>
-                                  </div>
-                                  <p className="text-xs text-zinc-500 mb-4">Se numerarán a partir del <span className="text-zinc-300 font-bold">#{epubReport.base + 1}</span>.</p>
-                                  {epubReport.warnings.length > 0 && (
-                                    <div className="mb-4 max-h-24 overflow-y-auto rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-                                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-400/80 mb-1">Avisos ({epubReport.warnings.length})</p>
-                                      <ul className="text-[11px] text-amber-200/70 list-disc list-inside space-y-0.5">
-                                        {epubReport.warnings.slice(0, 5).map((w, i) => (
-                                          <li key={i}>{w}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  <div className="flex gap-3">
-                                    <button type="button" onClick={() => setEpubReport(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-800 text-zinc-300 text-sm font-bold hover:bg-zinc-800 transition-colors">
-                                      Cancelar
-                                    </button>
-                                    <button type="button" onClick={runEpubImport} className="flex-1 px-4 py-2.5 rounded-xl bg-cyan-500 text-zinc-950 text-sm font-black hover:bg-cyan-400 transition-colors">
-                                      Crear {epubReport.parsed.length} capítulos
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
+                            {bookData && (
+                              <BookImportDialog
+                                data={bookData}
+                                baseNumber={chapters.reduce((mx: number, c: any) => Math.max(mx, Number(c.number) || 0), 0)}
+                                onCancel={() => setBookData(null)}
+                                onConfirm={createBookChapters}
+                              />
                             )}
                           </>
                         )}

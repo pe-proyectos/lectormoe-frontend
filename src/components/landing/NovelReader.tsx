@@ -528,7 +528,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
 
   const escHtml = (x: string) =>
     x.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
-  const pagedTitleHtml = `<h1 style="font-family:${prefs.family};font-size:${Math.round(prefs.fontSize * 1.9)}px;line-height:1.15;font-weight:800;letter-spacing:-0.01em;margin:0 0 0.35em;">${escHtml(chapter.title || `Capítulo ${chapter.number}`)}</h1><div style="font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;opacity:0.65;margin-bottom:2em;">${wordCount.toLocaleString(language)} ${t('reader_words')} · ${readingMinutes} ${t('reader_reading_time')}</div>`;
+  const pagedTitleHtml = `<h1 style="font-family:${prefs.family};font-size:${Math.round(prefs.fontSize * 1.9)}px;line-height:1.15;font-weight:800;letter-spacing:-0.01em;margin:0 0 0.35em;">${escHtml(chapter.title || `Capítulo ${(chapter as any).displayNumber ?? chapter.number}`)}</h1><div style="font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;opacity:0.65;margin-bottom:2em;">${wordCount.toLocaleString(language)} ${t('reader_words')} · ${readingMinutes} ${t('reader_reading_time')}</div>`;
 
   const dynamicCss = `
     .nr-article p { margin: 0 0 ${prefs.paragraphSpacing}em 0; ${prefs.paragraphIndent ? 'text-indent: 1.5em;' : ''} }
@@ -587,7 +587,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
                 <Clock size={12} /> {readingMinutes} {t('reader_min')}
               </span>
               <span className="text-xs font-bold opacity-70" style={{ color: palette.uiText }}>
-                Cap. {chapter.number}
+                Cap. {(chapter as any).displayNumber ?? chapter.number}
               </span>
             </div>
           </div>
@@ -624,7 +624,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             letterSpacing: '-0.01em',
             marginBottom: '0.4em',
           }}>
-            {chapter.title || `Capítulo ${chapter.number}`}
+            {chapter.title || `Capítulo ${(chapter as any).displayNumber ?? chapter.number}`}
           </h1>
           <div style={{ color: palette.subtle, fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2.5em' }}>
             {wordCount.toLocaleString(language)} {t('reader_words')} · {readingMinutes} {t('reader_reading_time')}

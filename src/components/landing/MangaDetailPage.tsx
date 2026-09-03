@@ -1697,7 +1697,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                     )}
 
                                     <h4 className="text-white font-bold text-sm md:text-lg truncate">
-                                      Capítulo {chapter.number}
+                                      Capítulo {(chapter as any).displayNumber ?? chapter.number}
                                     </h4>
                                     {(manga as any).finalChapterNumber != null && chapter.number === (manga as any).finalChapterNumber && (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded text-[9px] font-black uppercase tracking-widest shrink-0">
