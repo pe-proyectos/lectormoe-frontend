@@ -75,6 +75,26 @@ export function useFeaturedRaffle(): State {
   return state
 }
 
+// Scans inscritos en el programa de referidos de qori.cc (los que aceptaron).
+// Se amplia agregando el slug del scan a este set.
+const REFERRAL_ENROLLED = new Set<string>(['senshimanga', 'breakscan'])
+
+// Si quien hace clic esta en una pagina de un scan inscrito, agrega su codigo
+// de referido (?ref=<slug>) a la URL del sorteo. El scan se detecta desde la
+// ruta actual (/{slug}/... o /red/{slug}/...), evaluada al momento del clic.
+export function withReferral(baseUrl: string): string {
+  try {
+    const parts = window.location.pathname.split('/').filter(Boolean)
+    const slug = parts[0] === 'red' ? parts[1] : parts[0]
+    if (!slug || !REFERRAL_ENROLLED.has(slug)) return baseUrl
+    const u = new URL(baseUrl)
+    u.searchParams.set('ref', slug)
+    return u.toString()
+  } catch {
+    return baseUrl
+  }
+}
+
 export function pad(n: number): string {
   return n.toString().padStart(2, '0')
 }

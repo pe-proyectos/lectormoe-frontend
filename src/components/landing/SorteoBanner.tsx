@@ -7,7 +7,8 @@ import {
   oddsLabel,
   pad,
   prizeTitle,
-  useFeaturedRaffle
+  useFeaturedRaffle,
+  withReferral
 } from '../../util/useFeaturedRaffle'
 
 // Tira del sorteo destacado de qori.cc. Los datos vienen del endpoint publico
@@ -113,6 +114,12 @@ const SorteoBanner: React.FC = () => {
       href={raffle.url}
       target='_blank'
       rel='noopener noreferrer'
+      onClick={(e) => {
+        const el = e.target as HTMLElement
+        if (el.closest('button')) return
+        e.preventDefault()
+        window.open(withReferral(raffle.url), '_blank', 'noopener,noreferrer')
+      }}
       className='qori-bar group relative z-[60] block w-full overflow-hidden border-b border-emerald-400/15 bg-[#04140d] transition-[background-color,border-color,box-shadow] duration-300 hover:border-emerald-400/40 hover:bg-[#06200f] hover:shadow-[0_10px_34px_-12px_rgba(16,185,129,0.5)] md:fixed md:inset-x-0 md:top-0'
     >
       {/* Keyframes y clases de animacion propias del banner */}

@@ -6,7 +6,8 @@ import {
   money,
   oddsLabel,
   pad,
-  useFeaturedRaffle
+  useFeaturedRaffle,
+  withReferral
 } from '../../util/useFeaturedRaffle'
 
 // Modal del sorteo destacado de qori.cc. Los datos vienen del endpoint publico
@@ -246,6 +247,10 @@ const SorteoModal: React.FC<SorteoModalProps> = () => {
             href={raffle.url}
             target='_blank'
             rel='noopener noreferrer'
+            onClick={(e) => {
+              e.preventDefault()
+              window.open(withReferral(raffle.url), '_blank', 'noopener,noreferrer')
+            }}
             className='group relative mt-5 flex w-full items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 px-6 py-3.5 text-sm font-black uppercase tracking-wide text-emerald-950 shadow-[0_10px_30px_-8px_rgba(16,185,129,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.99]'
           >
             <span
