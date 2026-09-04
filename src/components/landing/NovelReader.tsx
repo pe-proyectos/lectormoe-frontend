@@ -245,7 +245,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [quoteText, setQuoteText] = useState<string | null>(null);
-  const [selBtn, setSelBtn] = useState<{ top: number; left: number; text: string } | null>(null);
+  const [selBtn, setSelBtn] = useState<{ top: number; left: number; below: boolean; text: string } | null>(null);
+  const quoteBtnHold = useRef(false);
   const [hydrated, setHydrated] = useState(false);
 
   // ONE bookmark per work (manga/novel). Stored on the backend as a row in
@@ -445,31 +446,46 @@ const NovelReader: React.FC<NovelReaderProps> = ({
 
   // Deteccion de seleccion de texto dentro del articulo -> boton "Crear tarjeta".
   useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     const onSel = () => {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || sel.rangeCount === 0) { setSelBtn(null); return; }
-      const text = sel.toString().trim();
-      if (text.length < 8) { setSelBtn(null); return; }
-      const anchorNode = sel.anchorNode as Node | null;
-      const el = anchorNode
-        ? (anchorNode.nodeType === 3 ? anchorNode.parentElement : (anchorNode as HTMLElement))
-        : null;
-      if (!el || !el.closest('.nr-article')) { setSelBtn(null); return; }
-      const rect = sel.getRangeAt(0).getBoundingClientRect();
-      if (!rect || (rect.top === 0 && rect.left === 0)) { setSelBtn(null); return; }
-      setSelBtn({ top: rect.top, left: rect.left + rect.width / 2, text });
+      // Da tiempo al navegador a fijar la seleccion tras soltar el dedo/mouse.
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) { setSelBtn(null); return; }
+        const text = sel.toString().replace(/\s*\n+\s*/g, ' ').trim();
+        if (text.length < 8) { setSelBtn(null); return; }
+        const anchorNode = sel.anchorNode as Node | null;
+        const el = anchorNode
+          ? (anchorNode.nodeType === 3 ? anchorNode.parentElement : (anchorNode as HTMLElement))
+          : null;
+        if (!el || !el.closest('.nr-article')) { setSelBtn(null); return; }
+        const rect = sel.getRangeAt(0).getBoundingClientRect();
+        if (!rect || (rect.top === 0 && rect.left === 0 && rect.width === 0)) { setSelBtn(null); return; }
+        // En movil el menu nativo tapa arriba: colocamos el boton DEBAJO.
+        const cx = Math.min(window.innerWidth - 84, Math.max(84, rect.left + rect.width / 2));
+        setSelBtn({
+          top: isMobile ? rect.bottom + 12 : rect.top - 46,
+          left: cx,
+          below: isMobile,
+          text,
+        });
+      }, 10);
     };
     const onChange = () => {
+      if (quoteBtnHold.current) return; // no cerrar si el usuario esta tocando el boton
       const s2 = window.getSelection();
       if (!s2 || s2.isCollapsed) setSelBtn(null);
     };
+    const onScroll = () => setSelBtn(null);
     document.addEventListener('mouseup', onSel);
     document.addEventListener('touchend', onSel);
     document.addEventListener('selectionchange', onChange);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       document.removeEventListener('mouseup', onSel);
       document.removeEventListener('touchend', onSel);
       document.removeEventListener('selectionchange', onChange);
+      window.removeEventListener('scroll', onScroll);
     };
   }, []);
 
@@ -856,20 +872,28 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       {selBtn && (
         <button
           type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => { setQuoteText(selBtn.text); setSelBtn(null); window.getSelection()?.removeAllRanges(); }}
+          onPointerDown={(e) => { quoteBtnHold.current = true; e.preventDefault(); e.stopPropagation(); }}
+          onPointerUp={() => { quoteBtnHold.current = false; }}
+          onClick={() => {
+            const txt = selBtn.text;
+            setSelBtn(null);
+            quoteBtnHold.current = false;
+            window.getSelection()?.removeAllRanges();
+            setQuoteText(txt);
+          }}
           style={{
             position: 'fixed',
-            top: Math.max(8, selBtn.top - 46),
+            top: Math.max(8, selBtn.top),
             left: selBtn.left,
             transform: 'translateX(-50%)',
             zIndex: 70,
             background: palette.accent,
             color: '#0a0a0b',
           }}
-          className="px-3 py-1.5 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 whitespace-nowrap"
+          className="px-3.5 py-2 rounded-full text-xs font-black shadow-xl flex items-center gap-1.5 whitespace-nowrap active:scale-95 transition-transform"
+          aria-label={t('reader_quote_create')}
         >
-          <Quote size={12} /> Crear tarjeta
+          <Quote size={13} /> {t('reader_quote_create')}
         </button>
       )}
 
@@ -878,8 +902,18 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         <QuoteCard
           text={quoteText}
           title={mangaTitle}
-          chapterLabel={`Capítulo ${(chapter as any).displayNumber ?? chapter.number}`}
-          accent={palette.accent}
+          chapterLabel={`${t('reader_quote_chapter')} ${(chapter as any).displayNumber ?? chapter.number}`}
+          accent={typeof document !== 'undefined' && document.documentElement.dataset.nsfw === 'true' ? '#ef4444' : palette.accent}
+          logged={logged}
+          t={t}
+          saveInfo={{
+            mangaSlug: mangaSlug || organization?.slug || '',
+            mangaTitle,
+            chapterNumber: chapter.number,
+            displayNumber: (chapter as any).displayNumber ?? null,
+            orgSlug: organizationSlug || organization?.slug || null,
+            workType: 'text',
+          }}
           onClose={() => setQuoteText(null)}
         />
       )}

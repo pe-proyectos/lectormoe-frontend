@@ -10,6 +10,7 @@ interface User {
   emailVerified: boolean
   isPublicProfile: boolean
   isPrivateHistory: boolean
+  savedQuotesPublic: boolean
   emailNotifications: boolean
   pushNotifications: boolean
   notifyCommentsOnOwnedContent?: boolean
@@ -964,6 +965,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
   const [settingsData, setSettingsData] = useState({
     isPublicProfile: user.isPublicProfile,
     isPrivateHistory: user.isPrivateHistory,
+    savedQuotesPublic: user.savedQuotesPublic ?? true,
     emailNotifications: user.emailNotifications,
     pushNotifications: user.pushNotifications,
     notifyCommentsOnOwnedContent: user.notifyCommentsOnOwnedContent ?? true,
@@ -1348,6 +1350,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, language, organizatio
                   description="Solo tu podras ver tus lecturas"
                   value={settingsData.isPrivateHistory}
                   onChange={() => setSettingsData({ ...settingsData, isPrivateHistory: !settingsData.isPrivateHistory })}
+                />
+                <ToggleRow
+                  title="Frases guardadas publicas"
+                  description="Mostrar tus frases guardadas en tu perfil"
+                  value={settingsData.savedQuotesPublic}
+                  onChange={() => setSettingsData({ ...settingsData, savedQuotesPublic: !settingsData.savedQuotesPublic })}
                 />
 
                 <div className="pt-6 border-t border-zinc-800">

@@ -69,6 +69,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
   const [togglingScanId, setTogglingScanId] = useState<number | null>(null);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [savedQuotes, setSavedQuotes] = useState<any[]>([]);
   const [profileData, setProfileData] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(!isOwner);
   const [stats, setStats] = useState({
@@ -468,6 +469,32 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
       setLoadingFavorites(false);
     }
   }, [isOwner, logged, user, profileSlug]);
+
+  // Frases guardadas (propias o publicas del perfil).
+  useEffect(() => {
+    const done = (arr: any) => setSavedQuotes(Array.isArray(arr) ? arr : []);
+    if (isOwner) {
+      if (!logged || !user) { setSavedQuotes([]); return; }
+      callAPI('/api/saved-quotes')
+        .then((r: any) => done(r?.data?.items ?? r?.items ?? []))
+        .catch(() => setSavedQuotes([]));
+    } else if (profileSlug) {
+      const API_URL = import.meta.env['PUBLIC_API_URL'];
+      fetch(`${API_URL}/api/user/profile/${profileSlug}/saved-quotes`)
+        .then((r) => r.json())
+        .then((r) => done(r?.data ?? []))
+        .catch(() => setSavedQuotes([]));
+    }
+  }, [isOwner, logged, user, profileSlug]);
+
+  const deleteQuote = async (id: number) => {
+    try {
+      await callAPI(`/api/saved-quotes/${id}`, { method: 'DELETE' });
+      setSavedQuotes((qs) => qs.filter((q) => q.id !== id));
+    } catch {
+      // ignore
+    }
+  };
 
   // Fetch Mi Lista — mirrors the favorites fetch above, against /api/user-list
   useEffect(() => {
@@ -1303,6 +1330,36 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               </>
               )}
             </section>
+
+            {savedQuotes.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-3 mb-4">
+                  {isOwner ? 'Mis' : 'Sus'} <span className="text-cyan-500">Frases</span>
+                  <span className="text-zinc-600 text-base font-bold">({savedQuotes.length})</span>
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {savedQuotes.map((q: any) => (
+                    <div key={q.id} className="relative rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 pl-6 overflow-hidden">
+                      <span className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500/60" />
+                      <p className="text-zinc-200 text-sm leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>&ldquo;{q.text}&rdquo;</p>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <a
+                          href={q.orgSlug ? `/writings/${q.orgSlug}/novel/${q.mangaSlug}/chapter/${q.chapterNumber}` : '#'}
+                          className="text-[11px] font-bold text-zinc-400 hover:text-cyan-400 truncate"
+                        >
+                          {q.mangaTitle} · Cap. {q.displayNumber ?? q.chapterNumber}
+                        </a>
+                        {isOwner && (
+                          <button type="button" onClick={() => deleteQuote(q.id)} className="text-zinc-600 hover:text-red-400 text-[11px] font-bold uppercase tracking-wider shrink-0">
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Mi Lista Section */}
             <section>
