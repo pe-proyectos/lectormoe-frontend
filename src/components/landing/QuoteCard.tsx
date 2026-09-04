@@ -195,8 +195,9 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
           workType: saveInfo.workType ?? null,
         }),
       })
-      if (res?.status || res?.data) { setSaved(true); toast.success(t('reader_quote_saved')) }
-      else throw new Error(res?.message || 'error')
+      // callAPI ya lanza si status === false; si llegamos aqui, se guardo.
+      if (res?.quote || res?.deduped) { setSaved(true); toast.success(t('reader_quote_saved')) }
+      else { setSaved(true); toast.success(t('reader_quote_saved')) }
     } catch (e: any) {
       if (String(e?.message || '').includes('QUOTE_LIMIT')) toast.error(t('reader_quote_limit'))
       else toast.error(e?.message || 'No se pudo guardar')

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   ChevronLeft, ChevronRight, Settings as SettingsIcon, X, Book,
   Type, Palette, Layout as LayoutIcon, Eye, RotateCcw, Maximize2,
-  AlignLeft, AlignCenter, AlignJustify, Clock, List, ArrowUp, Bookmark, Quote,
+  AlignLeft, AlignCenter, AlignJustify, Clock, List, ArrowUp, Bookmark, Quote, Copy, Link2,
 } from 'lucide-react';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
@@ -11,6 +11,8 @@ import QuoteCard from './QuoteCard';
 import CommentsSection from './CommentsSection';
 import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
+import { toast } from 'react-toastify';
+import { paintRange, clearHighlight } from '../../util/quoteHighlight';
 
 interface AdjacentChapter {
   number: number;
@@ -245,8 +247,9 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [quoteText, setQuoteText] = useState<string | null>(null);
-  const [selBtn, setSelBtn] = useState<{ top: number; left: number; below: boolean; text: string } | null>(null);
-  const quoteBtnHold = useRef(false);
+  const [selBar, setSelBar] = useState<{ top: number; left: number; below: boolean; text: string } | null>(null);
+  const selRangeRef = useRef<Range | null>(null);
+  const hlClearRef = useRef<(() => void) | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   // ONE bookmark per work (manga/novel). Stored on the backend as a row in
@@ -444,50 +447,130 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     } catch {}
   }, [hydrated, scrollKey, prefs.rememberScroll]);
 
-  // Deteccion de seleccion de texto dentro del articulo -> boton "Crear tarjeta".
+  // Deteccion de seleccion en el articulo -> barra de acciones con resaltado
+  // propio persistente (no depende de la seleccion nativa viva).
   useEffect(() => {
-    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
-    const onSel = () => {
-      // Da tiempo al navegador a fijar la seleccion tras soltar el dedo/mouse.
-      setTimeout(() => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed || sel.rangeCount === 0) { setSelBtn(null); return; }
-        const text = sel.toString().replace(/\s*\n+\s*/g, ' ').trim();
-        if (text.length < 8) { setSelBtn(null); return; }
-        const anchorNode = sel.anchorNode as Node | null;
-        const el = anchorNode
-          ? (anchorNode.nodeType === 3 ? anchorNode.parentElement : (anchorNode as HTMLElement))
-          : null;
-        if (!el || !el.closest('.nr-article')) { setSelBtn(null); return; }
-        const rect = sel.getRangeAt(0).getBoundingClientRect();
-        if (!rect || (rect.top === 0 && rect.left === 0 && rect.width === 0)) { setSelBtn(null); return; }
-        // En movil el menu nativo tapa arriba: colocamos el boton DEBAJO.
-        const cx = Math.min(window.innerWidth - 84, Math.max(84, rect.left + rect.width / 2));
-        setSelBtn({
-          top: isMobile ? rect.bottom + 12 : rect.top - 46,
-          left: cx,
-          below: isMobile,
-          text,
-        });
-      }, 10);
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    let deb: ReturnType<typeof setTimeout> | undefined;
+
+    const position = (range: Range) => {
+      const rect = range.getBoundingClientRect();
+      const cx = Math.min(window.innerWidth - 140, Math.max(140, rect.left + rect.width / 2));
+      const top = isMobile
+        ? Math.min(window.innerHeight - 72, rect.bottom + 12)
+        : Math.max(8, rect.top - 52);
+      return { top, left: cx };
     };
+
+    const show = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+      const text = sel.toString().replace(/\s+/g, ' ').trim();
+      if (text.length < 8) return;
+      const an = sel.anchorNode as Node | null;
+      const el = an ? (an.nodeType === 3 ? an.parentElement : (an as HTMLElement)) : null;
+      if (!el || !el.closest('.nr-article')) return;
+      const range = sel.getRangeAt(0).cloneRange();
+      const rect = range.getBoundingClientRect();
+      if (!rect || (rect.top === 0 && rect.width === 0)) return;
+      selRangeRef.current = range;
+      hlClearRef.current?.();
+      hlClearRef.current = paintRange(range);
+      const pos = position(range);
+      setSelBar({ ...pos, below: isMobile, text });
+    };
+
+    const onMouseUp = () => setTimeout(show, 0);
     const onChange = () => {
-      if (quoteBtnHold.current) return; // no cerrar si el usuario esta tocando el boton
-      const s2 = window.getSelection();
-      if (!s2 || s2.isCollapsed) setSelBtn(null);
+      if (deb) clearTimeout(deb);
+      deb = setTimeout(() => {
+        const sc = window.getSelection();
+        if (sc && !sc.isCollapsed) show();
+      }, 300);
     };
-    const onScroll = () => setSelBtn(null);
-    document.addEventListener('mouseup', onSel);
-    document.addEventListener('touchend', onSel);
+    const onScroll = () => {
+      const r = selRangeRef.current;
+      if (!r) return;
+      setSelBar((b) => (b ? { ...b, ...position(r) } : b));
+    };
+    const onDocDown = (e: PointerEvent) => {
+      const tgt = e.target as HTMLElement | null;
+      if (tgt?.closest?.('[data-quote-bar]')) return;
+      if (!tgt?.closest?.('.nr-article')) {
+        hlClearRef.current?.();
+        hlClearRef.current = null;
+        selRangeRef.current = null;
+        setSelBar(null);
+      }
+    };
+
+    document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('selectionchange', onChange);
+    document.addEventListener('pointerdown', onDocDown, true);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      document.removeEventListener('mouseup', onSel);
-      document.removeEventListener('touchend', onSel);
+      document.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('selectionchange', onChange);
+      document.removeEventListener('pointerdown', onDocDown, true);
       window.removeEventListener('scroll', onScroll);
+      if (deb) clearTimeout(deb);
+      clearHighlight();
     };
   }, []);
+
+  const dismissSel = () => {
+    hlClearRef.current?.();
+    hlClearRef.current = null;
+    selRangeRef.current = null;
+    setSelBar(null);
+    try { window.getSelection()?.removeAllRanges(); } catch { /* noop */ }
+  };
+  const copySel = async () => {
+    if (!selBar) return;
+    try { await navigator.clipboard.writeText(selBar.text); toast.success(t('reader_quote_text_copied')); } catch { /* noop */ }
+    dismissSel();
+  };
+  const copyRef = async () => {
+    if (!selBar) return;
+    try {
+      const base = window.location.origin + window.location.pathname;
+      const enc = btoa(unescape(encodeURIComponent(selBar.text.slice(0, 300))));
+      const frag = encodeURIComponent(selBar.text.slice(0, 120));
+      await navigator.clipboard.writeText(`${base}?quote=${encodeURIComponent(enc)}#:~:text=${frag}`);
+      toast.success(t('reader_quote_ref_copied'));
+    } catch { /* noop */ }
+    dismissSel();
+  };
+  const quickSaveSel = async () => {
+    if (!selBar) return;
+    if (!logged) { toast.info(t('reader_quote_login')); return; }
+    const txt = selBar.text;
+    dismissSel();
+    try {
+      await callAPI('/api/saved-quotes', {
+        method: 'POST',
+        body: JSON.stringify({
+          text: txt,
+          mangaSlug: mangaSlug || organization?.slug || '',
+          mangaTitle,
+          chapterNumber: chapter.number,
+          displayNumber: (chapter as any).displayNumber ?? null,
+          orgSlug: organizationSlug || organization?.slug || null,
+          workType: 'text',
+        }),
+      });
+      toast.success(t('reader_quote_saved'));
+    } catch (e: any) {
+      if (String(e?.message || '').includes('QUOTE_LIMIT')) toast.error(t('reader_quote_limit'));
+      else toast.error('No se pudo guardar la frase');
+    }
+  };
+  const openCardFromSel = () => {
+    if (!selBar) return;
+    const txt = selBar.text;
+    dismissSel();
+    setQuoteText(txt);
+  };
 
   const prevHref = chapter.previousChapter ? chapterUrlPattern(chapter.previousChapter.number) : null;
   const nextHref = chapter.nextChapter ? chapterUrlPattern(chapter.nextChapter.number) : null;
@@ -869,32 +952,34 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       )}
 
       {/* Boton flotante: crear tarjeta de cita desde la seleccion */}
-      {selBtn && (
-        <button
-          type="button"
-          onPointerDown={(e) => { quoteBtnHold.current = true; e.preventDefault(); e.stopPropagation(); }}
-          onPointerUp={() => { quoteBtnHold.current = false; }}
-          onClick={() => {
-            const txt = selBtn.text;
-            setSelBtn(null);
-            quoteBtnHold.current = false;
-            window.getSelection()?.removeAllRanges();
-            setQuoteText(txt);
-          }}
-          style={{
-            position: 'fixed',
-            top: Math.max(8, selBtn.top),
-            left: selBtn.left,
-            transform: 'translateX(-50%)',
-            zIndex: 70,
-            background: palette.accent,
-            color: '#0a0a0b',
-          }}
-          className="px-3.5 py-2 rounded-full text-xs font-black shadow-xl flex items-center gap-1.5 whitespace-nowrap active:scale-95 transition-transform"
-          aria-label={t('reader_quote_create')}
-        >
-          <Quote size={13} /> {t('reader_quote_create')}
-        </button>
+      {selBar && (
+        <>
+          <style>{`::highlight(quote-sel){background-color:${palette.accent}66}`}</style>
+          <div
+            data-quote-bar
+            style={{ position: 'fixed', top: selBar.top, left: selBar.left, transform: 'translateX(-50%)', zIndex: 70, background: palette.ui, border: `1px solid ${palette.border}` }}
+            className="flex items-stretch rounded-2xl shadow-2xl overflow-hidden"
+          >
+            {[
+              { icon: <Copy size={15} />, label: t('reader_quote_copy'), fn: copySel },
+              { icon: <Quote size={15} />, label: t('reader_quote_create'), fn: openCardFromSel, primary: true },
+              { icon: <Bookmark size={15} />, label: t('reader_quote_save'), fn: quickSaveSel },
+              { icon: <Link2 size={15} />, label: t('reader_quote_copy_ref'), fn: copyRef },
+            ].map((b, i) => (
+              <button
+                key={i}
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={b.fn}
+                title={b.label}
+                className="flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-bold whitespace-nowrap transition-colors hover:bg-white/10 active:scale-95"
+                style={{ color: b.primary ? palette.accent : palette.uiText }}
+              >
+                {b.icon}<span className="hidden sm:inline">{b.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Tarjeta de cita */}

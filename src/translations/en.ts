@@ -1,4 +1,7 @@
 export const translations: Record<string, string> = {
+  reader_quote_copy_ref: "Copy link",
+  reader_quote_ref_copied: "Link copied",
+  reader_quote_text_copied: "Text copied",
   reader_quote_create: "Create card",
   reader_quote_share: "Share",
   reader_quote_copy: "Copy",
