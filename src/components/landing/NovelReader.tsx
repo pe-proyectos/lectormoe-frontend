@@ -8,6 +8,7 @@ import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
 import { getTranslator } from '../../util/translate';
 import QuoteCard from './QuoteCard';
+import QuotesSidePanel from './QuotesSidePanel';
 import CommentsSection from './CommentsSection';
 import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
@@ -248,6 +249,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [quoteText, setQuoteText] = useState<string | null>(null);
+  const [quotesPanelOpen, setQuotesPanelOpen] = useState(false);
+  const [quotesRefresh, setQuotesRefresh] = useState(0);
   const [selBar, setSelBar] = useState<{ top: number; left: number; below: boolean; text: string } | null>(null);
   const selRangeRef = useRef<Range | null>(null);
   const hlClearRef = useRef<(() => void) | null>(null);
@@ -567,16 +570,30 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         }),
       });
       toast.success(t('reader_quote_saved'));
+      setQuotesRefresh((n) => n + 1);
     } catch (e: any) {
       if (String(e?.message || '').includes('QUOTE_LIMIT')) toast.error(t('reader_quote_limit'));
       else toast.error('No se pudo guardar la frase');
     }
   };
+  const quoteRefOffsets = useRef<{ start: number; end: number } | null>(null);
   const openCardFromSel = () => {
     if (!selBar) return;
     const txt = selBar.text;
+    const range = selRangeRef.current;
+    const root = document.querySelector('.nr-article') as HTMLElement | null;
+    quoteRefOffsets.current = range && root ? getRangeOffsets(root, range) : null;
     dismissSel();
     setQuoteText(txt);
+  };
+  const copyQuoteRef = async () => {
+    try {
+      const base = window.location.origin + window.location.pathname;
+      const off = quoteRefOffsets.current;
+      const url = off ? `${base}?q=${off.start}-${off.end}` : base;
+      await navigator.clipboard.writeText(url);
+      toast.success(t('reader_quote_ref_copied'));
+    } catch { /* noop */ }
   };
 
   // Deep-link: si la URL trae ?q=inicio-fin, resalta esa cita al abrir.
@@ -750,6 +767,13 @@ const NovelReader: React.FC<NovelReaderProps> = ({
               <span className="text-xs font-bold opacity-70" style={{ color: palette.uiText }}>
                 Cap. {(chapter as any).displayNumber ?? chapter.number}
               </span>
+              {logged && (
+                <button type="button" onClick={() => setQuotesPanelOpen(true)} title={t('reader_quotes_open')} aria-label={t('reader_quotes_open')}
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-opacity hover:opacity-80"
+                  style={{ color: palette.uiText, border: `1px solid ${palette.border}` }}>
+                  <Quote size={13} /> {t('reader_quotes_panel_title')}
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -1018,6 +1042,9 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           chapterLabel={`${t('reader_quote_chapter')} ${(chapter as any).displayNumber ?? chapter.number}`}
           accent={typeof document !== 'undefined' && document.documentElement.dataset.nsfw === 'true' ? '#ef4444' : palette.accent}
           logged={logged}
+          scanName={organization?.name ?? null}
+          username={user?.username ?? null}
+          onCopyRef={copyQuoteRef}
           t={t}
           saveInfo={{
             mangaSlug: mangaSlug || organization?.slug || '',
@@ -1027,7 +1054,21 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             orgSlug: organizationSlug || organization?.slug || null,
             workType: 'text',
           }}
+          onSaved={() => setQuotesRefresh((n) => n + 1)}
           onClose={() => setQuoteText(null)}
+        />
+      )}
+
+      {logged && (
+        <QuotesSidePanel
+          open={quotesPanelOpen}
+          onClose={() => setQuotesPanelOpen(false)}
+          userId={user?.id ?? null}
+          userSlug={user?.slug ?? user?.username ?? null}
+          publicList={user?.savedQuotesPublic ?? true}
+          accent={palette.accent}
+          t={t}
+          refreshKey={quotesRefresh}
         />
       )}
 

@@ -1,0 +1,58 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+
+const { showAds } = Astro.locals;
+const { id } = Astro.params;
+const API_URL = import.meta.env.PUBLIC_API_URL || "";
+
+let quote: any = null;
+try {
+  const res = await fetch(`${API_URL}/api/quotes/${id}`, { headers: { "Content-Type": "application/json" } });
+  const json = await res.json();
+  if (json?.status && json?.data) quote = json.data;
+} catch (e) {
+  quote = null;
+}
+
+if (!quote) return Astro.redirect("/", 302);
+
+const ogImage = `${API_URL}/api/quotes/${id}/og.png`;
+const chapterLabel = `Capítulo ${quote.displayNumber ?? quote.chapterNumber}`;
+const snippet = (quote.text || "").slice(0, 70).trim();
+const pageTitle = `“${snippet}${quote.text.length > 70 ? "…" : ""}” — ${quote.mangaTitle}`;
+const pageDesc = quote.note?.trim()
+  ? quote.note.trim()
+  : `${quote.mangaTitle}, ${chapterLabel}${quote.scanName ? ` · ${quote.scanName}` : ""} · capibaratraductor.com`;
+const profileUrl = quote.userSlug ? `/profile/${quote.userSlug}` : null;
+---
+
+<LandingLayout showAds={showAds} title={pageTitle} description={pageDesc} imageUrl={ogImage}>
+  <main class="min-h-[70vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-2xl">
+      <div class="rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl bg-black/30">
+        <img src={ogImage} alt={pageTitle} width="1200" height="630" class="block w-full h-auto" loading="eager" />
+      </div>
+
+      {quote.note?.trim() ? (
+        <p class="mt-5 text-center text-white/70 italic max-w-xl mx-auto">
+          “{quote.note.trim()}”{quote.username ? <span class="not-italic text-white/50"> — {quote.username}</span> : null}
+        </p>
+      ) : null}
+
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {profileUrl ? (
+          <a href={profileUrl} class="px-4 py-2 rounded-xl bg-cyan-500 text-zinc-950 text-sm font-black hover:bg-cyan-400 transition-colors">
+            Ver más frases de {quote.username ? `@${quote.username}` : "este lector"}
+          </a>
+        ) : null}
+        <a href="/" class="px-4 py-2 rounded-xl border border-white/15 bg-white/5 text-white text-sm font-bold hover:bg-white/10 transition-colors">
+          Descubrir novelas
+        </a>
+      </div>
+
+      <p class="mt-6 text-center text-xs text-white/40">
+        {quote.mangaTitle} · {chapterLabel}{quote.scanName ? ` · ${quote.scanName}` : ""}
+      </p>
+    </div>
+  </main>
+</LandingLayout>
