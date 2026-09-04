@@ -110,6 +110,7 @@ function draw(canvas: HTMLCanvasElement, text: string, title: string, chapterLab
 
 const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3ee', logged, saveInfo, t, onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const blobRef = useRef<Blob | null>(null)
   const [theme, setTheme] = useState<Theme>('dark')
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -119,7 +120,12 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
   // Redibuja cuando el tema cambia y cuando las fuentes estan listas.
   useEffect(() => {
     let cancelled = false
-    const render = () => { if (!cancelled && canvasRef.current) draw(canvasRef.current, text, title, chapterLabel, accent, theme) }
+    const gen = () => canvasRef.current?.toBlob((bl) => { if (!cancelled) blobRef.current = bl }, 'image/png')
+    const render = () => {
+      if (cancelled || !canvasRef.current) return
+      draw(canvasRef.current, text, title, chapterLabel, accent, theme)
+      gen()
+    }
     render()
     if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
       ;(document as any).fonts.ready.then(render).catch(() => {})
@@ -147,26 +153,34 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
     URL.revokeObjectURL(url)
   }
 
-  const share = async () => {
-    setBusy(true)
-    try {
-      const blob = await toBlob()
-      if (!blob) throw new Error('no blob')
+  const shareText = `"${text}" — ${title}, ${chapterLabel}`
+  const share = () => {
+    const nav = navigator as any
+    const blob = blobRef.current
+    if (blob) {
       const file = new File([blob], fileName, { type: 'image/png' })
-      const nav = navigator as any
       if (nav.canShare && nav.canShare({ files: [file] })) {
-        await nav.share({ files: [file], text: `"${text}" — ${title}, ${chapterLabel}` })
-      } else {
-        downloadBlob(blob)
+        // Llamada SIN await previo para conservar el gesto de usuario (iOS/Android).
+        nav.share({ files: [file], text: shareText }).catch((e: any) => {
+          if (e?.name !== 'AbortError') downloadBlob(blob)
+        })
+        return
       }
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        const blob = await toBlob()
-        if (blob) downloadBlob(blob)
+      if (nav.share) {
+        nav.share({ text: shareText }).catch(() => downloadBlob(blob))
+        return
       }
-    } finally {
-      setBusy(false)
+      downloadBlob(blob)
+      return
     }
+    // La imagen aun no esta lista: generarla y descargar/compartir.
+    toBlob().then((b) => {
+      if (!b) return
+      const file = new File([b], fileName, { type: 'image/png' })
+      const n = navigator as any
+      if (n.canShare && n.canShare({ files: [file] })) n.share({ files: [file], text: shareText }).catch(() => downloadBlob(b))
+      else downloadBlob(b)
+    })
   }
 
   const download = async () => { const b = await toBlob(); if (b) downloadBlob(b) }

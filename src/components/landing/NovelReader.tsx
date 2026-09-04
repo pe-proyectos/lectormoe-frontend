@@ -13,6 +13,7 @@ import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
 import { toast } from 'react-toastify';
 import { paintRange, clearHighlight } from '../../util/quoteHighlight';
+import { getRangeOffsets, rangeFromOffsets } from '../../util/quoteOffsets';
 
 interface AdjacentChapter {
   number: number;
@@ -250,6 +251,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [selBar, setSelBar] = useState<{ top: number; left: number; below: boolean; text: string } | null>(null);
   const selRangeRef = useRef<Range | null>(null);
   const hlClearRef = useRef<(() => void) | null>(null);
+  const hlColorRef = useRef<string>('rgba(34,211,238,0.32)');
   const [hydrated, setHydrated] = useState(false);
 
   // ONE bookmark per work (manga/novel). Stored on the backend as a row in
@@ -475,7 +477,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       if (!rect || (rect.top === 0 && rect.width === 0)) return;
       selRangeRef.current = range;
       hlClearRef.current?.();
-      hlClearRef.current = paintRange(range);
+      hlClearRef.current = paintRange(range, hlColorRef.current);
       const pos = position(range);
       setSelBar({ ...pos, below: isMobile, text });
     };
@@ -532,11 +534,16 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   };
   const copyRef = async () => {
     if (!selBar) return;
+    const range = selRangeRef.current;
+    const root = document.querySelector('.nr-article') as HTMLElement | null;
     try {
       const base = window.location.origin + window.location.pathname;
-      const enc = btoa(unescape(encodeURIComponent(selBar.text.slice(0, 300))));
-      const frag = encodeURIComponent(selBar.text.slice(0, 120));
-      await navigator.clipboard.writeText(`${base}?quote=${encodeURIComponent(enc)}#:~:text=${frag}`);
+      let url = base;
+      if (range && root) {
+        const off = getRangeOffsets(root, range);
+        if (off) url = `${base}?q=${off.start}-${off.end}`;
+      }
+      await navigator.clipboard.writeText(url);
       toast.success(t('reader_quote_ref_copied'));
     } catch { /* noop */ }
     dismissSel();
@@ -571,6 +578,27 @@ const NovelReader: React.FC<NovelReaderProps> = ({
     dismissSel();
     setQuoteText(txt);
   };
+
+  // Deep-link: si la URL trae ?q=inicio-fin, resalta esa cita al abrir.
+  useEffect(() => {
+    if (!hydrated) return;
+    const q = new URLSearchParams(window.location.search).get('q');
+    const m = q && q.match(/^(\d+)-(\d+)$/);
+    if (!m) return;
+    const start = Number(m[1]);
+    const end = Number(m[2]);
+    const tid = setTimeout(() => {
+      const root = document.querySelector('.nr-article') as HTMLElement | null;
+      if (!root) return;
+      const range = rangeFromOffsets(root, start, end);
+      if (!range) return;
+      hlClearRef.current?.();
+      hlClearRef.current = paintRange(range, hlColorRef.current);
+      const el = range.startContainer.parentElement || (range.startContainer as HTMLElement);
+      el?.scrollIntoView?.({ block: 'center', behavior: 'auto' });
+    }, 200);
+    return () => clearTimeout(tid);
+  }, [hydrated, chapter?.id]);
 
   const prevHref = chapter.previousChapter ? chapterUrlPattern(chapter.previousChapter.number) : null;
   const nextHref = chapter.nextChapter ? chapterUrlPattern(chapter.nextChapter.number) : null;
@@ -646,6 +674,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
 
   const readingMinutes = Math.max(1, Math.round(wordCount / WORDS_PER_MIN));
   const palette = getThemePalette(prefs);
+  hlColorRef.current = `${palette.accent}52`;
 
   const articleStyle: React.CSSProperties = {
     color: palette.text,
@@ -954,7 +983,6 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       {/* Boton flotante: crear tarjeta de cita desde la seleccion */}
       {selBar && (
         <>
-          <style>{`::highlight(quote-sel){background-color:${palette.accent}66}`}</style>
           <div
             data-quote-bar
             style={{ position: 'fixed', top: selBar.top, left: selBar.left, transform: 'translateX(-50%)', zIndex: 70, background: palette.ui, border: `1px solid ${palette.border}` }}

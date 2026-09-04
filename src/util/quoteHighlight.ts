@@ -1,31 +1,52 @@
-// Resaltado persistente de la seleccion mientras la barra de citas esta abierta.
-// Usa la CSS Custom Highlight API (Chrome/Edge/Safari 17.2+). Si no hay soporte,
-// hace no-op (la barra sigue funcionando con el texto ya capturado).
-const NAME = 'quote-sel'
+// Resaltado de la seleccion mediante rectangulos de overlay (posicion absoluta
+// en coordenadas de documento). Funciona en TODOS los navegadores (no depende
+// de la CSS Custom Highlight API). Se reposiciona en resize; con scroll vertical
+// se mueve solo (coordenadas de documento).
+let overlays: HTMLElement[] = []
+let current: { range: Range; color: string } | null = null
+let listening = false
 
-export const supportsHighlight = (): boolean =>
-  typeof CSS !== 'undefined' &&
-  // @ts-ignore
-  !!(CSS as any).highlights &&
-  typeof (window as any).Highlight === 'function'
+function clearOverlays() {
+  for (const d of overlays) d.remove()
+  overlays = []
+}
 
-// Pinta el rango y devuelve un cleanup.
-export function paintRange(range: Range): () => void {
-  if (!supportsHighlight()) return () => {}
-  try {
-    // @ts-ignore
-    ;(CSS as any).highlights.set(NAME, new (window as any).Highlight(range.cloneRange()))
-    return clearHighlight
-  } catch {
-    return () => {}
+function render() {
+  clearOverlays()
+  if (!current) return
+  const rects = current.range.getClientRects()
+  const sx = window.scrollX
+  const sy = window.scrollY
+  for (const r of Array.from(rects)) {
+    if (r.width < 1 || r.height < 2) continue
+    const d = document.createElement('div')
+    d.setAttribute('data-quote-hl', '')
+    d.style.cssText = `position:absolute;left:${r.left + sx}px;top:${r.top + sy}px;width:${r.width}px;height:${r.height}px;background:${current.color};pointer-events:none;z-index:5;border-radius:3px;`
+    document.body.appendChild(d)
+    overlays.push(d)
   }
+}
+
+function ensureListener() {
+  if (listening || typeof window === 'undefined') return
+  listening = true
+  window.addEventListener('resize', () => { if (current) render() })
+}
+
+export function paintRange(range: Range, color = 'rgba(34,211,238,0.32)'): () => void {
+  ensureListener()
+  try {
+    current = { range: range.cloneRange(), color }
+    render()
+  } catch {
+    current = null
+  }
+  return clearHighlight
 }
 
 export function clearHighlight(): void {
-  try {
-    // @ts-ignore
-    if (supportsHighlight()) (CSS as any).highlights.delete(NAME)
-  } catch {
-    // noop
-  }
+  current = null
+  clearOverlays()
 }
+
+export const supportsHighlight = (): boolean => true
