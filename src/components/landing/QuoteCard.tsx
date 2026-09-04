@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Share2, Download, Copy, Check, Bookmark, BookmarkCheck, Link2, Type, Palette } from 'lucide-react'
+import { X, Share2, Download, Copy, Check, Bookmark, BookmarkCheck, Link2, Type, Palette, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../util/callApi'
 
@@ -179,26 +179,54 @@ function draw(canvas: HTMLCanvasElement, cfg: CardConfig, text: string, title: s
   ctx.fillRect(PAD, fTop, Math.round(PAD * 0.7), 5)
 
   const titleSize = Math.round(Math.min(W, H) * (fmt.vertical ? 0.036 : 0.045))
+  const brandSize = Math.round(titleSize * 0.6)
+  const scanSize = Math.round(titleSize * 0.66)
+
+  // Medir el bloque derecho (scan sobre marca) para reservar su ancho.
+  ctx.textAlign = 'right'
+  ctx.font = `700 ${scanSize}px ${font.head}`
+  const scanW = scanName ? ctx.measureText(scanName).width : 0
+  ctx.font = `600 ${brandSize}px ${font.head}`
+  const brandW = ctx.measureText('capibaratraductor.com').width
+  const rightW = Math.max(scanW, brandW)
+  const availLeft = (W - PAD * 2) - rightW - Math.round(PAD * 0.6)
+
+  // Ajustar el titulo: achica la fuente y permite hasta 2 lineas con elipsis.
+  let tSize = titleSize
+  let tLines: string[] = []
+  for (tSize = titleSize; tSize >= Math.round(titleSize * 0.62); tSize -= 2) {
+    ctx.font = `800 ${tSize}px ${font.head}`
+    tLines = wrapLines(ctx, title, availLeft)
+    if (tLines.length <= 2) break
+  }
+  if (tLines.length > 2) {
+    tLines = tLines.slice(0, 2)
+    ctx.font = `800 ${tSize}px ${font.head}`
+    let last = tLines[1]
+    while (last.length > 1 && ctx.measureText(last + '…').width > availLeft) last = last.slice(0, -1)
+    tLines[1] = last.replace(/\s+$/, '') + '…'
+  }
+
+  ctx.textAlign = 'left'
   ctx.fillStyle = pal.text
-  ctx.font = `800 ${titleSize}px ${font.head}`
-  const tLine = wrapLines(ctx, title, maxW * 0.72)[0] || title
-  ctx.fillText(tLine, PAD, fTop + Math.round(titleSize * 0.7))
+  ctx.font = `800 ${tSize}px ${font.head}`
+  let ty = fTop + Math.round(tSize * 0.85)
+  for (const ln of tLines) { ctx.fillText(ln, PAD, ty); ty += Math.round(tSize * 1.16) }
 
   ctx.fillStyle = accent
-  ctx.font = `700 ${Math.round(titleSize * 0.68)}px ${font.head}`
-  ctx.fillText(chapterLabel.toUpperCase(), PAD, fTop + Math.round(titleSize * 2.05))
+  ctx.font = `700 ${Math.round(titleSize * 0.62)}px ${font.head}`
+  ctx.fillText(chapterLabel.toUpperCase(), PAD, ty + Math.round(titleSize * 0.15))
 
   // Bloque derecho: nombre del scan sobre capibaratraductor.com.
   ctx.textAlign = 'right'
-  const brandSize = Math.round(titleSize * 0.6)
   if (scanName) {
     ctx.fillStyle = pal.text
-    ctx.font = `700 ${Math.round(titleSize * 0.66)}px ${font.head}`
-    ctx.fillText(scanName, W - PAD, fTop + Math.round(titleSize * 0.75))
+    ctx.font = `700 ${scanSize}px ${font.head}`
+    ctx.fillText(scanName, W - PAD, fTop + Math.round(titleSize * 0.85))
   }
   ctx.fillStyle = pal.sub
   ctx.font = `600 ${brandSize}px ${font.head}`
-  ctx.fillText('capibaratraductor.com', W - PAD, fTop + Math.round(titleSize * (scanName ? 1.7 : 0.95)))
+  ctx.fillText('capibaratraductor.com', W - PAD, fTop + Math.round(titleSize * (scanName ? 1.75 : 1.0)))
   ctx.textAlign = 'left'
 }
 
@@ -209,6 +237,45 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [panel, setPanel] = useState<'estilo' | 'texto'>('estilo')
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null)
+
+  const clampPan = (x: number, y: number, z: number) => {
+    const el = previewRef.current
+    const maxX = el ? (el.clientWidth * (z - 1)) / 2 : 0
+    const maxY = el ? (el.clientHeight * (z - 1)) / 2 : 0
+    return { x: Math.max(-maxX, Math.min(maxX, x)), y: Math.max(-maxY, Math.min(maxY, y)) }
+  }
+  const setZoomClamped = (z: number) => {
+    const nz = Math.max(1, Math.min(4, z))
+    setZoom(nz)
+    setPan((p) => (nz === 1 ? { x: 0, y: 0 } : clampPan(p.x, p.y, nz)))
+  }
+  const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
+
+  const onPreviewWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    setZoomClamped(zoom * (e.deltaY < 0 ? 1.15 : 0.87))
+  }
+  const onPreviewDown = (e: React.PointerEvent) => {
+    if (zoom <= 1) return
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    dragRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y }
+    setDragging(true)
+  }
+  const onPreviewMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return
+    const d = dragRef.current
+    setPan(clampPan(d.px + (e.clientX - d.x), d.py + (e.clientY - d.y), zoom))
+  }
+  const onPreviewUp = (e: React.PointerEvent) => {
+    dragRef.current = null
+    setDragging(false)
+    ;(e.target as HTMLElement).releasePointerCapture?.(e.pointerId)
+  }
 
   const accents = useMemo(() => {
     const base = accent && !ACCENTS.includes(accent) ? [accent, ...ACCENTS] : ACCENTS
@@ -250,6 +317,9 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  // Al cambiar de formato (cambian las dimensiones) resetea el zoom/pan.
+  useEffect(() => { resetZoom() }, [cfg.format])
 
   const toBlob = (): Promise<Blob | null> =>
     new Promise((res) => { canvasRef.current ? canvasRef.current.toBlob((b) => res(b), 'image/png') : res(null) })
@@ -323,17 +393,32 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
     } finally { setSaving(false) }
   }
 
-  const pill = 'px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider transition-colors'
+  const pill = 'px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer'
   const chip = (active: boolean) => `${pill} ${active ? 'bg-white text-zinc-950' : 'text-white/55 hover:text-white bg-white/5'}`
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm overflow-y-auto" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl my-auto rounded-2xl bg-zinc-950 ring-1 ring-white/10 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-3xl xl:max-w-5xl 2xl:max-w-6xl my-auto rounded-2xl bg-zinc-950 ring-1 ring-white/10 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="grid md:grid-cols-[1.1fr_1fr]">
           {/* Vista previa */}
           <div className="p-4 sm:p-5 flex flex-col items-center justify-center bg-black/40 border-b md:border-b-0 md:border-r border-white/10">
-            <div className="w-full flex items-center justify-center">
-              <canvas ref={canvasRef} className="block max-w-full max-h-[46vh] md:max-h-[60vh] w-auto h-auto rounded-xl shadow-2xl ring-1 ring-white/10" role="img" aria-label={text} />
+            <div ref={previewRef}
+              onWheel={onPreviewWheel} onPointerDown={onPreviewDown} onPointerMove={onPreviewMove} onPointerUp={onPreviewUp} onPointerCancel={onPreviewUp}
+              className="relative w-full flex items-center justify-center overflow-hidden rounded-xl"
+              style={{ touchAction: 'none', cursor: zoom > 1 ? (dragging ? 'grabbing' : 'grab') : 'default' }}>
+              <canvas ref={canvasRef}
+                className="block max-w-full max-h-[46vh] md:max-h-[60vh] xl:max-h-[72vh] w-auto h-auto rounded-xl shadow-2xl ring-1 ring-white/10 select-none"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transition: dragging ? 'none' : 'transform 120ms', transformOrigin: 'center' }}
+                role="img" aria-label={text} />
+              <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur px-1 py-1 ring-1 ring-white/15">
+                <button type="button" onClick={() => setZoomClamped(zoom - 0.4)} disabled={zoom <= 1} aria-label="Alejar"
+                  className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 disabled:opacity-40 cursor-pointer"><ZoomOut size={16} /></button>
+                <span className="text-[10px] font-bold text-white/70 w-8 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+                <button type="button" onClick={() => setZoomClamped(zoom + 0.4)} disabled={zoom >= 4} aria-label="Acercar"
+                  className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 disabled:opacity-40 cursor-pointer"><ZoomIn size={16} /></button>
+                <button type="button" onClick={resetZoom} disabled={zoom === 1 && pan.x === 0 && pan.y === 0} aria-label="Restablecer zoom"
+                  className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 disabled:opacity-40 cursor-pointer"><Maximize2 size={15} /></button>
+              </div>
             </div>
             {caption ? (
               <p className="mt-3 text-center text-[12px] italic text-white/60 max-w-sm">{caption}{uname ? ` — ${uname}` : ''}</p>
@@ -367,7 +452,7 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
                     <div className="flex flex-wrap gap-1.5">
                       {(Object.keys(THEMES) as ThemeKey[]).map((k) => (
                         <button key={k} type="button" onClick={() => set('theme', k)} aria-label={k}
-                          className={`w-8 h-8 rounded-lg border-2 transition ${cfg.theme === k ? 'border-white scale-105' : 'border-white/15'}`}
+                          className={`w-8 h-8 rounded-lg border-2 transition cursor-pointer ${cfg.theme === k ? 'border-white scale-105' : 'border-white/15'}`}
                           style={{ background: `linear-gradient(135deg, ${THEMES[k].bg1}, ${THEMES[k].bg2})` }} />
                       ))}
                     </div>
@@ -378,7 +463,7 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
                     <div className="flex flex-wrap gap-1.5">
                       {accents.map((c) => (
                         <button key={c} type="button" onClick={() => set('accent', c)} aria-label={c}
-                          className={`w-8 h-8 rounded-full border-2 transition ${cfg.accent === c ? 'border-white scale-110' : 'border-transparent'}`}
+                          className={`w-8 h-8 rounded-full border-2 transition cursor-pointer ${cfg.accent === c ? 'border-white scale-110' : 'border-transparent'}`}
                           style={{ background: c }} />
                       ))}
                     </div>
@@ -428,29 +513,29 @@ const QuoteCard: React.FC<Props> = ({ text, title, chapterLabel, accent = '#22d3
             <div className="mt-4 pt-4 border-t border-white/10">
               <div className="grid grid-cols-4 gap-2">
                 <button type="button" onClick={share}
-                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl text-zinc-950 text-[11px] font-black transition-opacity hover:opacity-90" style={{ background: cfg.accent }}>
+                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl text-zinc-950 text-[11px] font-black transition-opacity hover:opacity-90 cursor-pointer" style={{ background: cfg.accent }}>
                   <Share2 size={17} /> {t('reader_quote_share')}
                 </button>
                 <button type="button" onClick={save} disabled={saving}
-                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl border border-white/15 bg-white/5 text-white text-[11px] font-bold hover:bg-white/10 transition-colors disabled:opacity-50">
+                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl border border-white/15 bg-white/5 text-white text-[11px] font-bold hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer">
                   {saved ? <BookmarkCheck size={17} /> : <Bookmark size={17} />} {saved ? t('reader_quote_saved') : t('reader_quote_save')}
                 </button>
                 <button type="button" onClick={download}
-                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl border border-white/15 bg-white/5 text-white text-[11px] font-bold hover:bg-white/10 transition-colors">
+                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl border border-white/15 bg-white/5 text-white text-[11px] font-bold hover:bg-white/10 transition-colors cursor-pointer">
                   <Download size={17} /> PNG
                 </button>
                 <button type="button" onClick={copy}
-                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl border border-white/15 bg-white/5 text-white text-[11px] font-bold hover:bg-white/10 transition-colors">
+                  className="flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl border border-white/15 bg-white/5 text-white text-[11px] font-bold hover:bg-white/10 transition-colors cursor-pointer">
                   {copied ? <Check size={17} /> : <Copy size={17} />} {copied ? t('reader_quote_copied') : t('reader_quote_copy')}
                 </button>
               </div>
               <div className="flex items-center justify-between mt-3">
                 {onCopyRef ? (
-                  <button type="button" onClick={onCopyRef} className="flex items-center gap-1.5 text-white/55 hover:text-white text-[11px] font-bold uppercase tracking-widest">
+                  <button type="button" onClick={onCopyRef} className="flex items-center gap-1.5 text-white/55 hover:text-white text-[11px] font-bold uppercase tracking-widest cursor-pointer">
                     <Link2 size={13} /> {t('reader_quote_copy_ref')}
                   </button>
                 ) : <span />}
-                <button type="button" onClick={onClose} aria-label="Cerrar" className="flex items-center gap-1.5 text-white/55 hover:text-white text-[11px] font-bold uppercase tracking-widest">
+                <button type="button" onClick={onClose} aria-label="Cerrar" className="flex items-center gap-1.5 text-white/55 hover:text-white text-[11px] font-bold uppercase tracking-widest cursor-pointer">
                   <X size={13} /> Cerrar
                 </button>
               </div>

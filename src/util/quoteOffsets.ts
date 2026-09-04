@@ -4,20 +4,21 @@
 // los nodos de texto (deterministico para el mismo capitulo).
 
 export function getRangeOffsets(root: HTMLElement, range: Range): { start: number; end: number } | null {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-  let acc = 0
-  let start = -1
-  let end = -1
-  let n: Node | null = walker.nextNode()
-  while (n) {
-    const len = (n.nodeValue || '').length
-    if (n === range.startContainer) start = acc + range.startOffset
-    if (n === range.endContainer) end = acc + range.endOffset
-    acc += len
-    n = walker.nextNode()
+  // Mide el offset de caracteres desde el inicio de `root` hasta cada limite
+  // del rango con un Range auxiliar. Funciona aunque el limite caiga en un
+  // nodo elemento (no de texto), a diferencia de comparar contra nodos de texto.
+  try {
+    const pre = document.createRange()
+    pre.selectNodeContents(root)
+    pre.setEnd(range.startContainer, range.startOffset)
+    const start = pre.toString().length
+    pre.setEnd(range.endContainer, range.endOffset)
+    const end = pre.toString().length
+    if (end <= start) return null
+    return { start, end }
+  } catch {
+    return null
   }
-  if (start < 0 || end < 0 || end <= start) return null
-  return { start, end }
 }
 
 export function rangeFromOffsets(root: HTMLElement, start: number, end: number): Range | null {
