@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   ChevronLeft, ChevronRight, Settings as SettingsIcon, X, Book,
   Type, Palette, Layout as LayoutIcon, Eye, RotateCcw, Maximize2,
-  AlignLeft, AlignCenter, AlignJustify, Clock, List, ArrowUp, Bookmark,
+  AlignLeft, AlignCenter, AlignJustify, Clock, List, ArrowUp, Bookmark, Quote,
 } from 'lucide-react';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
 import { getTranslator } from '../../util/translate';
+import QuoteCard from './QuoteCard';
 import CommentsSection from './CommentsSection';
 import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
@@ -243,6 +244,8 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const [quoteText, setQuoteText] = useState<string | null>(null);
+  const [selBtn, setSelBtn] = useState<{ top: number; left: number; text: string } | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   // ONE bookmark per work (manga/novel). Stored on the backend as a row in
@@ -439,6 +442,36 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       }
     } catch {}
   }, [hydrated, scrollKey, prefs.rememberScroll]);
+
+  // Deteccion de seleccion de texto dentro del articulo -> boton "Crear tarjeta".
+  useEffect(() => {
+    const onSel = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) { setSelBtn(null); return; }
+      const text = sel.toString().trim();
+      if (text.length < 8) { setSelBtn(null); return; }
+      const anchorNode = sel.anchorNode as Node | null;
+      const el = anchorNode
+        ? (anchorNode.nodeType === 3 ? anchorNode.parentElement : (anchorNode as HTMLElement))
+        : null;
+      if (!el || !el.closest('.nr-article')) { setSelBtn(null); return; }
+      const rect = sel.getRangeAt(0).getBoundingClientRect();
+      if (!rect || (rect.top === 0 && rect.left === 0)) { setSelBtn(null); return; }
+      setSelBtn({ top: rect.top, left: rect.left + rect.width / 2, text });
+    };
+    const onChange = () => {
+      const s2 = window.getSelection();
+      if (!s2 || s2.isCollapsed) setSelBtn(null);
+    };
+    document.addEventListener('mouseup', onSel);
+    document.addEventListener('touchend', onSel);
+    document.addEventListener('selectionchange', onChange);
+    return () => {
+      document.removeEventListener('mouseup', onSel);
+      document.removeEventListener('touchend', onSel);
+      document.removeEventListener('selectionchange', onChange);
+    };
+  }, []);
 
   const prevHref = chapter.previousChapter ? chapterUrlPattern(chapter.previousChapter.number) : null;
   const nextHref = chapter.nextChapter ? chapterUrlPattern(chapter.nextChapter.number) : null;
@@ -817,6 +850,38 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             </nav>
           </div>
         </div>
+      )}
+
+      {/* Boton flotante: crear tarjeta de cita desde la seleccion */}
+      {selBtn && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { setQuoteText(selBtn.text); setSelBtn(null); window.getSelection()?.removeAllRanges(); }}
+          style={{
+            position: 'fixed',
+            top: Math.max(8, selBtn.top - 46),
+            left: selBtn.left,
+            transform: 'translateX(-50%)',
+            zIndex: 70,
+            background: palette.accent,
+            color: '#0a0a0b',
+          }}
+          className="px-3 py-1.5 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 whitespace-nowrap"
+        >
+          <Quote size={12} /> Crear tarjeta
+        </button>
+      )}
+
+      {/* Tarjeta de cita */}
+      {quoteText && (
+        <QuoteCard
+          text={quoteText}
+          title={mangaTitle}
+          chapterLabel={`Capítulo ${(chapter as any).displayNumber ?? chapter.number}`}
+          accent={palette.accent}
+          onClose={() => setQuoteText(null)}
+        />
       )}
 
       {/* Lightbox de ilustraciones */}
