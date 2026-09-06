@@ -18,9 +18,9 @@ const ScanCommunity: React.FC<Props> = ({ organization, user, logged, language =
   return (
     <section className="mt-8">
       <div className="flex items-center gap-2 mb-4">
-        <MessageSquareText className="text-cyan-400" size={22} />
-        <h2 className="text-xl font-black text-white">{en ? 'Community' : 'Comunidad'}</h2>
-        <a href="/socials" className="ml-auto text-xs font-bold text-cyan-400 hover:underline">{en ? 'Open community' : 'Ir a Comunidad'}</a>
+        <MessageSquareText className="text-teal-400" size={22} />
+        <h2 className="text-xl font-black text-white">{en ? `${organization?.name || 'Scan'} on The Pond` : `${organization?.name || 'El scan'} en La Charca`}</h2>
+        <a href="/socials" className="ml-auto text-xs font-bold text-teal-400 hover:underline">{en ? 'Open The Pond' : 'Abrir La Charca'}</a>
       </div>
       {isStaff && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] mb-4">

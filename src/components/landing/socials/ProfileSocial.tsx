@@ -46,13 +46,13 @@ const ProfileSocial: React.FC<Props> = ({ profileSlug, currentUser, logged, lang
       <div className="flex items-center flex-wrap gap-6 mb-6 bg-zinc-900/40 border border-zinc-800 rounded-[32px] px-8 py-5">
         <div className="flex items-center gap-6">
           <Count n={s?.postsCount ?? 0} label={en ? 'posts' : 'posts'} />
-          <a href="#" className="hover:opacity-80"><Count n={s?.followersCount ?? 0} label={en ? 'followers' : 'seguidores'} /></a>
+          <Count n={s?.followersCount ?? 0} label={en ? 'followers' : 'seguidores'} />
           <Count n={s?.followingCount ?? 0} label={en ? 'following' : 'siguiendo'} />
         </div>
         {s && !s.isSelf && (
           <div className="flex items-center gap-2 ml-auto">
             <button type="button" onClick={toggleFollow} disabled={busy}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition cursor-pointer disabled:opacity-60 ${s.isFollowing ? 'bg-zinc-800 text-white hover:bg-rose-500/20 hover:text-rose-300' : 'bg-gradient-to-b from-cyan-400 to-cyan-500 text-zinc-950 hover:from-cyan-300 hover:to-cyan-400 shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_8px_24px_-8px_rgba(34,211,238,0.5)]'}`}>
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black transition cursor-pointer disabled:opacity-60 ${s.isFollowing ? 'bg-zinc-800 text-white hover:bg-rose-500/20 hover:text-rose-300' : 'bg-gradient-to-br from-teal-400 to-cyan-500 text-zinc-950 hover:from-teal-300 hover:to-cyan-400 shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_8px_24px_-8px_rgba(45,212,191,0.55)]'}`}>
               {s.isFollowing ? <><UserCheck size={16} /> {en ? 'Following' : 'Siguiendo'}</> : <><UserPlus size={16} /> {en ? 'Follow' : 'Seguir'}</>}
             </button>
             <div className="relative">
@@ -72,7 +72,7 @@ const ProfileSocial: React.FC<Props> = ({ profileSlug, currentUser, logged, lang
       </div>
 
       <div className="flex items-center gap-2 mb-4">
-        <MessageSquareText size={20} className="text-cyan-400" />
+        <MessageSquareText size={20} className="text-teal-400" />
         <h2 className="text-xl font-black text-white">{en ? 'Posts' : 'Publicaciones'}</h2>
       </div>
       <div className="rounded-[32px] border border-zinc-800 bg-zinc-900/20 overflow-hidden">

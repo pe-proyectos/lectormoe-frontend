@@ -21,6 +21,7 @@ import {
   LogIn,
   UserPlus,
   HardDriveDownload,
+  Droplet,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
@@ -527,7 +528,7 @@ const Navbar: React.FC<NavbarProps> = ({
             href="/socials"
             className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
           >
-            <MessageCircle size={16} /> Comunidad
+            <Droplet size={16} className="text-teal-400" /> La Charca
           </a>
 
           {/* Luckys oculto del navbar (decisión 2026-07-07). La página /luckys

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Check } from 'lucide-react'
+import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 
 interface Opt { text: string; votes: number }
@@ -32,7 +33,7 @@ const PostPoll: React.FC<Props> = ({ poll: initial, logged, language = 'es', onL
     try {
       const r: any = await callAPI(`/api/polls/${poll.id}/vote`, { method: 'POST', body: JSON.stringify({ optionIndex: i }) })
       setPoll({ ...poll, options: r.options, votesCount: r.votesCount, myVote: r.myVote })
-    } catch (e: any) { if (String(e?.message).includes('votaste')) setPoll({ ...poll, myVote: i }) } finally { setBusy(false) }
+    } catch (e: any) { if (String(e?.message).includes('votaste')) setPoll({ ...poll, myVote: i }); else toast.error(e?.message || 'No se pudo votar') } finally { setBusy(false) }
   }
 
   return (
@@ -42,10 +43,10 @@ const PostPoll: React.FC<Props> = ({ poll: initial, logged, language = 'es', onL
         const mine = poll.myVote === i
         return (
           <button key={i} type="button" onClick={() => vote(i)} disabled={busy || showResults}
-            className={`relative w-full text-left rounded-xl overflow-hidden border transition ${showResults ? 'border-white/10 cursor-default' : 'border-white/15 hover:border-cyan-400/60 cursor-pointer'}`}>
-            {showResults && <div className={`absolute inset-y-0 left-0 ${mine ? 'bg-cyan-500/25' : 'bg-white/[0.06]'}`} style={{ width: `${pct}%`, transition: 'width 500ms cubic-bezier(0.22,1,0.36,1)' }} />}
+            className={`relative w-full text-left rounded-xl overflow-hidden border transition ${showResults ? 'border-white/10 cursor-default' : 'border-white/15 hover:border-teal-400/60 cursor-pointer'}`}>
+            {showResults && <div className={`absolute inset-y-0 left-0 ${mine ? 'bg-teal-500/25' : 'bg-white/[0.06]'}`} style={{ width: `${pct}%`, transition: 'width 500ms cubic-bezier(0.22,1,0.36,1)' }} />}
             <div className="relative flex items-center justify-between px-4 py-2.5">
-              <span className={`text-sm font-semibold ${mine ? 'text-cyan-200' : 'text-white/90'} flex items-center gap-1.5`}>{mine && <Check size={14} className="text-cyan-300" />}{o.text}</span>
+              <span className={`text-sm font-semibold ${mine ? 'text-teal-200' : 'text-white/90'} flex items-center gap-1.5`}>{mine && <Check size={14} className="text-teal-300" />}{o.text}</span>
               {showResults && <span className="text-sm font-bold text-white/70 tabular-nums">{pct}%</span>}
             </div>
           </button>

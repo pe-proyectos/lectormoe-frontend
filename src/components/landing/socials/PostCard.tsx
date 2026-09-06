@@ -33,36 +33,11 @@ function Content({ text }: { text: string }) {
     <p className="text-[15px] leading-relaxed text-white/90 whitespace-pre-wrap break-words">
       {tokenizeContent(text).map((tk, i) => {
         if (tk.type === 'tag') return <a key={i} href={`/socials/tag/${tk.value.slice(1).toLowerCase()}`} className="text-cyan-400 hover:underline">{tk.value}</a>
-        if (tk.type === 'mention') return <a key={i} href={`/profile/${tk.value.slice(1)}`} className="text-cyan-400 hover:underline">{tk.value}</a>
+        if (tk.type === 'mention') return <a key={i} href={`/profile/${tk.value.slice(1).toLowerCase()}`} className="text-cyan-400 hover:underline">{tk.value}</a>
         if (tk.type === 'url') return <a key={i} href={tk.value} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline break-all">{tk.value}</a>
         return <React.Fragment key={i}>{tk.value}</React.Fragment>
       })}
     </p>
-  )
-}
-
-function Carousel({ images }: { images: string[] }) {
-  const [idx, setIdx] = useState(0)
-  if (!images.length) return null
-  if (images.length === 1) {
-    return (
-      <a href={resolveImg(images[0])} target="_blank" rel="noopener noreferrer" className="mt-3 block rounded-2xl overflow-hidden bg-black/30 ring-1 ring-white/10">
-        <img src={resolveImg(images[0])} alt="" loading="lazy" className="w-full max-h-[560px] object-contain" />
-      </a>
-    )
-  }
-  return (
-    <div className="mt-3 relative rounded-2xl overflow-hidden bg-black/40 ring-1 ring-white/10">
-      <img src={resolveImg(images[idx])} alt="" loading="lazy" className="w-full aspect-square object-cover" />
-      <button type="button" onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx === 0}
-        className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white disabled:opacity-0 hover:bg-black/80 cursor-pointer"><ChevronLeft size={18} /></button>
-      <button type="button" onClick={() => setIdx((i) => Math.min(images.length - 1, i + 1))} disabled={idx === images.length - 1}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white disabled:opacity-0 hover:bg-black/80 cursor-pointer"><ChevronRight size={18} /></button>
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {images.map((_, i) => <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === idx ? 'bg-white' : 'bg-white/40'}`} />)}
-      </div>
-      <div className="absolute top-2 right-2 text-[11px] font-bold text-white bg-black/60 rounded-full px-2 py-0.5">{idx + 1}/{images.length}</div>
-    </div>
   )
 }
 
@@ -72,7 +47,7 @@ function QuotedPost({ post }: { post: Post }) {
       <div className="flex items-center gap-2">
         <AuthorAvatar post={post} size={22} />
         <span className="text-[13px] font-bold text-white/90 truncate">{post.author.name}</span>
-        {post.author.kind === 'scan' && <BadgeCheck size={13} className="text-cyan-400 shrink-0" />}
+        {post.author.kind === 'scan' && <BadgeCheck size={13} className="text-amber-400 shrink-0" />}
         <span className="text-[11px] text-white/35">· {timeAgo(post.createdAt)}</span>
       </div>
       {post.content && <p className="mt-1 text-[13px] text-white/75 line-clamp-4 whitespace-pre-wrap break-words">{post.content}</p>}
@@ -82,16 +57,17 @@ function QuotedPost({ post }: { post: Post }) {
 }
 
 function WorkCard({ work, en }: { work: NonNullable<Post['work']>; en: boolean }) {
-  const href = work.orgSlug && work.mangaSlug ? `${orgHref(work.orgSlug, work.isNSFW)}/manga/${work.mangaSlug}` : '#'
+  const href = work.orgSlug && work.mangaSlug ? `${orgHref(work.orgSlug, work.isNSFW)}/manga/${work.mangaSlug}` : null
+  const Wrap: any = href ? 'a' : 'div'
   return (
-    <a href={href} onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 hover:border-cyan-400/40 bg-white/[0.02] p-2.5 transition-colors group/w">
+    <Wrap href={href || undefined} onClick={(e: any) => e.stopPropagation()} className={`mt-3 flex items-center gap-3 rounded-3xl border border-white/10 bg-white/[0.02] p-2.5 transition-colors group/w ${href ? 'hover:border-teal-400/40' : 'opacity-80'}`}>
       {work.imageUrl ? <img src={resolveImg(work.imageUrl)} alt="" className="w-12 h-16 object-cover rounded-lg shrink-0" /> : <div className="w-12 h-16 rounded-lg bg-white/10 shrink-0" />}
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-black uppercase tracking-wider text-cyan-400/80">{en ? 'Work' : 'Obra'}</p>
         <p className="text-sm font-bold text-white truncate">{work.title}</p>
       </div>
-      <span className="shrink-0 px-3 py-1.5 rounded-full bg-white/5 group-hover/w:bg-cyan-500 group-hover/w:text-zinc-950 text-white text-xs font-black transition-colors">{en ? 'Read' : 'Leer'}</span>
-    </a>
+      {href && <span className="shrink-0 px-3 py-1.5 rounded-full bg-white/5 group-hover/w:bg-teal-500 group-hover/w:text-zinc-950 text-white text-xs font-black transition-colors">{en ? 'Read' : 'Leer'}</span>}
+    </Wrap>
   )
 }
 
@@ -111,6 +87,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
   const [revealed, setRevealed] = useState(false)
   const [reportMode, setReportMode] = useState(false)
   const [burst, setBurst] = useState(false)
+  const [confirmDel, setConfirmDel] = useState(false)
   if (gone) return null
 
   const canDelete = logged && (
@@ -147,8 +124,8 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
     } catch { /* cancelado */ }
   }
   const del = async () => {
-    setMenuOpen(false)
-    if (!confirm(en ? 'Delete this post?' : '¿Eliminar esta publicación?')) return
+    if (!confirmDel) { setConfirmDel(true); return }
+    setMenuOpen(false); setConfirmDel(false)
     setGone(true)
     try { await callAPI(`/api/organization-post/${post.id}`, { method: 'DELETE' }); onDeleted?.(post.id) }
     catch { setGone(false); toast.error('No se pudo eliminar') }
@@ -163,8 +140,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
   const blockAuthor = async () => {
     setMenuOpen(false)
     if (a.kind !== 'user' || !a.slug) return
-    if (!confirm(en ? `Block @${a.slug}?` : `¿Bloquear a @${a.slug}?`)) return
-    try { await callAPI(`/api/users/${a.slug}/block`, { method: 'POST' }); toast.success(en ? 'Blocked' : 'Bloqueado'); setGone(true) } catch { toast.error('No se pudo') }
+    try { await callAPI(`/api/users/${a.slug}/block`, { method: 'POST' }); toast.success(en ? `Bloqueaste a @${a.slug}` : `Bloqueaste a @${a.slug}`); setGone(true) } catch { toast.error('No se pudo') }
   }
 
   const a = main.author
@@ -188,7 +164,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <a href={authorHref(a)} className="text-[15px] font-black text-white hover:underline truncate">{a.name}</a>
-            {a.kind === 'scan' && <BadgeCheck size={15} className="text-cyan-400 shrink-0" />}
+            {a.kind === 'scan' && <BadgeCheck size={15} className="text-amber-400 shrink-0" />}
             {a.kind === 'scan' && a.byUser && <span className="text-[12px] text-white/40 truncate">· {en ? 'by' : 'por'} @{a.byUser}</span>}
             <span className="text-[13px] text-white/35">· {timeAgo(main.createdAt, language)}</span>
             {main.pinned && <span className="text-[10px] text-cyan-300 font-bold uppercase ml-1">{en ? 'Pinned' : 'Fijado'}</span>}
@@ -196,7 +172,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
               <button type="button" onClick={() => { setMenuOpen((v) => !v); setReportMode(false) }} aria-label="Opciones" className="p-1.5 -m-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 cursor-pointer"><MoreHorizontal size={17} /></button>
               {menuOpen && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setReportMode(false) }} />
+                  <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setReportMode(false); setConfirmDel(false) }} />
                   <div className="absolute right-0 top-9 z-20 w-52 rounded-2xl bg-zinc-900/95 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl py-1.5">
                     {reportMode ? (
                       <>
@@ -211,7 +187,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
                         {logged && <button type="button" onClick={() => setReportMode(true)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-200 hover:bg-white/5 cursor-pointer"><Flag size={15} /> {en ? 'Report' : 'Reportar'}</button>}
                         {logged && a.kind === 'user' && a.slug && a.slug !== user?.slug && <button type="button" onClick={blockAuthor} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-200 hover:bg-white/5 cursor-pointer"><Ban size={15} /> {en ? 'Block' : 'Bloquear'} @{a.slug}</button>}
                         {canDelete && <div className="my-1 h-px bg-white/10" />}
-                        {canDelete && <button type="button" onClick={del} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-white/5 cursor-pointer"><Trash2 size={15} /> {en ? 'Delete' : 'Eliminar'}</button>}
+                        {canDelete && <button type="button" onClick={del} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm cursor-pointer ${confirmDel ? 'text-white bg-rose-500/90 hover:bg-rose-500' : 'text-rose-400 hover:bg-white/5'}`}><Trash2 size={15} /> {confirmDel ? (en ? 'Confirm delete' : 'Confirmar eliminar') : (en ? 'Delete' : 'Eliminar')}</button>}
                       </>
                     )}
                   </div>
@@ -220,7 +196,9 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
             </div>
           </div>
 
-          <div className="mt-0.5" onClick={(e) => { if ((e.target as HTMLElement).closest('a,button')) return; if (!asThreadRoot) goThread() }} style={{ cursor: asThreadRoot ? 'default' : 'pointer' }}>
+          <div className="mt-0.5" role={asThreadRoot ? undefined : 'link'} tabIndex={asThreadRoot ? undefined : 0}
+            onKeyDown={(e) => { if (!asThreadRoot && (e.key === 'Enter')) goThread() }}
+            onClick={(e) => { if ((e.target as HTMLElement).closest('a,button')) return; if (!asThreadRoot) goThread() }} style={{ cursor: asThreadRoot ? 'default' : 'pointer' }}>
             {main.isSpoiler && !revealed && !main.spoilerSafe ? (
               <div className="relative mt-1 rounded-2xl overflow-hidden">
                 <div className="pointer-events-none blur-md select-none opacity-60"><Content text={main.content} /><PostImages images={main.images} /></div>
@@ -244,8 +222,8 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
           <div className="mt-2 flex items-center justify-between max-w-[340px]">
             <ActionBtn icon={<MessageCircle size={18} />} count={main.commentsCount} active={false} halo="group-hover/act:bg-cyan-400/10 group-hover/act:text-cyan-400" onClick={goThread} label="Responder" />
             <ActionBtn icon={<Repeat2 size={18} />} count={reposts} active={reposted} color="text-emerald-400" halo="group-hover/act:bg-emerald-400/10 group-hover/act:text-emerald-400" onClick={toggleRepost} label="Repostear" />
-            <ActionBtn icon={<Heart size={18} className={`transition-transform ${liked ? 'fill-rose-400' : ''} ${burst ? 'scale-125' : 'scale-100'}`} />} count={likes} active={liked} color="text-rose-400" halo="group-hover/act:bg-rose-400/10 group-hover/act:text-rose-400" onClick={toggleLike} label="Me gusta">
-              {burst && <span className="absolute inset-0 rounded-full ring-2 ring-rose-400/50 animate-ping" />}
+            <ActionBtn icon={<Heart size={18} className={`transition-transform ${liked ? 'fill-amber-400' : ''} ${burst ? 'scale-125' : 'scale-100'}`} />} count={likes} active={liked} color="text-amber-400" halo="group-hover/act:bg-amber-400/10 group-hover/act:text-amber-400" onClick={toggleLike} label="Me gusta">
+              {burst && <><span className="absolute inset-0 rounded-full ring-2 ring-amber-400/50 animate-ping" /><span className="absolute inset-0 rounded-full ring-2 ring-amber-400/30 animate-ping" style={{ animationDelay: '150ms' }} /></>}
             </ActionBtn>
             <button type="button" onClick={toggleSave} aria-label="Guardar" className={`p-2 -m-2 rounded-full cursor-pointer transition hover:bg-cyan-400/10 ${saved ? 'text-cyan-400' : 'text-white/50 hover:text-cyan-400'}`}><Bookmark size={18} className={saved ? 'fill-cyan-400' : ''} /></button>
             <button type="button" onClick={share} aria-label="Compartir" className="p-2 -m-2 rounded-full text-white/50 hover:text-cyan-400 hover:bg-cyan-400/10 cursor-pointer transition"><Share size={17} /></button>

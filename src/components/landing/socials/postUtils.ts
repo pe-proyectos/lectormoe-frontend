@@ -28,6 +28,7 @@ export interface Post {
   liked: boolean
   saved: boolean
   reposted: boolean
+  isSpoiler?: boolean
   author: Author
   repostOf: Post | null
   spoilerSafe?: boolean

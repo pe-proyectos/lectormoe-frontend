@@ -29,7 +29,9 @@ const PostThread: React.FC<Props> = ({ postId, user, logged, language = 'es' }) 
   const onLogin = () => { window.location.href = '/login' }
 
   if (loading) return <div className="flex justify-center py-20 text-white/40"><Loader2 size={26} className="animate-spin" /></div>
-  if (notFound || !post) return <div className="text-center py-20 text-white/50">{en ? 'Post not found.' : 'Publicación no encontrada.'}</div>
+  if (notFound || !post) return (
+    <div className="text-center py-24 text-white/60"><p className="text-6xl mb-3">🦫</p><p className="font-bold">{en ? 'This post sank or was removed.' : 'Esta publicación se hundió o fue eliminada.'}</p><a href="/socials" className="inline-block mt-4 text-teal-400 hover:underline font-bold">{en ? 'Back to The Pond' : 'Volver a La Charca'}</a></div>
+  )
 
   return (
     <div className="max-w-[600px] mx-auto border-x border-white/10 min-h-screen">
@@ -51,7 +53,7 @@ const PostThread: React.FC<Props> = ({ postId, user, logged, language = 'es' }) 
         </div>
       ) : (
         <div className="px-4 py-4 border-b border-white/10 text-center">
-          <a href="/login" className="text-cyan-400 font-bold hover:underline">{en ? 'Log in to reply' : 'Inicia sesión para responder'}</a>
+          <a href="/login" className="text-teal-400 font-bold hover:underline">{en ? 'Join The Pond to reply' : 'Únete a la charca para responder'}</a>
         </div>
       )}
 
