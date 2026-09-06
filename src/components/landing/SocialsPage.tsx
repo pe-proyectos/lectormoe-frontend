@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Search, TrendingUp, Sparkles, Users, Flame, Bookmark, X, ArrowUp } from 'lucide-react'
+import { Search, TrendingUp, Sparkles, Users, Flame, Bookmark, X, ArrowUp, Home, Compass, Bell, User as UserIcon } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
 import PostComposer from './socials/PostComposer'
 import PostCard from './socials/PostCard'
@@ -55,7 +55,23 @@ const SocialsPage: React.FC<Props> = ({ user, logged, nsfwMode, language = 'es' 
   )
 
   return (
-    <div className="max-w-6xl mx-auto flex gap-6 px-0 sm:px-4">
+    <div className="max-w-[1100px] mx-auto flex gap-6 px-0 sm:px-4">
+      {/* Nav izquierda estilo X (desktop) */}
+      <nav className="hidden xl:flex flex-col w-[220px] shrink-0 sticky top-0 h-screen py-4 pr-2">
+        {([
+          { icon: <Home size={22} />, label: en ? 'Home' : 'Inicio', onClick: () => { setSearch(''); setTab('foryou'); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+          { icon: <Compass size={22} />, label: en ? 'Explore' : 'Explorar', onClick: () => { setTab('popular'); setSearch('') } },
+          { icon: <Bell size={22} />, label: en ? 'Notifications' : 'Notificaciones', href: '/notifications' },
+          { icon: <Bookmark size={22} />, label: en ? 'Saved' : 'Guardados', onClick: () => { setSearch(''); setTab('saved') }, hide: !logged },
+          { icon: <UserIcon size={22} />, label: en ? 'Profile' : 'Perfil', href: user?.slug ? `/profile/${user.slug}` : '/login' },
+        ] as any[]).filter((it) => !it.hide).map((it, i) => (
+          it.href
+            ? <a key={i} href={it.href} className="flex items-center gap-4 px-4 py-2.5 rounded-full text-[18px] font-bold text-white/90 hover:bg-white/[0.06] transition-colors cursor-pointer">{it.icon} {it.label}</a>
+            : <button key={i} type="button" onClick={it.onClick} className="flex items-center gap-4 px-4 py-2.5 rounded-full text-[18px] font-bold text-white/90 hover:bg-white/[0.06] transition-colors cursor-pointer text-left">{it.icon} {it.label}</button>
+        ))}
+        {logged && <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="mt-3 py-3 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-500 text-zinc-950 font-black text-[15px] hover:from-cyan-300 hover:to-cyan-400 shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_8px_24px_-8px_rgba(34,211,238,0.5)] active:scale-[0.98] transition cursor-pointer">{en ? 'Post' : 'Publicar'}</button>}
+      </nav>
+
       {/* Columna principal */}
       <div className="flex-1 min-w-0 max-w-[600px] mx-auto border-x border-white/10 min-h-screen">
         <div className="sticky top-0 z-10 backdrop-blur bg-zinc-950/80 border-b border-white/10">
