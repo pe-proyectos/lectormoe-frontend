@@ -30,6 +30,7 @@ export interface Post {
   reposted: boolean
   author: Author
   repostOf: Post | null
+  poll?: { id: number; options: { text: string; votes: number }[]; votesCount: number; endsAt: string; myVote: number | null } | null
 }
 
 export function timeAgo(dateStr: string, lang = 'es'): string {

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { ImagePlus, Loader2, X, Send, EyeOff } from 'lucide-react'
+import { ImagePlus, Loader2, X, Send, EyeOff, BarChart3, Plus } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import { uploadFile } from '../../../util/uploadFile'
@@ -24,6 +24,9 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [spoiler, setSpoiler] = useState(false)
+  const [pollMode, setPollMode] = useState(false)
+  const [pollOpts, setPollOpts] = useState<string[]>(['', ''])
+  const [pollDur, setPollDur] = useState(24)
   const fileRef = useRef<HTMLInputElement>(null)
   const avatar = user?.imageUrl ? resolveImg(user.imageUrl) : null
 
@@ -35,17 +38,18 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
   const submit = async () => {
     if (busy) return
     const text = content.trim()
-    if (!text && files.length === 0) return
+    const hasPoll = pollMode && pollOpts.filter((o) => o.trim()).length >= 2
+    if (!text && files.length === 0 && !hasPoll) return
     setBusy(true)
     try {
       let images: string[] = []
       if (files.length) images = await Promise.all(files.map(async (f) => resolveImg(await uploadFile(f, undefined, 'posts'))))
       const post: any = await callAPI('/api/socials/posts', {
         method: 'POST',
-        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler }),
+        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler, poll: pollMode && pollOpts.filter((o) => o.trim()).length >= 2 ? { options: pollOpts.filter((o) => o.trim()), durationHours: pollDur } : undefined }),
       })
       onCreated(post)
-      setContent(''); setFiles([]); setSpoiler(false)
+      setContent(''); setFiles([]); setSpoiler(false); setPollMode(false); setPollOpts(['', ''])
       if (!replyTo && !compact) toast.success(en ? 'Published' : 'Publicado')
     } catch (e: any) { toast.error(e?.message || 'No se pudo publicar') } finally { setBusy(false) }
   }
@@ -70,11 +74,29 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
             ))}
           </div>
         )}
+        {pollMode && (
+          <div className="mt-3 space-y-2 rounded-2xl border border-white/10 p-3">
+            {pollOpts.map((o, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input value={o} onChange={(e) => setPollOpts((p) => p.map((x, j) => (j === i ? e.target.value.slice(0, 60) : x)))} placeholder={`${en ? 'Option' : 'Opción'} ${i + 1}`}
+                  className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30" />
+                {pollOpts.length > 2 && <button type="button" onClick={() => setPollOpts((p) => p.filter((_, j) => j !== i))} className="text-white/30 hover:text-rose-400 cursor-pointer"><X size={15} /></button>}
+              </div>
+            ))}
+            <div className="flex items-center justify-between">
+              {pollOpts.length < 4 ? <button type="button" onClick={() => setPollOpts((p) => [...p, ''])} className="flex items-center gap-1 text-xs font-bold text-cyan-400 hover:underline cursor-pointer"><Plus size={13} /> {en ? 'Add option' : 'Añadir opción'}</button> : <span />}
+              <select value={pollDur} onChange={(e) => setPollDur(Number(e.target.value))} className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white cursor-pointer">
+                <option value={1}>1h</option><option value={6}>6h</option><option value={24}>1d</option><option value={72}>3d</option><option value={168}>7d</option>
+              </select>
+            </div>
+          </div>
+        )}
         <div className="mt-2 flex items-center justify-between">
           <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addFiles(e.target.files)} />
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => fileRef.current?.click()} disabled={files.length >= MAX_IMAGES} className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-40 cursor-pointer"><ImagePlus size={19} /></button>
             <button type="button" onClick={() => setSpoiler((v) => !v)} title={en ? 'Mark as spoiler' : 'Marcar como spoiler'} className={`p-1.5 rounded-lg cursor-pointer ${spoiler ? 'text-amber-400 bg-amber-500/10' : 'text-white/50 hover:bg-white/5'}`}><EyeOff size={18} /></button>
+            {!replyTo && <button type="button" onClick={() => setPollMode((v) => !v)} title={en ? 'Poll' : 'Encuesta'} className={`p-1.5 rounded-lg cursor-pointer ${pollMode ? 'text-cyan-400 bg-cyan-500/10' : 'text-white/50 hover:bg-white/5'}`}><BarChart3 size={18} /></button>}
           </div>
           <button type="button" onClick={submit} disabled={busy || (!content.trim() && files.length === 0)}
             className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-500 text-zinc-950 text-sm font-black hover:from-cyan-300 hover:to-cyan-400 shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_6px_18px_-6px_rgba(34,211,238,0.5)] disabled:opacity-40 disabled:shadow-none active:scale-[0.98] transition cursor-pointer">

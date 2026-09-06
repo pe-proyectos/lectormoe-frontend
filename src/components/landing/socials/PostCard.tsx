@@ -3,6 +3,7 @@ import { Heart, MessageCircle, Repeat2, Bookmark, Share, Trash2, MoreHorizontal,
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import PostImages from './PostImages'
+import PostPoll from './PostPoll'
 import { timeAgo, resolveImg, authorHref, authorAvatar, tokenizeContent, type Post } from './postUtils'
 
 interface Props {
@@ -218,6 +219,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
               <>
                 <Content text={main.content} />
                 <PostImages images={main.images} />
+                {main.poll && <PostPoll poll={main.poll} logged={logged} language={language} onLogin={onLogin} />}
               </>
             )}
             {!isPureRepost && main.repostOf && <QuotedPost post={main.repostOf} />}
