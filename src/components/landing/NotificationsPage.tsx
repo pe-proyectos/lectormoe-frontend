@@ -190,6 +190,8 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
       if (os && ms) return `/${os}/manga/${ms}`;
       return null;
     }
+    case 'user_follow':
+      return n.actor?.slug ? `/profile/${n.actor.slug}` : '/socials';
     case 'post_reply':
     case 'post_like':
     case 'post_repost':
@@ -282,6 +284,10 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: work ? `${work} · ${rel}` : `Toca para ver la lista · ${rel}`,
       };
     }
+    case 'user_follow': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} te siguió`, subtitle: rel };
+    }
     case 'post_reply': {
       const who = n.actor?.username || 'Alguien';
       return { title: `${who} respondió tu publicación`, subtitle: `Toca para ver el hilo · ${rel}` };
@@ -330,6 +336,8 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 
       return <ListChecks size={size} className="text-cyan-400" />;
     case 'copyright_strike':
       return <AlertCircle size={size} className="text-red-400" />;
+    case 'user_follow':
+      return <UserPlus size={size} className="text-cyan-400" />;
     case 'post_reply':
       return <MessageCircle size={size} className="text-cyan-400" />;
     case 'post_like':

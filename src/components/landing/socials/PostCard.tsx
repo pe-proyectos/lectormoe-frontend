@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Heart, MessageCircle, Repeat2, Bookmark, Share, Trash2, MoreHorizontal, BadgeCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Bookmark, Share, Trash2, MoreHorizontal, BadgeCheck, ChevronLeft, ChevronRight, Flag, Ban, Link2, EyeOff } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import { timeAgo, resolveImg, authorHref, authorAvatar, tokenizeContent, type Post } from './postUtils'
@@ -92,6 +92,8 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
   const [saved, setSaved] = useState(main.saved)
   const [menuOpen, setMenuOpen] = useState(false)
   const [gone, setGone] = useState(false)
+  const [revealed, setRevealed] = useState(false)
+  const [reportMode, setReportMode] = useState(false)
   if (gone) return null
 
   const canDelete = logged && (
@@ -134,6 +136,18 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
     catch { setGone(false); toast.error('No se pudo eliminar') }
   }
   const goThread = () => { window.location.href = `/socials/${main.id}` }
+  const report = async (category: string) => {
+    setMenuOpen(false); setReportMode(false)
+    try { await callAPI(`/api/posts/${main.id}/report`, { method: 'POST', body: JSON.stringify({ category }) }); toast.success(en ? 'Report sent' : 'Reporte enviado') }
+    catch (e: any) { toast.error(e?.message || 'No se pudo') }
+  }
+  const copyLink = async () => { setMenuOpen(false); try { await navigator.clipboard.writeText(`${window.location.origin}/socials/${main.id}`); toast.success(en ? 'Link copied' : 'Enlace copiado') } catch {} }
+  const blockAuthor = async () => {
+    setMenuOpen(false)
+    if (a.kind !== 'user' || !a.slug) return
+    if (!confirm(en ? `Block @${a.slug}?` : `¿Bloquear a @${a.slug}?`)) return
+    try { await callAPI(`/api/users/${a.slug}/block`, { method: 'POST' }); toast.success(en ? 'Blocked' : 'Bloqueado'); setGone(true) } catch { toast.error('No se pudo') }
+  }
 
   const a = main.author
   const ActionBtn = ({ icon, count, active, color, onClick, label }: any) => (
@@ -159,24 +173,49 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
             {a.kind === 'scan' && a.byUser && <span className="text-[12px] text-white/40 truncate">· {en ? 'by' : 'por'} @{a.byUser}</span>}
             <span className="text-[13px] text-white/35">· {timeAgo(main.createdAt, language)}</span>
             {main.pinned && <span className="text-[10px] text-cyan-300 font-bold uppercase ml-1">{en ? 'Pinned' : 'Fijado'}</span>}
-            {canDelete && (
-              <div className="relative ml-auto">
-                <button type="button" onClick={() => setMenuOpen((v) => !v)} aria-label="Opciones" className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/5 cursor-pointer"><MoreHorizontal size={17} /></button>
-                {menuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 top-8 z-20 w-36 rounded-xl bg-zinc-900 ring-1 ring-white/10 shadow-xl py-1">
-                      <button type="button" onClick={del} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-white/5 cursor-pointer"><Trash2 size={15} /> {en ? 'Delete' : 'Eliminar'}</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="relative ml-auto">
+              <button type="button" onClick={() => { setMenuOpen((v) => !v); setReportMode(false) }} aria-label="Opciones" className="p-1.5 -m-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 cursor-pointer"><MoreHorizontal size={17} /></button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => { setMenuOpen(false); setReportMode(false) }} />
+                  <div className="absolute right-0 top-9 z-20 w-52 rounded-2xl bg-zinc-900/95 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl py-1.5">
+                    {reportMode ? (
+                      <>
+                        <div className="px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-white/40">{en ? 'Report reason' : 'Motivo del reporte'}</div>
+                        {([['spam','Spam'],['harassment',en?'Harassment':'Acoso'],['nsfw_unmarked',en?'NSFW not marked':'NSFW sin marcar'],['spoiler_unmarked',en?'Unmarked spoiler':'Spoiler sin marcar'],['other',en?'Other':'Otro']] as [string,string][]).map(([c,l]) => (
+                          <button key={c} type="button" onClick={() => report(c)} className="w-full text-left px-4 py-2 text-sm text-zinc-200 hover:bg-white/5 cursor-pointer">{l}</button>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" onClick={copyLink} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-200 hover:bg-white/5 cursor-pointer"><Link2 size={15} /> {en ? 'Copy link' : 'Copiar enlace'}</button>
+                        {logged && <button type="button" onClick={() => setReportMode(true)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-200 hover:bg-white/5 cursor-pointer"><Flag size={15} /> {en ? 'Report' : 'Reportar'}</button>}
+                        {logged && a.kind === 'user' && a.slug && a.slug !== user?.slug && <button type="button" onClick={blockAuthor} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-200 hover:bg-white/5 cursor-pointer"><Ban size={15} /> {en ? 'Block' : 'Bloquear'} @{a.slug}</button>}
+                        {canDelete && <div className="my-1 h-px bg-white/10" />}
+                        {canDelete && <button type="button" onClick={del} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-white/5 cursor-pointer"><Trash2 size={15} /> {en ? 'Delete' : 'Eliminar'}</button>}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="mt-0.5" onClick={(e) => { if ((e.target as HTMLElement).closest('a,button')) return; if (!asThreadRoot) goThread() }} style={{ cursor: asThreadRoot ? 'default' : 'pointer' }}>
-            <Content text={main.content} />
-            <Carousel images={main.images} />
+            {main.isSpoiler && !revealed ? (
+              <div className="relative mt-1 rounded-2xl overflow-hidden">
+                <div className="pointer-events-none blur-md select-none opacity-60"><Content text={main.content} /><Carousel images={main.images} /></div>
+                <button type="button" onClick={(e) => { e.stopPropagation(); setRevealed(true) }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-zinc-950/40 backdrop-blur-sm cursor-pointer">
+                  <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/90 ring-1 ring-white/15 text-sm font-bold text-white"><EyeOff size={15} /> {en ? 'Spoiler — tap to reveal' : 'Spoiler — toca para mostrar'}</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <Content text={main.content} />
+                <Carousel images={main.images} />
+              </>
+            )}
             {!isPureRepost && main.repostOf && <QuotedPost post={main.repostOf} />}
           </div>
 

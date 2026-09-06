@@ -170,6 +170,8 @@ const buildItemUrl = (n: NotificationItem): string | null => {
     case 'content_removed':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/mangas`;
+    case 'user_follow':
+      return n.actor?.slug ? `/profile/${n.actor.slug}` : '/socials';
     case 'post_reply':
     case 'post_like':
     case 'post_repost':
@@ -238,6 +240,10 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
       const reason = (n as any).details ? truncate((n as any).details, 60) : '';
       return { title: `Obra retirada: ${mangaTitle}`, subtitle: reason ? `${reason} · ${rel}` : rel };
     }
+    case 'user_follow': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} te siguió`, subtitle: rel };
+    }
     case 'post_reply': {
       const who = n.actor?.username || 'Alguien';
       return { title: `${who} respondió tu publicación`, subtitle: rel };
@@ -275,6 +281,8 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 14 
     case 'failed_payment':
     case 'content_removed':
       return <AlertCircle size={size} className="text-red-400" />;
+    case 'user_follow':
+      return <UserPlus size={size} className="text-cyan-400" />;
     case 'post_reply':
       return <MessageCircle size={size} className="text-cyan-400" />;
     case 'post_like':

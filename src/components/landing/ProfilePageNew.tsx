@@ -63,6 +63,8 @@ interface ReadingHistory {
   lastReadAt: string;
 }
 
+import ProfileSocial from './socials/ProfileSocial';
+
 const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization, profileSlug, isOwner = false, nsfwMode = false }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [followedScans, setFollowedScans] = useState<FollowedScan[]>([]);
@@ -981,6 +983,11 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
               ))}
             </div>
           </>
+        )}
+
+        {/* Módulo social: seguir + publicaciones del usuario */}
+        {profileSlug && (
+          <ProfileSocial profileSlug={profileSlug} currentUser={user} logged={logged} language="es" />
         )}
 
         {/* Reading Streak Badge */}

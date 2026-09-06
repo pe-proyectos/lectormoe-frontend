@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { ImagePlus, Loader2, X, Send } from 'lucide-react'
+import { ImagePlus, Loader2, X, Send, EyeOff } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import { uploadFile } from '../../../util/uploadFile'
@@ -23,6 +23,7 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
   const [content, setContent] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
+  const [spoiler, setSpoiler] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const avatar = user?.imageUrl ? resolveImg(user.imageUrl) : null
 
@@ -41,10 +42,10 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
       if (files.length) images = await Promise.all(files.map(async (f) => resolveImg(await uploadFile(f, undefined, 'posts'))))
       const post: any = await callAPI('/api/socials/posts', {
         method: 'POST',
-        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null }),
+        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler }),
       })
       onCreated(post)
-      setContent(''); setFiles([])
+      setContent(''); setFiles([]); setSpoiler(false)
       if (!replyTo && !compact) toast.success(en ? 'Published' : 'Publicado')
     } catch (e: any) { toast.error(e?.message || 'No se pudo publicar') } finally { setBusy(false) }
   }
@@ -71,7 +72,10 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
         )}
         <div className="mt-2 flex items-center justify-between">
           <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addFiles(e.target.files)} />
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={files.length >= MAX_IMAGES} className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-40 cursor-pointer"><ImagePlus size={19} /></button>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={files.length >= MAX_IMAGES} className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-40 cursor-pointer"><ImagePlus size={19} /></button>
+            <button type="button" onClick={() => setSpoiler((v) => !v)} title={en ? 'Mark as spoiler' : 'Marcar como spoiler'} className={`p-1.5 rounded-lg cursor-pointer ${spoiler ? 'text-amber-400 bg-amber-500/10' : 'text-white/50 hover:bg-white/5'}`}><EyeOff size={18} /></button>
+          </div>
           <button type="button" onClick={submit} disabled={busy || (!content.trim() && files.length === 0)}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-cyan-500 text-zinc-950 text-sm font-black hover:bg-cyan-400 disabled:opacity-40 cursor-pointer">
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} {replyTo ? (en ? 'Reply' : 'Responder') : (en ? 'Post' : 'Publicar')}
