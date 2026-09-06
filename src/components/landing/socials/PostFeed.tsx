@@ -11,11 +11,12 @@ interface Props {
   language?: string
   emptyText?: string
   prepend?: Post[]
+  onTopId?: (id: number) => void
 }
 
 export interface PostFeedHandle { prepend: (p: Post) => void }
 
-const PostFeed: React.FC<Props> = ({ fetcher, reloadKey, user, logged, language = 'es', emptyText }) => {
+const PostFeed: React.FC<Props> = ({ fetcher, reloadKey, user, logged, language = 'es', emptyText, onTopId }) => {
   const [posts, setPosts] = useState<Post[]>([])
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
@@ -31,6 +32,7 @@ const PostFeed: React.FC<Props> = ({ fetcher, reloadKey, user, logged, language 
       if (my !== reqId.current) return
       setPosts((prev) => (replace ? items : [...prev, ...items]))
       setHasMore(hasMore)
+      if (replace && items[0]) onTopId?.(items[0].id)
     } catch { if (my === reqId.current) setHasMore(false) } finally { if (my === reqId.current) setLoading(false) }
   }, [fetcher])
 

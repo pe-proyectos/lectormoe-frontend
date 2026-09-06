@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Search, TrendingUp, Sparkles, Users, Flame, Bookmark, X } from 'lucide-react'
+import { Search, TrendingUp, Sparkles, Users, Flame, Bookmark, X, ArrowUp } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
 import PostComposer from './socials/PostComposer'
 import PostCard from './socials/PostCard'
@@ -16,9 +16,24 @@ const SocialsPage: React.FC<Props> = ({ user, logged, nsfwMode, language = 'es' 
   const [trending, setTrending] = useState<{ tag: string; count: number }[]>([])
   const [q, setQ] = useState('')
   const [search, setSearch] = useState('')
+  const [topId, setTopId] = useState(0)
+  const [newCount, setNewCount] = useState(0)
+  const [nonce, setNonce] = useState(0)
 
-  useEffect(() => { setExtra([]) }, [tab, search])
+  useEffect(() => { setExtra([]); setNewCount(0) }, [tab, search])
   useEffect(() => { callAPI('/api/socials/trending').then((d: any) => setTrending(d || [])).catch(() => {}) }, [])
+
+  useEffect(() => {
+    if (search || tab === 'saved' || !topId) return
+    const poll = async () => {
+      if (document.hidden) return
+      try { const d: any = await callAPI(`/api/socials/feed/updates?sinceId=${topId}${nsfwParam}`); setNewCount(d?.count || 0) } catch {}
+    }
+    const iv = setInterval(poll, 45000)
+    return () => clearInterval(iv)
+  }, [topId, search, tab, nsfwParam])
+
+  const showNew = () => { setNewCount(0); setExtra([]); setNonce((n) => n + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
   const nsfwParam = nsfwMode ? '&nsfw=1' : ''
   const feedFetcher = useCallback(async (page: number) => {
@@ -67,6 +82,13 @@ const SocialsPage: React.FC<Props> = ({ user, logged, nsfwMode, language = 'es' 
             className="flex-1 bg-transparent text-sm text-white placeholder-white/30 focus:outline-none" />
         </form>
 
+        {newCount > 0 && !search && tab !== 'saved' && (
+          <div className="sticky top-[112px] z-20 flex justify-center pointer-events-none">
+            <button type="button" onClick={showNew} className="pointer-events-auto mt-2 flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-500 text-zinc-950 text-sm font-black shadow-[0_8px_24px_-8px_rgba(34,211,238,0.6)] hover:from-cyan-300 hover:to-cyan-400 active:scale-95 transition cursor-pointer">
+              <ArrowUp size={16} /> {newCount} {en ? 'new posts' : 'posts nuevos'}
+            </button>
+          </div>
+        )}
         {logged && !search && tab !== 'saved' && (
           <div className="border-b border-white/10">
             <PostComposer user={user} language={language} onCreated={(p) => setExtra((e) => [p, ...e])} />
@@ -77,7 +99,8 @@ const SocialsPage: React.FC<Props> = ({ user, logged, nsfwMode, language = 'es' 
 
         <PostFeed
           fetcher={feedFetcher}
-          reloadKey={`${tab}|${search}`}
+          reloadKey={`${tab}|${search}|${nonce}`}
+          onTopId={setTopId}
           user={user} logged={logged} language={language}
           emptyText={
             search ? (en ? 'No results.' : 'Sin resultados.')
