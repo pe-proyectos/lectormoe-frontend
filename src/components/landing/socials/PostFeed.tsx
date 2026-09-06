@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MessageSquareText } from 'lucide-react'
 import PostCard from './PostCard'
 import type { Post } from './postUtils'
 
@@ -46,10 +46,30 @@ const PostFeed: React.FC<Props> = ({ fetcher, reloadKey, user, logged, language 
   }, [hasMore, loading, page, load])
 
   const onLogin = () => { window.location.href = '/login' }
+
+  const Skeleton = () => (
+    <div className="border-b border-white/[0.06] px-4 py-4 animate-pulse">
+      <div className="flex gap-3">
+        <div className="w-11 h-11 rounded-full bg-white/[0.06] shrink-0" />
+        <div className="flex-1 space-y-2.5 pt-1">
+          <div className="h-3 w-40 bg-white/[0.06] rounded" />
+          <div className="h-3 w-full bg-white/[0.06] rounded" />
+          <div className="h-3 w-3/4 bg-white/[0.06] rounded" />
+        </div>
+      </div>
+    </div>
+  )
   const onDeleted = (id: number) => setPosts((prev) => prev.filter((p) => p.id !== id))
 
-  if (loading && posts.length === 0) return <div className="flex justify-center py-16 text-white/40"><Loader2 size={26} className="animate-spin" /></div>
-  if (posts.length === 0) return <p className="text-center text-white/45 py-16 px-4">{emptyText || (language === 'en' ? 'Nothing here yet.' : 'Aún no hay nada por aquí.')}</p>
+  if (loading && posts.length === 0) return <div>{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} />)}</div>
+  if (posts.length === 0) return (
+    <div className="flex flex-col items-center justify-center text-center py-20 px-8 max-w-sm mx-auto">
+      <div className="w-16 h-16 rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06] flex items-center justify-center mb-4">
+        <MessageSquareText size={30} className="text-white/25" />
+      </div>
+      <p className="text-white/60 font-bold">{emptyText || (language === 'en' ? 'Nothing here yet.' : 'Aún no hay nada por aquí.')}</p>
+    </div>
+  )
 
   return (
     <div>

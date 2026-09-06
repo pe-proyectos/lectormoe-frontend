@@ -77,7 +77,7 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
             <button type="button" onClick={() => setSpoiler((v) => !v)} title={en ? 'Mark as spoiler' : 'Marcar como spoiler'} className={`p-1.5 rounded-lg cursor-pointer ${spoiler ? 'text-amber-400 bg-amber-500/10' : 'text-white/50 hover:bg-white/5'}`}><EyeOff size={18} /></button>
           </div>
           <button type="button" onClick={submit} disabled={busy || (!content.trim() && files.length === 0)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-cyan-500 text-zinc-950 text-sm font-black hover:bg-cyan-400 disabled:opacity-40 cursor-pointer">
+            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-500 text-zinc-950 text-sm font-black hover:from-cyan-300 hover:to-cyan-400 shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_6px_18px_-6px_rgba(34,211,238,0.5)] disabled:opacity-40 disabled:shadow-none active:scale-[0.98] transition cursor-pointer">
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} {replyTo ? (en ? 'Reply' : 'Responder') : (en ? 'Post' : 'Publicar')}
           </button>
         </div>

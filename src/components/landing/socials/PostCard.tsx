@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Heart, MessageCircle, Repeat2, Bookmark, Share, Trash2, MoreHorizontal, BadgeCheck, ChevronLeft, ChevronRight, Flag, Ban, Link2, EyeOff } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
+import PostImages from './PostImages'
 import { timeAgo, resolveImg, authorHref, authorAvatar, tokenizeContent, type Post } from './postUtils'
 
 interface Props {
@@ -94,6 +95,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
   const [gone, setGone] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [reportMode, setReportMode] = useState(false)
+  const [burst, setBurst] = useState(false)
   if (gone) return null
 
   const canDelete = logged && (
@@ -106,6 +108,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
   const toggleLike = async () => {
     if (!guard()) return
     const n = !liked; setLiked(n); setLikes((x) => x + (n ? 1 : -1))
+    if (n) { setBurst(true); setTimeout(() => setBurst(false), 550) }
     try { const r: any = await callAPI(`/api/posts/${main.id}/like`, { method: 'POST' }); setLiked(r.liked); setLikes(r.likesCount) }
     catch { setLiked(!n); setLikes((x) => x + (n ? -1 : 1)) }
   }
@@ -150,10 +153,11 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
   }
 
   const a = main.author
-  const ActionBtn = ({ icon, count, active, color, onClick, label }: any) => (
+  const ActionBtn = ({ icon, count, active, color, halo, onClick, label, children }: any) => (
     <button type="button" onClick={onClick} aria-label={label}
-      className={`flex items-center gap-1.5 text-[13px] font-bold cursor-pointer transition ${active ? color : 'text-white/50 hover:text-white'}`}>
-      {icon} {count > 0 ? count : ''}
+      className={`group/act flex items-center gap-1 text-[13px] font-medium cursor-pointer transition ${active ? color : 'text-white/50 hover:text-white'}`}>
+      <span className={`relative flex items-center justify-center p-2 -m-2 rounded-full transition ${halo}`}>{icon}{children}</span>
+      <span className="tabular-nums min-w-[12px] text-left">{count > 0 ? count : ''}</span>
     </button>
   )
 
@@ -204,7 +208,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
           <div className="mt-0.5" onClick={(e) => { if ((e.target as HTMLElement).closest('a,button')) return; if (!asThreadRoot) goThread() }} style={{ cursor: asThreadRoot ? 'default' : 'pointer' }}>
             {main.isSpoiler && !revealed ? (
               <div className="relative mt-1 rounded-2xl overflow-hidden">
-                <div className="pointer-events-none blur-md select-none opacity-60"><Content text={main.content} /><Carousel images={main.images} /></div>
+                <div className="pointer-events-none blur-md select-none opacity-60"><Content text={main.content} /><PostImages images={main.images} /></div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); setRevealed(true) }}
                   className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-zinc-950/40 backdrop-blur-sm cursor-pointer">
                   <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/90 ring-1 ring-white/15 text-sm font-bold text-white"><EyeOff size={15} /> {en ? 'Spoiler — tap to reveal' : 'Spoiler — toca para mostrar'}</span>
@@ -213,18 +217,20 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
             ) : (
               <>
                 <Content text={main.content} />
-                <Carousel images={main.images} />
+                <PostImages images={main.images} />
               </>
             )}
             {!isPureRepost && main.repostOf && <QuotedPost post={main.repostOf} />}
           </div>
 
-          <div className="mt-3 flex items-center gap-6 max-w-md">
-            <ActionBtn icon={<MessageCircle size={17} />} count={main.commentsCount} active={false} onClick={goThread} label="Responder" />
-            <ActionBtn icon={<Repeat2 size={17} />} count={reposts} active={reposted} color="text-emerald-400" onClick={toggleRepost} label="Repostear" />
-            <ActionBtn icon={<Heart size={17} className={liked ? 'fill-rose-400' : ''} />} count={likes} active={liked} color="text-rose-400" onClick={toggleLike} label="Me gusta" />
-            <button type="button" onClick={toggleSave} aria-label="Guardar" className={`cursor-pointer transition ${saved ? 'text-cyan-400' : 'text-white/50 hover:text-white'}`}><Bookmark size={17} className={saved ? 'fill-cyan-400' : ''} /></button>
-            <button type="button" onClick={share} aria-label="Compartir" className="text-white/50 hover:text-white cursor-pointer transition"><Share size={16} /></button>
+          <div className="mt-2 flex items-center justify-between max-w-[340px]">
+            <ActionBtn icon={<MessageCircle size={18} />} count={main.commentsCount} active={false} halo="group-hover/act:bg-cyan-400/10 group-hover/act:text-cyan-400" onClick={goThread} label="Responder" />
+            <ActionBtn icon={<Repeat2 size={18} />} count={reposts} active={reposted} color="text-emerald-400" halo="group-hover/act:bg-emerald-400/10 group-hover/act:text-emerald-400" onClick={toggleRepost} label="Repostear" />
+            <ActionBtn icon={<Heart size={18} className={`transition-transform ${liked ? 'fill-rose-400' : ''} ${burst ? 'scale-125' : 'scale-100'}`} />} count={likes} active={liked} color="text-rose-400" halo="group-hover/act:bg-rose-400/10 group-hover/act:text-rose-400" onClick={toggleLike} label="Me gusta">
+              {burst && <span className="absolute inset-0 rounded-full ring-2 ring-rose-400/50 animate-ping" />}
+            </ActionBtn>
+            <button type="button" onClick={toggleSave} aria-label="Guardar" className={`p-2 -m-2 rounded-full cursor-pointer transition hover:bg-cyan-400/10 ${saved ? 'text-cyan-400' : 'text-white/50 hover:text-cyan-400'}`}><Bookmark size={18} className={saved ? 'fill-cyan-400' : ''} /></button>
+            <button type="button" onClick={share} aria-label="Compartir" className="p-2 -m-2 rounded-full text-white/50 hover:text-cyan-400 hover:bg-cyan-400/10 cursor-pointer transition"><Share size={17} /></button>
           </div>
         </div>
       </div>
