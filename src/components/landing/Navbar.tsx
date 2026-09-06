@@ -523,6 +523,13 @@ const Navbar: React.FC<NavbarProps> = ({
             <ListIcon size={16} /> Listas
           </a>
 
+          <a
+            href="/socials"
+            className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
+          >
+            <MessageCircle size={16} /> Comunidad
+          </a>
+
           {/* Luckys oculto del navbar (decisión 2026-07-07). La página /luckys
               sigue accesible por URL directa. */}
 
