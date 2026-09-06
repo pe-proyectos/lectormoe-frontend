@@ -27,11 +27,11 @@ const SocialsPage: React.FC<Props> = ({ user, logged, nsfwMode, language = 'es' 
     if (search || tab === 'saved' || !topId) return
     const poll = async () => {
       if (document.hidden) return
-      try { const d: any = await callAPI(`/api/socials/feed/updates?sinceId=${topId}${nsfwParam}`); setNewCount(d?.count || 0) } catch {}
+      try { const d: any = await callAPI(`/api/socials/feed/updates?sinceId=${topId}${nsfwMode ? '&nsfw=1' : ''}`); setNewCount(d?.count || 0) } catch {}
     }
     const iv = setInterval(poll, 45000)
     return () => clearInterval(iv)
-  }, [topId, search, tab, nsfwParam])
+  }, [topId, search, tab, nsfwMode])
 
   const showNew = () => { setNewCount(0); setExtra([]); setNonce((n) => n + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
