@@ -32,6 +32,7 @@ export interface Post {
   repostOf: Post | null
   spoilerSafe?: boolean
   spoilerWork?: { mangaCustomId: number; title: string | null; chapter: number | null } | null
+  work?: { title: string; imageUrl: string | null; mangaSlug: string | null; orgSlug: string | null; isNSFW: boolean } | null
   poll?: { id: number; options: { text: string; votes: number }[]; votesCount: number; endsAt: string; myVote: number | null } | null
 }
 

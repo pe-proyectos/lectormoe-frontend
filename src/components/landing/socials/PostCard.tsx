@@ -4,7 +4,7 @@ import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import PostImages from './PostImages'
 import PostPoll from './PostPoll'
-import { timeAgo, resolveImg, authorHref, authorAvatar, tokenizeContent, type Post } from './postUtils'
+import { timeAgo, resolveImg, authorHref, authorAvatar, orgHref, tokenizeContent, type Post } from './postUtils'
 
 interface Props {
   post: Post
@@ -77,6 +77,20 @@ function QuotedPost({ post }: { post: Post }) {
       </div>
       {post.content && <p className="mt-1 text-[13px] text-white/75 line-clamp-4 whitespace-pre-wrap break-words">{post.content}</p>}
       {post.images.length > 0 && <img src={resolveImg(post.images[0])} alt="" className="mt-2 max-h-52 rounded-lg object-cover" />}
+    </a>
+  )
+}
+
+function WorkCard({ work, en }: { work: NonNullable<Post['work']>; en: boolean }) {
+  const href = work.orgSlug && work.mangaSlug ? `${orgHref(work.orgSlug, work.isNSFW)}/manga/${work.mangaSlug}` : '#'
+  return (
+    <a href={href} onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 hover:border-cyan-400/40 bg-white/[0.02] p-2.5 transition-colors group/w">
+      {work.imageUrl ? <img src={resolveImg(work.imageUrl)} alt="" className="w-12 h-16 object-cover rounded-lg shrink-0" /> : <div className="w-12 h-16 rounded-lg bg-white/10 shrink-0" />}
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-black uppercase tracking-wider text-cyan-400/80">{en ? 'Work' : 'Obra'}</p>
+        <p className="text-sm font-bold text-white truncate">{work.title}</p>
+      </div>
+      <span className="shrink-0 px-3 py-1.5 rounded-full bg-white/5 group-hover/w:bg-cyan-500 group-hover/w:text-zinc-950 text-white text-xs font-black transition-colors">{en ? 'Read' : 'Leer'}</span>
     </a>
   )
 }
@@ -220,6 +234,7 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
               <>
                 <Content text={main.content} />
                 <PostImages images={main.images} />
+                {main.work && <WorkCard work={main.work} en={en} />}
                 {main.poll && <PostPoll poll={main.poll} logged={logged} language={language} onLogin={onLogin} />}
               </>
             )}

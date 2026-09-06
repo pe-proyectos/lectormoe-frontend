@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ImagePlus, Loader2, X, Send, EyeOff, BarChart3, Plus, Search } from 'lucide-react'
+import { ImagePlus, Loader2, X, Send, EyeOff, BarChart3, Plus, Search, BookOpen } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import { uploadFile } from '../../../util/uploadFile'
@@ -28,6 +28,10 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
   const [spoilerChapter, setSpoilerChapter] = useState('')
   const [workQ, setWorkQ] = useState('')
   const [workResults, setWorkResults] = useState<any[]>([])
+  const [attachMode, setAttachMode] = useState(false)
+  const [attachedWork, setAttachedWork] = useState<{ id: number; title: string; imageUrl?: string | null } | null>(null)
+  const [attachQ, setAttachQ] = useState('')
+  const [attachResults, setAttachResults] = useState<any[]>([])
   const [pollMode, setPollMode] = useState(false)
   const [pollOpts, setPollOpts] = useState<string[]>(['', ''])
   const [pollDur, setPollDur] = useState(24)
@@ -41,6 +45,14 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
     }, 300)
     return () => clearTimeout(t)
   }, [workQ, spoiler, spoilerWork])
+
+  useEffect(() => {
+    if (!attachMode || attachedWork || attachQ.trim().length < 2) { setAttachResults([]); return }
+    const t = setTimeout(async () => {
+      try { const d: any = await callAPI(`/api/socials/works/search?q=${encodeURIComponent(attachQ.trim())}`); setAttachResults(d || []) } catch { setAttachResults([]) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [attachQ, attachMode, attachedWork])
 
   const addFiles = (list: FileList | null) => {
     if (!list) return
@@ -58,10 +70,10 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
       if (files.length) images = await Promise.all(files.map(async (f) => resolveImg(await uploadFile(f, undefined, 'posts'))))
       const post: any = await callAPI('/api/socials/posts', {
         method: 'POST',
-        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler, spoilerOfMangaCustomId: spoiler ? spoilerWork?.id ?? null : null, spoilerChapter: spoiler && spoilerChapter ? Number(spoilerChapter) : null, poll: pollMode && pollOpts.filter((o) => o.trim()).length >= 2 ? { options: pollOpts.filter((o) => o.trim()), durationHours: pollDur } : undefined }),
+        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler, spoilerOfMangaCustomId: spoiler ? spoilerWork?.id ?? null : null, spoilerChapter: spoiler && spoilerChapter ? Number(spoilerChapter) : null, workMangaCustomId: attachedWork?.id ?? null, poll: pollMode && pollOpts.filter((o) => o.trim()).length >= 2 ? { options: pollOpts.filter((o) => o.trim()), durationHours: pollDur } : undefined }),
       })
       onCreated(post)
-      setContent(''); setFiles([]); setSpoiler(false); setSpoilerWork(null); setSpoilerChapter(''); setWorkQ(''); setPollMode(false); setPollOpts(['', ''])
+      setContent(''); setFiles([]); setSpoiler(false); setSpoilerWork(null); setSpoilerChapter(''); setWorkQ(''); setAttachMode(false); setAttachedWork(null); setAttachQ(''); setPollMode(false); setPollOpts(['', ''])
       if (!replyTo && !compact) toast.success(en ? 'Published' : 'Publicado')
     } catch (e: any) { toast.error(e?.message || 'No se pudo publicar') } finally { setBusy(false) }
   }
@@ -133,12 +145,41 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
             )}
           </div>
         )}
+        {attachMode && (
+          <div className="mt-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-3">
+            {attachedWork ? (
+              <div className="flex items-center gap-2">
+                {attachedWork.imageUrl && <img src={resolveImg(attachedWork.imageUrl)} alt="" className="w-8 h-11 object-cover rounded" />}
+                <span className="text-sm text-white flex-1 truncate">{attachedWork.title}</span>
+                <button type="button" onClick={() => { setAttachedWork(null); setAttachQ('') }} className="text-white/40 hover:text-rose-400 cursor-pointer"><X size={14} /></button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5">
+                  <Search size={15} className="text-white/40" />
+                  <input value={attachQ} onChange={(e) => setAttachQ(e.target.value)} placeholder={en ? 'Attach a work…' : 'Adjuntar una obra…'} className="flex-1 bg-transparent text-sm text-white placeholder-white/30 focus:outline-none" />
+                </div>
+                {attachResults.length > 0 && (
+                  <div className="absolute z-30 mt-1 w-full max-h-60 overflow-auto rounded-xl bg-zinc-900/95 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl py-1">
+                    {attachResults.map((w) => (
+                      <button key={w.id} type="button" onClick={() => { setAttachedWork({ id: w.id, title: w.title, imageUrl: w.imageUrl }); setAttachResults([]) }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer text-left">
+                        {w.imageUrl && <img src={resolveImg(w.imageUrl)} alt="" className="w-7 h-9 object-cover rounded" />}
+                        <span className="text-sm text-white truncate">{w.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         <div className="mt-2 flex items-center justify-between">
           <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => addFiles(e.target.files)} />
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => fileRef.current?.click()} disabled={files.length >= MAX_IMAGES} className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-500/10 disabled:opacity-40 cursor-pointer"><ImagePlus size={19} /></button>
             <button type="button" onClick={() => setSpoiler((v) => !v)} title={en ? 'Mark as spoiler' : 'Marcar como spoiler'} className={`p-1.5 rounded-lg cursor-pointer ${spoiler ? 'text-amber-400 bg-amber-500/10' : 'text-white/50 hover:bg-white/5'}`}><EyeOff size={18} /></button>
             {!replyTo && <button type="button" onClick={() => setPollMode((v) => !v)} title={en ? 'Poll' : 'Encuesta'} className={`p-1.5 rounded-lg cursor-pointer ${pollMode ? 'text-cyan-400 bg-cyan-500/10' : 'text-white/50 hover:bg-white/5'}`}><BarChart3 size={18} /></button>}
+            <button type="button" onClick={() => setAttachMode((v) => !v)} title={en ? 'Attach work' : 'Adjuntar obra'} className={`p-1.5 rounded-lg cursor-pointer ${attachMode ? 'text-cyan-400 bg-cyan-500/10' : 'text-white/50 hover:bg-white/5'}`}><BookOpen size={18} /></button>
           </div>
           <button type="button" onClick={submit} disabled={busy || (!content.trim() && files.length === 0)}
             className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-500 text-zinc-950 text-sm font-black hover:from-cyan-300 hover:to-cyan-400 shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_6px_18px_-6px_rgba(34,211,238,0.5)] disabled:opacity-40 disabled:shadow-none active:scale-[0.98] transition cursor-pointer">
