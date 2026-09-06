@@ -242,7 +242,8 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
     }
     case 'user_follow': {
       const who = n.actor?.username || 'Alguien';
-      return { title: `${who} te siguió`, subtitle: rel };
+      const more = (n.actorsCount || 1) - 1;
+      return { title: more > 0 ? `${who} y ${more} más te siguieron` : `${who} te siguió`, subtitle: rel };
     }
     case 'post_reply': {
       const who = n.actor?.username || 'Alguien';
@@ -250,7 +251,8 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
     }
     case 'post_like': {
       const who = n.actor?.username || 'Alguien';
-      return { title: `A ${who} le gustó tu publicación`, subtitle: rel };
+      const more = (n.actorsCount || 1) - 1;
+      return { title: more > 0 ? `A ${who} y ${more} más les gustó tu publicación` : `A ${who} le gustó tu publicación`, subtitle: rel };
     }
     case 'post_repost': {
       const who = n.actor?.username || 'Alguien';

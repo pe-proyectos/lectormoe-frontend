@@ -696,27 +696,31 @@ const ReportsTab = ({ token }: { token: string }) => {
       ) : (
         <div className="space-y-3">
           {reports.map((r) => {
-            const target = r.mangaCustom || r.joint;
-            const targetUrl = r.mangaCustom ? `/${r.mangaCustom.organization?.slug}/manga/${r.mangaCustom.manga?.slug}` : r.joint ? `/joint/manga/${r.joint.slug}` : '#';
-            // La obra está oculta al público si tiene deletedAt (soft delete).
-            const isHidden = !!target?.deletedAt;
+            const isPost = !!r.post;
+            const target = r.post || r.mangaCustom || r.joint;
+            const targetUrl = isPost ? `/socials/${r.postId}` : r.mangaCustom ? `/${r.mangaCustom.organization?.slug}/manga/${r.mangaCustom.manga?.slug}` : r.joint ? `/joint/manga/${r.joint.slug}` : '#';
+            // Oculto al público: posts usan hiddenAt; obras usan deletedAt.
+            const isHidden = isPost ? !!r.post.hiddenAt : !!target?.deletedAt;
+            const rowTitle = isPost ? ((r.post.content || '').trim().slice(0, 90) || '(publicación con imagen)') : (target?.title || 'Obra');
+            const rowSub = isPost ? `@${r.post.user?.username || '—'}${r.post.organization ? ' · ' + r.post.organization.name : ''} · reportado por @${r.reporter?.slug}` : `${r.mangaCustom?.organization?.name || ''} · por @${r.reporter?.slug}`;
+            const rowImg = isPost ? (Array.isArray(r.post.images) ? r.post.images[0] : null) : target?.imageUrl;
             return (
               <div key={r.id} className="flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                {target?.imageUrl && <img src={target.imageUrl} alt="" className="w-10 h-14 object-cover rounded" />}
+                {rowImg && <img src={rowImg} alt="" className="w-10 h-14 object-cover rounded" />}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <a href={targetUrl} target="_blank" rel="noreferrer" className="font-semibold text-white hover:text-violet-400 truncate">{target?.title || 'Obra'}</a>
+                    <a href={targetUrl} target="_blank" rel="noreferrer" className="font-semibold text-white hover:text-violet-400 truncate">{rowTitle}</a>
                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${r.category === 'menores' ? 'bg-red-500/20 text-red-400' : 'bg-zinc-800 text-zinc-400'}`}>{catLabel[r.category] || r.category}</span>
                     {r.reportsForTarget > 1 && <span className="text-[10px] text-zinc-500">{r.reportsForTarget} reportes</span>}
                     {r.status !== 'pending' && <span className="text-[10px] text-zinc-600">{r.status}</span>}
                     {isHidden && <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">Oculta</span>}
                   </div>
-                  <p className="text-zinc-500 text-xs">{r.mangaCustom?.organization?.name} · por @{r.reporter?.slug}</p>
+                  <p className="text-zinc-500 text-xs truncate">{rowSub}</p>
                   {r.details && <p className="text-zinc-400 text-xs mt-1 truncate">{r.details}</p>}
                 </div>
                 {r.status === 'pending' ? (
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => act(r.id, 'delete_notify')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra y avisa al scan (correo + notificación) con la razón">Borrar y notificar</button>
+                    {!isPost && <button onClick={() => act(r.id, 'delete_notify')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra y avisa al scan (correo + notificación) con la razón">Borrar y notificar</button>}
                     <button onClick={() => act(r.id, 'hide_content')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors" title="Borra la obra sin avisar al scan">Ocultar</button>
                     <button onClick={() => act(r.id, 'dismiss')} disabled={busyId === r.id} className="px-3 py-1.5 rounded-lg text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">Descartar</button>
                   </div>
