@@ -1,99 +1,120 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Users, Compass, MessageSquareText } from 'lucide-react'
+import React, { useCallback, useEffect, useState } from 'react'
+import { Search, TrendingUp, Sparkles, Users, Flame, Bookmark, X } from 'lucide-react'
 import { callAPI } from '../../util/callApi'
+import PostComposer from './socials/PostComposer'
 import PostCard from './socials/PostCard'
+import PostFeed from './socials/PostFeed'
 import type { Post } from './socials/postUtils'
 
-interface Props {
-  user: any
-  logged: boolean
-  nsfwMode?: boolean
-  language?: string
-}
-
-type Scope = 'following' | 'discover'
+interface Props { user: any; logged: boolean; nsfwMode?: boolean; language?: string }
+type Tab = 'foryou' | 'following' | 'popular' | 'saved'
 
 const SocialsPage: React.FC<Props> = ({ user, logged, nsfwMode, language = 'es' }) => {
   const en = language === 'en'
-  const [scope, setScope] = useState<Scope>(logged ? 'following' : 'discover')
-  const [posts, setPosts] = useState<Post[]>([])
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const reqId = useRef(0)
+  const [tab, setTab] = useState<Tab>('foryou')
+  const [extra, setExtra] = useState<Post[]>([])
+  const [trending, setTrending] = useState<{ tag: string; count: number }[]>([])
+  const [q, setQ] = useState('')
+  const [search, setSearch] = useState('')
 
-  const load = useCallback(async (p: number, replace: boolean, sc: Scope) => {
-    const my = ++reqId.current
-    setLoading(true)
-    try {
-      const q = new URLSearchParams({ page: String(p), limit: '10', scope: sc })
-      if (nsfwMode) q.set('nsfw', '1')
-      const data: any = await callAPI(`/api/socials/feed?${q.toString()}`)
-      if (my !== reqId.current) return
-      const items: Post[] = data?.items || []
-      setPosts((prev) => (replace ? items : [...prev, ...items]))
-      setHasMore(!!data?.hasMore)
-    } catch { if (my === reqId.current) setHasMore(false) } finally { if (my === reqId.current) setLoading(false) }
-  }, [nsfwMode])
+  useEffect(() => { setExtra([]) }, [tab, search])
+  useEffect(() => { callAPI('/api/socials/trending').then((d: any) => setTrending(d || [])).catch(() => {}) }, [])
 
-  useEffect(() => { setPosts([]); setPage(0); setHasMore(true); load(0, true, scope) }, [scope, load])
+  const nsfwParam = nsfwMode ? '&nsfw=1' : ''
+  const feedFetcher = useCallback(async (page: number) => {
+    if (search) { const d: any = await callAPI(`/api/socials/search?q=${encodeURIComponent(search)}&page=${page}`); return { items: d?.items || [], hasMore: !!d?.hasMore } }
+    if (tab === 'saved') { const d: any = await callAPI(`/api/socials/saved?page=${page}`); return { items: d?.items || [], hasMore: !!d?.hasMore } }
+    const d: any = await callAPI(`/api/socials/feed?scope=${tab}&page=${page}${nsfwParam}`)
+    return { items: d?.items || [], hasMore: !!d?.hasMore }
+  }, [tab, search, nsfwParam])
 
-  const loadMore = () => { const next = page + 1; setPage(next); load(next, false, scope) }
+  const doSearch = (e: React.FormEvent) => { e.preventDefault(); setSearch(q.trim()) }
+  const clearSearch = () => { setSearch(''); setQ('') }
   const onLogin = () => { window.location.href = '/login' }
 
-  const Tab: React.FC<{ id: Scope; icon: React.ReactNode; label: string }> = ({ id, icon, label }) => (
-    <button type="button" onClick={() => setScope(id)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition cursor-pointer ${scope === id ? 'bg-white text-zinc-950' : 'text-white/60 hover:text-white bg-white/5'}`}>
-      {icon} {label}
+  const TabBtn = ({ id, icon, label }: { id: Tab; icon: React.ReactNode; label: string }) => (
+    <button type="button" onClick={() => { setSearch(''); setTab(id) }}
+      className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 text-sm font-bold border-b-2 transition cursor-pointer ${tab === id && !search ? 'text-white border-cyan-400' : 'text-white/50 border-transparent hover:text-white hover:bg-white/[0.03]'}`}>
+      {icon} <span className="hidden sm:inline">{label}</span>
     </button>
   )
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <header className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <MessageSquareText className="text-cyan-400" size={26} />
-          <h1 className="text-2xl font-black text-white">{en ? 'Community' : 'Comunidad'}</h1>
+    <div className="max-w-6xl mx-auto flex gap-6 px-0 sm:px-4">
+      {/* Columna principal */}
+      <div className="flex-1 min-w-0 max-w-[600px] mx-auto border-x border-white/10 min-h-screen">
+        <div className="sticky top-0 z-10 backdrop-blur bg-zinc-950/80 border-b border-white/10">
+          <h1 className="px-4 pt-4 pb-2 text-xl font-black text-white flex items-center gap-2"><Sparkles size={20} className="text-cyan-400" /> {en ? 'Community' : 'Comunidad'}</h1>
+          {search ? (
+            <div className="flex items-center gap-2 px-4 pb-3 text-sm text-white/60">
+              <span>{en ? 'Results for' : 'Resultados de'} <span className="font-bold text-white">"{search}"</span></span>
+              <button type="button" onClick={clearSearch} className="text-cyan-400 hover:underline cursor-pointer flex items-center gap-1"><X size={13} /> {en ? 'clear' : 'limpiar'}</button>
+            </div>
+          ) : (
+            <div className="flex">
+              <TabBtn id="foryou" icon={<Sparkles size={15} />} label={en ? 'For you' : 'Para ti'} />
+              {logged && <TabBtn id="following" icon={<Users size={15} />} label={en ? 'Following' : 'Siguiendo'} />}
+              <TabBtn id="popular" icon={<Flame size={15} />} label={en ? 'Popular' : 'Populares'} />
+              {logged && <TabBtn id="saved" icon={<Bookmark size={15} />} label={en ? 'Saved' : 'Guardados'} />}
+            </div>
+          )}
         </div>
-        <p className="text-sm text-white/50">{en ? 'Updates, announcements and posts from your favorite scans.' : 'Avances, avisos y publicaciones de tus scans favoritos.'}</p>
-      </header>
 
-      <div className="flex items-center gap-2 mb-6">
-        {logged && <Tab id="following" icon={<Users size={15} />} label={en ? 'Following' : 'Siguiendo'} />}
-        <Tab id="discover" icon={<Compass size={15} />} label={en ? 'Discover' : 'Descubrir'} />
+        {/* búsqueda móvil */}
+        <form onSubmit={doSearch} className="lg:hidden flex items-center gap-2 px-4 py-2 border-b border-white/10">
+          <Search size={16} className="text-white/40" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={en ? 'Search posts, #tags…' : 'Buscar posts, #tags…'}
+            className="flex-1 bg-transparent text-sm text-white placeholder-white/30 focus:outline-none" />
+        </form>
+
+        {logged && !search && tab !== 'saved' && (
+          <div className="border-b border-white/10">
+            <PostComposer user={user} language={language} onCreated={(p) => setExtra((e) => [p, ...e])} />
+          </div>
+        )}
+
+        {extra.map((p) => <PostCard key={`x-${p.id}`} post={p} user={user} logged={logged} language={language} onDeleted={(id) => setExtra((e) => e.filter((x) => x.id !== id))} onLogin={onLogin} />)}
+
+        <PostFeed
+          fetcher={feedFetcher}
+          reloadKey={`${tab}|${search}`}
+          user={user} logged={logged} language={language}
+          emptyText={
+            search ? (en ? 'No results.' : 'Sin resultados.')
+              : tab === 'following' ? (en ? 'Follow scans to see their posts.' : 'Sigue scans para ver sus publicaciones.')
+              : tab === 'saved' ? (en ? 'You have no saved posts.' : 'No has guardado publicaciones.')
+              : (en ? 'No posts yet. Be the first!' : 'Aún no hay publicaciones. ¡Sé el primero!')
+          }
+        />
       </div>
 
-      {loading && posts.length === 0 ? (
-        <div className="flex justify-center py-16 text-white/40"><Loader2 size={26} className="animate-spin" /></div>
-      ) : posts.length === 0 ? (
-        <div className="text-center py-16">
-          <MessageSquareText size={40} className="mx-auto mb-3 text-white/25" />
-          <p className="text-white/50 font-semibold">
-            {scope === 'following'
-              ? (en ? 'Follow scans to see their posts here.' : 'Sigue scans para ver sus publicaciones aquí.')
-              : (en ? 'No posts yet.' : 'Aún no hay publicaciones.')}
-          </p>
-          {scope === 'following' && (
-            <button type="button" onClick={() => setScope('discover')} className="mt-3 text-cyan-400 hover:underline text-sm font-bold cursor-pointer">
-              {en ? 'Discover posts' : 'Descubrir publicaciones'}
-            </button>
-          )}
+      {/* Sidebar */}
+      <aside className="hidden lg:block w-80 shrink-0 py-4">
+        <div className="sticky top-4 space-y-4">
+          <form onSubmit={doSearch} className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2.5 focus-within:border-white/30">
+            <Search size={17} className="text-white/40" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={en ? 'Search' : 'Buscar'} className="flex-1 bg-transparent text-sm text-white placeholder-white/30 focus:outline-none" />
+          </form>
+
+          <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+            <h2 className="text-base font-black text-white flex items-center gap-2 mb-3"><TrendingUp size={18} className="text-cyan-400" /> {en ? 'Trending' : 'Tendencias'}</h2>
+            {trending.length === 0 ? (
+              <p className="text-sm text-white/40">{en ? 'Nothing trending yet.' : 'Nada en tendencia aún.'}</p>
+            ) : (
+              <ul className="space-y-2.5">
+                {trending.map((t) => (
+                  <li key={t.tag}>
+                    <a href={`/socials/tag/${t.tag}`} className="block hover:bg-white/5 -mx-2 px-2 py-1 rounded-lg transition-colors">
+                      <div className="text-sm font-bold text-white">#{t.tag}</div>
+                      <div className="text-[11px] text-white/40">{t.count} {en ? 'posts' : 'publicaciones'}</div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} user={user} logged={logged} canManage={false} showOrg language={language} onLogin={onLogin} />
-          ))}
-          {hasMore ? (
-            <button type="button" onClick={loadMore} disabled={loading}
-              className="w-full py-3 rounded-xl border border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 text-sm font-bold cursor-pointer disabled:opacity-50">
-              {loading ? <Loader2 size={16} className="animate-spin mx-auto" /> : (en ? 'Load more' : 'Cargar más')}
-            </button>
-          ) : (
-            <p className="text-center text-xs text-white/30 py-4">{en ? "That's all for now." : 'Eso es todo por ahora.'}</p>
-          )}
-        </div>
-      )}
+      </aside>
     </div>
   )
 }

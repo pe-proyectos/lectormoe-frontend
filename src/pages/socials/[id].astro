@@ -1,0 +1,13 @@
+---
+import LandingLayout from '../../layouts/LandingLayout.astro';
+import PostThread from '../../components/landing/socials/PostThread';
+// @ts-ignore
+const { user, showAds, language } = Astro.locals;
+const { id } = Astro.params;
+const pid = Number(id);
+if (!Number.isFinite(pid)) return Astro.redirect('/socials', 302);
+const logged = !!user;
+---
+<LandingLayout title="Publicación - Comunidad" description="Comunidad de CapibaraTraductor" showAds={showAds}>
+  <PostThread postId={pid} user={user} logged={logged} language={language} client:only="react" />
+</LandingLayout>

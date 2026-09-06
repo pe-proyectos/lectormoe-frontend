@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Bell, ChevronLeft, ChevronRight, CheckCheck, Loader2, MessageSquare, BookPlus, User, AlertCircle, Mail, ListChecks } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, CheckCheck, Loader2, MessageSquare, BookPlus, User, AlertCircle, Mail, ListChecks, Heart, Repeat2, AtSign, MessageCircle } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { callAPI } from '../../util/callApi';
@@ -18,6 +18,9 @@ interface NotificationItem {
   subscriptionId?: number | null;
   organizationId?: number | null;
   listId?: number | null;
+  postId?: number | null;
+  actorUserId?: number | null;
+  actor?: { username: string; slug?: string | null; imageUrl?: string | null } | null;
   details?: string | null;
   customList?: {
     slug: string;
@@ -187,6 +190,11 @@ const buildItemUrl = (n: NotificationItem, nsfwMode: boolean): string | null => 
       if (os && ms) return `/${os}/manga/${ms}`;
       return null;
     }
+    case 'post_reply':
+    case 'post_like':
+    case 'post_repost':
+    case 'post_mention':
+      return n.postId ? `/socials/${n.postId}` : '/socials';
     default:
       return null;
   }
@@ -274,6 +282,22 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
         subtitle: work ? `${work} · ${rel}` : `Toca para ver la lista · ${rel}`,
       };
     }
+    case 'post_reply': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} respondió tu publicación`, subtitle: `Toca para ver el hilo · ${rel}` };
+    }
+    case 'post_like': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `A ${who} le gustó tu publicación`, subtitle: rel };
+    }
+    case 'post_repost': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} reposteó tu publicación`, subtitle: rel };
+    }
+    case 'post_mention': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} te mencionó`, subtitle: `Toca para ver la publicación · ${rel}` };
+    }
     case 'new_chapter':
     default: {
       const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
@@ -306,6 +330,14 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 16 
       return <ListChecks size={size} className="text-cyan-400" />;
     case 'copyright_strike':
       return <AlertCircle size={size} className="text-red-400" />;
+    case 'post_reply':
+      return <MessageCircle size={size} className="text-cyan-400" />;
+    case 'post_like':
+      return <Heart size={size} className="text-rose-400" />;
+    case 'post_repost':
+      return <Repeat2 size={size} className="text-emerald-400" />;
+    case 'post_mention':
+      return <AtSign size={size} className="text-cyan-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
   }

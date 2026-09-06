@@ -1,0 +1,11 @@
+---
+import LandingLayout from '../../../layouts/LandingLayout.astro';
+import SocialsTagPage from '../../../components/landing/socials/SocialsTagPage';
+// @ts-ignore
+const { user, showAds, nsfwMode, language } = Astro.locals;
+const { tag } = Astro.params;
+const logged = !!user;
+---
+<LandingLayout title={`#${tag} - Comunidad`} description="Comunidad de CapibaraTraductor" showAds={showAds}>
+  <SocialsTagPage tag={tag} user={user} logged={logged} nsfwMode={nsfwMode} language={language} client:only="react" />
+</LandingLayout>

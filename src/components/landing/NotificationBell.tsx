@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Bell, Loader2, CheckCheck, MessageSquare, BookPlus, User, AlertCircle } from 'lucide-react';
+import { Bell, Loader2, CheckCheck, MessageSquare, BookPlus, User, AlertCircle, Heart, Repeat2, AtSign, MessageCircle } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface NotificationItem {
   id: number;
   type: string;
+  postId?: number | null;
+  actor?: { username: string; slug?: string | null; imageUrl?: string | null } | null;
   source: string;
   readAt: string | null;
   createdAt: string;
@@ -168,6 +170,11 @@ const buildItemUrl = (n: NotificationItem): string | null => {
     case 'content_removed':
       if (!n.organization?.slug) return null;
       return `/${n.organization.slug}/admin/mangas`;
+    case 'post_reply':
+    case 'post_like':
+    case 'post_repost':
+    case 'post_mention':
+      return n.postId ? `/socials/${n.postId}` : '/socials';
     default:
       return null;
   }
@@ -231,6 +238,22 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
       const reason = (n as any).details ? truncate((n as any).details, 60) : '';
       return { title: `Obra retirada: ${mangaTitle}`, subtitle: reason ? `${reason} · ${rel}` : rel };
     }
+    case 'post_reply': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} respondió tu publicación`, subtitle: rel };
+    }
+    case 'post_like': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `A ${who} le gustó tu publicación`, subtitle: rel };
+    }
+    case 'post_repost': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} reposteó tu publicación`, subtitle: rel };
+    }
+    case 'post_mention': {
+      const who = n.actor?.username || 'Alguien';
+      return { title: `${who} te mencionó`, subtitle: rel };
+    }
     case 'new_chapter':
     default: {
       const title = n.joint?.title || n.mangaCustom?.title || 'Manga';
@@ -252,6 +275,14 @@ const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 14 
     case 'failed_payment':
     case 'content_removed':
       return <AlertCircle size={size} className="text-red-400" />;
+    case 'post_reply':
+      return <MessageCircle size={size} className="text-cyan-400" />;
+    case 'post_like':
+      return <Heart size={size} className="text-rose-400" />;
+    case 'post_repost':
+      return <Repeat2 size={size} className="text-emerald-400" />;
+    case 'post_mention':
+      return <AtSign size={size} className="text-cyan-400" />;
     default:
       return <Bell size={size} className="text-zinc-600" />;
   }
