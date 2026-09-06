@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react'
-import { ImagePlus, Loader2, X, Send, EyeOff, BarChart3, Plus } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { ImagePlus, Loader2, X, Send, EyeOff, BarChart3, Plus, Search } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { callAPI } from '../../../util/callApi'
 import { uploadFile } from '../../../util/uploadFile'
@@ -24,11 +24,23 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
   const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const [spoiler, setSpoiler] = useState(false)
+  const [spoilerWork, setSpoilerWork] = useState<{ id: number; title: string } | null>(null)
+  const [spoilerChapter, setSpoilerChapter] = useState('')
+  const [workQ, setWorkQ] = useState('')
+  const [workResults, setWorkResults] = useState<any[]>([])
   const [pollMode, setPollMode] = useState(false)
   const [pollOpts, setPollOpts] = useState<string[]>(['', ''])
   const [pollDur, setPollDur] = useState(24)
   const fileRef = useRef<HTMLInputElement>(null)
   const avatar = user?.imageUrl ? resolveImg(user.imageUrl) : null
+
+  useEffect(() => {
+    if (!spoiler || spoilerWork || workQ.trim().length < 2) { setWorkResults([]); return }
+    const t = setTimeout(async () => {
+      try { const d: any = await callAPI(`/api/socials/works/search?q=${encodeURIComponent(workQ.trim())}`); setWorkResults(d || []) } catch { setWorkResults([]) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [workQ, spoiler, spoilerWork])
 
   const addFiles = (list: FileList | null) => {
     if (!list) return
@@ -46,10 +58,10 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
       if (files.length) images = await Promise.all(files.map(async (f) => resolveImg(await uploadFile(f, undefined, 'posts'))))
       const post: any = await callAPI('/api/socials/posts', {
         method: 'POST',
-        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler, poll: pollMode && pollOpts.filter((o) => o.trim()).length >= 2 ? { options: pollOpts.filter((o) => o.trim()), durationHours: pollDur } : undefined }),
+        body: JSON.stringify({ content: text, images, parentId: replyTo ?? null, orgSlug: asOrgSlug ?? null, isSpoiler: spoiler, spoilerOfMangaCustomId: spoiler ? spoilerWork?.id ?? null : null, spoilerChapter: spoiler && spoilerChapter ? Number(spoilerChapter) : null, poll: pollMode && pollOpts.filter((o) => o.trim()).length >= 2 ? { options: pollOpts.filter((o) => o.trim()), durationHours: pollDur } : undefined }),
       })
       onCreated(post)
-      setContent(''); setFiles([]); setSpoiler(false); setPollMode(false); setPollOpts(['', ''])
+      setContent(''); setFiles([]); setSpoiler(false); setSpoilerWork(null); setSpoilerChapter(''); setWorkQ(''); setPollMode(false); setPollOpts(['', ''])
       if (!replyTo && !compact) toast.success(en ? 'Published' : 'Publicado')
     } catch (e: any) { toast.error(e?.message || 'No se pudo publicar') } finally { setBusy(false) }
   }
@@ -89,6 +101,36 @@ const PostComposer: React.FC<Props> = ({ user, language = 'es', onCreated, reply
                 <option value={1}>1h</option><option value={6}>6h</option><option value={24}>1d</option><option value={72}>3d</option><option value={168}>7d</option>
               </select>
             </div>
+          </div>
+        )}
+        {spoiler && (
+          <div className="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-3 space-y-2">
+            <p className="text-[11px] font-black uppercase tracking-wider text-amber-400/80">{en ? 'Spoiler shield (optional)' : 'Escudo antspoiler (opcional)'}</p>
+            {spoilerWork ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 text-sm text-white">{spoilerWork.title}<button type="button" onClick={() => { setSpoilerWork(null); setWorkQ('') }} className="text-white/40 hover:text-rose-400 cursor-pointer"><X size={13} /></button></span>
+                <input value={spoilerChapter} onChange={(e) => setSpoilerChapter(e.target.value.replace(/[^0-9.]/g, ''))} placeholder={en ? 'Chapter' : 'Capítulo'} inputMode="decimal"
+                  className="w-24 rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30" />
+                <span className="text-[11px] text-white/40">{en ? 'Auto-reveals to readers past this chapter' : 'Se revela solo a quien ya lo leyó'}</span>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5">
+                  <Search size={15} className="text-white/40" />
+                  <input value={workQ} onChange={(e) => setWorkQ(e.target.value)} placeholder={en ? 'Which work is this about?' : '¿De qué obra es el spoiler?'} className="flex-1 bg-transparent text-sm text-white placeholder-white/30 focus:outline-none" />
+                </div>
+                {workResults.length > 0 && (
+                  <div className="absolute z-30 mt-1 w-full max-h-60 overflow-auto rounded-xl bg-zinc-900/95 backdrop-blur-xl ring-1 ring-white/10 shadow-2xl py-1">
+                    {workResults.map((w) => (
+                      <button key={w.id} type="button" onClick={() => { setSpoilerWork({ id: w.id, title: w.title }); setWorkResults([]) }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 cursor-pointer text-left">
+                        {w.imageUrl && <img src={resolveImg(w.imageUrl)} alt="" className="w-7 h-9 object-cover rounded" />}
+                        <span className="text-sm text-white truncate">{w.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
         <div className="mt-2 flex items-center justify-between">

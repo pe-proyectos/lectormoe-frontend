@@ -207,12 +207,13 @@ const PostCard: React.FC<Props> = ({ post, user, logged, language = 'es', onDele
           </div>
 
           <div className="mt-0.5" onClick={(e) => { if ((e.target as HTMLElement).closest('a,button')) return; if (!asThreadRoot) goThread() }} style={{ cursor: asThreadRoot ? 'default' : 'pointer' }}>
-            {main.isSpoiler && !revealed ? (
+            {main.isSpoiler && !revealed && !main.spoilerSafe ? (
               <div className="relative mt-1 rounded-2xl overflow-hidden">
                 <div className="pointer-events-none blur-md select-none opacity-60"><Content text={main.content} /><PostImages images={main.images} /></div>
                 <button type="button" onClick={(e) => { e.stopPropagation(); setRevealed(true) }}
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-zinc-950/40 backdrop-blur-sm cursor-pointer">
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-950/50 backdrop-blur-md cursor-pointer">
                   <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/90 ring-1 ring-white/15 text-sm font-bold text-white"><EyeOff size={15} /> {en ? 'Spoiler — tap to reveal' : 'Spoiler — toca para mostrar'}</span>
+                  {main.spoilerWork?.title && <span className="text-[11px] text-white/60">{main.spoilerWork.title}{main.spoilerWork.chapter != null ? ` · ${en ? 'ch.' : 'cap.'} ${main.spoilerWork.chapter}` : ''}</span>}
                 </button>
               </div>
             ) : (

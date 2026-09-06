@@ -30,6 +30,8 @@ export interface Post {
   reposted: boolean
   author: Author
   repostOf: Post | null
+  spoilerSafe?: boolean
+  spoilerWork?: { mangaCustomId: number; title: string | null; chapter: number | null } | null
   poll?: { id: number; options: { text: string; votes: number }[]; votesCount: number; endsAt: string; myVote: number | null } | null
 }
 
