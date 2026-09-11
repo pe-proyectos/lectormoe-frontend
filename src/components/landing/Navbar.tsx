@@ -525,7 +525,7 @@ const Navbar: React.FC<NavbarProps> = ({
           </a>
 
           <a
-            href="/socials"
+            href="https://lacharca.com"
             className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
           >
             <Droplet size={16} className="text-teal-400" /> La Charca

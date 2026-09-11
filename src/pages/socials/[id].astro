@@ -1,13 +1,20 @@
 ---
-import LandingLayout from '../../layouts/LandingLayout.astro';
-import PostThread from '../../components/landing/socials/PostThread';
-// @ts-ignore
-const { user, showAds, language } = Astro.locals;
+// Permalink historico de un post de la comunidad. Buscamos su equivalente en
+// hilos.rest por externalRef (orgpost:<id>) para no romper enlaces antiguos.
 const { id } = Astro.params;
 const pid = Number(id);
-if (!Number.isFinite(pid)) return Astro.redirect('/socials', 302);
-const logged = !!user;
+let target = 'https://lacharca.com/';
+if (Number.isFinite(pid)) {
+  try {
+    const base = process.env.HILOS_BASE || import.meta.env.HILOS_BASE || 'https://hilos.rest';
+    const key = process.env.HILOS_SECRET_KEY || import.meta.env.HILOS_SECRET_KEY || '';
+    const res = await fetch(`${base}/v1/posts/by-ref?ref=orgpost:${pid}`, {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(4000),
+    });
+    const json = await res.json();
+    if (json?.data?.id) target = `https://lacharca.com/post/${json.data.id}`;
+  } catch { /* sin mapeo: al inicio de La Charca */ }
+}
+return Astro.redirect(target, 301);
 ---
-<LandingLayout title="Publicación - Comunidad" description="Comunidad de CapibaraTraductor" showAds={showAds}>
-  <PostThread postId={pid} user={user} logged={logged} language={language} client:only="react" />
-</LandingLayout>

@@ -1,12 +1,5 @@
 ---
-import LandingLayout from '../layouts/LandingLayout.astro';
-import SocialsPage from '../components/landing/SocialsPage';
-
-// @ts-ignore - showAds / nsfwMode / language set dynamically in middleware
-const { user, showAds, nsfwMode, language } = Astro.locals;
-const logged = !!user;
+// La comunidad se mudo a La Charca (lacharca.com). Los posts historicos se
+// migraron a hilos.rest, asi que redirigimos de forma permanente.
+return Astro.redirect('https://lacharca.com/', 301);
 ---
-
-<LandingLayout title="Comunidad - CapibaraTraductor" description="Avances, avisos y publicaciones de tus scans favoritos." showAds={showAds}>
-  <SocialsPage user={user} logged={logged} nsfwMode={nsfwMode} language={language} client:only="react" />
-</LandingLayout>
