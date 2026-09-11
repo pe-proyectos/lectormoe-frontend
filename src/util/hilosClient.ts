@@ -7,6 +7,10 @@ let token: string | null = null
 let expMs = 0
 let inflight: Promise<string | null> | null = null
 let base = 'https://hilos.rest'
+// Datos de la sesion de hilos que la interfaz necesita mostrar.
+export const hilosSession: { linked: boolean; handle: string | null; charcaUrl: string } = {
+  linked: false, handle: null, charcaUrl: 'https://lacharca.com',
+}
 
 function authHeader(): Record<string, string> {
   const m = document.cookie.match(/(?:^|;\s*)token=([^;]+)/)
@@ -24,6 +28,9 @@ async function fetchToken(): Promise<string | null> {
   token = json.data.token
   expMs = Date.now() + Math.max(30, (json.data.expiresIn || 900) - 60) * 1000
   if (json.data.hilosBase) base = json.data.hilosBase
+  hilosSession.linked = !!json.data.linked
+  hilosSession.handle = json.data.handle ?? null
+  if (json.data.charcaUrl) hilosSession.charcaUrl = json.data.charcaUrl
   return token
 }
 
@@ -58,7 +65,10 @@ export async function hilosFetch(path: string, init: RequestInit = {}, retry = t
   return json?.data
 }
 
+export const CHARCA_URL = 'https://lacharca.com'
+
 export const hilosApi = {
+  session: async () => { await getToken(); return hilosSession },
   postRef: async (ref: string): Promise<number | null> => {
     const res = await fetch(`${API}/api/hilos/post-ref?ref=${encodeURIComponent(ref)}`)
     const json: any = await res.json().catch(() => ({}))

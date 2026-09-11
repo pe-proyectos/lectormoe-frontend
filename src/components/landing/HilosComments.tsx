@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MessageCircle, LogIn, Send, Image as ImageIcon, X, Trash2, EyeOff, Heart } from 'lucide-react';
+import { MessageCircle, LogIn, Send, Image as ImageIcon, X, Trash2, EyeOff, Heart, ExternalLink } from 'lucide-react';
 import { notify } from '../../util/feedback';
 import { uploadFile } from '../../util/uploadFile';
 import { formatDate as formatDateUtil } from '../../util/date';
-import { hilosApi, hilosPublic } from '../../util/hilosClient';
+import { hilosApi, hilosPublic, hilosSession, CHARCA_URL } from '../../util/hilosClient';
 
 // Comentarios servidos por hilos.rest (el motor social compartido con
 // lacharca.com). El historial de CapibaraTraductor ya vive ahi, migrado con sus
@@ -55,6 +55,7 @@ const HilosComments: React.FC<Props> = ({ hilosRef, logged, user, organization, 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
+  const [linked, setLinked] = useState<boolean | null>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
 
   const canModerate = !!user?.permissions?.find((p: any) => p.organizationId === organization?.id)?.canHideComment;
@@ -77,6 +78,13 @@ const HilosComments: React.FC<Props> = ({ hilosRef, logged, user, organization, 
   }, [hilosRef, postId, logged]);
 
   useEffect(() => { setPostId(null); setPage(0); load(0, true); /* eslint-disable-next-line */ }, [hilosRef]);
+
+  useEffect(() => {
+    if (!logged) return;
+    let alive = true;
+    hilosApi.session().then(() => { if (alive) setLinked(hilosSession.linked); }).catch(() => {});
+    return () => { alive = false; };
+  }, [logged]);
 
   const byParent = useMemo(() => {
     const m = new Map<number, HilosComment[]>();
@@ -229,22 +237,43 @@ const HilosComments: React.FC<Props> = ({ hilosRef, logged, user, organization, 
     );
   };
 
+  // Solo llegamos aquí si el contenido no existe en el motor social (p. ej. un
+  // capítulo que aún no se ha publicado). Lo decimos sin dejar un hueco mudo.
   if (!loading && postId === null) {
     return (
       <div className="bg-zinc-950/60 border border-zinc-900 rounded-3xl p-6 text-center">
         <MessageCircle size={22} className="mx-auto text-zinc-700 mb-2" />
-        <p className="text-sm text-zinc-500">Los comentarios de esta página aún no están disponibles.</p>
+        <p className="text-sm text-zinc-400">Todavía no hay conversación para esta página.</p>
+        <p className="text-xs text-zinc-600 mt-1.5">
+          Los comentarios viven en{' '}
+          <a href={CHARCA_URL} target="_blank" rel="noopener" className="text-cyan-400 hover:underline">La Charca</a>.
+          Vuelve en un momento.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="bg-zinc-950/60 border border-zinc-900 rounded-3xl p-4 sm:p-6">
-      <div className="flex items-center gap-2 mb-5">
-        <MessageCircle size={18} className="text-cyan-400" />
-        <h3 className="text-base font-bold text-white">Comentarios</h3>
-        {total > 0 && <span className="text-xs text-zinc-500 tabular-nums">{total.toLocaleString('es')}</span>}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2">
+          <MessageCircle size={18} className="text-cyan-400" />
+          <h3 className="text-base font-bold text-white">Comentarios</h3>
+          {total > 0 && <span className="text-xs text-zinc-500 tabular-nums">{total.toLocaleString('es')}</span>}
+        </div>
+        {postId && (
+          <a href={`${CHARCA_URL}/post/${postId}`} target="_blank" rel="noopener"
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-cyan-400 transition-colors shrink-0">
+            Ver en La Charca <ExternalLink size={13} />
+          </a>
+        )}
       </div>
+
+      <p className="text-[12px] text-zinc-500 mb-5 leading-relaxed">
+        Esta conversación vive en{' '}
+        <a href={CHARCA_URL} target="_blank" rel="noopener" className="text-cyan-400 hover:underline font-bold">La Charca</a>
+        , la comunidad de CapibaraTraductor. La ves aquí para que comentes sin salir del lector.
+      </p>
 
       {logged ? (
         <div className="mb-6 space-y-3">
@@ -264,6 +293,18 @@ const HilosComments: React.FC<Props> = ({ hilosRef, logged, user, organization, 
                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-400 rounded-full flex items-center justify-center transition-colors">
                 <X size={14} />
               </button>
+            </div>
+          )}
+
+          {linked === false && (
+            <div className="flex items-start gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 px-3.5 py-3">
+              <MessageCircle size={16} className="text-cyan-400 mt-0.5 shrink-0" />
+              <p className="text-[12px] text-zinc-300 leading-relaxed flex-1">
+                Comentas con tu cuenta de CapibaraTraductor. Si creas tu cuenta de La Charca te llevas
+                este historial y puedes seguir scans, publicar y usar los mensajes.
+                <a href={`${CHARCA_URL}/auth/login`} target="_blank" rel="noopener"
+                  className="ml-1.5 font-bold text-cyan-400 hover:underline whitespace-nowrap">Vincular ahora</a>
+              </p>
             </div>
           )}
 
