@@ -63,7 +63,7 @@ interface ReadingHistory {
   lastReadAt: string;
 }
 
-import ProfileSocial from './socials/ProfileSocial';
+import CharcaProfileTab from './socials/CharcaProfileTab';
 
 const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization, profileSlug, isOwner = false, nsfwMode = false }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -987,7 +987,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
 
         {/* Módulo social: seguir + publicaciones del usuario */}
         {profileSlug && (
-          <ProfileSocial profileSlug={profileSlug} currentUser={user} logged={logged} language="es" />
+          <CharcaProfileTab profileSlug={profileSlug} currentUser={user} logged={logged} />
         )}
 
         {/* Reading Streak Badge */}
