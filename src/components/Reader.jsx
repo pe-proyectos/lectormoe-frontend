@@ -17,7 +17,7 @@ import { callAPI } from '../util/callApi';
 import { LazyImage } from "./LazyImage";
 import { getTranslator } from "../util/translate";
 import { formatDate } from "../util/date";
-import CommentsSection from "./landing/CommentsSection";
+import CommentsGateway from "./landing/CommentsGateway";
 import ChapterReactions from "./ChapterReactions";
 import { getOrgPath, getOrgSlugFromPath } from "../util/get-org-path";
 
@@ -1877,8 +1877,9 @@ export function Reader({
           )}
           {/* Comments Section - Below Reader */}
           {chapterData.pages.length > 0 && !loading && (
-            <CommentsSection
+            <CommentsGateway
               identifier={isJoint ? `joint_${jointSlug}_${chapterNumber}` : `${mangaSlug}_${chapterNumber}`}
+              hilosRef={chapter?.id ? `chapter:${chapter.id}` : null}
               logged={logged || false}
               user={user}
               organization={organization}

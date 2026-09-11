@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
 import { getTranslator } from '../../util/translate';
 import QuoteCard from './QuoteCard';
 import QuotesSidePanel from './QuotesSidePanel';
-import CommentsSection from './CommentsSection';
+import CommentsGateway from './CommentsGateway';
 import ChapterReactions from '../ChapterReactions';
 import { callAPI } from '../../util/callApi';
 import { toast } from 'react-toastify';
@@ -882,8 +882,9 @@ const NovelReader: React.FC<NovelReaderProps> = ({
         <section style={{ borderTop: `1px solid ${palette.border}`, background: palette.ui, padding: '2rem 1rem' }}>
           <div style={{ maxWidth: WIDTH_PX[prefs.width], margin: '0 auto' }}>
             {chapter?.id && <ChapterReactions chapterId={chapter.id} logged={logged || false} />}
-            <CommentsSection
+            <CommentsGateway
               identifier={`${mangaSlug}_${chapter.number}`}
+              hilosRef={chapter?.id ? `chapter:${chapter.id}` : null}
               logged={logged || false}
               user={user || null}
               organization={organization}

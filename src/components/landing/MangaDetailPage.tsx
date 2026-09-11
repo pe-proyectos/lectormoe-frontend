@@ -25,7 +25,7 @@ import ReportButton from "./ReportButton";
 import AddToListButton from "./AddToListButton";
 import DownloadButton from "../app/DownloadButton";
 import { formatDate as formatDateUtil } from "../../util/date";
-import CommentsSection from "./CommentsSection";
+import CommentsGateway from "./CommentsGateway";
 import NSFWAgeModal from "./NSFWAgeModal";
 import { isNSFWContent, hasAgeVerification } from "../../util/nsfw";
 
@@ -1914,8 +1914,9 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
         )}
 
         {/* COMMENTS SECTION (FULL WIDTH) */}
-        <CommentsSection
+        <CommentsGateway
           identifier={isJoint ? `joint_${mangaSlug}` : mangaSlug}
+          hilosRef={!isJoint && (manga as any)?.id ? `manga:${(manga as any).id}` : null}
           logged={logged || false}
           user={user}
           organization={organization}
