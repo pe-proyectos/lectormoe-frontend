@@ -1,0 +1,39 @@
+---
+import LandingLayout from '../../layouts/LandingLayout.astro';
+// @ts-ignore
+const { user, showAds, callAPI } = Astro.locals;
+const redirect = Astro.url.searchParams.get('redirect') || '';
+const allowed = ['https://lacharca.com', 'http://localhost'];
+const ok = allowed.some((a) => redirect.startsWith(a));
+
+// Si no hay sesión, mandar al login y volver aquí.
+if (!user) {
+  return Astro.redirect(`/login?next=${encodeURIComponent(`/sso/authorize?redirect=${encodeURIComponent(redirect)}`)}`);
+}
+
+let target: string | null = null;
+let error: string | null = null;
+if (!ok) {
+  error = 'Destino no permitido.';
+} else {
+  try {
+    const res = await callAPI('/api/sso/code', { method: 'POST', body: JSON.stringify({ redirect }) });
+    const code = res?.data?.code || res?.code;
+    if (code) target = `${redirect}${redirect.includes('?') ? '&' : '?'}code=${encodeURIComponent(code)}`;
+    else error = 'No se pudo generar el código.';
+  } catch (e: any) {
+    error = e?.message || 'No se pudo continuar.';
+  }
+}
+if (target) return Astro.redirect(target);
+---
+<LandingLayout showAds={showAds} title="Conectando con La Charca">
+  <main class="min-h-[60vh] flex items-center justify-center px-4">
+    <div class="text-center max-w-sm">
+      <p class="text-5xl mb-3">🦫</p>
+      <h1 class="text-xl font-black text-white">No pudimos conectar con La Charca</h1>
+      <p class="text-white/60 text-sm mt-2">{error}</p>
+      <a href="/" class="inline-block mt-5 px-5 py-2 rounded-full bg-cyan-500 text-zinc-950 font-black text-sm">Volver al inicio</a>
+    </div>
+  </main>
+</LandingLayout>
