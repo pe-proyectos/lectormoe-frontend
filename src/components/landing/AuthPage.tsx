@@ -7,6 +7,13 @@ interface AuthPageProps {
   organization?: any;
 }
 
+// Conserva ?next= al saltar entre login y registro (flujo SSO).
+const keepNext = () => {
+  if (typeof window === 'undefined') return ''
+  const n = new URLSearchParams(window.location.search).get('next')
+  return n && n.startsWith('/') && !n.startsWith('//') ? `?next=${encodeURIComponent(n)}` : ''
+}
+
 const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,9 +115,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization
         // Disparar evento para actualizar el navbar
         window.dispatchEvent(new Event('auth-changed'));
         
-        const redirectPath = isScanContext && organization?.slug 
-          ? `/${organization.slug}` 
-          : '/';
+        // Respetar ?next= (solo rutas internas) para flujos como el SSO de La Charca.
+        const nextParam = new URLSearchParams(window.location.search).get('next');
+        const safeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
+        const redirectPath = safeNext
+          ? safeNext
+          : isScanContext && organization?.slug
+            ? `/${organization.slug}`
+            : '/';
         
         // Redirigir según el contexto
         window.location.href = redirectPath;
@@ -132,9 +144,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ isScanContext = false, organization
 
   const handleGoToRegister = () => {
     if (isScanContext && organization?.slug) {
-      window.location.href = `/${organization.slug}/register`;
+      window.location.href = `/${organization.slug}/register${keepNext()}`;
     } else {
-      window.location.href = '/register';
+      window.location.href = `/register${keepNext()}`;
     }
   };
 

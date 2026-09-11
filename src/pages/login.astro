@@ -8,7 +8,9 @@ const logged = !!user;
 
 // Si ya está logueado, redirigir al inicio
 if (logged) {
-  return Astro.redirect("/");
+  const next = Astro.url.searchParams.get("next");
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  return Astro.redirect(safeNext);
 }
 ---
 

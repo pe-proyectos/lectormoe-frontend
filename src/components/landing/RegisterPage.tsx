@@ -7,6 +7,13 @@ interface RegisterPageProps {
   organization?: any;
 }
 
+// Conserva ?next= al volver al login (flujo SSO de La Charca).
+const keepNext = () => {
+  if (typeof window === 'undefined') return ''
+  const n = new URLSearchParams(window.location.search).get('next')
+  return n && n.startsWith('/') && !n.startsWith('//') ? `?next=${encodeURIComponent(n)}` : ''
+}
+
 const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, organization }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -74,9 +81,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
         // Después de 2 segundos, redirigir a login
         setTimeout(() => {
           if (isScanContext && organization?.slug) {
-            window.location.href = `/${organization.slug}/login`;
+            window.location.href = `/${organization.slug}/login${keepNext()}`;
           } else {
-            window.location.href = '/login';
+            window.location.href = `/login${keepNext()}`;
           }
         }, 2000);
       } else {
@@ -92,9 +99,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
 
   const handleGoToLogin = () => {
     if (isScanContext && organization?.slug) {
-      window.location.href = `/${organization.slug}/login`;
+      window.location.href = `/${organization.slug}/login${keepNext()}`;
     } else {
-      window.location.href = '/login';
+      window.location.href = `/login${keepNext()}`;
     }
   };
 
