@@ -29,6 +29,14 @@ if (manga?.jointSlug) {
   return Astro.redirect(`/joint/manga/${manga.jointSlug}`, 302);
 }
 
+// Las novelas y libros tienen su propia ficha en /writings: esta ruta existe
+// por historia, pero su sitio canónico es aquel.
+const bookTypeCode = manga?.manga?.bookType?.code;
+if (bookTypeCode && new Set(['novel', 'light-novel', 'book', 'short-story']).has(bookTypeCode)) {
+  const writingsRoot = nsfwMode ? '/red/writings' : '/writings';
+  return Astro.redirect(`${writingsRoot}/${organization.slug}/${bookTypeCode}/${mangaSlug}`, 301);
+}
+
 // Si el manga o la org es NSFW y no estamos en modo /red/, redirigir
 if ((manga?.isNSFW || organization?.isNSFW) && !nsfwMode) {
   return Astro.redirect(`/red${Astro.url.pathname}${Astro.url.search}`);
