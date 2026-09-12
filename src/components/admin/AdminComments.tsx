@@ -21,6 +21,8 @@ interface User {
 
 interface Comment {
   id: number;
+  /** Post de La Charca al que pertenece, para poder abrir la conversación. */
+  charcaPostId?: number | null;
   comment: string;
   identifier: string;
   imageUrl?: string;
@@ -335,7 +337,7 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
   const [bans, setBans] = useState<Ban[]>([]);
   const [bansLoading, setBansLoading] = useState(true);
   const [banDialogOpen, setBanDialogOpen] = useState(false);
-  const [banTargetUser, setBanTargetUser] = useState<{ id: number; username: string } | null>(null);
+  const [banTargetUser, setBanTargetUser] = useState<{ id: number; username: string; slug?: string } | null>(null);
   const [banType, setBanType] = useState<'TEMPORARY' | 'PERMANENT' | 'RESTRICTED'>('PERMANENT');
   const [banReason, setBanReason] = useState('');
   const [banDeleteComments, setBanDeleteComments] = useState(false);
@@ -360,11 +362,32 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     applyFiltersAndSort();
   }, [comments, searchTerm, statusFilter, identifierFilter, sortBy, sortOrder]);
 
+  // Los comentarios viven en La Charca (hilos.rest). Los traemos de allí y los
+  // adaptamos a la forma que este panel ya conoce, para no reescribirlo entero.
   const refreshComments = () => {
     setLoading(true);
-    callAPI(`/api/comment/admin`)
-      .then((data) => {
-        setComments(data);
+    callAPI(`/api/hilos/moderation/comments?limit=100&status=all`)
+      .then((data: any) => {
+        const items = data?.items || [];
+        setComments(items.map((c: any) => ({
+          id: c.id,
+          comment: c.content,
+          identifier: c.post?.wall?.displayName || c.post?.title || c.post?.externalRef || '',
+          likesCount: c.likesCount || 0,
+          dislikesCount: 0,
+          createdAt: c.createdAt,
+          parentId: c.parentCommentId ?? null,
+          userId: 0,
+          user: {
+            id: 0,
+            username: c.author?.displayName || c.author?.handle || 'Alguien',
+            slug: c.author?.handle || '',
+            imageUrl: c.author?.avatarUrl || null,
+          },
+          hiddenAt: c.hidden ? c.createdAt : undefined,
+          deletedAt: c.deleted ? c.createdAt : undefined,
+          charcaPostId: c.post?.id ?? null,
+        })));
       })
       .catch((error) => toast.error(error?.message || 'Error al cargar comentarios'))
       .finally(() => setLoading(false));
@@ -485,9 +508,9 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     if (!selectedComment) return;
 
     try {
-      await callAPI(`/api/comment/${selectedComment.id}/hide`, {
+      await callAPI(`/api/hilos/comments/${selectedComment.id}/hide`, {
         method: 'POST',
-        body: JSON.stringify({ reason: hideReason }),
+        body: JSON.stringify({ hidden: true, reason: hideReason }),
       });
       toast.success('Comentario ocultado exitosamente');
       refreshComments();
@@ -503,7 +526,7 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     if (!window.confirm('¿Estás seguro de eliminar este comentario?')) return;
 
     try {
-      await callAPI(`/api/comment/${commentId}`, {
+      await callAPI(`/api/hilos/comments/${commentId}`, {
         method: 'DELETE',
       });
       toast.success('Comentario eliminado exitosamente');
@@ -515,8 +538,9 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
 
   const handleRestoreComment = async (commentId: number) => {
     try {
-      await callAPI(`/api/comment/${commentId}/restore`, {
+      await callAPI(`/api/hilos/comments/${commentId}/hide`, {
         method: 'POST',
+        body: JSON.stringify({ hidden: false }),
       });
       toast.success('Comentario restaurado exitosamente');
       refreshComments();
@@ -559,7 +583,7 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
   };
 
   const handleOpenBanDialog = (comment: Comment) => {
-    setBanTargetUser({ id: comment.userId, username: comment.user.username });
+    setBanTargetUser({ id: comment.userId, username: comment.user.username, slug: comment.user.slug });
     setBanType('PERMANENT');
     setBanReason('');
     setBanDeleteComments(false);
@@ -572,7 +596,7 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     if (!banTargetUser || isBanning) return;
     try {
       setIsBanning(true);
-      await callAPI('/api/comment/ban', {
+      await callAPI(`/api/hilos/pages/${encodeURIComponent(banTargetUser?.slug || '')}/mute`, {
         method: 'POST',
         body: JSON.stringify({
           userId: banTargetUser.id,
@@ -605,15 +629,16 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     }
   };
 
+  // La respuesta la publica la page del scan en el hilo de La Charca.
   const handleReply = async (parentComment: Comment, text: string) => {
+    if (!parentComment.charcaPostId) {
+      toast.error('No encontramos la conversación de este comentario');
+      return;
+    }
     try {
-      await callAPI('/api/comment', {
+      await callAPI(`/api/hilos/posts/${parentComment.charcaPostId}/reply`, {
         method: 'POST',
-        body: JSON.stringify({
-          identifier: parentComment.identifier,
-          comment: text,
-          parentId: parentComment.id.toString(),
-        }),
+        body: JSON.stringify({ content: text, parentCommentId: parentComment.id }),
       });
       toast.success('Respuesta enviada');
       refreshComments();
