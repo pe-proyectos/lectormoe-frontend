@@ -148,6 +148,10 @@ const buildItemUrl = (n: NotificationItem): string | null => {
       }
       return null;
     }
+    case 'charca_comment': {
+      const d = charcaDetails(n);
+      return d.readerUrl || d.url || 'https://lacharca.com';
+    }
     case 'comment_reply':
     case 'comment_on_owned_content':
       return buildCommentThreadUrl(n);
@@ -182,11 +186,29 @@ const buildItemUrl = (n: NotificationItem): string | null => {
   }
 };
 
+// Los comentarios viven en La Charca: su contexto viaja en 'details'.
+const charcaDetails = (n: any): { author?: string; text?: string; url?: string; readerUrl?: string; context?: string; work?: string; kind?: string } => {
+  try { return typeof n.details === 'string' ? JSON.parse(n.details) : (n.details || {}); } catch { return {}; }
+};
+
 const truncate = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n)}...` : s);
 
 const formatItem = (n: NotificationItem): { title: string; subtitle: string } => {
   const rel = formatRelative(n.createdAt);
   switch (n.type) {
+    case 'charca_comment': {
+      const d = charcaDetails(n);
+      const who = d.author || n.actor?.username || 'Alguien';
+      const donde = d.kind === 'chapter'
+        ? `${d.work ? `${d.work} — ` : ''}${d.context || ''}`
+        : d.context || '';
+      const title =
+        n.source === 'reply' ? `${who} respondió a tu comentario`
+        : n.source === 'org_staff' ? `Nuevo comentario en ${donde || 'tu scan'}`
+        : `${who} comentó en una conversación que sigues`;
+      const body = d.text ? truncate(d.text, 60) : '';
+      return { title, subtitle: [body, donde && n.source !== 'org_staff' ? donde : '', rel].filter(Boolean).join(' · ') };
+    }
     case 'comment_reply': {
       const replier = n.comment?.user?.username || 'Alguien';
       const original = n.parentComment?.comment ? truncate(n.parentComment.comment, 40) : '';
@@ -273,6 +295,7 @@ const formatItem = (n: NotificationItem): { title: string; subtitle: string } =>
 
 const ThumbIcon: React.FC<{ type: string; size?: number }> = ({ type, size = 14 }) => {
   switch (type) {
+    case 'charca_comment':
     case 'comment_reply':
     case 'comment_on_owned_content':
       return <MessageSquare size={size} className="text-cyan-400" />;
