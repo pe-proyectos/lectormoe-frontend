@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { chapterLabel, normalizeLabelMode, volumePositions } from '../../util/chapterLabel';
 import { notify } from '../../util/feedback';
 import {
   Star,
@@ -108,6 +109,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   // (favorites, history by manga_slug, view tracking, analytics with mangaSlug payload).
   // Detect joint mode via the sentinel organization slug set by the joint Astro page.
   const isJoint = organization?.slug === 'joint';
+
+  // Posición de cada capítulo dentro de su tomo: solo hace falta cuando la
+  // obra se rotula por tomo, pero calcularlo una vez sale barato.
+  const _volPos = useMemo(
+    () => volumePositions(((manga as any)?.chapters || []) as any[]),
+    [manga],
+  );
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInUserList, setIsInUserList] = useState(false);
@@ -1697,7 +1705,13 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                                     )}
 
                                     <h4 className="text-white font-bold text-sm md:text-lg truncate">
-                                      Capítulo {(chapter as any).displayNumber ?? chapter.number}
+                                      {chapterLabel(
+                                        chapter as any,
+                                        normalizeLabelMode((manga as any)?.chapterLabelMode),
+                                        _volPos.get(chapter.number)
+                                          ? { positionInVolume: _volPos.get(chapter.number)!.pos, totalInVolume: _volPos.get(chapter.number)!.total }
+                                          : {},
+                                      )}
                                     </h4>
                                     {(manga as any).finalChapterNumber != null && chapter.number === (manga as any).finalChapterNumber && (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded text-[9px] font-black uppercase tracking-widest shrink-0">

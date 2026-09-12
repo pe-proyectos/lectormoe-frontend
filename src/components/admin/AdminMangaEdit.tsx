@@ -361,6 +361,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
       hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
       finalChapterNumber: initialResource?.finalChapterNumber ?? null,
       groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
+      chapterLabelMode: initialResource?.chapterLabelMode ?? 'chapter',
       cover: initialResource?.imageUrl || '',
       banner: initialResource?.bannerUrl || '',
       genres: initialResource?.genres || [],
@@ -667,6 +668,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         hideUnreleasedChapters: initialResource?.hideUnreleasedChapters ?? false,
         finalChapterNumber: initialResource?.finalChapterNumber ?? null,
         groupChaptersByVolume: initialResource?.groupChaptersByVolume ?? false,
+      chapterLabelMode: initialResource?.chapterLabelMode ?? 'chapter',
         workType: initialResource?.workType || 'manga',
         cover: initialResource?.imageUrl || '',
         banner: initialResource?.bannerUrl || '',
@@ -765,6 +767,24 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   // Importa un libro (epub/docx/md): lo parsea en el backend y abre el panel
   // editable para ajustar titulo, tomo y numero por capitulo antes de crear.
+  // Pegar el tomo directamente: lo convertimos en archivo y reutilizamos el
+  // mismo importador, que ya sabe partir por títulos y detectar tomos.
+  const handleBookPaste = async () => {
+    const texto = await dlg.prompt(
+      'Pega aquí el texto del tomo. Se dividirá en capítulos por sus títulos (# o "Capítulo N") y podrás revisar y ajustar todo antes de crear nada.',
+      {
+        title: 'Pegar un tomo completo',
+        placeholder: 'Capítulo 1\n\nTexto del capítulo...',
+        multiline: true,
+        confirmLabel: 'Analizar',
+        required: true,
+      },
+    );
+    if (!texto || !texto.trim()) return;
+    const blob = new File([texto], 'tomo.md', { type: 'text/markdown' });
+    await handleBookImport(blob);
+  };
+
   const handleBookImport = async (file: File) => {
     setEpubImporting(true);
     const toastId = toast.loading('Analizando archivo...');
@@ -1549,6 +1569,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         patchBody.hideUnreleasedChapters = formData.hideUnreleasedChapters;
         patchBody.finalChapterNumber = formData.finalChapterNumber ?? null;
         patchBody.groupChaptersByVolume = formData.groupChaptersByVolume;
+        patchBody.chapterLabelMode = formData.chapterLabelMode;
         patchBody.subscriptionPlanIdsCanReadUnreleased = formData.subscriptionPlansCanReadUnreleased?.map((p: any) => p.id) || [];
         patchBody.subscriptionPlanIdsCanReadReleased = formData.subscriptionPlansCanReadReleased?.map((p: any) => p.id) || [];
       }
@@ -2151,6 +2172,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                               className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
                             >
                               {epubImporting ? 'Analizando...' : 'Importar libro'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleBookPaste}
+                              disabled={epubImporting}
+                              className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
+                            >
+                              Pegar tomo
                             </button>
                             <button
                               type="button"
@@ -3311,6 +3340,23 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                         />
                         <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
                       </label>
+                    </div>
+
+                    {/* Cómo se nombra cada entrega */}
+                    <div className="py-3 border-b border-zinc-800">
+                      <p className="text-sm font-medium text-white mb-1">Cómo se nombra cada entrega</p>
+                      <p className="text-xs text-zinc-400 mb-2">
+                        Las novelas que salen por tomos suelen querer que mande el número de tomo. Cambia solo cómo se muestra: la numeración interna no se toca.
+                      </p>
+                      <select
+                        value={formData.chapterLabelMode}
+                        onChange={(e) => setFormData(prev => ({ ...prev, chapterLabelMode: e.target.value }))}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="chapter">Por capítulo — "Capítulo 12"</option>
+                        <option value="volume">Por tomo — "Tomo 3" (y "Tomo 3 - 2" si hay varias entregas)</option>
+                        <option value="both">Tomo y capítulo — "Tomo 3 · Capítulo 12"</option>
+                      </select>
                     </div>
 
                     {/* Capítulo final */}

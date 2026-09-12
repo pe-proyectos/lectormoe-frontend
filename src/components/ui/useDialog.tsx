@@ -14,6 +14,8 @@ interface DialogState {
   title: string
   message: string
   value: string
+  /** Campo de varias líneas, para textos largos. */
+  multiline?: boolean
   placeholder?: string
   confirmLabel: string
   cancelLabel: string
@@ -23,7 +25,7 @@ interface DialogState {
 
 export interface UseDialog {
   confirm: (message: string, opts?: { title?: string; confirmLabel?: string; cancelLabel?: string; danger?: boolean }) => Promise<boolean>
-  prompt: (message: string, opts?: { title?: string; defaultValue?: string; placeholder?: string; confirmLabel?: string; required?: boolean }) => Promise<string | null>
+  prompt: (message: string, opts?: { title?: string; defaultValue?: string; placeholder?: string; confirmLabel?: string; required?: boolean; multiline?: boolean }) => Promise<string | null>
   alert: (message: string, opts?: { title?: string }) => Promise<void>
   DialogHost: React.FC
 }
@@ -48,6 +50,7 @@ export function useDialog(): UseDialog {
       setState({
         kind: 'prompt', title: opts?.title || '', message, value: opts?.defaultValue || '',
         placeholder: opts?.placeholder, confirmLabel: opts?.confirmLabel || 'Aceptar', cancelLabel: 'Cancelar',
+        multiline: !!opts?.multiline,
         resolve: (v) => resolve(v === false ? null : (v as string)),
       })
     })
@@ -81,6 +84,16 @@ export function useDialog(): UseDialog {
           {state.title ? <h3 className="text-white font-black text-base mb-1">{state.title}</h3> : null}
           <p className="text-zinc-400 text-sm whitespace-pre-line mb-4">{state.message}</p>
           {state.kind === 'prompt' && (
+            (state as any).multiline ? (
+              <textarea
+                autoFocus
+                rows={10}
+                value={state.value}
+                placeholder={state.placeholder}
+                onChange={(e) => setState({ ...state, value: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm font-mono focus:outline-none focus:border-cyan-500 mb-1 resize-y"
+              />
+            ) : (
             <input
               autoFocus
               type="text"
@@ -90,6 +103,7 @@ export function useDialog(): UseDialog {
               onKeyDown={(e) => { if (e.key === 'Enter' && canConfirm) close(state.value) }}
               className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-cyan-500 mb-1"
             />
+            )
           )}
           <div className="flex gap-3 mt-4">
             {state.cancelLabel ? (
