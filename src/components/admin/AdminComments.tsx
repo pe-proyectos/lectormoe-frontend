@@ -15,6 +15,8 @@ import { formatDate as formatDateUtil } from '../../util/date';
 interface User {
   id: number;
   username: string;
+  /** Handle en La Charca: con él se silencia a la cuenta. */
+  slug?: string;
   imageUrl?: string;
   subscriptions?: any[];
 }
