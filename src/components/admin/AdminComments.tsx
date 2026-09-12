@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { MessageCircle, EyeOff, Trash2, RotateCcw, ThumbsUp, ThumbsDown, ArrowUpDown, Reply, Send, ShieldBan, ShieldOff, ShieldCheck } from 'lucide-react';
 import Card from './ui/Card';
@@ -72,6 +72,8 @@ const getSubscriptionDays = (subscriptionDate: string) => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 };
+
+const PAGE_SIZE = 100;
 
 const CommentCard = ({ comment, onHide, onDelete, onRestore, onLike, onReply, onBan, currentUser }: any) => {
   const [showReplies, setShowReplies] = useState(true);
@@ -339,6 +341,10 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
   const [bans, setBans] = useState<Ban[]>([]);
   const [bansLoading, setBansLoading] = useState(true);
   const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [serverStats, setServerStats] = useState<{ total: number; hidden: number } | null>(null);
   const [banTargetUser, setBanTargetUser] = useState<{ id: number; username: string; slug?: string } | null>(null);
   const [banType, setBanType] = useState<'TEMPORARY' | 'PERMANENT' | 'RESTRICTED'>('PERMANENT');
   const [banReason, setBanReason] = useState('');
@@ -364,14 +370,16 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
     applyFiltersAndSort();
   }, [comments, searchTerm, statusFilter, identifierFilter, sortBy, sortOrder]);
 
+  const firstLoad = useRef(true);
+  useEffect(() => {
+    if (firstLoad.current) { firstLoad.current = false; return; }
+    const t = setTimeout(() => loadPage(0, false, { q: searchTerm, status: statusFilter }), 350);
+    return () => clearTimeout(t);
+  }, [searchTerm, statusFilter]);
+
   // Los comentarios viven en La Charca (hilos.rest). Los traemos de allí y los
   // adaptamos a la forma que este panel ya conoce, para no reescribirlo entero.
-  const refreshComments = () => {
-    setLoading(true);
-    callAPI(`/api/hilos/moderation/comments?limit=100&status=all`)
-      .then((data: any) => {
-        const items = data?.items || [];
-        setComments(items.map((c: any) => ({
+  const mapComment = (c: any) => ({
           id: c.id,
           comment: c.content,
           identifier: c.post?.wall?.displayName || c.post?.title || c.post?.externalRef || '',
@@ -386,14 +394,33 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
             slug: c.author?.handle || '',
             imageUrl: c.author?.avatarUrl || null,
           },
-          hiddenAt: c.hidden ? c.createdAt : undefined,
-          deletedAt: c.deleted ? c.createdAt : undefined,
-          charcaPostId: c.post?.id ?? null,
-        })));
+    hiddenAt: c.hidden ? c.createdAt : undefined,
+    deletedAt: c.deleted ? c.createdAt : undefined,
+    charcaPostId: c.post?.id ?? null,
+  });
+
+  // El motor devuelve los totales de TODO el scan, no solo de lo cargado: si
+  // no, los contadores mienten en cuanto hay más de una página.
+  const loadPage = (pageNum: number, append: boolean, opts?: { q?: string; status?: string }) => {
+    if (append) setLoadingMore(true); else setLoading(true);
+    const q = opts?.q ?? searchTerm;
+    const status = opts?.status ?? statusFilter;
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(pageNum) });
+    params.set('status', status === 'all' ? 'all' : status);
+    if (q.trim()) params.set('q', q.trim());
+    callAPI(`/api/hilos/moderation/comments?${params}`)
+      .then((data: any) => {
+        const mapped = (data?.items || []).map(mapComment);
+        setComments((prev: any[]) => (append ? [...prev, ...mapped] : mapped));
+        setServerStats({ total: data?.total ?? mapped.length, hidden: data?.hidden ?? 0 });
+        setHasMore(!!data?.hasMore);
+        setPage(pageNum);
       })
       .catch((error) => toast.error(error?.message || 'Error al cargar comentarios'))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setLoadingMore(false); });
   };
+
+  const refreshComments = () => loadPage(0, false);
 
   const applyFiltersAndSort = () => {
     let filtered = [...comments];
@@ -653,9 +680,9 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
   const uniqueIdentifiers = [...new Set(comments.map((c) => c.identifier))].sort();
 
   const stats = {
-    total: comments.length,
-    active: comments.filter((c) => !c.deletedAt && !c.hiddenAt).length,
-    hidden: comments.filter((c) => c.hiddenAt && !c.deletedAt).length,
+    total: serverStats?.total ?? comments.length,
+    active: serverStats ? Math.max(0, serverStats.total - serverStats.hidden) : comments.filter((c) => !c.deletedAt && !c.hiddenAt).length,
+    hidden: serverStats?.hidden ?? comments.filter((c) => c.hiddenAt && !c.deletedAt).length,
     deleted: comments.filter((c) => c.deletedAt).length,
     withImages: comments.filter((c) => c.imageUrl).length,
     withReplies: comments.filter((c) => c.replies && c.replies.length > 0).length,
@@ -831,7 +858,7 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
 
         {filteredComments.length > 0 && (
           <p className="text-sm text-zinc-500 mt-4">
-            Mostrando {filteredComments.length} de {comments.length} comentarios
+            Mostrando {filteredComments.length} de {stats.total.toLocaleString('es')} comentarios
           </p>
         )}
       </Card>
@@ -869,6 +896,25 @@ const AdminComments: React.FC<AdminCommentsProps> = ({ language, user, organizat
               currentUser={user}
             />
           ))}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => loadPage(page + 1, true)}
+              disabled={loadingMore}
+              className="w-full py-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-sm font-black text-zinc-300 transition-colors disabled:opacity-50"
+            >
+              {loadingMore
+                ? 'Cargando…'
+                : `Cargar más (${comments.length.toLocaleString('es')} de ${stats.total.toLocaleString('es')})`}
+            </button>
+          )}
+
+          {!hasMore && comments.length > 0 && (
+            <p className="text-center text-xs text-zinc-600 py-4">
+              No hay más comentarios.
+            </p>
+          )}
         </div>
       )}
 
