@@ -245,6 +245,11 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('text');
   const [focusMode, setFocusMode] = useState(false);
+  // Los botones flotantes se apartan mientras lees: en móvil el texto ocupa
+  // todo el ancho y quedaban encima de las palabras.
+  const [controlsHidden, setControlsHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const idleTimer = useRef<any>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
@@ -426,6 +431,17 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       const max = doc.scrollHeight - doc.clientHeight;
       const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
       setScrollProgress(pct);
+
+      // Bajando y ya lejos del principio: fuera. Subiendo: vuelven.
+      const y = window.scrollY;
+      const delta = y - lastScrollY.current;
+      if (Math.abs(delta) > 6) {
+        setControlsHidden(delta > 0 && y > 160);
+        lastScrollY.current = y;
+      }
+      // Si se deja de desplazar, reaparecen solos.
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => setControlsHidden(false), 1400);
       if (prefs.rememberScroll) {
         if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
         scrollSaveTimer.current = setTimeout(() => {
@@ -900,13 +916,24 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       )}
 
       {/* Floating buttons */}
-      <div style={{ position: 'fixed', top: focusMode ? 16 : 80, right: 16, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* En móvil van abajo a la derecha, donde llega el pulgar y no hay texto.
+          En escritorio siguen arriba, que es donde la gente ya los busca. */}
+      <div
+        className={`fixed z-30 flex flex-col gap-2.5 right-3 md:right-4 bottom-4 md:bottom-auto ${focusMode ? 'md:top-4' : 'md:top-20'}`}
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          transform: controlsHidden ? 'translateX(calc(100% + 24px))' : 'none',
+          opacity: controlsHidden ? 0 : 1,
+          pointerEvents: controlsHidden ? 'none' : 'auto',
+          transition: 'transform .28s cubic-bezier(.2,.8,.2,1), opacity .2s ease',
+        }}
+      >
         <button
           ref={toggleRef}
           type="button"
           onClick={() => setPanelOpen((o) => !o)}
           style={{ background: palette.accent, color: '#0a0a0b' }}
-          className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+          className="w-11 h-11 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
           title={`${t('reader_prefs')} (S)`}
           aria-label={t('reader_prefs')}
         >
@@ -916,7 +943,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           type="button"
           onClick={() => setFocusMode((o) => !o)}
           style={{ background: palette.ui, color: palette.uiText, border: `1px solid ${palette.border}` }}
-          className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+          className="w-11 h-11 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
           title={focusMode ? `${t('reader_focus_exit')} (F)` : `${t('reader_focus')} (F)`}
           aria-label={t('reader_focus')}
         >
@@ -930,7 +957,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             color: prefs.paginated ? '#0a0a0b' : palette.uiText,
             border: prefs.paginated ? '1px solid transparent' : `1px solid ${palette.border}`,
           }}
-          className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+          className="w-11 h-11 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
           title={prefs.paginated ? t('reader_paginated_off') : t('reader_paginated_on')}
           aria-label="Alternar modo paginado"
         >
@@ -957,7 +984,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
             type="button"
             onClick={() => setTocOpen(true)}
             style={{ background: palette.ui, color: palette.uiText, border: `1px solid ${palette.border}` }}
-            className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            className="w-11 h-11 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
             title={t('reader_chapter_index')}
             aria-label={t('reader_chapter_index')}
           >
