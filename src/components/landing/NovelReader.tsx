@@ -814,7 +814,10 @@ const NovelReader: React.FC<NovelReaderProps> = ({
           onImageClick={(src) => setLightbox(src)}
         />
       ) : (
-      <main style={{ maxWidth: WIDTH_PX[prefs.width], margin: '0 auto', padding: '3rem 1rem' }}>
+      <main
+        className="pb-28 md:pb-12"
+        style={{ maxWidth: WIDTH_PX[prefs.width], margin: '0 auto', padding: '3rem 1rem' }}
+      >
         <div className="px-2 md:px-4">
           <h1 style={{
             fontFamily: prefs.family,
@@ -919,7 +922,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       {/* En móvil van abajo a la derecha, donde llega el pulgar y no hay texto.
           En escritorio siguen arriba, que es donde la gente ya los busca. */}
       <div
-        className={`fixed z-30 flex flex-col gap-2.5 right-3 md:right-4 bottom-4 md:bottom-auto ${focusMode ? 'md:top-4' : 'md:top-20'}`}
+        className={`fixed z-30 flex flex-row-reverse md:flex-col gap-2.5 right-3 md:right-4 bottom-3 md:bottom-auto ${focusMode ? 'md:top-4' : 'md:top-20'}`}
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
           transform: controlsHidden ? 'translateX(calc(100% + 24px))' : 'none',
