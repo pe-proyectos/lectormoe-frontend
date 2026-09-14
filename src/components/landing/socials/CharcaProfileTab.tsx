@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ExternalLink, MessageCircle, Users, Loader2 } from 'lucide-react'
 import { hilosPublic, CHARCA_URL } from '../../../util/hilosClient'
+import { isImageUrl as isImg } from '@/util/imageUrl';
 
 interface Props { profileSlug: string; currentUser: any; logged: boolean }
 
@@ -11,7 +12,6 @@ interface Page {
 interface Post { id: number; content: string; createdAt: string; likesCount: number; commentsCount: number }
 
 const n = (v: any) => Number(v || 0).toLocaleString('es')
-const isImg = (u: string) => /\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(u)
 
 // La parte social de un perfil vive en La Charca. Aquí mostramos un resumen
 // real leído de hilos.rest, con enlace para seguir la conversación allí.

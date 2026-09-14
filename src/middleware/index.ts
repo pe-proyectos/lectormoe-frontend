@@ -91,7 +91,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // ============================================
 
   // Skip middleware for static file requests (service worker, manifests, etc.)
-  const staticFileExtensions = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|json|xml|txt|map|webmanifest)$/i;
+  const staticFileExtensions = /\.(js|css|png|jpg|jpeg|jfif|gif|svg|ico|webp|avif|bmp|apng|woff|woff2|ttf|eot|json|xml|txt|map|webmanifest)$/i;
   if (staticFileExtensions.test(context.url.pathname)) {
     return await next();
   }

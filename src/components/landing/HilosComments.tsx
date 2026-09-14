@@ -4,6 +4,7 @@ import { notify } from '../../util/feedback';
 import { uploadFile } from '../../util/uploadFile';
 import { formatDate as formatDateUtil } from '../../util/date';
 import { hilosApi, hilosPublic, hilosSession, CHARCA_URL } from '../../util/hilosClient';
+import { isImageUrl as isImg } from '@/util/imageUrl';
 
 // Comentarios servidos por hilos.rest (el motor social compartido con
 // lacharca.com). El historial de CapibaraTraductor ya vive ahi, migrado con sus
@@ -33,7 +34,6 @@ const MAX = 1000;
 const R2_BASE = (import.meta.env['PUBLIC_R2_PUBLIC_URL'] || 'https://r2.capibaratraductor.com').replace(/\/$/, '');
 // uploadFile devuelve la clave en R2; hilos guarda la URL absoluta en el texto.
 const publicUrl = (key: string) => (/^https?:\/\//.test(key) ? key : `${R2_BASE}/${key.replace(/^\//, '')}`);
-const isImg = (u: string) => /\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(u);
 
 const split = (content: string) => {
   const parts = (content || '').split(/\s+/);

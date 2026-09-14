@@ -235,8 +235,8 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
   };
 
   const uploadAndInsertImage = async (file: File, marker = 'w70') => {
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-      toast.error('Solo se permiten imágenes JPG, PNG, WEBP o GIF.');
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(file.type)) {
+      toast.error('Solo se permiten imágenes JPG, PNG, WEBP, AVIF o GIF.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -385,7 +385,7 @@ const NovelEditor: React.FC<NovelEditorProps> = ({ value, onChange, disabled = f
         </button>
         <input ref={docxInputRef} type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={onPickDocx} />
         <input ref={mdInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={onPickMd} />
-        <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onPickImage} />
+        <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" className="hidden" onChange={onPickImage} />
 
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">

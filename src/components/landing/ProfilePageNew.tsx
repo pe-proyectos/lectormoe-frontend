@@ -1794,7 +1794,7 @@ const ProfilePageNew: React.FC<ProfilePageProps> = ({ user, logged, organization
                   </div>
                   <div className="flex-1 space-y-2">
                     <p className="text-white font-bold text-sm">Cambiar foto de perfil</p>
-                    <p className="text-zinc-500 text-[10px] uppercase font-black tracking-widest">JPG, PNG o WebP (Max 2MB)</p>
+                    <p className="text-zinc-500 text-[10px] uppercase font-black tracking-widest">JPG, PNG, WebP o AVIF (Max 2MB)</p>
                     <button
                       onClick={() => avatarInputRef.current?.click()}
                       className="px-4 py-2 bg-zinc-800 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-zinc-700 transition-colors"
