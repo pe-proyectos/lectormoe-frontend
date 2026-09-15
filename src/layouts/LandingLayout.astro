@@ -9,6 +9,10 @@ import AppNative from '../components/app/AppNative';
 import { resolveAdsProvider } from '../util/ads-provider';
 import { ClientRouter } from 'astro:transitions';
 
+// Promocion del sorteo de qori.cc. Apagada por defecto: para volver a
+// encenderla, PUBLIC_SORTEO_QORI=on en el entorno del frontend.
+const sorteoQori = import.meta.env.PUBLIC_SORTEO_QORI === 'on';
+
 interface Props {
   title?: string;
   description?: string;
@@ -145,7 +149,7 @@ const siteName =
     <ClientRouter />
   </head>
   <body>
-    <SorteoBanner client:only="react" transition:persist="sorteo-banner" />
+    {sorteoQori && <SorteoBanner client:only="react" transition:persist="sorteo-banner" />}
     <slot />
     <GlobalToaster client:only="react" transition:persist="toaster" />
     <AppNative client:only="react" transition:persist="appnative" />
@@ -162,7 +166,7 @@ const siteName =
       />
     )}
     <DiscordInviteModal client:only="react" transition:persist="discord-modal" />
-    <SorteoModal client:only="react" transition:persist="sorteo-modal" />
+    {sorteoQori && <SorteoModal client:only="react" transition:persist="sorteo-modal" />}
     {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider).
         Se omite en la app (isNativeApp): es el "emergente" con cerrar difícil. */}
     {adsProvider === 'adsterra' && !isNativeApp && (
