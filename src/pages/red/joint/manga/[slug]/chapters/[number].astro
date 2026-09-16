@@ -1,7 +1,7 @@
 ---
-import LandingLayout from '../../../../../layouts/LandingLayout.astro';
-import ReaderPageContainer from '../../../../../components/landing/ReaderPageContainer';
-import { jointRedirectTarget } from '../../../../../util/jointPage';
+import LandingLayout from '../../../../../../layouts/LandingLayout.astro';
+import ReaderPageContainer from '../../../../../../components/landing/ReaderPageContainer';
+import { jointRedirectTarget } from '../../../../../../util/jointPage';
 
 const { slug, number } = Astro.params;
 const { callAPI, user, language, showAds, nsfwMode } = Astro.locals as any;

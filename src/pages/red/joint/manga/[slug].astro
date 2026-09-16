@@ -1,7 +1,7 @@
 ---
-import LandingLayout from '../../../layouts/LandingLayout.astro';
-import MangaDetailPageContainer from '../../../components/landing/MangaDetailPageContainer';
-import { jointRedirectTarget, mangaFromJoint, orgFromJoint } from '../../../util/jointPage';
+import LandingLayout from '../../../../layouts/LandingLayout.astro';
+import MangaDetailPageContainer from '../../../../components/landing/MangaDetailPageContainer';
+import { jointRedirectTarget, mangaFromJoint, orgFromJoint } from '../../../../util/jointPage';
 
 const { slug } = Astro.params;
 const { callAPI, user, showAds, nsfwMode } = Astro.locals as any;
