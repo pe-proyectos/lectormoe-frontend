@@ -15,6 +15,7 @@ import { callAPI } from '../../util/callApi';
 import { toast } from 'react-toastify';
 import { paintRange, clearHighlight } from '../../util/quoteHighlight';
 import { getRangeOffsets, rangeFromOffsets } from '../../util/quoteOffsets';
+import { stripLeadingTitle } from '@/util/novelMarkdown';
 
 interface AdjacentChapter {
   number: number;
@@ -673,7 +674,7 @@ const NovelReader: React.FC<NovelReaderProps> = ({
   }, [panelOpen]);
 
   const { html, toc } = useMemo(() => {
-    const raw = chapter?.bodyMarkdown || '';
+    const raw = stripLeadingTitle(chapter?.bodyMarkdown || '', chapter?.title);
     if (!raw) return { html: '', toc: [] as { id: string; level: number; text: string }[] };
     const rendered = md.render(raw);
     const sanitized = DOMPurify.sanitize(rendered, {
@@ -696,14 +697,14 @@ const NovelReader: React.FC<NovelReaderProps> = ({
       return `<h${lvl} id="${id}">${inner}</h${lvl}>`;
     });
     return { html: withIds, toc };
-  }, [chapter?.bodyMarkdown]);
+  }, [chapter?.bodyMarkdown, chapter?.title]);
 
   const wordCount = useMemo(() => {
-    const raw = chapter?.bodyMarkdown || '';
+    const raw = stripLeadingTitle(chapter?.bodyMarkdown || '', chapter?.title);
     if (!raw) return 0;
     const stripped = raw.replace(/[#*_>`~\-]/g, ' ').replace(/\[(.*?)\]\(.*?\)/g, '$1');
     return stripped.split(/\s+/).filter(Boolean).length;
-  }, [chapter?.bodyMarkdown]);
+  }, [chapter?.bodyMarkdown, chapter?.title]);
 
   const readingMinutes = Math.max(1, Math.round(wordCount / WORDS_PER_MIN));
   const palette = getThemePalette(prefs);

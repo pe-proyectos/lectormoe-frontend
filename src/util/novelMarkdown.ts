@@ -31,6 +31,39 @@ const ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'src', 'alt', 'loading',
 const FORBID_TAGS = ['style', 'script', 'iframe', 'object', 'embed', 'form', 'input', 'button']
 const FORBID_ATTR = ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
 
+// Muchos capitulos de novela traen el titulo repetido dentro del cuerpo (como
+// encabezado, como linea suelta, o ambos), y el lector ya lo pinta en la
+// cabecera: se veia dos o tres veces. Quita esas repeticiones SOLO si estan al
+// principio del cuerpo y coinciden con el titulo del capitulo.
+const normalizarTitulo = (s: string): string =>
+  (s || '')
+    .replace(/^#{1,6}\s*/, '')
+    .replace(/[*_`~]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/[.:;,\-–—]+$/, '')
+    .trim()
+    .toLowerCase()
+
+export function stripLeadingTitle(markdown: string, title?: string | null): string {
+  const cuerpo = markdown || ''
+  const t = normalizarTitulo(title || '')
+  if (!cuerpo || !t) return cuerpo
+
+  const lineas = cuerpo.split('\n')
+  let i = 0
+  // Hasta 3 repeticiones: cubre "titulo suelto + encabezado" y algun caso extra.
+  for (let quitadas = 0; quitadas < 3; ) {
+    while (i < lineas.length && lineas[i].trim() === '') i++
+    if (i >= lineas.length) break
+    if (normalizarTitulo(lineas[i]) !== t) break
+    i++
+    quitadas++
+  }
+  if (i === 0) return cuerpo
+  while (i < lineas.length && lineas[i].trim() === '') i++
+  return lineas.slice(i).join('\n')
+}
+
 export interface TocEntry {
   id: string
   level: number
