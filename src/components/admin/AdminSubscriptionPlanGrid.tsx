@@ -44,7 +44,7 @@ const AdminSubscriptionPlanGrid: React.FC<AdminSubscriptionPlanGridProps> = ({ l
 
   const refreshSubscriptionPlans = () => {
     setLoading(true);
-    callAPI(`/api/subscription-plan`)
+    callAPI(`/api/subscription-plan?active=all`)
       .then((result) => {
         // El API retorna { items: [...], maxPage: X, total: Y }
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {

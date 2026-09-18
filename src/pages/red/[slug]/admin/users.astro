@@ -11,7 +11,7 @@ const _ = getTranslator(language);
 if (!organization) return Astro.redirect("/404");
 if (!logged) return Astro.redirect(`/red/${organizationSlug}/login`);
 
-const subscriptionPlansData = await callAPI(`/api/subscription-plan`);
+const subscriptionPlansData = await callAPI(`/api/subscription-plan?active=all`);
 const subscriptionPlans = subscriptionPlansData?.items || (Array.isArray(subscriptionPlansData) ? subscriptionPlansData : []);
 ---
 

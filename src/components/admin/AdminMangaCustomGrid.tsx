@@ -109,7 +109,7 @@ const AdminMangaCustomGrid: React.FC<AdminMangaCustomGridProps> = ({
   }, [page, debouncedSearchTerm]);
 
   const refreshSubscriptionPlans = () => {
-    return callAPI(`/api/subscription-plan`)
+    return callAPI(`/api/subscription-plan?active=all`)
       .then((result) => {
         // El API retorna { items: [...], maxPage: X, total: Y }
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items)) {

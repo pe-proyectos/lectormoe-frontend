@@ -723,7 +723,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   const loadSubscriptionPlans = async () => {
     try {
-      const result = await callAPI('/api/subscription-plan');
+      const result = await callAPI('/api/subscription-plan?active=all');
       // callAPI devuelve result.data, que es { items: [...], maxPage, total }
       if (result?.items && Array.isArray(result.items)) {
         setSubscriptionPlans(result.items);

@@ -17,7 +17,7 @@ if (!logged) {
   return Astro.redirect(`/${organizationSlug}/login`);
 }
 
-const subscriptionPlansData = await callAPI(`/api/subscription-plan`);
+const subscriptionPlansData = await callAPI(`/api/subscription-plan?active=all`);
 // El API devuelve { status: true, data: { items: [...], maxPage, total } }
 // callAPI devuelve result.data, así que subscriptionPlansData es { items: [...], maxPage, total }
 const subscriptionPlans = subscriptionPlansData?.items || (Array.isArray(subscriptionPlansData) ? subscriptionPlansData : []);
