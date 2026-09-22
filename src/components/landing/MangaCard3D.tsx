@@ -4,6 +4,7 @@ import { notify } from '../../util/feedback';
 import { nsfwUrl } from '../../util/nsfw-url';
 import { Clock, Book, ArrowRight, Check, Lock, Unlock, CreditCard, AlertTriangle, Eye } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
+import JointCredit, { type JointMember } from './JointCredit';
 
 interface Chapter {
   id: number;
@@ -20,6 +21,7 @@ interface Manga {
   cover: string;
   scan?: string;
   scanName?: string;
+  jointMembers?: JointMember[] | null;
   status?: 'Ongoing' | 'Completed' | 'Hiatus';
   lastUpdate?: string;
   chapter?: string;
@@ -660,10 +662,18 @@ const MangaCard3D: React.FC<Props> = ({ user, organization, manga, hideScan = fa
           </div>
         </div>
         
-        {!hideScan && (manga.scan || manga.scanName) && (
-          <div className="px-4 py-3 bg-zinc-900/90 border-t border-zinc-800/50 flex items-center justify-between group-hover:bg-zinc-800 transition-colors">
-            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest truncate">{manga.scan || manga.scanName}</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+        {!hideScan && (manga.scan || manga.scanName || manga.jointMembers?.length) && (
+          <div className="px-4 py-3 bg-zinc-900/90 border-t border-zinc-800/50 flex items-center justify-between gap-2 group-hover:bg-zinc-800 transition-colors">
+            {manga.jointMembers?.length ? (
+              <JointCredit
+                members={manga.jointMembers}
+                fallback={manga.scan || manga.scanName}
+                className="text-[9px] font-black text-zinc-500 uppercase tracking-widest"
+              />
+            ) : (
+              <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest truncate">{manga.scan || manga.scanName}</span>
+            )}
+            <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 shrink-0" />
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import MangaCard3D from './MangaCard3D';
 import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock, Book, ArrowRight, User, X } from 'lucide-react';
 import { translateStatus } from '../../util/landing/translateStatus';
 import { callAPI } from '../../util/callApi';
+import JointCredit, { type JointMember } from './JointCredit';
 
 interface Manga {
   id: string;
@@ -21,6 +22,7 @@ interface Manga {
   chapters?: any[];
   userHasSubscription?: boolean;
   isNSFW?: boolean;
+  jointMembers?: JointMember[] | null;
 }
 
 interface MangaListItemProps {
@@ -83,9 +85,14 @@ const MangaListItem: React.FC<MangaListItemProps> = ({ manga, hideScan, nsfwMode
               <User size={12} /> {manga.author}
             </div>
           )}
-          {!hideScan && manga.scan && (
-            <div className="flex items-center gap-1.5 text-cyan-500 text-[10px] font-black uppercase tracking-widest">
-              <span className="text-zinc-700">|</span> {manga.scan}
+          {!hideScan && (manga.scan || manga.jointMembers?.length) && (
+            <div className="flex items-center gap-1.5 text-cyan-500 text-[10px] font-black uppercase tracking-widest min-w-0">
+              <span className="text-zinc-700">|</span>
+              {manga.jointMembers?.length ? (
+                <JointCredit members={manga.jointMembers} fallback={manga.scan} />
+              ) : (
+                manga.scan
+              )}
             </div>
           )}
         </div>
@@ -383,6 +390,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
               scan: mangaOrg?.name || '',
               scanName: mangaOrg?.name || '',
               scanUrl: mangaOrgSlug ? `/${mangaOrgSlug}` : '',
+              // Colaboracion entre scans: la tarjeta se acredita al lider y el
+              // resto se resume en un "+N" que se despliega al pasar el raton.
+              jointMembers: m._jointMembers || null,
               mangaUrl: mangaUrl,
               status: m.status || 'Ongoing',
               author: m.author?.name || m.author,
