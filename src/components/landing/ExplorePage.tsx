@@ -4,6 +4,7 @@ import { Search, Filter, SlidersHorizontal, LayoutGrid, List as ListIcon, Clock,
 import { translateStatus } from '../../util/landing/translateStatus';
 import { callAPI } from '../../util/callApi';
 import JointCredit, { type JointMember } from './JointCredit';
+import AdsterraUnit from '../ads/AdsterraUnit';
 
 interface Manga {
   id: string;
@@ -647,6 +648,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
           </div>
         </div>
 
+        {/* Anuncio de cabecera: 728x90 en escritorio, 320x50 en movil. */}
+        <AdsterraUnit slot="728x90" mobileSlot="320x50" className="my-6" />
+
         {/* Results */}
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -663,7 +667,15 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
         ) : filteredMangas.length > 0 ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {filteredMangas.map((manga) => (
+              {filteredMangas.map((manga, idx) => (
+                <React.Fragment key={`celda-${manga.mangaUrl || manga.id}`}>
+                {idx === 12 && (
+                  // Banner nativo tras las dos primeras filas: a esa altura el
+                  // lector ya esta navegando y no interrumpe la primera vista.
+                  <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 xl:col-span-6">
+                    <AdsterraUnit slot="native" />
+                  </div>
+                )}
                 <MangaCard3D
                   user={user}
                   organization={organization}
@@ -684,6 +696,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ organization, organizationSlu
                     })(),
                   }}
                 />
+                </React.Fragment>
               ))}
             </div>
           ) : (

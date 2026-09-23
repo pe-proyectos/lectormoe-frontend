@@ -23,6 +23,7 @@ import { getBookTypeBadge, getDemographyBadge } from "../../util/taxonomy";
 import MilestoneAlertButton from "./MilestoneAlertButton";
 import MangaReviews from "./MangaReviews";
 import ReportButton from "./ReportButton";
+import AdsterraUnit from '../ads/AdsterraUnit';
 import AddToListButton from "./AddToListButton";
 import DownloadButton from "../app/DownloadButton";
 import { formatDate as formatDateUtil } from "../../util/date";
@@ -1519,6 +1520,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Rectangulo bajo la ficha: es el hueco natural de la columna y no
+                empuja nada del contenido principal. */}
+            <AdsterraUnit slot="300x250" />
           </div>
 
           {/* SECCION DERECHA (MAIN CONTENT) */}
@@ -1593,6 +1598,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                     </span>
                   </h2>
                 </div>
+
+                {/* Franja antes de la lista de capitulos: el lector ya decidio
+                    que le interesa la obra y esta a punto de elegir capitulo. */}
+                <AdsterraUnit slot="468x60" mobileSlot="320x50" className="mb-6" />
 
                 {/* Range picker first on mobile (so user can switch ranges
                     without scrolling past the whole list), and a side column

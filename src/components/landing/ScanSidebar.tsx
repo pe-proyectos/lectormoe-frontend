@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Crown, Star, Heart, MessageSquare, ShieldCheck, LogIn, Play, Clock, BookMarked, Sparkles, BookOpen, Medal, ChevronDown, Mail } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import ContactScanModal from './ContactScanModal';
+import AdsterraUnit from '../ads/AdsterraUnit';
 
 interface TopCommenter {
   id: number;
@@ -731,6 +732,13 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
             background: #3f3f46;
           }
         `}} />
+
+        {/* Rascacielos al final de la columna: solo en escritorio, donde hay
+            160px de ancho libres. En movil la columna se apila bajo el
+            contenido y un anuncio de 600px de alto seria un muro. */}
+        <div className="hidden lg:block">
+          <AdsterraUnit slot="160x600" />
+        </div>
       </div>
     </aside>
   );

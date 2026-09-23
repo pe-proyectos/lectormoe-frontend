@@ -3,7 +3,8 @@ import { StickyNavbar } from "../components/StickyNavbar.jsx";
 import { Footer } from "../components/Footer.jsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { resolveAdsProvider } from "../util/ads-provider";
+import { resolveAdsProvider, SOCIAL_BAR_HABILITADA } from "../util/ads-provider";
+import { ADSTERRA_GLOBAL } from "../util/adsterra";
 
 interface Props {
 	title?: string;
@@ -30,7 +31,7 @@ const adsProvider = resolveAdsProvider({
 ---
 
 <!doctype html>
-<html data-theme={theme} lang={language || organization.language || "es"}>
+<html data-theme={theme} lang={language || organization.language || "es"} data-ads={adsProvider}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="description" content={description || organization?.description || "Mangas"} />
@@ -46,7 +47,7 @@ const adsProvider = resolveAdsProvider({
 		)}
 		*/}
 		{adsProvider === 'adsterra' && (
-			<script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
+			<script src={ADSTERRA_GLOBAL.popunder} />
 		)}
 		{/* Metadata General */}
 		<meta name="title" content={title && organization?.title ? (title + " - " + organization?.title) : title || organization?.title || "Mangas"}>
@@ -121,7 +122,7 @@ const adsProvider = resolveAdsProvider({
 		<ToastContainer client:only="react"theme="dark" />
 		{/* Adsterra Social Bar: formato emergente. Se puede apagar con SOCIAL_BAR_HABILITADA en util/ads-provider. */}
 		{adsProvider === 'adsterra' && SOCIAL_BAR_HABILITADA && (
-			<script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
+			<script src={ADSTERRA_GLOBAL.socialBar} />
 		)}
 		<script is:inline>
 			if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
