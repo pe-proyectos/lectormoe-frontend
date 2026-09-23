@@ -34,6 +34,16 @@ const adsProvider = resolveAdsProvider({
 <html data-theme={theme} lang={language || organization.language || "es"} data-ads={adsProvider}>
 	<head>
 		<meta charset="UTF-8" />
+		{/* Verificacion de Monetag: siempre presente. */}
+		<meta name="monetag" content="fc59094aa6305fcd6cc4401bb0d852d2" />
+		{/* Adcash Autotag (zona 8kxyxuxlp4). Solo donde el layout decidio que hay
+		    anuncios: no en login, portada desnuda ni para quien paga por quitarlos. */}
+		{adsProvider !== 'none' && (
+		  <Fragment>
+		    <script is:inline id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+		    <script is:inline type="text/javascript" set:html={"aclib.runAutoTag({ zoneId: '8kxyxuxlp4' });"} />
+		  </Fragment>
+		)}
 		<meta name="description" content={description || organization?.description || "Mangas"} />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<link rel="icon" type="image/png" href={organization?.faviconUrl || "/images/faviconcaptrad.png"} />

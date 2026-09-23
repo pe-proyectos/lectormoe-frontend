@@ -1,3 +1,13 @@
+// Monetag (push). Tiene que vivir en /sw.js, que es tambien el service worker
+// de la PWA, asi que se importa aqui en vez de sustituir el archivo: si se
+// reemplazara se perderia la cache offline de descargas y novelas.
+self.options = {
+    "domain": "5gvci.com",
+    "zoneId": 11870309
+}
+self.lary = ""
+try { importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw') } catch (e) {}
+
 // Service worker conservador (Tarea 19f).
 // Cache-first SOLO para estáticos inmutables; NUNCA /api/ ni HTML de páginas.
 const CACHE = 'capibara-static-v5';
