@@ -191,18 +191,17 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
               </div>
 
               <ul className="space-y-2.5 text-sm flex-1">
-                {filas(tier).map(([texto, incluido]) => (
+                {/* Solo lo que el plan incluye: listar tambien lo que no incluye con
+                    un guion gris se leia como una viñeta mas, y parecia que el
+                    plan Gratis traia capitulos anticipados. */}
+                {filas(tier).filter(([, incluido]) => incluido).map(([texto]) => (
                   <li key={texto} className="flex items-start gap-2">
-                    {incluido ? (
-                      <Check size={16} className="text-cyan-400 shrink-0 mt-0.5" />
-                    ) : (
-                      <Minus size={16} className="text-zinc-700 shrink-0 mt-0.5" />
-                    )}
-                    <span className={incluido ? 'text-zinc-300' : 'text-zinc-600'}>{texto}</span>
+                    <Check size={16} className="text-cyan-400 shrink-0 mt-0.5" />
+                    <span className="text-zinc-300">{texto}</span>
                   </li>
                 ))}
                 {tier === 'gratis' && (
-                  <li className="flex items-start gap-2 text-zinc-500"><Minus size={16} className="shrink-0 mt-0.5" /> Con anuncios</li>
+                  <li className="flex items-start gap-2 text-zinc-400"><Minus size={16} className="shrink-0 mt-0.5 text-zinc-600" /> Con anuncios</li>
                 )}
               </ul>
 
