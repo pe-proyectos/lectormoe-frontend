@@ -42,7 +42,6 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
   const [datos, setDatos] = useState<Datos | null>(null);
   const [anual, setAnual] = useState(false);
   const [sdkListo, setSdkListo] = useState(false);
-  const [cambiando, setCambiando] = useState<number | null>(null);
   const renderizados = useRef<Set<string>>(new Set());
 
   const preview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1';
@@ -56,37 +55,6 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
       })
       .catch(() => setDatos(null));
   }, [preview]);
-
-  // Vuelta de PayPal tras aprobar un cambio de plan.
-  useEffect(() => {
-    const qs = new URLSearchParams(window.location.search);
-    const cambio = qs.get('cambio');
-    if (!cambio) return;
-    const limpiar = () => {
-      qs.delete('cambio');
-      qs.delete('plan');
-      const resto = qs.toString();
-      window.history.replaceState(null, '', window.location.pathname + (resto ? `?${resto}` : ''));
-    };
-    if (cambio === 'cancelado') {
-      notify.error('Cambio de plan cancelado. Sigues con tu plan actual.');
-      limpiar();
-      return;
-    }
-    const planId = Number(qs.get('plan'));
-    if (cambio === 'ok' && planId) {
-      callAPI('/api/capibara-plans/change/confirm', { method: 'POST', body: JSON.stringify({ planId }) })
-        .then(() => {
-          notify.success('Tu plan se actualizó.');
-          limpiar();
-          setTimeout(() => window.location.reload(), 800);
-        })
-        .catch((e: any) => {
-          notify.error(e?.message || 'No pudimos confirmar el cambio. Si PayPal ya te lo cobró, escríbenos por Discord.');
-          limpiar();
-        });
-    }
-  }, []);
 
   // SDK de PayPal (el mismo que usa la pagina de planes por scan).
   useEffect(() => {
@@ -113,10 +81,10 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
   const tierActual: Tier = nivel === 'legacy' ? 'gratis' : nivel;
   const tienePlataforma = !!datos?.actual;
 
-  // Botones de PayPal solo para quien aun no tiene un plan Capibara: los que
-  // ya lo tienen cambian de plan con "Subir a", sin pagar dos suscripciones.
+  // Subir de plan es contratar el nuevo a su precio completo: al activarse, el
+  // API suspende la suscripcion anterior, asi que nunca se pagan dos.
   useEffect(() => {
-    if (!sdkListo || !window.paypal || !logged || tienePlataforma) return;
+    if (!sdkListo || !window.paypal || !logged) return;
     for (const plan of planesVisibles) {
       const cont = `capibara-pp-${plan.id}`;
       const nodo = document.getElementById(cont);
@@ -143,31 +111,12 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
         })
         .render(`#${cont}`);
     }
-  }, [sdkListo, planesVisibles, logged, tienePlataforma, user?.id]);
+  }, [sdkListo, planesVisibles, logged, user?.id, datos?.actual?.planId]);
 
   // Al cambiar mensual/anual los contenedores se regeneran.
   useEffect(() => { renderizados.current.clear(); }, [anual]);
 
   if (!datos?.visible) return null;
-
-  const cambiarA = async (plan: Plan) => {
-    setCambiando(plan.id);
-    try {
-      const r = await callAPI('/api/capibara-plans/change', {
-        method: 'POST',
-        body: JSON.stringify({ planId: plan.id, returnPath: window.location.pathname }),
-      });
-      if (r?.approveUrl) {
-        window.location.href = r.approveUrl;
-        return;
-      }
-      notify.success('Tu plan se actualizó.');
-      setTimeout(() => window.location.reload(), 800);
-    } catch (e: any) {
-      notify.error(e?.message || 'No se pudo cambiar el plan.');
-      setCambiando(null);
-    }
-  };
 
   const L = datos.limitesPorNivel;
   const tarjetas: Array<{ tier: Tier; plan?: Plan }> = [
@@ -266,17 +215,15 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
                   <a href="/login" className="block w-full text-center rounded-full py-2.5 bg-cyan-500 text-zinc-950 text-xs font-black uppercase tracking-widest">Inicia sesión para suscribirte</a>
                 ) : !plan ? (
                   <div className="text-center text-zinc-600 text-xs">No disponible</div>
-                ) : tienePlataforma ? (
-                  <button
-                    type="button"
-                    disabled={cambiando !== null}
-                    onClick={() => cambiarA(plan)}
-                    className="w-full rounded-full py-2.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-60 text-zinc-950 text-xs font-black uppercase tracking-widest transition-colors"
-                  >
-                    {cambiando === plan.id ? 'Abriendo PayPal…' : ORDEN[tier] > ORDEN[tierActual] ? `Subir a ${NOMBRE[tier]}` : `Cambiar a ${anual ? 'anual' : 'mensual'}`}
-                  </button>
                 ) : (
-                  <div id={`capibara-pp-${plan.id}`} key={`${plan.id}-${intervalo}`} />
+                  <>
+                    {tierActual !== 'gratis' && (
+                      <p className="text-center text-cyan-400 text-[11px] font-black uppercase tracking-widest mb-2">
+                        {ORDEN[tier] > ORDEN[tierActual] ? `Subir a ${NOMBRE[tier]}` : `Pasar a ${anual ? 'anual' : 'mensual'}`}
+                      </p>
+                    )}
+                    <div id={`capibara-pp-${plan.id}`} key={`${plan.id}-${intervalo}`} />
+                  </>
                 )}
               </div>
             </div>
@@ -286,7 +233,7 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
 
       {tienePlataforma && (
         <p className="text-center text-zinc-500 text-xs mt-6">
-          Al cambiar de plan no pagas dos suscripciones: el precio nuevo se aplica desde tu próximo cobro.
+          Al subir de plan pagas el precio del nuevo y tu plan actual se detiene: nunca pagas dos a la vez.
         </p>
       )}
     </section>
