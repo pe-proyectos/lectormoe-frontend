@@ -616,7 +616,7 @@ const CapibaraTab = ({ token }: { token: string }) => {
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard label="Estado" value={estado.lanzado ? 'Lanzado' : 'Sin lanzar'} sub={estado.lanzado ? '' : 'Vista previa con ?preview=1'} />
-            <StatCard label="Cobros" value={estado.pagos?.cobros ?? 0} sub={`${estado.pagos?.pendientes ?? 0} sin repartir por lectura`} />
+            <StatCard label="Cobros" value={estado.pagos?.cobros ?? 0} sub={`${estado.pagos?.pendientes ?? 0} con meses por repartir · ${estado.pagos?.reembolsados ?? 0} reembolsados`} />
             <StatCard label="Bruto" value={`$${(estado.pagos?.bruto ?? 0).toFixed(2)}`} sub={`PayPal: $${(estado.pagos?.comisiones ?? 0).toFixed(2)}`} />
             <StatCard label="Legacy activas" value={estado.legacyActivas} sub="Siguen con su 50/50" />
           </div>
