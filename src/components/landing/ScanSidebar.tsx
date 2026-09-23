@@ -82,7 +82,10 @@ const ScanSidebar: React.FC<ScanSidebarProps> = ({ subscribeUrl, user, logged, o
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const result = await callAPI('/api/subscription-plan');
+        // active=all: aqui los planes solo sirven para agrupar a los
+        // suscriptores que ya existen (el muro de apoyos), no para vender. Tras
+        // el lanzamiento de Capibara el listado publico viene vacio.
+        const result = await callAPI('/api/subscription-plan?active=all');
 
         // El API retorna { items: [...], maxPage: X, total: Y }
         if (result && typeof result === 'object' && !Array.isArray(result) && Array.isArray(result.items) && result.items.length > 0) {
