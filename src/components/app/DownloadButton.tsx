@@ -29,8 +29,6 @@ interface Props {
   isJoint?: boolean;
 }
 
-const isPremium = (user: any): boolean =>
-  Array.isArray(user?.subscriptions) && user.subscriptions.some((s: any) => s?.active === true);
 
 // Descarga una obra para leer sin conexión. El usuario elige qué capítulos,
 // puede cancelar, y accede a su biblioteca de descargas. La descarga ocurre en
@@ -57,11 +55,10 @@ const DownloadButton: React.FC<Props> = ({ user, scanSlug, mangaSlug, title, cov
 
   const openPicker = async () => {
     if (!user) { notify.error('Inicia sesión para descargar.'); return; }
-    const premium = isPremium(user);
-    const gate = await canDownloadNewWork(premium, wk);
+    const gate = await canDownloadNewWork(user, wk);
     if (!gate.ok) {
       notify.error(
-        `Alcanzaste tu límite de ${gate.limit} descargas${premium ? '' : ' (gratis)'}. Libera espacio en Descargas${premium ? '.' : ' o hazte premium para 24.'}`,
+        `Alcanzaste tu límite de ${gate.limit} obras descargadas. Libera espacio en Descargas o mejora tu plan en /subscriptions.`,
         { autoClose: 6000 }
       );
       window.location.href = '/descargas';

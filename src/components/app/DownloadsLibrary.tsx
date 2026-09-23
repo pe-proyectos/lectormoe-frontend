@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { HardDriveDownload, Trash2, BookOpen, WifiOff, Crown } from 'lucide-react';
 import { notify } from '../../util/feedback';
-import { getDownloads, deleteWork, DOWNLOAD_LIMITS, type DownloadedWork } from '../../util/downloads';
+import { getDownloads, deleteWork, limiteDescargas, type DownloadedWork } from '../../util/downloads';
 import { useDialog } from '../ui/useDialog';
 
-const isPremium = (user: any): boolean =>
-  Array.isArray(user?.subscriptions) && user.subscriptions.some((s: any) => s?.active === true);
 
 const fmtBytes = (b: number) => (b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(0) + ' MB' : (b / 1e3).toFixed(0) + ' KB');
 
@@ -15,8 +13,7 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
   const dlg = useDialog();
   const [works, setWorks] = useState<DownloadedWork[]>([]);
   const [loading, setLoading] = useState(true);
-  const premium = isPremium(user);
-  const limit = premium ? DOWNLOAD_LIMITS.premium : DOWNLOAD_LIMITS.free;
+  const limit = limiteDescargas(user);
 
   const load = async () => {
     setLoading(true);
@@ -40,16 +37,16 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
         </div>
         <h1 className="text-2xl font-black text-white">Mis descargas</h1>
         <div className="flex items-center justify-between mt-2 mb-6">
-          <p className="text-zinc-500 text-sm">Lee sin conexión. {works.length} de {limit} obras usadas.</p>
-          {!premium && (
-            <a href="/scans" className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-400 hover:text-amber-300">
-              <Crown size={12} /> Sube a 24
+          <p className="text-zinc-500 text-sm">Lee sin conexión. {limit === null ? `${works.length} obras descargadas.` : `${works.length} de ${limit} obras usadas.`}</p>
+          {limit !== null && (
+            <a href="/subscriptions" className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-400 hover:text-amber-300">
+              <Crown size={12} /> Descargar más
             </a>
           )}
         </div>
         {/* Barra de uso */}
         <div className="h-2 rounded-full bg-zinc-900 overflow-hidden mb-6">
-          <div className="h-full bg-cyan-500 transition-all" style={{ width: `${Math.min(100, (works.length / limit) * 100)}%` }} />
+          <div className="h-full bg-cyan-500 transition-all" style={{ width: limit === null ? '0%' : `${Math.min(100, (works.length / limit) * 100)}%` }} />
         </div>
 
         {loading ? (

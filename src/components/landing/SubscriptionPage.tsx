@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { notify } from '../../util/feedback';
 import { Check, Shield, Crown, Trophy, MessageSquare, Heart, ExternalLink } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
+import CapibaraPlans from './CapibaraPlans';
 
 interface SubscriptionPlan {
   id: number;
@@ -63,6 +64,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loadingDonors, setLoadingDonors] = useState(true);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [capibaraVisible, setCapibaraVisible] = useState(false);
   const paypalButtonsRendered = useRef<Set<number>>(new Set());
   const [mangaSlug, setMangaSlug] = useState<string | null>(null);
   const [chapterNumber, setChapterNumber] = useState<string | null>(null);
@@ -519,6 +521,22 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
             </a>
           </div>
 
+          {/* Planes Capibara (validos en todos los scans). Este scan queda como
+              origen del suscriptor y se lleva el 25% de cada pago. */}
+          <CapibaraPlans
+            user={user}
+            logged={logged}
+            paypalClientId={paypalClientId}
+            scanNombre={organization?.name || organization?.title}
+            onVisible={setCapibaraVisible}
+          />
+
+          {capibaraVisible && subscriptionPlans.length > 0 && (
+            <h2 className="text-center text-zinc-500 text-xs font-black uppercase tracking-[0.3em] mb-6">
+              Planes propios de {organization?.name || organization?.title}
+            </h2>
+          )}
+
           {/* Pricing Cards */}
           {loadingPlans ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
@@ -606,7 +624,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                 );
               })}
             </div>
-          ) : (
+          ) : capibaraVisible ? null : (
             <div className="text-center py-12 mb-20">
               <p className="text-zinc-500 text-lg font-medium">No hay planes de suscripción disponibles</p>
             </div>

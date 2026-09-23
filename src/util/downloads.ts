@@ -129,12 +129,24 @@ export async function downloadCount(): Promise<number> {
 
 // ¿Puede el usuario descargar UNA obra NUEVA? (si ya está descargada, siempre sí:
 // añadir capítulos a una obra existente no cuenta contra el límite).
-export async function canDownloadNewWork(isPremium: boolean, existingKey?: string): Promise<{ ok: boolean; used: number; limit: number }> {
-  const limit = isPremium ? DOWNLOAD_LIMITS.premium : DOWNLOAD_LIMITS.free;
+export async function canDownloadNewWork(user: any, existingKey?: string): Promise<{ ok: boolean; used: number; limit: number | null }> {
+  const limit = limiteDescargas(user);
   const all = await getDownloads();
   const isExisting = existingKey ? all.some((w) => w.key === existingKey) : false;
   const used = all.length;
-  return { ok: isExisting || used < limit, used, limit };
+  return { ok: isExisting || limit === null || used < limit, used, limit };
+}
+
+/**
+ * Tope de obras descargadas para este usuario. Lo decide el API segun su plan
+ * (user.capibara.limites). `null` = ilimitado. Si el dato no llega (API vieja,
+ * sin sesion) se cae al esquema anterior: gratis 6, con suscripcion 24.
+ */
+export function limiteDescargas(user: any): number | null {
+  const desdeApi = user?.capibara?.limites?.descargas;
+  if (desdeApi === null || typeof desdeApi === 'number') return desdeApi;
+  const pagando = Array.isArray(user?.subscriptions) && user.subscriptions.some((s: any) => s?.active === true);
+  return pagando ? DOWNLOAD_LIMITS.premium : DOWNLOAD_LIMITS.free;
 }
 
 async function fetchAsBuffer(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {

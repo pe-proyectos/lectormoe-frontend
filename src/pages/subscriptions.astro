@@ -1,0 +1,13 @@
+---
+import LandingLayout from "../layouts/LandingLayout.astro";
+import GlobalSubscriptionsPage from "../components/landing/GlobalSubscriptionsPage";
+
+// Suscripcion Capibara desde la pagina general: sin scan de origen.
+const { user, showAds } = Astro.locals as any;
+const logged = !!user;
+const paypalClientId = import.meta.env.PUBLIC_PAYPAL_CLIENT_ID;
+---
+
+<LandingLayout title="Suscripción Capibara" showAds={showAds}>
+  <GlobalSubscriptionsPage user={user} logged={logged} paypalClientId={paypalClientId} client:only="react" />
+</LandingLayout>

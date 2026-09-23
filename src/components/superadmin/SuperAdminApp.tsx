@@ -554,7 +554,7 @@ const ErrorMsg = ({ msg }: { msg: string }) => (
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'raffles' | 'reports' | 'moderation' | 'beta';
+type Tab = 'overview' | 'orgs' | 'requests' | 'create-scan' | 'users' | 'subscriptions' | 'capibara' | 'raffles' | 'reports' | 'moderation' | 'beta';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'overview', label: 'Vista general', icon: '📊' },
@@ -563,6 +563,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'moderation', label: 'Auditoría', icon: '📋' },
   { id: 'users', label: 'Usuarios', icon: '👥' },
   { id: 'subscriptions', label: 'Suscripciones', icon: '💳' },
+  { id: 'capibara', label: 'Plan Capibara', icon: '🦫' },
   { id: 'raffles', label: 'Sorteos', icon: '🎟️' },
   { id: 'beta', label: 'Verificadores', icon: '🧪' },
   { id: 'requests', label: 'Solicitudes', icon: '📬' },
@@ -579,6 +580,93 @@ const ACTION_LABEL: Record<string, string> = {
   genre_create: 'Género creado',
   genre_rename: 'Género renombrado',
   genre_delete: 'Género eliminado',
+};
+
+// Suscripcion Capibara: alta de planes en PayPal, cobros y reparto mensual.
+const CapibaraTab = ({ token }: { token: string }) => {
+  const [estado, setEstado] = useState<any>(null);
+  const [error, setError] = useState('');
+  const [ocupado, setOcupado] = useState('');
+  const [log, setLog] = useState<string>('');
+  const hoy = new Date();
+  const mesPrevio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  const [anio, setAnio] = useState(mesPrevio.getFullYear());
+  const [mes, setMes] = useState(mesPrevio.getMonth() + 1);
+
+  const cargar = () =>
+    saFetch('/api/superadmin/capibara/estado', token).then(setEstado).catch((e) => setError(e.message));
+  useEffect(() => { cargar(); }, [token]);
+
+  const accion = async (nombre: string, path: string, body?: any) => {
+    setOcupado(nombre); setError(''); setLog('');
+    try {
+      const r = await saFetch(path, token, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+      setLog(JSON.stringify(r, null, 2));
+      await cargar();
+    } catch (e: any) { setError(e.message); }
+    finally { setOcupado(''); }
+  };
+
+  if (!estado && !error) return <Spinner />;
+
+  return (
+    <div className="space-y-6">
+      {error && <ErrorMsg msg={error} />}
+      {estado && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Estado" value={estado.lanzado ? 'Lanzado' : 'Sin lanzar'} sub={estado.lanzado ? '' : 'Vista previa con ?preview=1'} />
+            <StatCard label="Cobros" value={estado.pagos?.cobros ?? 0} sub={`${estado.pagos?.pendientes ?? 0} sin repartir por lectura`} />
+            <StatCard label="Bruto" value={`$${(estado.pagos?.bruto ?? 0).toFixed(2)}`} sub={`PayPal: $${(estado.pagos?.comisiones ?? 0).toFixed(2)}`} />
+            <StatCard label="Legacy activas" value={estado.legacyActivas} sub="Siguen con su 50/50" />
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
+                <tr><th className="text-left p-3">Plan</th><th className="text-left p-3">Intervalo</th><th className="text-right p-3">Precio</th><th className="text-right p-3">Activas</th></tr>
+              </thead>
+              <tbody>
+                {estado.planes.length === 0 ? (
+                  <tr><td colSpan={4} className="p-4 text-zinc-500">Aún no hay planes. Créalos con el botón de abajo.</td></tr>
+                ) : estado.planes.map((p: any) => (
+                  <tr key={p.id} className="border-t border-zinc-800">
+                    <td className="p-3 text-zinc-200">{p.name}</td>
+                    <td className="p-3 text-zinc-400">{p.interval === 'YEAR' ? 'Anual' : 'Mensual'}</td>
+                    <td className="p-3 text-right text-zinc-200">${p.price}</td>
+                    <td className="p-3 text-right text-zinc-200">{p._count?.subscriptions ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      <div className="flex flex-wrap gap-3 items-end">
+        <button disabled={!!ocupado} onClick={() => accion('bootstrap', '/api/superadmin/capibara/bootstrap')}
+          className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold">
+          {ocupado === 'bootstrap' ? 'Creando…' : 'Crear planes en PayPal'}
+        </button>
+        <button disabled={!!ocupado} onClick={() => accion('sync', '/api/superadmin/capibara/sync')}
+          className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white text-sm font-semibold">
+          {ocupado === 'sync' ? 'Sincronizando…' : 'Sincronizar cobros'}
+        </button>
+        <div className="flex items-end gap-2">
+          <input type="number" value={anio} onChange={(e) => setAnio(Number(e.target.value))} className="w-24 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-2 text-sm text-white" />
+          <input type="number" min={1} max={12} value={mes} onChange={(e) => setMes(Number(e.target.value))} className="w-16 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-2 text-sm text-white" />
+          <button disabled={!!ocupado} onClick={() => accion('reparto', '/api/superadmin/capibara/reparto', { year: anio, month: mes })}
+            className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white text-sm font-semibold">
+            {ocupado === 'reparto' ? 'Repartiendo…' : 'Repartir lectura del mes'}
+          </button>
+        </div>
+      </div>
+      <p className="text-zinc-500 text-xs">
+        Crear planes es idempotente: solo crea lo que falte. El reparto por lectura corre solo el día 2 de cada mes; el botón sirve para relanzarlo.
+      </p>
+      {log && <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-300 overflow-auto">{log}</pre>}
+    </div>
+  );
 };
 
 const ModerationLogTab = ({ token }: { token: string }) => {
@@ -916,6 +1004,7 @@ const SuperAdminApp = () => {
         {tab === 'raffles' && <SuperadminRaffles token={token} />}
         {tab === 'reports' && <ReportsTab token={token} />}
         {tab === 'moderation' && <ModerationLogTab token={token} />}
+        {tab === 'capibara' && <CapibaraTab token={token} />}
         {tab === 'beta' && <BetaTestersTab token={token} />}
       </div>
     </div>
