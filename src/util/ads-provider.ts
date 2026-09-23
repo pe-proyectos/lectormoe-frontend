@@ -62,6 +62,14 @@ function isAuthPath(pathname: string): boolean {
   return false;
 }
 
+// Panel de administracion: nunca lleva anuncios. Se decide por la RUTA y no
+// solo por el layout porque hay paginas de admin (edicion de joints y sus
+// capitulos, /superadmin, /{scan}/admin) que no usan AdminLayout.
+function isAdminPath(pathname: string): boolean {
+  const p = pathname.startsWith('/red/') ? pathname.slice(4) : pathname;
+  return /^\/superadmin(\/|$)/.test(p) || /^\/admin(\/|$)/.test(p) || /^\/[^/]+\/admin(\/|$)/.test(p);
+}
+
 interface ResolveAdsProviderInput {
   pathname: string;
   nsfwMode?: boolean;
@@ -81,8 +89,12 @@ export function resolveAdsProvider({
 }: ResolveAdsProviderInput): AdsProvider {
   // Hard "no ads" gates first: cheaper to short-circuit.
   if (showAds === false) return 'none';
-  if (NO_ADS_LANDING_PATHS.has(pathname)) return 'none';
-  if (isAuthPath(pathname)) return 'none';
+  if (isAdminPath(pathname)) return 'none';
+  // Portada y rutas de autenticacion se excluian por AdSense (no permite
+  // anuncios en paginas sin contenido). Con AdSense desactivado se decidio
+  // monetizarlas tambien; al reactivarlo hay que volver a excluirlas.
+  if (ADSENSE_HABILITADO && NO_ADS_LANDING_PATHS.has(pathname)) return 'none';
+  if (ADSENSE_HABILITADO && isAuthPath(pathname)) return 'none';
   // Luckys (raffles) is an ad-free zone — paid prizes shouldn't share screen
   // real estate with ads, and PayPal smart buttons + ad scripts collide.
   if (pathname === '/luckys' || pathname.startsWith('/luckys/')) return 'none';
