@@ -39,12 +39,12 @@ const adsProvider = resolveAdsProvider({
 		<link rel="manifest" href="/manifest.json" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? title + " - " + organization?.title : organization?.title || "Mangas"}</title>
-		{/* Google AdSense meta tag - always present for verification */}
+		{/* ADSENSE DESACTIVADO (2026-09-23): ver util/ads-provider.ts.
 		<meta name="google-adsense-account" content="ca-pub-2799839819522052" />
-		{/* Ad provider switch: see util/ads-provider.ts. */}
 		{adsProvider === 'google' && (
 			<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2799839819522052" crossorigin="anonymous" />
 		)}
+		*/}
 		{adsProvider === 'adsterra' && (
 			<script src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
 		)}
@@ -119,8 +119,8 @@ const adsProvider = resolveAdsProvider({
 			)
 		}
 		<ToastContainer client:only="react"theme="dark" />
-		{/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider). */}
-		{adsProvider === 'adsterra' && (
+		{/* Adsterra Social Bar: formato emergente. Se puede apagar con SOCIAL_BAR_HABILITADA en util/ads-provider. */}
+		{adsProvider === 'adsterra' && SOCIAL_BAR_HABILITADA && (
 			<script src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
 		)}
 		<script is:inline>

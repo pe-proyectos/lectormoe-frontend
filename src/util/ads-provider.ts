@@ -1,13 +1,32 @@
 // Single source of truth for "which ad network on this page".
 //
-// Rules (see CLAUDE.md / brief):
-//   - Anything under /red, an org with isNSFW, or a manga with isNSFW → Adsterra.
-//   - The bare global landing (`/` and `/red`) and any auth route → no ads.
-//   - Everything else → Google AdSense.
+// ESTADO ACTUAL (2026-09-23): Google restringio la cuenta de AdSense, asi que
+// TODO el sitio (azul y rojo) sirve Adsterra. El camino de AdSense se conserva
+// comentado, no borrado, para poder volver en cuanto se levante la
+// restriccion: ver la constante ADSENSE_HABILITADO mas abajo.
 //
-// AdSense ToS prohibits Google ads on adult content; Adsterra is our adult-
-// safe fallback. Mis-routing here can get the AdSense account banned, so the
-// rule chain is intentionally short and conservative.
+// Reglas vigentes:
+//   - Rutas de autenticacion y la portada global desnuda (`/`, `/red`) → sin anuncios.
+//   - Obra en privado (copyright) → sin anuncios.
+//   - Todo lo demas → Adsterra.
+//
+// Reglas de cuando AdSense estaba activo (se restauran al reactivarlo):
+//   - Anything under /red, an org with isNSFW, or a manga with isNSFW → Adsterra.
+//   - Everything else → Google AdSense.
+//   AdSense ToS prohibits Google ads on adult content; Adsterra is our adult-
+//   safe fallback. Mis-routing here can get the AdSense account banned, so the
+//   rule chain is intentionally short and conservative.
+
+// Interruptor unico. Ponlo a true para volver a repartir entre AdSense (azul)
+// y Adsterra (+18); mientras sea false, Adsterra sirve todo.
+const ADSENSE_HABILITADO = false;
+
+// La "Social Bar" de Adsterra es el formato emergente y cuesta cerrarlo. Antes
+// solo salia en el lado +18; al pasar TODO el sitio a Adsterra empezaria a
+// aparecerle tambien a los lectores del azul. Se deja encendida porque es lo
+// que se pidio, pero con interruptor propio para poder quitarla sin renunciar
+// al resto de formatos.
+export const SOCIAL_BAR_HABILITADA = true;
 
 export type AdsProvider = 'google' | 'adsterra' | 'none';
 
@@ -79,6 +98,11 @@ export function resolveAdsProvider({
     organization?.isNSFW ||
     manga?.isNSFW
   );
+
+  // Con AdSense restringido, el contexto adulto ya no decide la red: Adsterra
+  // sirve tanto el azul como el rojo. Se sigue calculando `adultContext`
+  // porque es la condicion que hay que restaurar al reactivar AdSense.
+  if (!ADSENSE_HABILITADO) return 'adsterra';
 
   return adultContext ? 'adsterra' : 'google';
 }

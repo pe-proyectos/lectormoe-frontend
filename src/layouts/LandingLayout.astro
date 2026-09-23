@@ -6,7 +6,7 @@ import MobileTabBar from '../components/ui/MobileTabBar';
 import GlobalToaster from '../components/ui/GlobalToaster';
 import PullToRefresh from '../components/ui/PullToRefresh';
 import AppNative from '../components/app/AppNative';
-import { resolveAdsProvider } from '../util/ads-provider';
+import { resolveAdsProvider, SOCIAL_BAR_HABILITADA } from '../util/ads-provider';
 import { ClientRouter } from 'astro:transitions';
 
 // Promocion del sorteo de qori.cc. Apagada por defecto: para volver a
@@ -87,10 +87,12 @@ const siteName =
     <title>{title}</title>
     <meta name="description" content={description} />
 
-    {/* Google AdSense meta tag - always present for verification */}
-    <meta name="google-adsense-account" content="ca-pub-2799839819522052" />
+    {/* ADSENSE DESACTIVADO (2026-09-23): Google restringio la cuenta, asi que
+        no se carga su script en ninguna parte del sitio. Se deja comentado,
+        junto con la meta de verificacion, para reactivarlo poniendo
+        ADSENSE_HABILITADO = true en util/ads-provider.ts y descomentando esto.
 
-    {/* Ad provider switch: see util/ads-provider.ts for the rule chain. */}
+    <meta name="google-adsense-account" content="ca-pub-2799839819522052" />
     {adsProvider === 'google' && (
       <script
         is:inline
@@ -99,6 +101,7 @@ const siteName =
         crossorigin="anonymous"
       />
     )}
+    */}
     {adsProvider === 'adsterra' && !isNativeApp && (
       <script is:inline src="https://pl28962172.profitablecpmratenetwork.com/1a/2a/f9/1a2af9b9b73dc2aadf88a69ee2a974eb.js" />
     )}
@@ -167,9 +170,9 @@ const siteName =
     )}
     <DiscordInviteModal client:only="react" transition:persist="discord-modal" />
     {sorteoQori && <SorteoModal client:only="react" transition:persist="sorteo-modal" />}
-    {/* Adsterra Social Bar — NSFW contexts only (matches resolveAdsProvider).
+    {/* Adsterra Social Bar: formato emergente. Se puede apagar con SOCIAL_BAR_HABILITADA en util/ads-provider.
         Se omite en la app (isNativeApp): es el "emergente" con cerrar difícil. */}
-    {adsProvider === 'adsterra' && !isNativeApp && (
+    {adsProvider === 'adsterra' && SOCIAL_BAR_HABILITADA && !isNativeApp && (
       <script is:inline src="https://pl28962335.profitablecpmratenetwork.com/fa/50/12/fa50128d8d2e47e35db6626316aea5aa.js" />
     )}
     {/* Indicador de navegación: barra de progreso que aparece al instante al
