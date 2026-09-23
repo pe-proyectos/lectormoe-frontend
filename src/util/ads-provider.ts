@@ -1,7 +1,7 @@
 // Single source of truth for "which ad network on this page".
 //
-// ESTADO ACTUAL (2026-09-23): Google restringio la cuenta de AdSense, asi que
-// TODO el sitio (azul y rojo) sirve Adsterra. El camino de AdSense se conserva
+// ESTADO ACTUAL (2026-09-23): Google restringio la cuenta de AdSense. Adsterra
+// sirve solo el lado +18; el azul usa Adcash y Monetag. El camino de AdSense se conserva
 // comentado, no borrado, para poder volver en cuanto se levante la
 // restriccion: ver la constante ADSENSE_HABILITADO mas abajo.
 //
@@ -28,7 +28,10 @@ const ADSENSE_HABILITADO = false;
 // al resto de formatos.
 export const SOCIAL_BAR_HABILITADA = true;
 
-export type AdsProvider = 'google' | 'adsterra' | 'none';
+// 'generico': la pagina lleva anuncios, pero no de Adsterra (sus anuncios
+// adultos son demasiado fuertes para el azul). Ahi solo corren Adcash y
+// Monetag, que se cargan con cualquier valor distinto de 'none'.
+export type AdsProvider = 'google' | 'adsterra' | 'generico' | 'none';
 
 const AUTH_PATHS = new Set([
   '/login',
@@ -99,10 +102,10 @@ export function resolveAdsProvider({
     manga?.isNSFW
   );
 
-  // Con AdSense restringido, el contexto adulto ya no decide la red: Adsterra
-  // sirve tanto el azul como el rojo. Se sigue calculando `adultContext`
-  // porque es la condicion que hay que restaurar al reactivar AdSense.
-  if (!ADSENSE_HABILITADO) return 'adsterra';
+  // Con AdSense restringido: Adsterra SOLO en contexto +18 (sus anuncios
+  // adultos son demasiado fuertes para el azul). El azul queda con Adcash y
+  // Monetag, que se cargan en cualquier pagina con anuncios.
+  if (!ADSENSE_HABILITADO) return adultContext ? 'adsterra' : 'generico';
 
   return adultContext ? 'adsterra' : 'google';
 }
