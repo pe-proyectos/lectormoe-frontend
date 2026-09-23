@@ -450,14 +450,44 @@ export function Reader({
     [chapterData.pages, currentPage, shouldRenderSideBySide, medianWidth]
   );
 
+  // Zoom con pellizco en modo paginado. La capa de toque cubre la pagina, asi
+  // que sin cuidado bloqueaba el zoom (touch-action) y, aunque se permitiera,
+  // soltar los dos dedos o arrastrar la pagina ampliada se leia como toque o
+  // deslizamiento y pasaba de pagina. En cascada no existe esa capa y por eso
+  // ahi si se podia ampliar.
+  const [ampliado, setAmpliado] = useState(false);
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    const sync = () => setAmpliado(vv.scale > 1.02);
+    sync();
+    vv.addEventListener('resize', sync);
+    return () => vv.removeEventListener('resize', sync);
+  }, []);
+  const estaAmpliado = () =>
+    typeof window !== 'undefined' && (window.visualViewport?.scale ?? 1) > 1.02;
+
   // Swipe horizontal en modo paginado. touchStart/End sobre la capa de toque.
-  const swipeRef = useRef({ x: 0, y: 0, swiped: false });
+  // `multi` marca que en el gesto participo mas de un dedo (un pellizco): ese
+  // gesto nunca debe pasar de pagina, ni al soltar ni con el click sintetico.
+  const swipeRef = useRef({ x: 0, y: 0, swiped: false, multi: false });
   const handlePageTouchStart = useCallback((e) => {
+    if (e.touches.length > 1) {
+      swipeRef.current.multi = true;
+      return;
+    }
     const t = e.touches[0];
-    swipeRef.current = { x: t.clientX, y: t.clientY, swiped: false };
+    swipeRef.current = { x: t.clientX, y: t.clientY, swiped: false, multi: false };
   }, []);
   const handlePageTouchEnd = useCallback(
     (e) => {
+      if (swipeRef.current.multi || estaAmpliado()) {
+        // Tras un pellizco o con la pagina ampliada el dedo esta haciendo zoom
+        // o recorriendo la imagen: bloquea tambien el click que llega despues.
+        swipeRef.current.swiped = true;
+        if (e.touches.length === 0) swipeRef.current.multi = false;
+        return;
+      }
       const t = e.changedTouches[0];
       const dx = t.clientX - swipeRef.current.x;
       const dy = t.clientY - swipeRef.current.y;
@@ -479,6 +509,8 @@ export function Reader({
         swipeRef.current.swiped = false;
         return;
       }
+      // Con la pagina ampliada un toque es para recorrerla, no para pasarla.
+      if (estaAmpliado()) return;
       const clickedRight = evt.clientX > window.innerWidth / 2;
       const isGoingForward = settings.readingDirection === 'ltr' ? clickedRight : !clickedRight;
       stepPaginated(isGoingForward);
@@ -1747,7 +1779,10 @@ export function Reader({
               {settings.readType === readTypes.PAGINATED && (
                 <div
                   className="absolute inset-0 z-10 cursor-pointer"
-                  style={{ touchAction: 'pan-y' }}
+                  // Sin ampliar: desplazamiento vertical + pellizco (los
+                  // deslizamientos horizontales los gestiona el lector).
+                  // Ampliada: el navegador mueve la vista en todas direcciones.
+                  style={{ touchAction: ampliado ? 'manipulation' : 'pan-y pinch-zoom' }}
                   onClick={handlePageClick}
                   onTouchStart={handlePageTouchStart}
                   onTouchEnd={handlePageTouchEnd}
