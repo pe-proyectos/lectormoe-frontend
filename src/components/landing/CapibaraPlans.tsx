@@ -143,7 +143,7 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">
           <Sparkles size={12} /> Suscripción Capibara
         </div>
-        <h2 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+        <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
           Un plan para todos los scans
         </h2>
         <p className="text-zinc-400">
