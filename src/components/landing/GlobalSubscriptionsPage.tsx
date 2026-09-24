@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import CapibaraPlans from './CapibaraPlans';
+import SubscribersRanking from './SubscribersRanking';
 
 interface Props {
   user: any;
@@ -47,6 +48,12 @@ const GlobalSubscriptionsPage: React.FC<Props> = ({ user, logged, paypalClientId
             <div className="text-center py-24 space-y-3">
               <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase">Suscripción Capibara</h1>
               <p className="text-zinc-400">Muy pronto: un solo plan para leer en todos los scans.</p>
+            </div>
+          )}
+
+          {visible && (
+            <div className="mt-16 pb-8">
+              <SubscribersRanking slug="capibara" nombre="CapibaraTraductor" />
             </div>
           )}
         </div>
