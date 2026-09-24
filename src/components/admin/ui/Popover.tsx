@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface PopoverProps {
   placement?: 'top' | 'bottom' | 'left' | 'right';
@@ -18,7 +19,7 @@ export const Popover: React.FC<PopoverProps> = ({ placement = 'bottom', children
 
   return (
     <PopoverContext.Provider value={{ isOpen, setIsOpen, placement }}>
-      <div className="relative">
+      <div className="relative" data-popover-root>
         {children}
       </div>
     </PopoverContext.Provider>
@@ -37,7 +38,10 @@ export const PopoverHandler: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <div onClick={handleClick} className="cursor-pointer" data-popover-handler>
       {children}
-    </div>
+    </div>,
+    document.body
+    )}
+    </>
   );
 };
 
@@ -45,13 +49,15 @@ export const PopoverContent: React.FC<{ children: React.ReactNode }> = ({ childr
   const context = React.useContext(PopoverContext);
   const popoverRef = useRef<HTMLDivElement>(null);
   const handlerRef = useRef<HTMLDivElement | null>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   if (!context) throw new Error('PopoverContent must be used within Popover');
 
   useEffect(() => {
     // Find the PopoverHandler element
     const findHandler = () => {
-      const popover = popoverRef.current?.closest('.relative');
+      const popover = anchorRef.current?.closest('[data-popover-root]');
       if (popover) {
         const handler = popover.querySelector('[data-popover-handler]') as HTMLElement;
         if (handler) {
@@ -102,21 +108,49 @@ export const PopoverContent: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [context.isOpen, context]);
 
-  if (!context.isOpen) return null;
+  // Se pinta en <body> con posicion fija: asi ninguna tarjeta vecina (ni un
+  // contenedor con overflow o su propio z-index) puede taparlo o recortarlo.
+  useLayoutEffect(() => {
+    if (!context.isOpen) return;
+    const place = () => {
+      const root = anchorRef.current?.closest('[data-popover-root]') as HTMLElement | null;
+      if (!root) return;
+      const r = root.getBoundingClientRect();
+      const w = popoverRef.current?.offsetWidth || 0;
+      const h = popoverRef.current?.offsetHeight || 0;
+      const gap = 8;
+      let top = r.bottom + gap;
+      let left = r.left;
+      if (context.placement === 'top') top = r.top - h - gap;
+      if (context.placement === 'left') { top = r.top; left = r.left - w - gap; }
+      if (context.placement === 'right') { top = r.top; left = r.right + gap; }
+      // Si no cabe abajo, se abre arriba; y nunca se sale por los lados.
+      if (context.placement === 'bottom' && top + h > window.innerHeight && r.top - h - gap > 0) top = r.top - h - gap;
+      left = Math.max(gap, Math.min(left, window.innerWidth - w - gap));
+      setPos({ top, left });
+    };
+    place();
+    const raf = requestAnimationFrame(place);
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [context.isOpen, context.placement]);
 
-  const placementStyles = {
-    top: 'bottom-full left-0 mb-2',
-    bottom: 'top-full left-0 mt-2',
-    left: 'right-full top-0 mr-2',
-    right: 'left-full top-0 ml-2',
-  };
+  if (!context.isOpen) return <span ref={anchorRef} hidden />;
 
   return (
+    <>
+    <span ref={anchorRef} hidden />
+    {createPortal(
     <div
       ref={popoverRef}
+      style={{ position: 'fixed', top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
       className={`
-        absolute z-50
-        ${placementStyles[context.placement]}
+        z-[1000]
         bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl
         p-4
         animate-in fade-in zoom-in-95 duration-200
@@ -124,7 +158,10 @@ export const PopoverContent: React.FC<{ children: React.ReactNode }> = ({ childr
       onClick={(e) => e.stopPropagation()}
     >
       {children}
-    </div>
+    </div>,
+    document.body
+    )}
+    </>
   );
 };
 
