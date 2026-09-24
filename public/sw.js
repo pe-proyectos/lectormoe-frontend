@@ -6,7 +6,8 @@ self.options = {
     "zoneId": 11870309
 }
 self.lary = ""
-try { importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw') } catch (e) {}
+// PAUSADO hasta nuevo aviso:
+// try { importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw') } catch (e) {}
 
 // Service worker conservador (Tarea 19f).
 // Cache-first SOLO para estáticos inmutables; NUNCA /api/ ni HTML de páginas.
