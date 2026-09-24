@@ -70,6 +70,18 @@ function isAdminPath(pathname: string): boolean {
   return /^\/superadmin(\/|$)/.test(p) || /^\/admin(\/|$)/.test(p) || /^\/[^/]+\/admin(\/|$)/.test(p);
 }
 
+// Paginas de cuenta y de pago: /subscriptions (general o de un scan, azul o
+// rojo), ajustes de la cuenta y darse de baja.
+function isCuentaOPago(pathname: string): boolean {
+  const p = pathname.startsWith('/red/') ? pathname.slice(4) : pathname;
+  return (
+    /^\/subscriptions\/?$/.test(p) ||
+    /^\/[^/]+\/subscriptions\/?$/.test(p) ||
+    /^\/settings(\/|$)/.test(p) ||
+    /^\/eliminar-cuenta\/?$/.test(p)
+  );
+}
+
 interface ResolveAdsProviderInput {
   pathname: string;
   nsfwMode?: boolean;
@@ -90,11 +102,14 @@ export function resolveAdsProvider({
   // Hard "no ads" gates first: cheaper to short-circuit.
   if (showAds === false) return 'none';
   if (isAdminPath(pathname)) return 'none';
-  // Portada y rutas de autenticacion se excluian por AdSense (no permite
-  // anuncios en paginas sin contenido). Con AdSense desactivado se decidio
-  // monetizarlas tambien; al reactivarlo hay que volver a excluirlas.
+  // Cuenta y pagos: login, registro, recuperar contraseña, ajustes y la pagina
+  // de suscripciones nunca llevan anuncios. Un anuncio invasivo en el momento
+  // de registrarse o pagar espanta justo al usuario que queremos retener.
+  if (isAuthPath(pathname)) return 'none';
+  if (isCuentaOPago(pathname)) return 'none';
+  // La portada desnuda se excluia por AdSense (no permite anuncios en paginas
+  // sin contenido); con AdSense desactivado si se monetiza.
   if (ADSENSE_HABILITADO && NO_ADS_LANDING_PATHS.has(pathname)) return 'none';
-  if (ADSENSE_HABILITADO && isAuthPath(pathname)) return 'none';
   // Luckys (raffles) is an ad-free zone — paid prizes shouldn't share screen
   // real estate with ads, and PayPal smart buttons + ad scripts collide.
   if (pathname === '/luckys' || pathname.startsWith('/luckys/')) return 'none';

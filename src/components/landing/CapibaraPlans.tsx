@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Minus, Sparkles } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { notify } from '../../util/feedback';
 
@@ -138,28 +138,22 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
   };
 
   return (
-    <section className="mb-20">
-      <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">
-          <Sparkles size={12} /> Suscripción Capibara
-        </div>
-        <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-          Un plan para todos los scans
-        </h2>
-        <p className="text-zinc-400">
-          Válido en todos los scans de CapibaraTraductor.
-          {scanNombre ? ` Suscribiéndote desde aquí también apoyas a ${scanNombre}.` : ''}
+    <section className="max-w-6xl mx-auto">
+      {/* Cabecera compacta: las cuatro tarjetas y sus botones de pago tienen que
+          verse sin hacer scroll. */}
+      <header className="text-center mb-8 space-y-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-400">
+          Suscripción Capibara{scanNombre ? ` · apoyas a ${scanNombre}` : ''}
         </p>
+        <h1 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">
+          Un plan, todos los scans
+        </h1>
         {nivel === 'legacy' && (
           <p className="text-amber-400/90 text-sm">
             Tienes una suscripción anterior a un scan. Si eliges un plan Capibara, la reemplazará.
           </p>
         )}
-        {!datos.lanzado && (
-          <p className="text-[10px] uppercase tracking-widest text-zinc-600">Vista previa: aún no anunciado</p>
-        )}
-
-        <div className="inline-flex p-1 rounded-full bg-zinc-900 border border-zinc-800 mt-4">
+        <div className="inline-flex p-1 rounded-full bg-zinc-900 border border-zinc-800">
           {[false, true].map((a) => (
             <button
               key={String(a)}
@@ -171,9 +165,9 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
             </button>
           ))}
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
         {tarjetas.map(({ tier, plan }) => {
           const esActual = tier === tierActual && (tier === 'gratis' || datos.actual?.interval === intervalo);
           const esInferior = ORDEN[tier] < ORDEN[tierActual];
@@ -181,7 +175,7 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
           return (
             <div
               key={tier}
-              className={`flex flex-col rounded-3xl border p-6 ${destacado ? 'border-cyan-500/50 bg-cyan-500/[0.04]' : 'border-zinc-800 bg-zinc-900/60'}`}
+              className={`flex flex-col h-full rounded-3xl border p-6 ${destacado ? 'border-cyan-500/50 bg-cyan-500/[0.04]' : 'border-zinc-800 bg-zinc-900/60'}`}
             >
               <h3 className="text-xl font-black text-white uppercase italic tracking-tight">{NOMBRE[tier]}</h3>
               <div className="mt-2 mb-5">
@@ -230,11 +224,13 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
         })}
       </div>
 
-      {tienePlataforma && (
-        <p className="text-center text-zinc-500 text-xs mt-6">
-          Al subir de plan pagas el precio del nuevo y tu plan actual se detiene: nunca pagas dos a la vez.
-        </p>
-      )}
+      <p className="text-center text-zinc-500 text-xs mt-6">
+        {tienePlataforma ? 'Al subir de plan pagas el precio del nuevo y tu plan actual se detiene: nunca pagas dos a la vez. ' : ''}
+        ¿Problemas con el pago?{' '}
+        <a href="https://capibaratraductor.com/discord" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+          Pide ayuda en Discord
+        </a>
+      </p>
     </section>
   );
 };

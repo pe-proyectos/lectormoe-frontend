@@ -27,8 +27,11 @@ interface TopDonor {
     id: number;
     name: string;
     price: number;
+    tier?: string | null;
   };
   subscriptionId: number;
+  /** Suscripcion por scan anterior a Capibara. */
+  legacy?: boolean;
 }
 
 interface GroupedDonor extends TopDonor {
@@ -284,57 +287,34 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
     }
   };
 
-  // Process top donors for podium - group by plan price
+  // Ranking de suscriptores del scan. Primero los del plan Capibara (por nivel)
+  // y despues los de los planes propios anteriores, agrupados como Legacy;
+  // dentro de cada grupo, por precio y antiguedad. Ya no depende de la lista
+  // de planes del scan, que tras el lanzamiento viene vacia.
+  const ORDEN_TIER: Record<string, number> = { premium: 3, plus: 2, lector: 1 };
   const donorsWithPlanIndex: GroupedDonor[] = useMemo(() => {
-    if (topDonors.length === 0 || subscriptionPlans.length === 0) return [];
-
-    // Crear un mapa de planId -> índice en la lista ordenada (más barato a más caro)
-    const planIndexMap = new Map<number, number>();
-    subscriptionPlans.forEach((plan, index) => {
-      planIndexMap.set(plan.id, index);
-    });
-
-    // Asignar índice del plan a cada donador y ordenar
-    const mapped = topDonors
-      .map(donor => {
-        // Buscar el índice del plan del donador en la lista ordenada
-        const planIndex = planIndexMap.get(donor.subscriptionPlan.id);
-        
-        // Si no se encuentra el plan, buscar por nombre como fallback
-        if (planIndex === undefined) {
-          // Fallback: buscar por nombre del plan
-          const planByName = subscriptionPlans.findIndex(p => p.name === donor.subscriptionPlan.name);
-          if (planByName !== -1) {
-            return {
-              ...donor,
-              planIndex: planByName,
-            };
-          }
-
-          // Si tampoco se encuentra por nombre, usar el índice del plan más caro como último recurso
-          return {
-            ...donor,
-            planIndex: subscriptionPlans.length - 1, // Fallback al más caro
-          };
-        }
-
-        return {
-          ...donor,
-          planIndex,
-        };
-      });
-
-    return mapped
+    return topDonors
+      .map((d) => ({ ...d, planIndex: d.legacy ? 0 : ORDEN_TIER[d.subscriptionPlan?.tier || ''] || 0 }))
       .sort((a, b) => {
-        // Primero ordenar por índice del plan (más barato primero, pero en el ranking queremos más caro primero)
-        // Invertir el orden para que los planes más caros aparezcan primero en el ranking
-        if (a.planIndex !== b.planIndex) {
-          return b.planIndex - a.planIndex; // Invertido: más caro primero
-        }
-        // Si tienen el mismo plan, ordenar por días (más días primero)
+        if (!!a.legacy !== !!b.legacy) return a.legacy ? 1 : -1;
+        if (a.planIndex !== b.planIndex) return b.planIndex - a.planIndex;
+        if (a.subscriptionPlan.price !== b.subscriptionPlan.price) return b.subscriptionPlan.price - a.subscriptionPlan.price;
         return b.days - a.days;
       });
-  }, [topDonors, subscriptionPlans]);
+  }, [topDonors]);
+
+  // Insignia de cada suscriptor en el ranking.
+  const getRankConfig = (d: GroupedDonor) => {
+    if (d.legacy) {
+      return { planName: 'Legacy', color: 'text-zinc-300', bg: 'bg-zinc-800/60', border: 'border-zinc-700' };
+    }
+    const porTier: Record<number, { color: string; bg: string; border: string }> = {
+      3: { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/40' },
+      2: { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/40' },
+      1: { color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/40' },
+    };
+    return { planName: d.subscriptionPlan.name, ...(porTier[d.planIndex] || porTier[1]) };
+  };
 
   // Organizar para la pirámide (Podio: 1ro al centro, 2do izquierda, 3ro derecha)
   const topThree = donorsWithPlanIndex.slice(0, 3);
@@ -492,7 +472,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
 
   return (
     <div 
-      className={`pt-32 pb-24 min-h-screen relative ${hasBackgroundBanner ? '' : 'bg-zinc-950'}`}
+      className={`pt-24 pb-24 min-h-screen relative ${hasBackgroundBanner ? '' : 'bg-zinc-950'}`}
       style={getBannerStyle()}
     >
         {/* Decorative Glows */}
@@ -500,27 +480,6 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 blur-[120px] rounded-full" />
 
         <div className="max-w-7xl mx-auto px-3 md:px-8 relative z-10">
-          {/* Header */}
-          <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
-              <Shield size={12} className="text-cyan-500" /> Membresías de {organization?.name || organization?.title}
-            </div>
-            <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
-              Suscripciones
-            </h1>
-            <p className="text-zinc-400 text-lg font-medium">
-              ¡Accede a contenido exclusivo y olvídate de los anuncios! Compra un plan de suscripción para apoyar al scan.
-            </p>
-            <a
-              href="http://capibaratraductor.com/discord"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752c4] text-white rounded-xl px-5 py-2.5 font-black text-xs uppercase tracking-widest transition-colors"
-            >
-              <MessageSquare size={16} /> ¿Problemas con el pago? Pedir ayuda
-            </a>
-          </div>
-
           {/* Planes Capibara (validos en todos los scans). Este scan queda como
               origen del suscriptor y se lleva el 25% de cada pago. */}
           <CapibaraPlans
@@ -531,104 +490,8 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
             onVisible={setCapibaraVisible}
           />
 
-          {capibaraVisible && subscriptionPlans.length > 0 && (
-            <h2 className="text-center text-zinc-500 text-xs font-black uppercase tracking-[0.3em] mb-6">
-              Planes propios de {organization?.name || organization?.title}
-            </h2>
-          )}
-
-          {/* Pricing Cards */}
-          {loadingPlans ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-zinc-900/40 border-2 border-zinc-800 rounded-[32px] p-8 animate-pulse">
-                  <div className="h-8 bg-zinc-800 rounded mb-4" />
-                  <div className="h-16 bg-zinc-800 rounded mb-4" />
-                  <div className="space-y-3">
-                    <div className="h-4 bg-zinc-800 rounded" />
-                    <div className="h-4 bg-zinc-800 rounded" />
-                    <div className="h-4 bg-zinc-800 rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : subscriptionPlans.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-              {subscriptionPlans.map((plan, index) => {
-                const colorConfig = getPlanColorConfig(index, subscriptionPlans.length);
-                
-                // Parse benefits from description
-                const benefits: string[] = plan.description 
-                  ? plan.description.split(/[.\n]/).filter(line => line.trim()).map(line => line.trim())
-                  : ['Acceso a contenido exclusivo'];
-                
-                // Get extra benefit if mangaSlug exists
-                const extraBenefit = getExtraBenefitText(plan);
-                const allBenefits = extraBenefit ? [...benefits, extraBenefit] : benefits;
-                
-                return (
-                  <div 
-                    key={plan.id}
-                    className={`relative bg-zinc-900/40 border-2 rounded-[32px] p-8 flex flex-col transition-all duration-500 hover:scale-[1.02] hover:bg-zinc-900 ${colorConfig.border}`}
-                  >
-                    <div className="mb-8">
-                      <h3 className={`text-2xl font-black italic uppercase tracking-tighter mb-1 ${colorConfig.color}`}>
-                        {plan.name}
-                      </h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-white text-4xl font-black italic">{plan.currency === 'USD' ? '$' : plan.currency}</span>
-                        <span className="text-white text-6xl font-black italic tracking-tighter">{plan.price}</span>
-                        <span className="text-zinc-500 font-bold uppercase text-[10px] ml-1">/ {{ DAY: 'DÍA', WEEK: 'SEM', MONTH: 'MES', YEAR: 'AÑO' }[plan.interval] ?? plan.interval}</span>
-                        {plan.interval !== 'MONTH' && (
-                          <span className="text-yellow-400 text-[9px] font-bold ml-1">⚠ se cobra cada {{ DAY: 'día', WEEK: 'semana', MONTH: 'mes', YEAR: 'año' }[plan.interval] ?? plan.interval}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 mb-10 flex-1">
-                      {allBenefits.map((benefit, bIdx) => {
-                        const isExtraBenefit = extraBenefit && bIdx === allBenefits.length - 1;
-                        return (
-                          <div key={bIdx} className="flex gap-3">
-                            <div className={`mt-1 shrink-0 w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center ${isExtraBenefit ? 'text-yellow-500' : 'text-cyan-500'}`}>
-                              <Check size={10} />
-                            </div>
-                            <span className={`text-xs font-medium leading-snug ${isExtraBenefit ? 'text-yellow-400 font-bold' : 'text-zinc-300'}`}>{benefit}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {!logged ? (
-                      <a
-                        href={`/${organization?.slug}/login`}
-                        className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl text-zinc-400 font-black uppercase text-[10px] tracking-widest hover:bg-white hover:text-black transition-all text-center block"
-                      >
-                        Por favor, inicia sesión para suscribirte
-                      </a>
-                    ) : hasActiveSubscription(plan.id) ? (
-                      <div className="w-full py-4 bg-green-500/10 border border-green-500/30 rounded-2xl text-green-400 font-black uppercase text-[10px] tracking-widest text-center">
-                        Ya estás suscrito
-                      </div>
-                    ) : plan.planId ? (
-                      <div 
-                        id={`paypal-button-container-${plan.id}`}
-                        className="paypal-button-container min-h-[48px] flex items-center justify-center"
-                      />
-                    ) : (
-                      <div className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl text-zinc-500 font-black uppercase text-[10px] tracking-widest text-center">
-                        Plan no disponible
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : capibaraVisible ? null : (
-            <div className="text-center py-12 mb-20">
-              <p className="text-zinc-500 text-lg font-medium">No hay planes de suscripción disponibles</p>
-            </div>
-          )}
+          {/* Los planes propios del scan (legacy) ya no admiten altas: no se
+              muestran. Sus suscriptores siguen en el ranking, como Legacy. */}
 
           {/* External Support Grid */}
           {(organization?.patreonUrl || organization?.discordUrl) && (
@@ -734,7 +597,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                       </div>
                       <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{podium[0].username}</h4>
                       {(() => {
-                        const rankConfig = getRankConfigByPlanIndex(podium[0].planIndex);
+                        const rankConfig = getRankConfig(podium[0]);
                         return (
                           <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
                             {rankConfig.planName}
@@ -763,7 +626,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                       </div>
                       <h4 className="text-white font-black italic text-3xl mb-1 tracking-tighter truncate w-full text-center">{podium[1].username}</h4>
                       {(() => {
-                        const rankConfig = getRankConfigByPlanIndex(podium[1].planIndex);
+                        const rankConfig = getRankConfig(podium[1]);
                         return (
                           <div className={`px-5 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
                             {rankConfig.planName}
@@ -791,7 +654,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                       </div>
                       <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{podium[2].username}</h4>
                       {(() => {
-                        const rankConfig = getRankConfigByPlanIndex(podium[2].planIndex);
+                        const rankConfig = getRankConfig(podium[2]);
                         return (
                           <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
                             {rankConfig.planName}
@@ -807,7 +670,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
                 {others.length > 0 && (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-12 border-t border-zinc-800/50">
                     {others.map((user) => {
-                      const rankConfig = getRankConfigByPlanIndex(user.planIndex);
+                      const rankConfig = getRankConfig(user);
                       return (
                         <div key={user.id} className="flex items-center justify-between p-6 bg-zinc-950/40 border border-zinc-800 rounded-[32px] hover:bg-zinc-800/80 hover:border-cyan-500/50 transition-all group shadow-sm">
                           <div className="flex items-center gap-4">

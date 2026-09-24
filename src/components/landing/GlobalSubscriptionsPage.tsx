@@ -1,6 +1,5 @@
 import type React from 'react';
 import { useState } from 'react';
-import { MessageSquare } from 'lucide-react';
 import CapibaraPlans from './CapibaraPlans';
 
 interface Props {
@@ -18,7 +17,7 @@ const GlobalSubscriptionsPage: React.FC<Props> = ({ user, logged, paypalClientId
   const [visible, setVisible] = useState<boolean | null>(null);
 
   return (
-    <div className="pt-32 pb-24 min-h-screen bg-zinc-950">
+    <div className="pt-24 pb-24 min-h-screen bg-zinc-950">
       <div className="max-w-7xl mx-auto px-3 md:px-8">
         <CapibaraPlans user={user} logged={logged} paypalClientId={paypalClientId} onVisible={setVisible} />
 
@@ -29,16 +28,6 @@ const GlobalSubscriptionsPage: React.FC<Props> = ({ user, logged, paypalClientId
           </div>
         )}
 
-        <div className="text-center">
-          <a
-            href="https://capibaratraductor.com/discord"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752c4] text-white rounded-xl px-5 py-2.5 font-black text-xs uppercase tracking-widest transition-colors"
-          >
-            <MessageSquare size={16} /> ¿Problemas con el pago? Pedir ayuda
-          </a>
-        </div>
       </div>
     </div>
   );
