@@ -21,10 +21,10 @@ import {
   LogIn,
   UserPlus,
   HardDriveDownload,
-  Droplet,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
+import NavMegaMenu from './NavMegaMenu';
 
 // Luckys se ocultó del navbar (decisión 2026-07-07): el hook useLuckysSummary
 // y su fetch periódico de rifas se eliminaron junto con el botón. La página
@@ -509,64 +509,15 @@ const Navbar: React.FC<NavbarProps> = ({
             </a>
           )}
 
-          <a
-            href={activeScan?.slug ? (nsfwMode ? `/red/${activeScan.slug}/search` : `/${activeScan.slug}/search`) : (nsfwMode ? '/red/search' : '/search')}
-            className={`text-sm font-bold transition-colors flex items-center gap-2 ${
-              activeView === "search"
-                ? "text-cyan-500"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            <Search size={16} /> Catálogo
-          </a>
-
-          <a
-            href={altContentLink.href}
-            className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
-          >
-            <Bookmark size={16} /> {altContentLink.label}
-          </a>
-
-          <a
-            href="/listas"
-            className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
-          >
-            <ListIcon size={16} /> Listas
-          </a>
-
-          <a
-            href="https://lacharca.com"
-            className="text-sm font-bold transition-colors flex items-center gap-2 text-zinc-400 hover:text-white"
-          >
-            <Droplet size={16} className="text-teal-400" /> La Charca
-          </a>
-
-          {/* Luckys oculto del navbar (decisión 2026-07-07). La página /luckys
-              sigue accesible por URL directa. */}
-
-          {/* Sorteo ended — hidden until next giveaway
-          <button
-            onClick={() => window.dispatchEvent(new Event('open-sorteo-modal'))}
-            className="text-sm font-bold transition-colors flex items-center gap-2 text-yellow-500 hover:text-yellow-400"
-          >
-            <Gift size={16} /> SORTEO Luckybara
-          </button>
-          */}
-
-          {/* Siempre visible: dentro de un scan lleva a SU pagina (el scan se
-              lleva el 25% de origen); fuera, a la pagina general de planes. */}
-          {(
-            <a
-              href={urlSuscripciones}
-              className={`text-sm font-bold transition-colors flex items-center gap-2 ${
-                enSuscripciones
-                  ? "text-yellow-500"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <CreditCard size={16} /> Suscripciones
-            </a>
-          )}
+          <NavMegaMenu
+            catalogUrl={activeScan?.slug ? (nsfwMode ? `/red/${activeScan.slug}/search` : `/${activeScan.slug}/search`) : (nsfwMode ? '/red/search' : '/search')}
+            altContentLink={altContentLink}
+            urlSuscripciones={urlSuscripciones}
+            enSuscripciones={enSuscripciones}
+            activeView={activeView}
+            nsfwMode={nsfwMode}
+            logged={!!logged}
+          />
 
           <div className="h-6 w-px bg-zinc-800 mx-2" />
 
