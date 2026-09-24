@@ -38,10 +38,7 @@ export const PopoverHandler: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <div onClick={handleClick} className="cursor-pointer" data-popover-handler>
       {children}
-    </div>,
-    document.body
-    )}
-    </>
+    </div>
   );
 };
 
