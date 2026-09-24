@@ -68,6 +68,16 @@ const Navbar: React.FC<NavbarProps> = ({
   onOpenRegister: _onOpenRegister,
   onGoExplore: _onGoExplore,
 }) => {
+  // Enlace a los planes. Dentro de un scan lleva a SU pagina de suscripciones
+  // (ese scan se lleva el 25% de origen); fuera, a la pagina general.
+  const slugScan = activeScan?.slug || organization?.slug;
+  const urlSuscripciones = slugScan && onGoSubscriptions
+    ? `${nsfwMode ? `/red/${slugScan}` : `/${slugScan}`}/subscriptions`
+    : '/subscriptions';
+  const enSuscripciones =
+    activeView === 'subscriptions' ||
+    (typeof window !== 'undefined' && /\/subscriptions\/?$/.test(window.location.pathname));
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -543,15 +553,13 @@ const Navbar: React.FC<NavbarProps> = ({
           </button>
           */}
 
-          {activeScan && onGoSubscriptions && (
+          {/* Siempre visible: dentro de un scan lleva a SU pagina (el scan se
+              lleva el 25% de origen); fuera, a la pagina general de planes. */}
+          {(
             <a
-              href={`${nsfwMode ? `/red/${activeScan?.slug || organization?.slug}` : `/${activeScan?.slug || organization?.slug}`}/subscriptions`}
-              onClick={(e) => {
-                e.preventDefault();
-                onGoSubscriptions();
-              }}
+              href={urlSuscripciones}
               className={`text-sm font-bold transition-colors flex items-center gap-2 ${
-                activeView === "subscriptions"
+                enSuscripciones
                   ? "text-yellow-500"
                   : "text-zinc-400 hover:text-white"
               }`}
@@ -762,16 +770,12 @@ const Navbar: React.FC<NavbarProps> = ({
             <Gift size={20} /> SORTEO Luckybara
           </button>
           */}
-          {activeScan && onGoSubscriptions && (
+          {(
             <a
-              href={`${nsfwMode ? `/red/${activeScan?.slug || organization?.slug}` : `/${activeScan?.slug || organization?.slug}`}/subscriptions`}
-              onClick={(e) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-                onGoSubscriptions();
-              }}
+              href={urlSuscripciones}
+              onClick={() => setMobileMenuOpen(false)}
               className={`text-xl font-bold flex items-center gap-4 ${
-                activeView === "subscriptions"
+                enSuscripciones
                   ? "text-yellow-500"
                   : "text-zinc-100"
               }`}
@@ -1076,9 +1080,7 @@ const Navbar: React.FC<NavbarProps> = ({
               ...(logged ? [
                 { icon: <HardDriveDownload size={18} />, label: 'Descargas', href: '/descargas' },
               ] : []),
-              ...(activeScan && onGoSubscriptions ? [
-                { icon: <Crown size={18} />,  label: 'Suscripciones', action: onGoSubscriptions as any },
-              ] : []),
+              { icon: <Crown size={18} />, label: 'Suscripciones', href: urlSuscripciones },
             ].map((item: any, i) => (
               item.href ? (
                 <a

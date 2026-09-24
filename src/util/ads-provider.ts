@@ -107,8 +107,11 @@ export function resolveAdsProvider({
   // de registrarse o pagar espanta justo al usuario que queremos retener.
   if (isAuthPath(pathname)) return 'none';
   if (isCuentaOPago(pathname)) return 'none';
-  // La portada desnuda se excluia por AdSense (no permite anuncios en paginas
-  // sin contenido); con AdSense desactivado si se monetiza.
+  // Portada general: sin anuncios. Es la primera impresion de la plataforma y
+  // el punto de entrada del anuncio de la Suscripcion Capibara.
+  if (pathname === '/') return 'none';
+  // La portada del lado +18 (/red) solo se excluye con AdSense activo, que no
+  // admite anuncios en paginas sin contenido.
   if (ADSENSE_HABILITADO && NO_ADS_LANDING_PATHS.has(pathname)) return 'none';
   // Luckys (raffles) is an ad-free zone — paid prizes shouldn't share screen
   // real estate with ads, and PayPal smart buttons + ad scripts collide.
