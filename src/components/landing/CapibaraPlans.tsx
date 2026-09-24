@@ -238,15 +238,15 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
 
               <div className="mt-6 min-h-[44px]">
                 {tier === 'gratis' && !logged ? (
-                  <a href="/login" className="block w-full text-center rounded-full py-2.5 border border-zinc-700 text-zinc-200 hover:border-zinc-500 hover:text-white text-[11px] font-black uppercase tracking-widest transition-colors">
+                  <a href="/login" className="w-full text-center rounded-full min-h-[44px] px-3 py-2 flex items-center justify-center leading-tight border border-zinc-700 text-zinc-200 hover:border-zinc-500 hover:text-white text-[11px] font-black uppercase tracking-widest transition-colors">
                     Inicia sesión para tener estos beneficios
                   </a>
                 ) : esActual ? (
-                  <div className="w-full text-center rounded-full py-2.5 bg-zinc-800 text-zinc-300 text-xs font-black uppercase tracking-widest">Ya tienes esta</div>
+                  <div className="w-full text-center rounded-full min-h-[44px] px-3 py-2 flex items-center justify-center leading-tight bg-zinc-800 text-zinc-300 text-xs font-black uppercase tracking-widest">Ya tienes esta</div>
                 ) : esInferior ? (
-                  <div className="w-full text-center rounded-full py-2.5 border border-zinc-800 text-zinc-500 text-xs font-black uppercase tracking-widest">Ya eres {NOMBRE[tierActual]}</div>
+                  <div className="w-full text-center rounded-full min-h-[44px] px-3 py-2 flex items-center justify-center leading-tight border border-zinc-800 text-zinc-500 text-xs font-black uppercase tracking-widest">Ya eres {NOMBRE[tierActual]}</div>
                 ) : tier === 'gratis' ? null : !logged ? (
-                  <a href="/login" className={`block w-full text-center rounded-full py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors ${tema.boton}`}>
+                  <a href="/login" className={`w-full text-center rounded-full min-h-[44px] px-3 py-2 flex items-center justify-center leading-tight text-[11px] font-black uppercase tracking-widest transition-colors ${tema.boton}`}>
                     Inicia sesión para suscribirte
                   </a>
                 ) : !plan ? (
