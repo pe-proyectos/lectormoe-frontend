@@ -37,7 +37,7 @@ const Hero: React.FC<HeroProps> = ({ onExplore, logged, nsfwMode = false }) => {
     const fetchFeaturedManga = async () => {
       try {
         setLoading(true);
-        const result = await callAPI(`/api/landing/featured-manga?limit=5&nsfw=${nsfwMode}`);
+        const result = await callAPI(`/api/landing/featured-manga?limit=5&nsfw=${nsfwMode}&sort=comments`);
 
         if (Array.isArray(result)) {
           setMangas(result);

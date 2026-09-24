@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Hero from './Hero';
+import DailyPicks from './DailyPicks';
 import TrendingSection from './TrendingSection';
 import RecentlyAdded from './RecentlyAdded';
 import GlobalRecommendations from './GlobalRecommendations';
@@ -92,6 +93,9 @@ const LandingApp: React.FC<LandingAppProps> = ({ user, logged, nsfwMode = false,
                 nsfwMode={nsfwMode}
               />
             )}
+
+            {/* Recomendaciones de la página: 12 al azar, cambian cada día */}
+            <DailyPicks user={user} logged={logged} nsfwMode={nsfwMode} contentKind={contentKind} />
 
             {/* Scans Buttons Section */}
             {!isWritings && (
