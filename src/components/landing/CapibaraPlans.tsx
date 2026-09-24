@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Minus } from 'lucide-react';
+import { Check, Crown, Globe, Lock, Minus, RotateCcw } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import { notify } from '../../util/feedback';
 
@@ -23,6 +23,35 @@ const NOMBRE: Record<Tier, string> = { gratis: 'Gratis', lector: 'Lector', plus:
 declare global {
   interface Window { paypal?: any }
 }
+
+// Aspecto de cada tarjeta. Plus destaca en azul y Premium en dorado.
+const TEMA: Record<Tier, {
+  tarjeta: string; titulo: string; acento: string; check: string; boton: string;
+  etiqueta?: { texto: string; clase: string };
+}> = {
+  gratis: {
+    tarjeta: 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700',
+    titulo: 'text-white', acento: 'text-zinc-400', check: 'text-zinc-400',
+    boton: 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700',
+  },
+  lector: {
+    tarjeta: 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-600',
+    titulo: 'text-white', acento: 'text-cyan-400', check: 'text-cyan-400',
+    boton: 'bg-zinc-100 text-zinc-950 hover:bg-white',
+  },
+  plus: {
+    tarjeta: 'border-cyan-400/60 bg-gradient-to-b from-cyan-500/[0.12] to-zinc-900/70 shadow-[0_0_45px_-15px_rgba(34,211,238,0.55)] hover:border-cyan-300',
+    titulo: 'text-cyan-300', acento: 'text-cyan-300', check: 'text-cyan-300',
+    boton: 'bg-cyan-400 text-zinc-950 hover:bg-cyan-300',
+    etiqueta: { texto: 'Más popular', clase: 'bg-cyan-400 text-zinc-950' },
+  },
+  premium: {
+    tarjeta: 'border-amber-400/70 bg-gradient-to-b from-amber-400/[0.14] via-amber-500/[0.04] to-zinc-900/70 shadow-[0_0_55px_-12px_rgba(251,191,36,0.55)] hover:border-amber-300',
+    titulo: 'text-amber-300', acento: 'text-amber-300', check: 'text-amber-300',
+    boton: 'bg-gradient-to-r from-amber-300 to-yellow-500 text-zinc-950 hover:from-amber-200 hover:to-yellow-400',
+    etiqueta: { texto: 'Todo incluido', clase: 'bg-gradient-to-r from-amber-300 to-yellow-500 text-zinc-950' },
+  },
+};
 
 interface Props {
   user: any;
@@ -167,21 +196,29 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
         </div>
       </header>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
+      <div className="grid gap-5 pt-3 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
         {tarjetas.map(({ tier, plan }) => {
           const esActual = tier === tierActual && (tier === 'gratis' || datos.actual?.interval === intervalo);
           const esInferior = ORDEN[tier] < ORDEN[tierActual];
-          const destacado = tier === 'premium';
+          const tema = TEMA[tier];
           return (
             <div
               key={tier}
-              className={`flex flex-col h-full rounded-3xl border p-6 ${destacado ? 'border-cyan-500/50 bg-cyan-500/[0.04]' : 'border-zinc-800 bg-zinc-900/60'}`}
+              className={`relative flex flex-col h-full rounded-3xl border p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 ${tema.tarjeta}`}
             >
-              <h3 className="text-xl font-black text-white uppercase italic tracking-tight">{NOMBRE[tier]}</h3>
+              {tema.etiqueta && (
+                <span className={`absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${tema.etiqueta.clase}`}>
+                  {tema.etiqueta.texto}
+                </span>
+              )}
+              <h3 className={`flex items-center gap-2 text-xl font-black uppercase italic tracking-tight ${tema.titulo}`}>
+                {tier === 'premium' && <Crown size={20} className="text-amber-300" fill="currentColor" />}
+                {NOMBRE[tier]}
+              </h3>
               <div className="mt-2 mb-5">
                 <span className="text-4xl font-black text-white">${tier === 'gratis' ? 0 : plan?.price ?? '—'}</span>
                 <span className="text-zinc-500 text-sm">{tier === 'gratis' ? '' : anual ? ' /año' : ' /mes'}</span>
-                {anual && plan && <p className="text-[11px] text-cyan-400 mt-1">Equivale a ${(plan.price / 12).toFixed(2)} al mes</p>}
+                {anual && plan && <p className={`text-[11px] mt-1 ${tema.acento}`}>Equivale a ${(plan.price / 12).toFixed(2)} al mes</p>}
               </div>
 
               <ul className="space-y-2.5 text-sm flex-1">
@@ -190,7 +227,7 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
                     plan Gratis traia capitulos anticipados. */}
                 {filas(tier).filter(([, incluido]) => incluido).map(([texto]) => (
                   <li key={texto} className="flex items-start gap-2">
-                    <Check size={16} className="text-cyan-400 shrink-0 mt-0.5" />
+                    <Check size={16} className={`shrink-0 mt-0.5 ${tema.check}`} />
                     <span className="text-zinc-300">{texto}</span>
                   </li>
                 ))}
@@ -200,18 +237,24 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
               </ul>
 
               <div className="mt-6 min-h-[44px]">
-                {esActual ? (
+                {tier === 'gratis' && !logged ? (
+                  <a href="/login" className="block w-full text-center rounded-full py-2.5 border border-zinc-700 text-zinc-200 hover:border-zinc-500 hover:text-white text-[11px] font-black uppercase tracking-widest transition-colors">
+                    Inicia sesión para tener estos beneficios
+                  </a>
+                ) : esActual ? (
                   <div className="w-full text-center rounded-full py-2.5 bg-zinc-800 text-zinc-300 text-xs font-black uppercase tracking-widest">Ya tienes esta</div>
                 ) : esInferior ? (
                   <div className="w-full text-center rounded-full py-2.5 border border-zinc-800 text-zinc-500 text-xs font-black uppercase tracking-widest">Ya eres {NOMBRE[tierActual]}</div>
                 ) : tier === 'gratis' ? null : !logged ? (
-                  <a href="/login" className="block w-full text-center rounded-full py-2.5 bg-cyan-500 text-zinc-950 text-xs font-black uppercase tracking-widest">Inicia sesión para suscribirte</a>
+                  <a href="/login" className={`block w-full text-center rounded-full py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors ${tema.boton}`}>
+                    Inicia sesión para suscribirte
+                  </a>
                 ) : !plan ? (
                   <div className="text-center text-zinc-600 text-xs">No disponible</div>
                 ) : (
                   <>
                     {tierActual !== 'gratis' && (
-                      <p className="text-center text-cyan-400 text-[11px] font-black uppercase tracking-widest mb-2">
+                      <p className={`text-center text-[11px] font-black uppercase tracking-widest mb-2 ${tema.acento}`}>
                         {ORDEN[tier] > ORDEN[tierActual] ? `Subir a ${NOMBRE[tier]}` : `Pasar a ${anual ? 'anual' : 'mensual'}`}
                       </p>
                     )}
@@ -224,7 +267,14 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
         })}
       </div>
 
-      <p className="text-center text-zinc-500 text-xs mt-6">
+      {/* Señales de confianza justo debajo de los precios. */}
+      <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs text-zinc-400">
+        <li className="flex items-center gap-2"><Lock size={14} className="text-emerald-400" /> Pago seguro con PayPal</li>
+        <li className="flex items-center gap-2"><RotateCcw size={14} className="text-emerald-400" /> Cancela cuando quieras</li>
+        <li className="flex items-center gap-2"><Globe size={14} className="text-emerald-400" /> Válido en todos los scans</li>
+      </ul>
+
+      <p className="text-center text-zinc-500 text-xs mt-4">
         {tienePlataforma ? 'Al subir de plan pagas el precio del nuevo y tu plan actual se detiene: nunca pagas dos a la vez. ' : ''}
         ¿Problemas con el pago?{' '}
         <a href="https://capibaratraductor.com/discord" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">

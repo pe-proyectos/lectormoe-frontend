@@ -3,6 +3,7 @@ import { notify } from '../../util/feedback';
 import { Check, Shield, Crown, Trophy, MessageSquare, Heart, ExternalLink } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 import CapibaraPlans from './CapibaraPlans';
+import DiscordIcon from '../icons/DiscordIcon';
 
 interface SubscriptionPlan {
   id: number;
@@ -475,9 +476,13 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
       className={`pt-24 pb-24 min-h-screen relative ${hasBackgroundBanner ? '' : 'bg-zinc-950'}`}
       style={getBannerStyle()}
     >
-        {/* Decorative Glows */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 blur-[120px] rounded-full" />
+        {/* Fondo: luz suave desde arriba y una rejilla tenue que se desvanece,
+            para dar profundidad sin competir con las tarjetas. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1100px] h-[600px] rounded-full bg-cyan-500/10 blur-[140px]" />
+          <div className="absolute top-40 right-[8%] w-[420px] h-[420px] rounded-full bg-amber-400/[0.06] blur-[120px]" />
+          <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(255,255,255,.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.5)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
+        </div>
 
         <div className="max-w-7xl mx-auto px-3 md:px-8 relative z-10">
           {/* Planes Capibara (validos en todos los scans). Este scan queda como
@@ -493,56 +498,26 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ organization, user,
           {/* Los planes propios del scan (legacy) ya no admiten altas: no se
               muestran. Sus suscriptores siguen en el ranking, como Legacy. */}
 
-          {/* External Support Grid */}
-          {(organization?.patreonUrl || organization?.discordUrl) && (
-            <div className="grid md:grid-cols-2 gap-8 mb-24">
-              {/* Patreon CTA */}
-              {organization?.patreonUrl && (
-                <a 
-                  href={organization.patreonUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="group relative bg-gradient-to-br from-[#FF424D]/20 to-zinc-900 border border-[#FF424D]/30 rounded-[40px] p-10 flex items-center justify-between overflow-hidden transition-all hover:shadow-[0_0_40px_rgba(255,66,77,0.1)]"
-                >
-                  <div className="space-y-4">
-                    <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none">
-                      Suscríbete desde Patreon
-                    </h2>
-                    <p className="text-zinc-400 font-medium">Apoya directamente y obtén beneficios premium.</p>
-                    <div className="inline-flex items-center gap-2 text-[#FF424D] font-black uppercase text-xs tracking-widest group-hover:translate-x-2 transition-transform">
-                      Ir a Patreon <ExternalLink size={16} />
-                    </div>
-                  </div>
-                  <div className="w-24 h-24 bg-[#FF424D] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform shrink-0">
-                    <span className="text-white font-black text-4xl italic">P</span>
-                  </div>
-                </a>
-              )}
-
-              {/* Discord CTA */}
-              {organization?.discordUrl && (
-                <a 
-                  href={organization.discordUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="group relative bg-gradient-to-br from-[#5865F2]/20 to-zinc-900 border border-[#5865F2]/30 rounded-[40px] p-10 flex items-center justify-between overflow-hidden transition-all hover:shadow-[0_0_40px_rgba(88,101,242,0.1)]"
-                >
-                  <div className="space-y-4">
-                    <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none">
-                      Únete a nuestro Discord
-                    </h2>
-                    <p className="text-zinc-400 font-medium">Reclama tu rango de Patreon en la web y el servidor.</p>
-                    <div className="inline-flex items-center gap-2 text-[#5865F2] font-black uppercase text-xs tracking-widest group-hover:translate-x-2 transition-transform">
-                      Ir a Discord <MessageSquare size={16} />
-                    </div>
-                  </div>
-                  <div className="w-24 h-24 bg-[#5865F2] rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform shrink-0">
-                    <MessageSquare size={40} className="text-white" fill="currentColor" />
-                  </div>
-                </a>
-              )}
+          {/* Discord: comunidad y soporte, en una franja a todo el ancho. */}
+          <a
+            href={organization?.discordUrl || 'https://capibaratraductor.com/discord'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative mb-24 flex flex-col sm:flex-row items-center gap-6 sm:gap-8 overflow-hidden rounded-3xl border border-[#5865F2]/30 bg-gradient-to-r from-[#5865F2]/15 via-zinc-900/60 to-zinc-900/60 px-6 py-7 sm:px-10 sm:py-8 transition-all hover:border-[#5865F2]/60 hover:shadow-[0_0_50px_-12px_rgba(88,101,242,0.45)]"
+          >
+            <div className="shrink-0 grid place-items-center w-16 h-16 rounded-2xl bg-[#5865F2] text-white shadow-lg shadow-[#5865F2]/30 transition-transform group-hover:scale-105">
+              <DiscordIcon size={34} />
             </div>
-          )}
+            <div className="flex-1 text-center sm:text-left">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Únete al Discord de {organization?.name || organization?.title || 'CapibaraTraductor'}
+              </h2>
+              <p className="text-zinc-400 text-sm mt-1">Avisos de capítulos nuevos, comunidad y ayuda con tu suscripción.</p>
+            </div>
+            <span className="shrink-0 inline-flex items-center gap-2 rounded-full bg-[#5865F2] px-6 py-3 text-sm font-bold text-white transition-colors group-hover:bg-[#4752c4]">
+              Entrar al servidor <ExternalLink size={15} />
+            </span>
+          </a>
 
           {/* Top Subscribers Full Width Ranking */}
           {loadingDonors ? (
