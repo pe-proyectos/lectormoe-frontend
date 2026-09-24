@@ -138,10 +138,10 @@ const CapibaraPlans: React.FC<Props> = ({ user, logged, paypalClientId, scanNomb
   };
 
   return (
-    <section className="max-w-6xl mx-auto">
+    <section className="max-w-6xl mx-auto mb-20">
       {/* Cabecera compacta: las cuatro tarjetas y sus botones de pago tienen que
           verse sin hacer scroll. */}
-      <header className="text-center mb-8 space-y-3">
+      <header className="text-center mb-10 space-y-4">
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-400">
           Suscripción Capibara{scanNombre ? ` · apoyas a ${scanNombre}` : ''}
         </p>
