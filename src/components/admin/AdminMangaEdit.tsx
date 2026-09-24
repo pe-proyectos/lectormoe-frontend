@@ -295,9 +295,10 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const resourceBase = () => isJointMode
     ? `/api/joint/${resourceSlug}`
     : `/api/manga-custom/${resourceSlug}`;
+  // includeScheduled=1: el admin recibe también los capítulos programados.
   const resourceFetchUrl = () => isJointMode
     ? `/api/joint/${resourceSlug}/admin`
-    : `/api/manga-custom/${resourceSlug}`;
+    : `/api/manga-custom/${resourceSlug}?includeScheduled=1`;
   const chapterListUrl = () => `${resourceBase()}/chapter`;
   const chapterUrl = (num: number | string) => `${resourceBase()}/chapter/${num}`;
   const pagesUrl = (num: number | string) => `${resourceBase()}/chapter/${num}/pages`;
@@ -379,6 +380,8 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     thumbnail: null as File | string | null,
     isUnreleased: false,
     volumeNumber: '' as string,
+    // Publicación programada (fecha/hora local). Vacío = publicar ya.
+    publishAt: '' as string,
   });
   
   const [pages, setPages] = useState<(File | string)[]>([]);
@@ -403,6 +406,9 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
   const [selectedChapter, setSelectedChapter] = useState<any>(null);
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false);
   const [isEditingChapter, setIsEditingChapter] = useState(false);
+  // El capítulo en edición está programado (publishAt). Solo entonces se
+  // puede reprogramar o quitar la programación; uno publicado no se reprograma.
+  const [editingChapterScheduled, setEditingChapterScheduled] = useState(false);
   const [editingChapterNumber, setEditingChapterNumber] = useState<number | null>(null);
   const [updatingChapterDate, setUpdatingChapterDate] = useState<number | null>(null); // Chapter ID being updated
 
@@ -597,6 +603,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
     // Limpiar estado de edición si se cambia a otro tab que no sea upload
     if (activeTab !== 'upload' && isEditingChapter) {
       setIsEditingChapter(false);
+      setEditingChapterScheduled(false);
       setEditingChapterNumber(null);
       setNewChapter({
         number: '',
@@ -606,6 +613,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         thumbnail: null,
         isUnreleased: false,
         volumeNumber: '',
+        publishAt: '',
       });
       setPages([]);
       setSinglePageIndexes([]);
@@ -843,6 +851,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             isUnreleased: false,
             volumeNumber: r.volumeNumber,
             displayNumber: r.displayNumber,
+            ...(r.publishAt ? { publishAt: r.publishAt } : {}),
           }),
         });
         created += 1;
@@ -994,7 +1003,9 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
         thumbnail: chapter.imageUrl || null,
         isUnreleased: chapter.isUnreleased || false,
         volumeNumber: chapter.volumeNumber != null ? String(chapter.volumeNumber) : '',
+        publishAt: chapter.publishAt ? utcToLocalDatetimeString(chapter.publishAt) : '',
       });
+      setEditingChapterScheduled(!!chapter.publishAt);
       // Preload the joint worked-by selector from the chapter
       if (isJointMode) {
         setWorkedByIds((chapter.workedByOrganizations || []).map((o: any) => o.id));
@@ -1718,6 +1729,13 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
             isUnreleased: newChapter.isUnreleased || false,
             volumeNumber: newChapter.volumeNumber === '' ? null : parseInt(newChapter.volumeNumber, 10),
             ...(isJointMode ? { workedByOrganizationIds: workedByIds } : {}),
+            // Programación: al crear solo se envía si hay fecha; al editar un
+            // capítulo programado, vacío = quitar la programación (publicar ya).
+            ...(newChapter.publishAt
+              ? { publishAt: localDatetimeStringToUTC(newChapter.publishAt) }
+              : isEdit && editingChapterScheduled
+                ? { publishAt: null }
+                : {}),
           }),
         }
       );
@@ -1741,11 +1759,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
           isSubscriberOnly: false,
           thumbnail: null,
           volumeNumber: '',
+          publishAt: '',
+        publishAt: '',
         });
         setPages([]);
         setSinglePageIndexes([]);
         setBodyMarkdown('');
         setIsEditingChapter(false);
+        setEditingChapterScheduled(false);
         setEditingChapterNumber(null);
         // Recargar capítulos — esto refresca chapters[] y el useEffect de
         // defaults pre-rellena el siguiente número/título automáticamente.
@@ -1908,6 +1929,32 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
 
   const toggleWorkedBy = (orgId: number) => {
     setWorkedByIds(prev => prev.includes(orgId) ? prev.filter(id => id !== orgId) : [...prev, orgId]);
+  };
+
+  // dd/mm HH:mm en la hora local del usuario.
+  const formatScheduleShort = (iso: string) => {
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+
+  // Quita la programación: el capítulo se publica en este momento (y avisa a
+  // los seguidores como cualquier capítulo nuevo).
+  const handlePublishNow = async (chapter: any) => {
+    if (!window.confirm(`¿Publicar ya el capítulo ${chapter.number}? Será visible para todos y se avisará a los seguidores.`)) return;
+    setUpdatingChapterDate(chapter.id);
+    try {
+      await callAPI(chapterUrl(chapter.number), {
+        method: 'PATCH',
+        body: JSON.stringify({ publishAt: null }),
+      });
+      toast.success(`Capítulo ${chapter.number} publicado`, { position: 'bottom-right' });
+      await loadChapters();
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo publicar el capítulo', { position: 'bottom-right' });
+    } finally {
+      setUpdatingChapterDate(null);
+    }
   };
 
   const handleUpdateChapterDate = async (chapter: any, newDate: string | null, isUnreleased: boolean) => {
@@ -2611,6 +2658,35 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                       </div>
                     </div>
 
+                    {/* Scheduled publish */}
+                    {(!isEditingChapter || editingChapterScheduled) && (
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                          <Clock size={12} /> Programar publicación
+                        </label>
+                        <DateTimePicker
+                          value={newChapter.publishAt}
+                          onChange={(value) => setNewChapter((prev) => ({ ...prev, publishAt: value || '' }))}
+                          showTime={true}
+                        />
+                        {newChapter.publishAt && (
+                          <button
+                            type="button"
+                            onClick={() => setNewChapter((prev) => ({ ...prev, publishAt: '' }))}
+                            className="text-[10px] font-bold text-cyan-400 hover:text-white"
+                          >
+                            {isEditingChapter ? 'Quitar programación (publicar ya al guardar)' : 'Quitar programación'}
+                          </button>
+                        )}
+                        <div className="flex gap-2 p-3 bg-zinc-950/50 rounded-xl border border-zinc-800/50">
+                          <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-[9px] text-zinc-500 font-medium leading-snug">
+                            Opcional. A diferencia de la fecha de salida (acceso anticipado para suscriptores), un capítulo programado no lo ve nadie hasta su fecha y hora; entonces se publica solo y avisa a los seguidores.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Blocked for Unreleased */}
                     <div className="space-y-2">
                       <label className="flex items-center gap-2 text-white text-[10px] font-black uppercase tracking-widest">
@@ -2687,10 +2763,14 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                             thumbnail: null,
                             isUnreleased: false,
                             volumeNumber: '',
+                            publishAt: '',
+          publishAt: '',
+        publishAt: '',
                           });
                           setPages([]);
                           setSinglePageIndexes([]);
                           setIsEditingChapter(false);
+                          setEditingChapterScheduled(false);
                           setEditingChapterNumber(null);
                           setActiveTab('chapters');
                         }}
@@ -3402,7 +3482,7 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                 <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
                   <div>
                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Índice de Capítulos</h3>
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1 block">{chapters.length} Episodios Publicados</span>
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1 block">{chapters.length} Episodios{chapters.some((c: any) => c.publishAt) ? ` · ${chapters.filter((c: any) => c.publishAt).length} programados` : ''}</span>
                   </div>
                 </div>
                 {chaptersLoading ? (
@@ -3445,7 +3525,27 @@ const AdminMangaEdit: React.FC<AdminMangaEditProps> = ({
                               )}
                             </td>
                             <td className="px-8 py-6 text-cyan-500 font-black italic">#{ch.number}</td>
-                            <td className="px-8 py-6 text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">{ch.title || `Capítulo ${ch.number}`}</td>
+                            <td className="px-8 py-6 text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">
+                              {ch.title || `Capítulo ${ch.number}`}
+                              {ch.publishAt && (
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-widest"
+                                    title="Nadie lo ve hasta esa fecha y hora; entonces se publica solo."
+                                  >
+                                    <Clock size={11} /> Programado · {formatScheduleShort(ch.publishAt)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePublishNow(ch)}
+                                    disabled={updatingChapterDate === ch.id}
+                                    className="text-[10px] font-bold text-cyan-400 hover:text-white disabled:opacity-50"
+                                  >
+                                    Publicar ya
+                                  </button>
+                                </div>
+                              )}
+                            </td>
                             <td className="px-8 py-6 text-xs font-bold text-zinc-500">{ch.views?.toLocaleString() || '0'}</td>
                             <td className="px-8 py-6">
                               <div className="flex flex-col gap-2 min-w-[200px]">

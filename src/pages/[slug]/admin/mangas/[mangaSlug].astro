@@ -18,7 +18,7 @@ if (!logged) {
   return Astro.redirect(`/${organizationSlug}/login`);
 }
 
-const manga = await callAPI(`/api/manga-custom/${mangaSlug}`);
+const manga = await callAPI(`/api/manga-custom/${mangaSlug}?includeScheduled=1`);
 
 if (!manga || manga?.status === false) {
   return Astro.redirect("/404");
