@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, Search, Bookmark, Bell, User, LogIn, Compass, BookOpen } from 'lucide-react';
+import { Home, Search, Bookmark, Bell, LogIn, BookOpen, LayoutGrid } from 'lucide-react';
 import { callAPI } from '../../util/callApi';
 
 interface Props {
@@ -44,42 +44,79 @@ const MobileTabBar: React.FC<Props> = ({ logged, nsfwMode, profileSlug }) => {
     : '/settings';
   const writingsHref = nsfwMode ? '/red/writings' : '/writings';
 
-  // Set logueado: navegación personal. Set anónimo: solo destinos públicos
-  // (nada de Mi Lista/Alertas que exigen cuenta y rebotan a /login).
-  const items = logged
+  // Dos accesos a cada lado y, al centro, el botón que abre el menú completo
+  // (MobileMenuSheet, dentro del Navbar). El perfil vive en ese menú; la
+  // barra se queda con lo que se usa a diario.
+  const izquierda = [
+    { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
+    { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
+  ];
+  const derecha = logged
     ? [
-        { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
-        { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
         { key: 'list', label: 'Mi Lista', icon: Bookmark, href: listHref },
         { key: 'notif', label: 'Alertas', icon: Bell, href: '/notifications', badge: unread },
-        { key: 'profile', label: 'Perfil', icon: User, href: profileHref },
       ]
     : [
-        { key: 'home', label: 'Inicio', icon: Home, href: homeHref },
-        { key: 'search', label: 'Buscar', icon: Search, href: searchHref },
-        { key: 'scans', label: 'Scans', icon: Compass, href: '/scans' },
         { key: 'novels', label: 'Novelas', icon: BookOpen, href: writingsHref },
         { key: 'profile', label: 'Entrar', icon: LogIn, href: profileHref },
       ];
 
   const isActive = (href: string) => (href === '/' || href === '/red' ? path === href : path === href || path.startsWith(`${href}/`));
 
+  const activo = nsfwMode ? 'text-red-400' : 'text-cyan-400';
+  const pastilla = nsfwMode ? 'bg-red-500/15' : 'bg-cyan-500/15';
+
+  const abrirMenu = () => {
+    // Si la página no tiene Navbar (sin menú que abrir), lleva al directorio.
+    if ((window as any).__capiMobileMenu) window.dispatchEvent(new Event('open-mobile-menu'));
+    else window.location.href = '/scans';
+  };
+
+  const Pestana = (it: { key: string; label: string; icon: any; href: string; badge?: number }) => {
+    const Icon = it.icon;
+    const on = isActive(it.href);
+    return (
+      <a
+        key={it.key}
+        href={it.href}
+        aria-current={on ? 'page' : undefined}
+        className={`relative flex flex-col items-center justify-center gap-1 flex-1 min-h-[58px] active:scale-95 transition-transform ${on ? activo : 'text-zinc-500'}`}
+      >
+        <span className={`relative flex items-center justify-center w-12 h-7 rounded-full transition-colors ${on ? pastilla : ''}`}>
+          <Icon size={20} strokeWidth={on ? 2.5 : 2} />
+          {!!it.badge && it.badge > 0 && (
+            <span className={`absolute -top-1 right-1.5 ${nsfwMode ? 'bg-red-500 text-white' : 'bg-cyan-500 text-zinc-950'} text-[9px] font-black rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center ring-2 ring-zinc-950`}>
+              {it.badge > 9 ? '9+' : it.badge}
+            </span>
+          )}
+        </span>
+        <span className="text-[10px] font-bold tracking-wide">{it.label}</span>
+      </a>
+    );
+  };
+
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-900 pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-stretch justify-around">
-        {items.map((it) => {
-          const Icon = it.icon;
-          const active = isActive(it.href);
-          return (
-            <a key={it.key} href={it.href} className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[56px] active:scale-[0.95] transition-transform ${active ? 'text-cyan-400' : 'text-zinc-500'}`}>
-              <Icon size={22} />
-              {!!it.badge && it.badge > 0 && (
-                <span className="absolute top-2 right-[calc(50%-18px)] bg-cyan-500 text-zinc-950 text-[9px] font-black rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center">{it.badge > 9 ? '9+' : it.badge}</span>
-              )}
-              <span className="text-[9px] font-black uppercase tracking-wide">{it.label}</span>
-            </a>
-          );
-        })}
+    <nav
+      aria-label="Navegación principal"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800/80 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] pb-[env(safe-area-inset-bottom)]"
+    >
+      <div className="flex items-stretch justify-around px-1">
+        {izquierda.map(Pestana)}
+        <div className="flex flex-1 items-start justify-center">
+          <button
+            type="button"
+            onClick={abrirMenu}
+            aria-label="Abrir menú"
+            className={`-mt-5 flex h-14 w-14 flex-col items-center justify-center rounded-2xl ring-4 ring-zinc-950 active:scale-95 transition-transform shadow-xl ${
+              nsfwMode
+                ? 'bg-gradient-to-br from-red-400 to-red-600 text-white shadow-red-500/30'
+                : 'bg-gradient-to-br from-cyan-300 to-cyan-500 text-zinc-950 shadow-cyan-500/30'
+            }`}
+          >
+            <LayoutGrid size={22} strokeWidth={2.5} />
+          </button>
+        </div>
+        {derecha.map(Pestana)}
       </div>
     </nav>
   );

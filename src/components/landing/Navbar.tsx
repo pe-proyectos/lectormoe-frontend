@@ -1,30 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Menu,
-  X,
   Search,
   ChevronDown,
   User as UserIcon,
   LogOut,
   Settings,
   ChevronLeft,
-  CreditCard,
   Shield,
   Crown,
   Bookmark,
   MessageCircle,
-  Bell,
-  Home,
-  Compass,
-  List as ListIcon,
-  Heart,
-  LogIn,
-  UserPlus,
-  HardDriveDownload,
 } from "lucide-react";
 import { callAPI } from '../../util/callApi';
 import NotificationBell from './NotificationBell';
 import NavMegaMenu from './NavMegaMenu';
+import MobileMenuSheet from './MobileMenuSheet';
 
 // Luckys se ocultó del navbar (decisión 2026-07-07): el hook useLuckysSummary
 // y su fetch periódico de rifas se eliminaron junto con el botón. La página
@@ -79,13 +70,23 @@ const Navbar: React.FC<NavbarProps> = ({
     (typeof window !== 'undefined' && /\/subscriptions\/?$/.test(window.location.pathname));
 
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [nsfwModalOpen, setNsfwModalOpen] = useState(false);
   // Bottom-bar mega menu (mobile only). Surfaces every desktop nav option in a
   // single fullscreen sheet so the bottombar itself can stay tight (3 quick
   // actions: lists / menu / profile).
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+  const cerrarMenuMovil = useCallback(() => setMegaMenuOpen(false), []);
+  // La barra inferior (otra isla de React) abre este menú con un evento.
+  useEffect(() => {
+    const abrir = () => setMegaMenuOpen(true);
+    (window as any).__capiMobileMenu = true;
+    window.addEventListener('open-mobile-menu', abrir);
+    return () => {
+      (window as any).__capiMobileMenu = false;
+      window.removeEventListener('open-mobile-menu', abrir);
+    };
+  }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState(initialUser);
   const [logged, setLogged] = useState(initialLogged);
@@ -373,9 +374,9 @@ const Navbar: React.FC<NavbarProps> = ({
     ? { label: 'Mangas', href: nsfwMode ? '/red' : '/' }
     : { label: 'Novelas', href: nsfwMode ? '/red/writings' : '/writings' };
 
-  const navigateToProfile = () => {
-    window.location.href = `${nsfwPrefix}/profile/${user?.slug}`;
-  };
+  const catalogUrl = activeScan?.slug
+    ? (nsfwMode ? `/red/${activeScan.slug}/search` : `/${activeScan.slug}/search`)
+    : (nsfwMode ? '/red/search' : '/search');
 
   const navigateTo = (path: string) => {
     window.location.href = path;
@@ -663,186 +664,30 @@ const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Mobile top bar: campana + botón de menú que abre el mega-menú (catálogo,
-            novelas, directorio de scans, toggle +18). La navegación rápida vive en
-            el MobileTabBar inferior; este botón da acceso a la navegación amplia. */}
-        <div className="flex items-center gap-2 md:hidden">
+        {/* Barra superior móvil: buscar, campana y el botón que abre el menú
+            completo (MobileMenuSheet). La barra inferior (MobileTabBar) también
+            lo abre con el evento 'open-mobile-menu'. */}
+        <div className="flex items-center gap-1.5 md:hidden">
+          <a
+            href={catalogUrl}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-zinc-300 bg-zinc-900/60 ring-1 ring-zinc-800 active:scale-95 transition-transform"
+            aria-label="Buscar"
+          >
+            <Search size={19} />
+          </a>
           {logged && <NotificationBell logged={!!logged} variant="mobile" />}
           <button
             type="button"
             onClick={() => setMegaMenuOpen(true)}
-            className="w-11 h-11 flex items-center justify-center text-white rounded-xl active:bg-zinc-800 transition-colors"
-            aria-label="Menú"
+            className={`w-10 h-10 flex items-center justify-center rounded-xl active:scale-95 transition-transform ${
+              nsfwMode ? 'bg-red-500 text-white' : 'bg-cyan-500 text-zinc-950'
+            }`}
+            aria-label="Abrir menú"
           >
-            <Menu size={24} />
+            <Menu size={20} strokeWidth={2.5} />
           </button>
         </div>
       </div>
-
-      {/* Mobile Menu — legacy hamburger drawer (now superseded by the bottom
-          bar mega menu). Kept inert so any external code that still toggles
-          mobileMenuOpen doesn't break. */}
-      {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-zinc-950 border-b border-zinc-800 p-8 flex flex-col gap-8 animate-in slide-in-from-top duration-300 shadow-2xl max-h-[80vh] overflow-y-auto">
-          {activeScan && (
-            <a
-              href={nsfwMode ? '/red' : '/'}
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-zinc-500 font-bold flex items-center gap-4 text-lg"
-            >
-              <ChevronLeft size={20} /> Inicio
-            </a>
-          )}
-          <a
-            href={activeScan?.slug ? (nsfwMode ? `/red/${activeScan.slug}/search` : `/${activeScan.slug}/search`) : (nsfwMode ? '/red/search' : '/search')}
-            onClick={() => setMobileMenuOpen(false)}
-            className={`text-xl font-bold flex items-center gap-4 ${
-              activeView === "search" ? "text-cyan-500" : "text-zinc-100"
-            }`}
-          >
-            <Search size={20} /> Catálogo
-          </a>
-          <a
-            href={altContentLink.href}
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-xl font-bold flex items-center gap-4 text-zinc-100"
-          >
-            <Bookmark size={20} /> {altContentLink.label}
-          </a>
-          {/* Luckys oculto del menú móvil (decisión 2026-07-07) */}
-          {/* Sorteo ended — hidden until next giveaway
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false);
-              window.dispatchEvent(new Event('open-sorteo-modal'));
-            }}
-            className="text-xl font-bold flex items-center gap-4 text-yellow-500"
-          >
-            <Gift size={20} /> SORTEO Luckybara
-          </button>
-          */}
-          {(
-            <a
-              href={urlSuscripciones}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`text-xl font-bold flex items-center gap-4 ${
-                enSuscripciones
-                  ? "text-yellow-500"
-                  : "text-zinc-100"
-              }`}
-            >
-              <CreditCard size={20} /> Suscripciones
-            </a>
-          )}
-
-          {logged && user && (user.username || user.email) ? (
-            <div className="space-y-4 pt-4 border-t border-zinc-800">
-              <div
-                className="flex items-center gap-4"
-                onClick={() => {
-                  navigateToProfile();
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-cyan-500">
-                  {user.imageUrl ? (
-                    <img
-                      src={user.imageUrl}
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                      <span className="text-cyan-500 font-black text-lg">
-                        {(user.username || user.email || "U")[0].toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-white font-black uppercase text-sm tracking-widest">
-                    {user.username || user.email || "Usuario"}
-                  </p>
-                  <p className="text-zinc-500 text-xs font-bold">
-                    {user.email || ""}
-                  </p>
-                </div>
-              </div>
-              <a
-                href={`${nsfwPrefix}/profile/${user?.slug}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
-              >
-                <UserIcon size={20} /> Mi Perfil
-              </a>
-              <a
-                href={`${nsfwPrefix}/list/${user?.slug}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
-              >
-                <Bookmark size={20} /> Mi Lista
-              </a>
-              <a
-                href={`${nsfwPrefix}/notifications`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
-              >
-                <Bell size={20} /> Notificaciones
-              </a>
-              <a
-                href="https://discord.gg/xJqCWAUxVt"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center gap-4 text-indigo-400 font-bold text-lg"
-              >
-                <MessageCircle size={20} /> Discord CapibaraTraductor
-              </a>
-              <a
-                href="/settings"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center gap-4 text-zinc-300 font-bold text-lg"
-              >
-                <Settings size={20} /> Ajustes
-              </a>
-              {user?.permissions
-                ?.filter((p: any) => p.canSeeAdminPanel && p.organization)
-                .map((p: any) => (
-                  <a
-                    key={p.organizationId}
-                    href={`/${p.organization.slug}/admin/mangas`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full flex items-center gap-4 text-purple-400 font-bold text-lg"
-                  >
-                    {p.organization.logoUrl ? (
-                      <img src={p.organization.logoUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
-                    ) : (
-                      <Shield size={20} />
-                    )}
-                    Panel {p.organization.name}
-                  </a>
-                ))}
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-4 text-red-500 font-black text-lg uppercase tracking-widest"
-              >
-                <LogOut size={20} /> Cerrar Sesión
-              </button>
-            </div>
-          ) : (
-            <a
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="bg-cyan-500 text-zinc-950 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl inline-block text-center"
-            >
-              Ingresar
-            </a>
-          )}
-        </div>
-      )}
 
     </nav>
 
@@ -894,229 +739,19 @@ const Navbar: React.FC<NavbarProps> = ({
       </div>
     )}
 
-    {/* ─── Mobile bottom bar (LEGACY, oculto) ─────────────────────────────
-        La barra inferior canónica es ahora MobileTabBar (montada globalmente en
-        LandingLayout, 5 destinos). Esta barra vieja de 3 acciones se duplicaba
-        con ella (dos barras inferiores apiladas). Se oculta con `hidden`; se
-        conserva el JSX porque aún alberga el opener del mega-menú, referenciado
-        más abajo. */}
-    <nav
-      className="hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]"
-      aria-label="Navegación móvil"
-      aria-hidden="true"
-    >
-      <div className="flex items-stretch justify-between max-w-md mx-auto px-2">
-        {/* Left: My lists */}
-        <button
-          type="button"
-          onClick={() => {
-            const target = logged && user?.slug ? `${nsfwPrefix}/list/${user.slug}` : `${nsfwPrefix}/login`;
-            window.location.href = target;
-          }}
-          className="flex flex-col items-center justify-center gap-0.5 py-3 flex-1 text-zinc-400 active:bg-zinc-900 transition-colors"
-          aria-label="Mi lista"
-        >
-          <Bookmark size={22} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Lista</span>
-        </button>
-
-        {/* Center: open mega menu */}
-        <button
-          type="button"
-          onClick={() => setMegaMenuOpen(true)}
-          className="-mt-5 mx-1 w-14 h-14 rounded-full bg-cyan-500 text-zinc-950 flex items-center justify-center shadow-2xl shadow-cyan-500/40 active:scale-95 transition-transform self-center"
-          aria-label="Abrir menú"
-        >
-          <Menu size={24} strokeWidth={2.5} />
-        </button>
-
-        {/* Right: profile picture */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!logged || !user) { window.location.href = `${nsfwPrefix}/login`; return; }
-            navigateToProfile();
-          }}
-          className="flex flex-col items-center justify-center gap-0.5 py-3 flex-1 text-zinc-400 active:bg-zinc-900 transition-colors"
-          aria-label="Mi perfil"
-        >
-          {logged && user?.imageUrl ? (
-            <img
-              src={user.imageUrl}
-              alt={user.username || 'Perfil'}
-              className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700"
-            />
-          ) : logged && (user?.username || user?.email) ? (
-            <div className="w-7 h-7 rounded-full bg-cyan-500 text-zinc-950 text-xs font-black flex items-center justify-center">
-              {(user.username || user.email || 'U')[0].toUpperCase()}
-            </div>
-          ) : (
-            <UserIcon size={22} />
-          )}
-          <span className="text-[9px] font-black uppercase tracking-widest">Perfil</span>
-        </button>
-      </div>
-    </nav>
-
-    {/* Mega-menu sheet — shown when the bottombar's center button is tapped.
-        Mirrors every link the desktop nav exposes. */}
-    {megaMenuOpen && (
-      <div
-        className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end"
-        onClick={() => setMegaMenuOpen(false)}
-      >
-        <div
-          className="w-full bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[88vh] overflow-y-auto pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom duration-200"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-zinc-900 sticky top-0 bg-zinc-950 z-10">
-            <span className="text-xs font-black text-zinc-500 uppercase tracking-[0.3em]">Menú</span>
-            <button
-              type="button"
-              onClick={() => setMegaMenuOpen(false)}
-              className="w-9 h-9 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 flex items-center justify-center transition-colors"
-              aria-label="Cerrar"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* User card (logged) or auth CTA (logged-out) */}
-          {logged && user ? (
-            <a
-              href={`${nsfwPrefix}/profile/${user.slug}`}
-              className="flex items-center gap-3 mx-5 mt-4 mb-2 p-3 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 transition-colors"
-            >
-              {user.imageUrl ? (
-                <img src={user.imageUrl} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-cyan-500 text-zinc-950 text-base font-black flex items-center justify-center">
-                  {(user.username || user.email || 'U')[0].toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-white font-bold text-sm truncate">{user.username || user.email}</p>
-                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">Ver mi perfil</p>
-              </div>
-              <ChevronDown size={16} className="text-zinc-500 -rotate-90" />
-            </a>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 mx-5 mt-4 mb-2">
-              <a
-                href={`${nsfwPrefix}/login`}
-                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-cyan-500 text-zinc-950 text-xs font-black uppercase tracking-widest"
-              >
-                <LogIn size={16} /> Iniciar sesión
-              </a>
-              <a
-                href={`${nsfwPrefix}/register`}
-                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-white text-xs font-black uppercase tracking-widest"
-              >
-                <UserPlus size={16} /> Registrarme
-              </a>
-            </div>
-          )}
-
-          {/* Quick navigation grid */}
-          <div className="grid grid-cols-3 gap-2 px-5 mt-4">
-            {[
-              { icon: <Home size={18} />,     label: 'Inicio',    href: nsfwMode ? '/red' : '/' },
-              { icon: <Search size={18} />,   label: 'Catálogo',  href: `${nsfwPrefix}/search` },
-              { icon: <Compass size={18} />,  label: 'Explorar',  href: '/scans' },
-              { icon: <Bookmark size={18} />, label: 'Novelas',   href: nsfwMode ? '/red/writings' : '/writings' },
-              ...(logged && user?.slug ? [
-                { icon: <ListIcon size={18} />, label: 'Mi lista', href: `${nsfwPrefix}/list/${user.slug}` },
-              ] : []),
-              ...(logged ? [
-                { icon: <HardDriveDownload size={18} />, label: 'Descargas', href: '/descargas' },
-              ] : []),
-              { icon: <Crown size={18} />, label: 'Suscripciones', href: urlSuscripciones },
-            ].map((item: any, i) => (
-              item.href ? (
-                <a
-                  key={i}
-                  href={item.href}
-                  className="flex flex-col items-center justify-center gap-1 py-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white transition-colors"
-                >
-                  <span className="text-cyan-400">{item.icon}</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
-                </a>
-              ) : (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => { item.action?.(); setMegaMenuOpen(false); }}
-                  className="flex flex-col items-center justify-center gap-1 py-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white transition-colors"
-                >
-                  <span className="text-cyan-400">{item.icon}</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
-                </button>
-              )
-            ))}
-          </div>
-
-          {/* Logged-in user shortcuts */}
-          {logged && user && (
-            <div className="px-5 mt-4 space-y-1">
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 px-1">Mi cuenta</p>
-              <a href={`${nsfwPrefix}/profile/${user.slug}`} className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
-                <UserIcon size={16} className="text-zinc-500" /><span className="text-sm font-bold">Mi perfil</span>
-              </a>
-              <a href={`${nsfwPrefix}/notifications`} className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
-                <Bell size={16} className="text-zinc-500" /><span className="text-sm font-bold">Notificaciones</span>
-              </a>
-              <a href={`${nsfwPrefix}/settings`} className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors">
-                <Settings size={16} className="text-zinc-500" /><span className="text-sm font-bold">Configuración</span>
-              </a>
-              <a href="/logout" className="flex items-center gap-3 px-3 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors">
-                <LogOut size={16} /><span className="text-sm font-bold">Cerrar sesión</span>
-              </a>
-            </div>
-          )}
-
-          {/* Admin scans — mirrors the desktop dropdown's panel list. Shows
-              every organization where the user has canSeeAdminPanel. */}
-          {logged && user?.permissions?.some((p: any) => p.canSeeAdminPanel && p.organization) && (
-            <div className="px-5 mt-4 space-y-1">
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 px-1">Mis scans (admin)</p>
-              {user.permissions
-                .filter((p: any) => p.canSeeAdminPanel && p.organization)
-                .map((p: any) => (
-                  <a
-                    key={p.organizationId}
-                    href={`/${p.organization.slug}/admin/mangas`}
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-zinc-300 hover:bg-zinc-900 transition-colors"
-                  >
-                    {p.organization.logoUrl ? (
-                      <img src={p.organization.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover" />
-                    ) : (
-                      <Shield size={16} className="text-purple-500" />
-                    )}
-                    <span className="text-sm font-bold truncate">Panel {p.organization.name}</span>
-                  </a>
-                ))}
-            </div>
-          )}
-
-          {/* NSFW toggle */}
-          <div className="px-5 mt-5 mb-3">
-            <button
-              type="button"
-              onClick={handleNsfwToggle}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors ${
-                nsfwMode
-                  ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                  : 'bg-red-500/15 border border-red-500/40 text-red-400 hover:bg-red-500/25'
-              }`}
-            >
-              <Heart size={14} fill={nsfwMode ? 'none' : 'currentColor'} />
-              {nsfwMode ? 'Salir del modo +18' : 'Activar +18'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    <MobileMenuSheet
+      open={megaMenuOpen}
+      onClose={cerrarMenuMovil}
+      user={user}
+      logged={!!logged}
+      nsfwMode={nsfwMode}
+      activeScan={activeScan}
+      catalogUrl={catalogUrl}
+      altContentLink={altContentLink}
+      urlSuscripciones={urlSuscripciones}
+      onNsfwToggle={() => setNsfwModalOpen(true)}
+      onLogout={handleLogout}
+    />
     </>
   );
 };

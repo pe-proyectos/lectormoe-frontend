@@ -32,7 +32,7 @@ interface NavMegaMenuProps {
 
 type Panel = 'explorar' | 'comunidad' | null;
 
-interface Item {
+export interface Item {
   href: string;
   icon: React.ReactNode;
   title: string;
@@ -40,7 +40,7 @@ interface Item {
   external?: boolean;
 }
 
-const conParams = (base: string, params: Record<string, string>) =>
+export const conParams = (base: string, params: Record<string, string>) =>
   `${base}?${new URLSearchParams(params).toString()}`;
 
 // Enlace de un panel: icono, título y una línea de descripción.
@@ -61,6 +61,66 @@ const Enlace: React.FC<{ item: Item; tono: string }> = ({ item, tono }) => (
   </a>
 );
 
+// Enlaces compartidos por el megamenú de escritorio y el menú móvil, para que
+// ambos ofrezcan siempre las mismas opciones.
+export function enlacesDescubrir(catalogUrl: string, altContentLink: { label: string; href: string }): Item[] {
+  return [
+    { href: catalogUrl, icon: <Search size={16} />, title: 'Catálogo', desc: 'Busca entre todas las obras' },
+    { href: conParams(catalogUrl, { sort: 'popular' }), icon: <Flame size={16} />, title: 'Populares', desc: 'Lo más leído ahora' },
+    { href: conParams(catalogUrl, { sort: 'latest' }), icon: <Sparkles size={16} />, title: 'Recientes', desc: 'Capítulos recién salidos' },
+    { href: conParams(catalogUrl, { status: 'Completed' }), icon: <CheckCircle2 size={16} />, title: 'Finalizados', desc: 'Historias para leer de corrido' },
+    { href: conParams(catalogUrl, { isOneShot: 'true' }), icon: <BookOpen size={16} />, title: 'One-shots', desc: 'Historias de un solo capítulo' },
+    { href: altContentLink.href, icon: <Bookmark size={16} />, title: altContentLink.label, desc: altContentLink.label === 'Novelas' ? 'Novelas, libros y cuentos' : 'Vuelve a los mangas' },
+  ];
+}
+
+export function enlacesComunidad(logged: boolean): Item[] {
+  return [
+    { href: 'https://lacharca.com', icon: <Droplet size={16} />, title: 'La Charca', desc: 'La red social de los lectores' },
+    { href: '/listas', icon: <ListIcon size={16} />, title: 'Listas', desc: 'Colecciones hechas por la comunidad' },
+    { href: '/scans', icon: <Users size={16} />, title: 'Scans', desc: 'Conoce a los grupos que traducen' },
+    { href: '/reclutamiento', icon: <Megaphone size={16} />, title: 'Reclutamiento', desc: 'Únete a un scan y ayuda a traducir' },
+    ...(logged
+      ? [{ href: '/mensajes', icon: <MessageCircle size={16} />, title: 'Mensajes', desc: 'Tus conversaciones con los scans' }]
+      : []),
+    { href: '/descargas', icon: <HardDriveDownload size={16} />, title: 'Descargas', desc: 'Lee sin conexión' },
+    { href: 'https://discord.gg/xJqCWAUxVt', icon: <DiscordIcon className="w-4 h-4" />, title: 'Discord', desc: 'Habla con el equipo y otros lectores', external: true },
+  ];
+}
+
+// Géneros más buscados primero; el resto sigue en orden alfabético.
+const GENEROS_DESTACADOS = [
+  'Acción', 'Romance', 'Comedia', 'Fantasía', 'Drama', 'Isekai', 'Vida escolar',
+  'Aventura', 'Recuentos de la vida', 'Harem', 'Shoujo', 'Seinen', 'Shounen',
+  'Boys Love', 'BL', 'Girls Love', 'GL', 'Yuri', 'Psicológico', 'Misterio',
+  'Sobrenatural', 'Horror', 'Deportes', 'Histórico', 'Artes marciales', 'Josei',
+];
+const rangoGenero = (n: string) => {
+  const i = GENEROS_DESTACADOS.findIndex((g) => g.toLowerCase() === n.toLowerCase());
+  return i === -1 ? GENEROS_DESTACADOS.length : i;
+};
+
+// Géneros para accesos rápidos. Se piden solo cuando `activo` pasa a true.
+export function useGeneros(activo: boolean, nsfwMode: boolean, max = 18): string[] | null {
+  const [generos, setGeneros] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!activo || generos) return;
+    callAPI('/api/genre')
+      .then((r: any) => {
+        const lista = Array.isArray(r) ? r : [];
+        setGeneros(
+          lista
+            .filter((g: any) => g?.name && (nsfwMode || !g.nsfw))
+            .map((g: any) => g.name as string)
+            .sort((a: string, b: string) => rangoGenero(a) - rangoGenero(b) || a.localeCompare(b, 'es'))
+            .slice(0, max)
+        );
+      })
+      .catch(() => setGeneros([]));
+  }, [activo, generos, nsfwMode, max]);
+  return generos;
+}
+
 // Navegación principal de escritorio: dos paneles amplios (Explorar y
 // Comunidad) que se abren al pasar el mouse o con clic/teclado, y el acceso
 // a Suscripciones siempre visible.
@@ -74,25 +134,10 @@ const NavMegaMenu: React.FC<NavMegaMenuProps> = ({
   logged,
 }) => {
   const [abierto, setAbierto] = useState<Panel>(null);
-  const [generos, setGeneros] = useState<string[] | null>(null);
   const cierre = useRef<ReturnType<typeof setTimeout> | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
 
-  // Géneros: se cargan la primera vez que se abre Explorar.
-  useEffect(() => {
-    if (abierto !== 'explorar' || generos) return;
-    callAPI('/api/genre')
-      .then((r: any) => {
-        const lista = Array.isArray(r) ? r : [];
-        setGeneros(
-          lista
-            .filter((g: any) => g?.name && (nsfwMode || !g.nsfw))
-            .map((g: any) => g.name as string)
-            .slice(0, 18)
-        );
-      })
-      .catch(() => setGeneros([]));
-  }, [abierto, generos, nsfwMode]);
+  const generos = useGeneros(abierto === 'explorar', nsfwMode);
 
   useEffect(() => {
     const fuera = (e: MouseEvent) => {
@@ -116,26 +161,8 @@ const NavMegaMenu: React.FC<NavMegaMenuProps> = ({
     cierre.current = setTimeout(() => setAbierto(null), 160);
   };
 
-  const descubrir: Item[] = [
-    { href: catalogUrl, icon: <Search size={16} />, title: 'Catálogo', desc: 'Busca entre todas las obras' },
-    { href: conParams(catalogUrl, { sort: 'popular' }), icon: <Flame size={16} />, title: 'Populares', desc: 'Lo más leído ahora' },
-    { href: conParams(catalogUrl, { sort: 'latest' }), icon: <Sparkles size={16} />, title: 'Recientes', desc: 'Capítulos recién salidos' },
-    { href: conParams(catalogUrl, { status: 'Completed' }), icon: <CheckCircle2 size={16} />, title: 'Finalizados', desc: 'Historias para leer de corrido' },
-    { href: conParams(catalogUrl, { isOneShot: 'true' }), icon: <BookOpen size={16} />, title: 'One-shots', desc: 'Historias de un solo capítulo' },
-    { href: altContentLink.href, icon: <Bookmark size={16} />, title: altContentLink.label, desc: altContentLink.label === 'Novelas' ? 'Novelas, libros y cuentos' : 'Vuelve a los mangas' },
-  ];
-
-  const comunidad: Item[] = [
-    { href: 'https://lacharca.com', icon: <Droplet size={16} />, title: 'La Charca', desc: 'La red social de los lectores' },
-    { href: '/listas', icon: <ListIcon size={16} />, title: 'Listas', desc: 'Colecciones hechas por la comunidad' },
-    { href: '/scans', icon: <Users size={16} />, title: 'Scans', desc: 'Conoce a los grupos que traducen' },
-    { href: '/reclutamiento', icon: <Megaphone size={16} />, title: 'Reclutamiento', desc: 'Únete a un scan y ayuda a traducir' },
-    ...(logged
-      ? [{ href: '/mensajes', icon: <MessageCircle size={16} />, title: 'Mensajes', desc: 'Tus conversaciones con los scans' }]
-      : []),
-    { href: '/descargas', icon: <HardDriveDownload size={16} />, title: 'Descargas', desc: 'Lee sin conexión' },
-    { href: 'https://discord.gg/xJqCWAUxVt', icon: <DiscordIcon className="w-4 h-4" />, title: 'Discord', desc: 'Habla con el equipo y otros lectores', external: true },
-  ];
+  const descubrir = enlacesDescubrir(catalogUrl, altContentLink);
+  const comunidad = enlacesComunidad(logged);
 
   const acento = nsfwMode ? 'text-red-400' : 'text-cyan-400';
   const tonoIcono = nsfwMode

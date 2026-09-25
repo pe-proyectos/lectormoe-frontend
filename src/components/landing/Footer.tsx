@@ -139,7 +139,7 @@ const Footer: React.FC<FooterProps> = ({ organization }) => {
       <div className={`pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b ${glow} to-transparent`} />
       <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(rgba(255,255,255,.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.5)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_60%)]" />
 
-      <div className="relative max-w-7xl mx-auto px-3 md:px-8 pt-14 pb-24 md:pb-8">
+      <div className="relative max-w-7xl mx-auto px-3 md:px-8 pt-12 md:pt-14 pb-8">
         <div className="grid gap-12 lg:grid-cols-12">
           {/* Marca: Capibara, o Capibara × scan, o Capibara × miembros del joint */}
           <div className="lg:col-span-5 space-y-5">
