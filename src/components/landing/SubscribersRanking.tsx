@@ -60,12 +60,10 @@ const SubscribersRanking: React.FC<{ slug?: string; nombre?: string }> = ({ slug
   };
 
   // Organizar para la pirámide (Podio: 1ro al centro, 2do izquierda, 3ro derecha)
-  const topThree = donorsWithPlanIndex.slice(0, 3);
-  const podium = topThree.length >= 3 ? [
-    topThree[1], // #2
-    topThree[0], // #1
-    topThree[2], // #3
-  ] : topThree;
+  // Cada puesto se pinta solo si existe: con 1 o 2 suscriptores el podio
+  // antes quedaba vacío (exigía 3) y la lista empieza en el 4.º.
+  const [primero, segundo, tercero] = donorsWithPlanIndex.slice(0, 3);
+  const diasTexto = (d: number, sufijo = 'días') => (d > 0 ? `${d} ${d === 1 ? sufijo.replace(/s\b/, '') : sufijo}` : 'Nuevo');
   
   const others = donorsWithPlanIndex.slice(3);
 
@@ -106,33 +104,33 @@ const SubscribersRanking: React.FC<{ slug?: string; nombre?: string }> = ({ slug
 
               <div className="bg-zinc-900/20 border border-zinc-800 rounded-[48px] p-8 md:p-16 relative overflow-hidden">
                 {/* Pyramid / Podium Layout */}
-                {podium.length >= 3 && (
-                  <div className="flex flex-col md:flex-row items-end justify-center gap-12 md:gap-4 mb-24 mt-12">
+                {primero && (
+                  <div className={`flex flex-col md:flex-row items-end justify-center gap-12 md:gap-4 mt-12 ${others.length ? "mb-24" : "mb-4"}`}>
                     {/* #2 - Left */}
-                    <div className="order-2 md:order-1 flex flex-col items-center group w-full max-w-[200px]">
+                    {segundo && (<div className="order-2 md:order-1 flex flex-col items-center group w-full max-w-[200px]">
                       <div className="relative mb-6">
                         <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-zinc-700 to-zinc-400 shadow-2xl overflow-hidden ring-4 ring-zinc-800 ring-offset-4 ring-offset-zinc-950">
-                          {podium[0].imageUrl ? (
-                            <img src={podium[0].imageUrl} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500" alt={podium[0].username} />
+                          {segundo.imageUrl ? (
+                            <img src={segundo.imageUrl} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500" alt={segundo.username} />
                           ) : (
                             <div className="w-full h-full bg-zinc-800 rounded-full flex items-center justify-center text-white font-black text-2xl">
-                              {podium[0].username[0].toUpperCase()}
+                              {segundo.username[0].toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-zinc-700 rounded-full flex items-center justify-center text-white font-black italic shadow-lg border-2 border-zinc-900 text-lg">2</div>
                       </div>
-                      <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{podium[0].username}</h4>
+                      <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{segundo.username}</h4>
                       {(() => {
-                        const rankConfig = getRankConfig(podium[0]);
+                        const rankConfig = getRankConfig(segundo);
                         return (
                           <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
                             {rankConfig.planName}
                           </div>
                         );
                       })()}
-                      <p className="text-zinc-500 font-bold text-[10px] uppercase">{podium[0].days} días</p>
-                    </div>
+                      <p className="text-zinc-500 font-bold text-[10px] uppercase">{diasTexto(segundo.days)}</p>
+                    </div>)}
 
                     {/* #1 - Center (Tallest) */}
                     <div className="order-1 md:order-2 flex flex-col items-center group w-full max-w-[280px] md:-translate-y-8">
@@ -141,19 +139,19 @@ const SubscribersRanking: React.FC<{ slug?: string; nombre?: string }> = ({ slug
                           <Crown size={56} fill="currentColor" />
                         </div>
                         <div className="w-48 h-48 rounded-full p-2 bg-gradient-to-tr from-yellow-600 to-yellow-200 shadow-[0_0_60px_rgba(234,179,8,0.3)] overflow-hidden ring-4 ring-yellow-500 ring-offset-8 ring-offset-zinc-950">
-                          {podium[1].imageUrl ? (
-                            <img src={podium[1].imageUrl} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500" alt={podium[1].username} />
+                          {primero.imageUrl ? (
+                            <img src={primero.imageUrl} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500" alt={primero.username} />
                           ) : (
                             <div className="w-full h-full bg-zinc-800 rounded-full flex items-center justify-center text-white font-black text-4xl">
-                              {podium[1].username[0].toUpperCase()}
+                              {primero.username[0].toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div className="absolute -bottom-3 -right-3 w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-zinc-950 font-black italic text-2xl shadow-xl border-4 border-zinc-950">1</div>
                       </div>
-                      <h4 className="text-white font-black italic text-3xl mb-1 tracking-tighter truncate w-full text-center">{podium[1].username}</h4>
+                      <h4 className="text-white font-black italic text-3xl mb-1 tracking-tighter truncate w-full text-center">{primero.username}</h4>
                       {(() => {
-                        const rankConfig = getRankConfig(podium[1]);
+                        const rankConfig = getRankConfig(primero);
                         return (
                           <div className={`px-5 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
                             {rankConfig.planName}
@@ -161,35 +159,35 @@ const SubscribersRanking: React.FC<{ slug?: string; nombre?: string }> = ({ slug
                         );
                       })()}
                       <p className="text-zinc-300 font-bold text-xs uppercase flex items-center gap-2">
-                        <Heart size={14} fill="currentColor" className="text-red-500 animate-pulse" /> {podium[1].days} días de apoyo
+                        <Heart size={14} fill="currentColor" className="text-red-500 animate-pulse" /> {primero.days > 0 ? `${diasTexto(primero.days)} de apoyo` : 'Recién llegado'}
                       </p>
                     </div>
 
                     {/* #3 - Right */}
-                    <div className="order-3 md:order-3 flex flex-col items-center group w-full max-w-[200px]">
+                    {tercero && (<div className="order-3 md:order-3 flex flex-col items-center group w-full max-w-[200px]">
                       <div className="relative mb-6">
                         <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-orange-800 to-orange-400 shadow-2xl overflow-hidden ring-4 ring-zinc-800 ring-offset-4 ring-offset-zinc-950">
-                          {podium[2].imageUrl ? (
-                            <img src={podium[2].imageUrl} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500" alt={podium[2].username} />
+                          {tercero.imageUrl ? (
+                            <img src={tercero.imageUrl} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500" alt={tercero.username} />
                           ) : (
                             <div className="w-full h-full bg-zinc-800 rounded-full flex items-center justify-center text-white font-black text-2xl">
-                              {podium[2].username[0].toUpperCase()}
+                              {tercero.username[0].toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-orange-700 rounded-full flex items-center justify-center text-white font-black italic shadow-lg border-2 border-zinc-900 text-lg">3</div>
                       </div>
-                      <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{podium[2].username}</h4>
+                      <h4 className="text-white font-black italic text-xl mb-1 truncate w-full text-center">{tercero.username}</h4>
                       {(() => {
-                        const rankConfig = getRankConfig(podium[2]);
+                        const rankConfig = getRankConfig(tercero);
                         return (
                           <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-2 border ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
                             {rankConfig.planName}
                           </div>
                         );
                       })()}
-                      <p className="text-zinc-500 font-bold text-[10px] uppercase">{podium[2].days} días</p>
-                    </div>
+                      <p className="text-zinc-500 font-bold text-[10px] uppercase">{diasTexto(tercero.days)}</p>
+                    </div>)}
                   </div>
                 )}
 
@@ -212,7 +210,7 @@ const SubscribersRanking: React.FC<{ slug?: string; nombre?: string }> = ({ slug
                             </div>
                             <div>
                               <h4 className="text-white font-bold group-hover:text-cyan-400 transition-colors leading-none mb-1 text-base">{user.username}</h4>
-                              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{user.days} días suscrito</p>
+                              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{user.days > 0 ? `${diasTexto(user.days)} suscrito` : 'Nuevo'}</p>
                             </div>
                           </div>
                           <div className={`px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${rankConfig.bg} ${rankConfig.color} ${rankConfig.border}`}>
