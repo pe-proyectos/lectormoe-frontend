@@ -1,6 +1,28 @@
 import { defineMiddleware } from "astro:middleware";
 import { getIP } from "../util/get-ip";
 
+// Permisos que convierten a alguien en staff de un scan. Los de lector
+// (canDownload, canReadUnreleased, hideAds) no cuentan: al registrarse en un
+// scan, un lector también recibe una fila de permisos con role "user".
+const PERMISOS_DE_STAFF = [
+  'canSeeAdminPanel', 'canCreateChapter', 'canEditChapter', 'canDeleteChapter',
+  'canCreatePage', 'canEditPage', 'canDeletePage', 'canCreateMangaCustom',
+  'canEditMangaCustom', 'canDeleteMangaCustom', 'canEditOrganization',
+  'canEditUser', 'canDeleteUser', 'canDeleteComment', 'canEditComment',
+  'canHideComment', 'canBanUser',
+];
+
+// Dueño del scan: al crearlo se le asigna role "owner".
+const esDueno = (perm: any) => String(perm?.role || '').toLowerCase() === 'owner';
+
+const esStaff = (perm: any) => {
+  if (!perm) return false;
+  if (perm.staff === true) return true; // cookie mínima (ver minimalCookieUser)
+  const rol = String(perm.role || '').toLowerCase();
+  if (rol && rol !== 'user') return true;
+  return PERMISOS_DE_STAFF.some((k) => perm[k] === true);
+};
+
 /**
  * Calcula si se deben mostrar anuncios basándose en el usuario y la organización
  * @param user - Usuario autenticado (puede ser null)
@@ -11,6 +33,9 @@ function calculateShowAds(user: any, organization: any): boolean {
   // GLOBAL OVERRIDE: User.hideAds is the platform-wide opt-out (admins,
   // giveaway prizes). Trumps everything; works across every page.
   if (user?.hideAds === true) return false;
+
+  // DUEÑOS DE SCAN: sin anuncios en todo el sitio.
+  if (Array.isArray(user?.permissions) && user.permissions.some(esDueno)) return false;
 
   // CROSS-ORG: any active subscription anywhere on the platform suppresses ads
   // everywhere. /api/auth/check returns ALL active subs regardless of which org
@@ -51,13 +76,10 @@ function calculateShowAds(user: any, organization: any): boolean {
       return false;
     }
 
-    // STAFF: los miembros del scan con acceso al panel no ven anuncios en las
-    // páginas de SU scan (siguen viendo anuncios en scans ajenos y en la
-    // landing). Criterio: canSeeAdminPanel de ESA org; el role no es confiable.
+    // STAFF: los miembros del equipo del scan (no los lectores) no ven
+    // anuncios en las páginas de SU scan; en scans ajenos y en la portada sí.
     const isStaffHere = user.permissions.some(
-      (perm: any) =>
-        perm.canSeeAdminPanel === true &&
-        perm.organizationId === organization.id,
+      (perm: any) => perm.organizationId === organization.id && esStaff(perm),
     );
     if (isStaffHere) {
       return false;
@@ -79,6 +101,9 @@ const minimalCookieUser = (user: any) => ({
     organizationId: p.organizationId,
     canSeeAdminPanel: p.canSeeAdminPanel,
     hideAds: p.hideAds,
+    // Para decidir anuncios cuando solo se tiene la cookie (API caído).
+    role: esDueno(p) ? 'owner' : undefined,
+    staff: esStaff(p) || undefined,
     organization: p.organization
       ? { id: p.organization.id, name: p.organization.name, slug: p.organization.slug, logoUrl: p.organization.logoUrl }
       : null,
