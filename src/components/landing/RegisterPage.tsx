@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
+import AuthShell, { AuthField, AuthSubmit, AuthError, AuthSuccessIcon, PasswordToggle } from './AuthShell';
 import 'cookie-store';
 
 interface RegisterPageProps {
@@ -106,175 +107,72 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ isScanContext = false, orga
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 pt-20 pb-12 relative overflow-hidden bg-zinc-950">
-      {/* Background decoration */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-500/10 blur-[150px] rounded-full animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-500/10 blur-[150px] rounded-full animate-pulse" />
-
-      <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-500">
-        <div className="bg-zinc-900/60 backdrop-blur-2xl border border-zinc-800 rounded-[40px] p-8 md:p-10 shadow-2xl">
-          
-          {/* Header */}
-          <div className="text-center mb-10">
-            {!isScanContext ? (
-              <div className="inline-flex items-center gap-3 mb-6 group cursor-default">
-                <div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center rotate-3 group-hover:rotate-12 transition-transform shadow-lg shadow-cyan-500/20">
-                  <span className="text-zinc-950 font-black text-2xl">C</span>
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight text-white">
-                  Capibara<span className="text-cyan-500">Traductor</span>
-                </h1>
-              </div>
-            ) : (
-              <>
-                {organization?.logoUrl && (
-                  <div className="mb-6 flex justify-center">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-cyan-500 shadow-lg shadow-cyan-500/10">
-                      <img 
-                        src={organization.logoUrl} 
-                        alt={organization.name} 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                  </div>
-                )}
-                <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">
-                  <ShieldCheck size={14} className="text-cyan-500" /> Portal de Lectura Autorizado
-                </div>
-              </>
-            )}
-
-            {isSubmitted ? (
-              <div className="flex flex-col items-center animate-in zoom-in duration-300">
-                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 mb-6 border border-green-500/20">
-                  <CheckCircle size={32} />
-                </div>
-                <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
-                  Cuenta Creada
-                </h2>
-                <p className="text-zinc-500 text-sm font-medium leading-relaxed">
-                  Tu cuenta ha sido creada exitosamente. Serás redirigido al inicio de sesión...
-                </p>
-              </div>
-            ) : (
-              <>
-                <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
-                  {isScanContext ? 'Crea tu Perfil' : 'Crea tu cuenta'}
-                </h2>
-                
-                <p className="text-zinc-500 text-sm font-medium leading-relaxed">
-                  {isScanContext ? 'Regístrate para seguir tus series favoritas.' : 'Únete a la comunidad de manga más premium.'}
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Forms */}
-          {!isSubmitted ? (
-            <form onSubmit={handleRegister} className="space-y-5">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4">
-                  <p className="text-red-400 text-sm font-bold">{error}</p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Nombre de usuario</label>
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-cyan-500 transition-colors" size={18} />
-                  <input 
-                    type="text" 
-                    required 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Tu alias"
-                    minLength={3}
-                    maxLength={20}
-                    pattern="^[a-zA-Z0-9_]*$"
-                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500 transition-all"
-                  />
-                </div>
-                <p className="text-[9px] text-zinc-600 font-bold ml-1">3-20 caracteres alfanuméricos</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-cyan-500 transition-colors" size={18} />
-                  <input 
-                    type="email" 
-                    required 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ejemplo@correo.com"
-                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Contraseña</label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-cyan-500 transition-colors" size={18} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    minLength={4}
-                    maxLength={30}
-                    className="w-full bg-zinc-950/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-12 text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-cyan-400 transition-colors p-1"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                <p className="text-[9px] text-zinc-600 font-bold ml-1">Mínimo 4 caracteres</p>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={isLoading}
-                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl shadow-cyan-500/10 ${isLoading ? 'bg-zinc-800 text-zinc-500' : 'bg-cyan-500 text-zinc-950 hover:bg-white'}`}
-              >
-                {isLoading ? 'Procesando...' : 'Registrarse'}
-                {!isLoading && <ArrowRight size={16} />}
-              </button>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <button 
-                onClick={handleGoToLogin}
-                className="w-full py-4 bg-zinc-800 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-cyan-500 hover:text-zinc-950 transition-all shadow-xl active:scale-95"
-              >
-                Ir al Login <ArrowRight size={16} />
-              </button>
-            </div>
-          )}
-
-          {!isSubmitted && (
-            <div className="mt-10 text-center">
-              <button 
-                onClick={handleGoToLogin}
-                className="text-[11px] font-bold text-zinc-500 hover:text-cyan-500 transition-colors"
-              >
-                ¿Ya tienes una cuenta? Inicia sesión
-              </button>
-            </div>
-          )}
-        </div>
-        
-        <p className="mt-8 text-center text-zinc-600 text-[10px] uppercase tracking-widest leading-relaxed">
-          Al continuar, aceptas nuestros <a href="/terms" className="text-zinc-400 hover:text-white underline underline-offset-4">Términos de Servicio</a> y <a href="/privacy" className="text-zinc-400 hover:text-white underline underline-offset-4">Política de Privacidad</a>.
-        </p>
-      </div>
-    </div>
+    <AuthShell
+      organization={isScanContext ? organization : null}
+      title={isSubmitted ? '¡Cuenta creada!' : 'Crea tu cuenta'}
+      subtitle={isSubmitted
+        ? 'Tu cuenta está lista. Te llevamos a iniciar sesión…'
+        : 'Gratis. Guarda tu progreso, arma tu lista y comenta en todos los scans.'}
+      hero={isSubmitted ? <AuthSuccessIcon Icon={CheckCircle} /> : undefined}
+      footer={!isSubmitted && (
+        <button type="button" onClick={handleGoToLogin} className="text-sm font-semibold text-zinc-400 transition-colors hover:text-cyan-400">
+          ¿Ya tienes cuenta? <span className="text-cyan-400">Inicia sesión</span>
+        </button>
+      )}
+    >
+      {!isSubmitted ? (
+        <form onSubmit={handleRegister} className="space-y-5">
+          <AuthError message={error} />
+          <AuthField
+            label="Nombre de usuario"
+            icon={User}
+            type="text"
+            required
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="tu_alias"
+            minLength={3}
+            maxLength={20}
+            pattern="^[a-zA-Z0-9_]*$"
+            hint="De 3 a 20 caracteres: letras, números y guion bajo."
+          />
+          <AuthField
+            label="Correo electrónico"
+            icon={Mail}
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@correo.com"
+          />
+          <AuthField
+            label="Contraseña"
+            icon={Lock}
+            type={showPassword ? 'text' : 'password'}
+            required
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Crea una contraseña"
+            minLength={4}
+            maxLength={30}
+            hint="Mínimo 4 caracteres."
+            trailing={<PasswordToggle visible={showPassword} onToggle={() => setShowPassword((v) => !v)} />}
+          />
+          <AuthSubmit loading={isLoading}>Crear cuenta</AuthSubmit>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={handleGoToLogin}
+          className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-cyan-500 text-sm font-black uppercase tracking-[0.15em] text-zinc-950 transition-colors hover:bg-cyan-400"
+        >
+          Iniciar sesión <ArrowRight size={17} />
+        </button>
+      )}
+    </AuthShell>
   );
 };
 
