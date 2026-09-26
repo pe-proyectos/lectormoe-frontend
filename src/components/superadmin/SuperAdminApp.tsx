@@ -592,6 +592,37 @@ const CapibaraTab = ({ token }: { token: string }) => {
   const mesPrevio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
   const [anio, setAnio] = useState(mesPrevio.getFullYear());
   const [mes, setMes] = useState(mesPrevio.getMonth() + 1);
+  // Regalar plan
+  const [regalos, setRegalos] = useState<any[]>([]);
+  const [regUsuario, setRegUsuario] = useState('');
+  const [regTier, setRegTier] = useState<'lector' | 'plus' | 'premium'>('premium');
+  const [regMeses, setRegMeses] = useState(1);
+  const [regOk, setRegOk] = useState('');
+  const cargarRegalos = () => saFetch('/api/superadmin/capibara/regalos', token).then(setRegalos).catch(() => {});
+  useEffect(() => { cargarRegalos(); }, [token]);
+
+  const regalar = async () => {
+    setOcupado('regalo'); setError(''); setRegOk('');
+    try {
+      const r = await saFetch('/api/superadmin/capibara/regalos', token, {
+        method: 'POST', body: JSON.stringify({ usuario: regUsuario, tier: regTier, meses: regMeses }),
+      });
+      setRegOk(`${r.plan} regalado a ${r.usuario} hasta el ${new Date(r.hasta).toLocaleDateString('es')}.`);
+      setRegUsuario('');
+      await Promise.all([cargar(), cargarRegalos()]);
+    } catch (e: any) { setError(e.message); }
+    finally { setOcupado(''); }
+  };
+
+  const revocar = async (id: number) => {
+    if (!window.confirm('¿Quitar este plan regalado? La cuenta pierde los beneficios al instante.')) return;
+    setOcupado('revocar'); setError('');
+    try {
+      await saFetch(`/api/superadmin/capibara/regalos/${id}/revocar`, token, { method: 'POST' });
+      await Promise.all([cargar(), cargarRegalos()]);
+    } catch (e: any) { setError(e.message); }
+    finally { setOcupado(''); }
+  };
 
   const cargar = () =>
     saFetch('/api/superadmin/capibara/estado', token).then(setEstado).catch((e) => setError(e.message));
@@ -664,6 +695,61 @@ const CapibaraTab = ({ token }: { token: string }) => {
       <p className="text-zinc-500 text-xs">
         Crear planes es idempotente: solo crea lo que falte. El reparto por lectura corre solo el día 2 de cada mes; el botón sirve para relanzarlo.
       </p>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-white font-semibold">Regalar plan</h3>
+          <p className="text-zinc-500 text-xs mt-1">
+            Da los beneficios de un plan sin pasar por PayPal (premios, sorteos, equipo). No genera cobros ni reparto,
+            no sale en el ranking de suscriptores y se apaga solo al terminar el plazo.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 items-end">
+          <label className="flex flex-col gap-1 text-xs text-zinc-400">
+            Cuenta
+            <input value={regUsuario} onChange={(e) => setRegUsuario(e.target.value)} placeholder="usuario, slug, correo o link del perfil"
+              className="w-72 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-400">
+            Plan
+            <select value={regTier} onChange={(e) => setRegTier(e.target.value as any)}
+              className="bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="lector">Lector</option>
+              <option value="plus">Plus</option>
+              <option value="premium">Premium</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-400">
+            Meses
+            <input type="number" min={1} max={120} value={regMeses} onChange={(e) => setRegMeses(Number(e.target.value))}
+              className="w-20 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" />
+          </label>
+          <button disabled={!!ocupado || !regUsuario.trim()} onClick={regalar}
+            className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 text-sm font-bold">
+            {ocupado === 'regalo' ? 'Regalando…' : 'Regalar'}
+          </button>
+        </div>
+        {regOk && <p className="text-emerald-400 text-sm">{regOk}</p>}
+        {regalos.length > 0 && (
+          <table className="w-full text-sm">
+            <thead className="text-zinc-500 text-xs uppercase">
+              <tr><th className="text-left py-2">Cuenta</th><th className="text-left py-2">Plan</th><th className="text-left py-2">Hasta</th><th /></tr>
+            </thead>
+            <tbody>
+              {regalos.map((r: any) => (
+                <tr key={r.id} className="border-t border-zinc-800">
+                  <td className="py-2 text-zinc-200">{r.user?.username || r.user?.slug}</td>
+                  <td className="py-2 text-zinc-400">{r.subscriptionPlan?.name}</td>
+                  <td className="py-2 text-zinc-400">{r.endDate ? new Date(r.endDate).toLocaleDateString('es') : '-'}</td>
+                  <td className="py-2 text-right">
+                    <button disabled={!!ocupado} onClick={() => revocar(r.id)} className="text-xs text-red-400 hover:text-red-300">Quitar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
       {log && <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-300 overflow-auto">{log}</pre>}
     </div>
   );
