@@ -357,11 +357,19 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
     }
   };
 
+  // ¿Tiene una suscripción Capibara Premium activa? (plan de plataforma, nivel premium)
+  const tienePremiumCapibara = (): boolean =>
+    !!logged &&
+    (user?.subscriptions || []).some(
+      (s: any) => s?.active === true && s?.subscriptionPlan?.isPlatform === true && s?.subscriptionPlan?.tier === 'premium' && s?.subscriptionPlan?.active !== false
+    );
+
   // Get access reason message
   const getAccessReasonMessage = (chapter: Chapter): string | null => {
     if (!logged && manga.requireLogin) {
       return "Debes iniciar sesión para leer este manga.";
     }
+    if (tienePremiumCapibara()) return null;
 
     // Si el capítulo está marcado como isUnreleased (bloqueado para lectura anticipada)
     // Solo los suscriptores exclusivos y los suscriptores con acceso anticipado del manga pueden leerlo
@@ -450,6 +458,10 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
   // Check chapter access
   const userHasAccessToChapter = (chapter: Chapter): boolean => {
     if (!logged && manga.requireLogin) return false;
+
+    // Suscripción Capibara Premium: lee todo en todos los scans (espeja
+    // tienePremiumPlataforma del backend).
+    if (tienePremiumCapibara()) return true;
 
     // Check user permissions (staff)
     const permissions =
@@ -1257,7 +1269,7 @@ const MangaDetailPage: React.FC<MangaDetailPageProps> = ({
                   mangaSlug={mangaSlug}
                   title={(manga as any).title || (manga as any)?.manga?.title || 'Manga'}
                   coverUrl={(manga as any).imageUrl || (manga as any)?.manga?.imageUrl || ''}
-                  chapters={(manga.chapters || []).map((c: any) => ({ number: c.number, title: c.title, isUnreleased: c.isUnreleased }))}
+                  chapters={(manga.chapters || []).map((c: any) => ({ number: c.number, title: c.title, isUnreleased: c.isUnreleased, releasedAt: c.releasedAt, hasAccess: userHasAccessToChapter(c) }))}
                   isJoint={isJoint}
                 />
               </div>

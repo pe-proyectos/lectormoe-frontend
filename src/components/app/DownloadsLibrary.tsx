@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { HardDriveDownload, Trash2, BookOpen, WifiOff, Crown } from 'lucide-react';
+import { HardDriveDownload, Trash2, BookOpen, WifiOff, Crown, Lock, Sparkles, LogIn } from 'lucide-react';
 import { notify } from '../../util/feedback';
-import { getDownloads, deleteWork, limiteDescargas, type DownloadedWork } from '../../util/downloads';
+import { getDownloads, deleteWork, limiteDescargas, actualizarLicencia, estadoLicencia, capituloBloqueado, cuentaActual, type DownloadedWork } from '../../util/downloads';
 import { useDialog } from '../ui/useDialog';
 
 
@@ -13,11 +13,19 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
   const dlg = useDialog();
   const [works, setWorks] = useState<DownloadedWork[]>([]);
   const [loading, setLoading] = useState(true);
+  const [licencia, setLicencia] = useState({ hasta: 0, vigente: false });
+  const [sinCuenta, setSinCuenta] = useState(false);
   const limit = limiteDescargas(user);
 
   const load = async () => {
     setLoading(true);
-    try { setWorks(await getDownloads()); } catch { setWorks([]); } finally { setLoading(false); }
+    try {
+      if (!cuentaActual()) { setSinCuenta(true); setWorks([]); return; }
+      // Con conexión, renueva el acceso a los anticipados según el plan actual.
+      await actualizarLicencia(user);
+      setLicencia(await estadoLicencia());
+      setWorks(await getDownloads());
+    } catch { setWorks([]); } finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
 
@@ -49,7 +57,14 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
           <div className="h-full bg-cyan-500 transition-all" style={{ width: limit === null ? '0%' : `${Math.min(100, (works.length / limit) * 100)}%` }} />
         </div>
 
-        {loading ? (
+        {sinCuenta ? (
+          <div className="text-center py-20 border-2 border-dashed border-zinc-800 rounded-[32px]">
+            <LogIn size={36} className="mx-auto mb-3 text-zinc-700" />
+            <p className="text-zinc-400 font-bold mb-1">Inicia sesión para ver tus descargas</p>
+            <p className="text-zinc-600 text-sm mb-4">Las descargas son de cada cuenta: así nadie más ve lo tuyo en este dispositivo.</p>
+            <a href="/login?next=/descargas" className="inline-block bg-cyan-500 text-zinc-950 rounded-xl px-5 py-2.5 font-black text-[10px] uppercase tracking-widest">Iniciar sesión</a>
+          </div>
+        ) : loading ? (
           <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-zinc-900 rounded-2xl animate-pulse" />)}</div>
         ) : works.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-zinc-800 rounded-[32px]">
@@ -68,6 +83,20 @@ const DownloadsLibrary: React.FC<Props> = ({ user, logged }) => {
                 <a href={`/descargas/leer?w=${encodeURIComponent(w.key)}`} className="flex-1 min-w-0">
                   <p className="text-sm font-black text-white truncate">{w.title}</p>
                   <p className="text-xs text-zinc-500">{w.chapters.length} capítulo{w.chapters.length !== 1 ? 's' : ''} · {fmtBytes(w.bytes)}</p>
+                  {(() => {
+                    const anticipados = w.chapters.filter((c) => c.anticipado);
+                    if (!anticipados.length) return null;
+                    const bloqueados = anticipados.filter((c) => capituloBloqueado(c, licencia.hasta)).length;
+                    return bloqueados > 0 ? (
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-amber-400">
+                        <Lock size={11} /> {bloqueados} anticipado{bloqueados !== 1 ? 's' : ''} bloqueado{bloqueados !== 1 ? 's' : ''}: renueva Premium
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-amber-300/90">
+                        <Sparkles size={11} /> {anticipados.length} anticipado{anticipados.length !== 1 ? 's' : ''}
+                      </p>
+                    );
+                  })()}
                 </a>
                 <a href={`/descargas/leer?w=${encodeURIComponent(w.key)}`} aria-label="Leer" className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-cyan-500/15 text-cyan-400 active:scale-95">
                   <BookOpen size={18} />

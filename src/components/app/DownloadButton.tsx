@@ -8,6 +8,7 @@ import {
   downloadChapter,
   deleteWork,
   canDownloadNewWork,
+  actualizarLicencia,
   DownloadCancelled,
   type DownloadedWork,
 } from '../../util/downloads';
@@ -17,6 +18,9 @@ interface ChapterLite {
   number: number;
   title?: string;
   isUnreleased?: boolean;
+  releasedAt?: string | null;
+  /** El usuario puede leerlo (p. ej. anticipado con Premium). */
+  hasAccess?: boolean;
 }
 
 interface Props {
@@ -48,8 +52,12 @@ const DownloadButton: React.FC<Props> = ({ user, scanSlug, mangaSlug, title, cov
     setState(w ? 'done' : 'idle');
   };
   useEffect(() => { refresh(); }, [wk]);
+  // Con conexión: renueva (o retira) el acceso a los anticipados descargados.
+  useEffect(() => { actualizarLicencia(user); }, [user]);
 
-  const releasedChapters = chapters.filter((c) => !c.isUnreleased);
+  // Descargables: los publicados y, con lectura anticipada, también los
+  // anticipados (quedan marcados y se bloquean si el plan vence).
+  const releasedChapters = chapters.filter((c) => !c.isUnreleased || c.hasAccess === true);
   const downloadedSet = new Set((existing?.chapters || []).map((c) => c.number));
   const pending = releasedChapters.filter((c) => !downloadedSet.has(c.number));
 
@@ -96,7 +104,12 @@ const DownloadButton: React.FC<Props> = ({ user, scanSlug, mangaSlug, title, cov
         if (pageUrls.length > 0) {
           await downloadChapter({
             work: { key: wk, title, coverUrl, scanSlug, mangaSlug, isJoint },
-            chapter: { number: ch.number, title: ch.title || `Capítulo ${ch.number}` },
+            chapter: {
+              number: ch.number,
+              title: ch.title || `Capítulo ${ch.number}`,
+              anticipado: !!ch.isUnreleased,
+              liberaEn: ch.isUnreleased && ch.releasedAt ? new Date(ch.releasedAt).getTime() : null,
+            },
             pageUrls,
             signal: controller.signal,
             onProgress: (p, t) => setProgress((prev) => ({ ...prev, page: p, pageTotal: t })),
@@ -165,6 +178,9 @@ const DownloadButton: React.FC<Props> = ({ user, scanSlug, mangaSlug, title, cov
                       Capítulo {c.number}
                       {c.title ? ` · ${c.title}` : ''}
                     </span>
+                    {c.isUnreleased && !dl && (
+                      <span className="ml-auto text-[10px] font-black text-amber-400 uppercase shrink-0">Anticipado</span>
+                    )}
                     {dl && <span className="ml-auto text-[10px] font-black text-green-400 uppercase shrink-0">Descargado</span>}
                   </button>
                 );

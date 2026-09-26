@@ -6,13 +6,24 @@
 // entrega en claro a JS). Las imágenes solo se descifran en memoria al momento
 // de leer, así en el almacenamiento nunca hay nada legible.
 //
-// Límites (cuenta OBRAS, capítulos ilimitados dentro): gratis 6, premium 24.
+// Límites (cuenta OBRAS, capítulos ilimitados dentro): los decide el plan.
 // Funciona igual en la app Android (Capacitor) y en el navegador (IndexedDB
 // persiste en ambos WebViews).
+//
+// Por CUENTA: cada usuario tiene su propia base (y su propia clave), así otra
+// cuenta en el mismo teléfono no ve ni gasta las descargas ajenas. La base
+// anterior (compartida) se asigna a la primera cuenta que la abre.
+//
+// Capítulos ANTICIPADOS (Premium o plan con lectura anticipada): se pueden
+// descargar, pero se abren solo mientras la "licencia" esté vigente. La
+// licencia se renueva cada vez que se entra con conexión y dura 7 días sin
+// ella. Si el plan vence, el capítulo queda bloqueado hasta su salida pública.
 
 export const DOWNLOAD_LIMITS = { free: 6, premium: 24 } as const;
 
-const DB_NAME = 'capibara-offline';
+const DB_BASE = 'capibara-offline';
+const CLAVE_DUENO_LEGADO = 'capi-descargas-dueno';
+const LICENCIA_DIAS = 7;
 const DB_VERSION = 1;
 const STORE_META = 'works'; // manifiesto por obra
 const STORE_PAGES = 'pages'; // blobs cifrados
@@ -22,6 +33,10 @@ export interface DownloadedChapter {
   number: number;
   title: string;
   pageCount: number;
+  /** Capítulo de lectura anticipada al descargarlo. */
+  anticipado?: boolean;
+  /** Fecha (ms) en que el capítulo pasa a ser público; desde ahí no se bloquea. */
+  liberaEn?: number | null;
 }
 
 export interface DownloadedWork {
@@ -41,11 +56,39 @@ export function workKey(scanSlug: string, mangaSlug: string, isJoint = false): s
   return isJoint ? `joint:${mangaSlug}` : `${scanSlug}:${mangaSlug}`;
 }
 
-let dbPromise: Promise<IDBDatabase> | null = null;
+// Cuenta actual, leída de la cookie `user` (también disponible sin conexión).
+export function cuentaActual(): string | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const raw = (document.cookie.match(/(?:^|; )user=([^;]*)/) || [])[1];
+    if (raw) {
+      const u = JSON.parse(decodeURIComponent(raw));
+      if (u?.id != null) return String(u.id);
+    }
+  } catch {}
+  const slug = (document.cookie.match(/(?:^|; )userSlug=([^;]*)/) || [])[1];
+  return slug ? `s:${decodeURIComponent(slug)}` : null;
+}
+
+function nombreDB(cuenta: string): string {
+  // La base compartida de antes pasa a ser de la primera cuenta que la abre.
+  const dueno = localStorage.getItem(CLAVE_DUENO_LEGADO);
+  if (!dueno) {
+    localStorage.setItem(CLAVE_DUENO_LEGADO, cuenta);
+    return DB_BASE;
+  }
+  return dueno === cuenta ? DB_BASE : `${DB_BASE}-u${cuenta}`;
+}
+
+const dbs = new Map<string, Promise<IDBDatabase>>();
 function openDB(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+  const cuenta = cuentaActual();
+  if (!cuenta) return Promise.reject(new SinCuenta());
+  const name = nombreDB(cuenta);
+  const abierta = dbs.get(name);
+  if (abierta) return abierta;
+  const p = new Promise<IDBDatabase>((resolve, reject) => {
+    const req = indexedDB.open(name, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META, { keyPath: 'key' });
@@ -55,7 +98,16 @@ function openDB(): Promise<IDBDatabase> {
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
-  return dbPromise;
+  dbs.set(name, p);
+  return p;
+}
+
+/** Sin sesión no hay descargas que mostrar (son de cada cuenta). */
+export class SinCuenta extends Error {
+  constructor() {
+    super('Inicia sesión para ver tus descargas.');
+    this.name = 'SinCuenta';
+  }
 }
 
 function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -71,10 +123,12 @@ function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) 
 }
 
 // ── Clave de cifrado del dispositivo ──────────────────────────────────────────
-let keyPromise: Promise<CryptoKey> | null = null;
+const keys = new Map<string, Promise<CryptoKey>>();
 async function getDeviceKey(): Promise<CryptoKey> {
-  if (keyPromise) return keyPromise;
-  keyPromise = (async () => {
+  const cuenta = cuentaActual() || '';
+  const previa = keys.get(cuenta);
+  if (previa) return previa;
+  const keyPromise = (async () => {
     const existing = await tx<CryptoKey | undefined>(STORE_KEYS, 'readonly', (s) => s.get('device'));
     if (existing) return existing;
     // extractable:false — la clave nunca sale en claro de la CryptoKey.
@@ -82,7 +136,53 @@ async function getDeviceKey(): Promise<CryptoKey> {
     await tx(STORE_KEYS, 'readwrite', (s) => s.put(key, 'device'));
     return key;
   })();
+  keys.set(cuenta, keyPromise);
   return keyPromise;
+}
+
+// ── Licencia de capítulos anticipados ─────────────────────────────────────────
+
+/** ¿El plan del usuario incluye lectura anticipada? (Premium o plan del scan). */
+export function tieneLecturaAnticipada(user: any): boolean {
+  return (user?.subscriptions || []).some(
+    (s: any) =>
+      s?.active === true &&
+      s?.subscriptionPlan?.active !== false &&
+      ((s?.subscriptionPlan?.isPlatform === true && s?.subscriptionPlan?.tier === 'premium') ||
+        s?.subscriptionPlan?.canReadUnreleased === true)
+  );
+}
+
+/**
+ * Renueva (o retira) la licencia de anticipados con los datos del plan. Solo
+ * se llama con conexión y con el usuario fresco del servidor.
+ */
+export async function actualizarLicencia(user: any): Promise<void> {
+  if (!user || typeof navigator === 'undefined' || navigator.onLine === false) return;
+  const hasta = tieneLecturaAnticipada(user) ? Date.now() + LICENCIA_DIAS * 86400_000 : 0;
+  try { await tx(STORE_KEYS, 'readwrite', (s) => s.put({ hasta, revisada: Date.now() }, 'licencia')); } catch {}
+}
+
+async function licenciaHasta(): Promise<number> {
+  try {
+    const l = await tx<{ hasta: number } | undefined>(STORE_KEYS, 'readonly', (s) => s.get('licencia'));
+    return l?.hasta || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** ¿Está bloqueado este capítulo descargado? Solo aplica a los anticipados. */
+export function capituloBloqueado(ch: DownloadedChapter, hasta: number, ahora = Date.now()): boolean {
+  if (!ch.anticipado) return false;
+  if (ch.liberaEn && ch.liberaEn <= ahora) return false; // ya es público
+  return hasta < ahora;
+}
+
+/** Estado de la licencia para pintar la biblioteca y el lector. */
+export async function estadoLicencia(): Promise<{ hasta: number; vigente: boolean }> {
+  const hasta = await licenciaHasta();
+  return { hasta, vigente: hasta > Date.now() };
 }
 
 async function encrypt(data: ArrayBuffer): Promise<ArrayBuffer> {
@@ -109,6 +209,7 @@ const pageId = (wk: string, ch: number, i: number) => `${wk}|${ch}|${i}`;
 // ── API pública ───────────────────────────────────────────────────────────────
 
 export async function getDownloads(): Promise<DownloadedWork[]> {
+  if (!cuentaActual()) return [];
   const all = await tx<DownloadedWork[]>(STORE_META, 'readonly', (s) => (s as any).getAll());
   return (all || []).sort((a, b) => b.downloadedAt - a.downloadedAt);
 }
@@ -181,7 +282,7 @@ async function toSmallCover(url: string): Promise<string> {
 // Descarga un capítulo (sus páginas cifradas) y actualiza el manifiesto.
 export async function downloadChapter(args: {
   work: { key: string; title: string; coverUrl: string; scanSlug: string; mangaSlug: string; isJoint: boolean };
-  chapter: { number: number; title: string };
+  chapter: { number: number; title: string; anticipado?: boolean; liberaEn?: number | null };
   pageUrls: string[];
   onProgress?: (done: number, total: number) => void;
   signal?: AbortSignal;
@@ -199,7 +300,12 @@ export async function downloadChapter(args: {
   const existing = await getDownload(work.key);
   const cover = existing?.cover || (await toSmallCover(work.coverUrl));
   const chapters = (existing?.chapters || []).filter((c) => c.number !== chapter.number);
-  chapters.push({ number: chapter.number, title: chapter.title, pageCount: pageUrls.length });
+  chapters.push({
+    number: chapter.number,
+    title: chapter.title,
+    pageCount: pageUrls.length,
+    ...(chapter.anticipado ? { anticipado: true, liberaEn: chapter.liberaEn ?? null } : {}),
+  });
   chapters.sort((a, b) => a.number - b.number);
   const manifest: DownloadedWork = {
     key: work.key,
@@ -221,6 +327,7 @@ export async function getDecryptedChapterPages(wk: string, chapter: number): Pro
   const w = await getDownload(wk);
   const ch = w?.chapters.find((c) => c.number === chapter);
   if (!w || !ch) throw new Error('Capítulo no descargado');
+  if (capituloBloqueado(ch, await licenciaHasta())) throw new CapituloBloqueado(ch);
   const urls: string[] = [];
   for (let i = 0; i < ch.pageCount; i++) {
     const packed = await tx<ArrayBuffer | undefined>(STORE_PAGES, 'readonly', (s) => s.get(pageId(wk, chapter, i)));
@@ -229,6 +336,20 @@ export async function getDecryptedChapterPages(wk: string, chapter: number): Pro
     urls.push(URL.createObjectURL(new Blob([plain])));
   }
   return urls;
+}
+
+/** Capítulo anticipado cuya licencia venció (plan inactivo y aún no es público). */
+export class CapituloBloqueado extends Error {
+  liberaEn: number | null;
+  constructor(ch: DownloadedChapter) {
+    super(
+      ch.liberaEn
+        ? `Capítulo anticipado: se libera el ${new Date(ch.liberaEn).toLocaleDateString('es')}. Con Premium activo puedes leerlo ya (conéctate una vez para renovar el acceso).`
+        : 'Capítulo anticipado: necesitas un plan con lectura anticipada activo. Conéctate una vez para renovar el acceso.'
+    );
+    this.name = 'CapituloBloqueado';
+    this.liberaEn = ch.liberaEn ?? null;
+  }
 }
 
 export function revokePageUrls(urls: string[]): void {

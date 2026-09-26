@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, List, X } from 'lucide-react';
-import { getDownload, getDecryptedChapterPages, revokePageUrls, type DownloadedWork } from '../../util/downloads';
+import { ArrowLeft, ChevronLeft, ChevronRight, List, X, Lock } from 'lucide-react';
+import { getDownload, getDecryptedChapterPages, revokePageUrls, estadoLicencia, capituloBloqueado, CapituloBloqueado, type DownloadedWork } from '../../util/downloads';
 
 // Lector offline con gestos nativos: deslizar para cambiar de página, zonas de
 // toque izquierda/derecha, toque central para mostrar/ocultar la UI y doble
@@ -17,12 +17,15 @@ const OfflineReader: React.FC<Props> = ({ workKey }) => {
   const [showChapters, setShowChapters] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [bloqueo, setBloqueo] = useState<string | null>(null);
+  const [licenciaHasta, setLicenciaHasta] = useState(0);
 
   const touchStart = useRef<{ x: number; y: number; t: number } | null>(null);
   const lastTap = useRef(0);
   const urlsRef = useRef<string[]>([]);
 
   useEffect(() => {
+    estadoLicencia().then((l) => setLicenciaHasta(l.hasta)).catch(() => {});
     getDownload(workKey).then((w) => {
       setWork(w || null);
       if (w && w.chapters.length) openChapter(w.chapters[0].number, w);
@@ -40,11 +43,19 @@ const OfflineReader: React.FC<Props> = ({ workKey }) => {
     try {
       const urls = await getDecryptedChapterPages(workKey, num);
       urlsRef.current = urls;
+      setBloqueo(null);
       setPages(urls);
       setChapter(num);
       setIdx(0);
       setZoom(1);
       setUiVisible(true);
+    } catch (e: any) {
+      // Anticipado con el plan vencido: se explica en vez de fallar en silencio.
+      urlsRef.current = [];
+      setPages([]);
+      setChapter(num);
+      setUiVisible(true);
+      setBloqueo(e instanceof CapituloBloqueado ? e.message : (e?.message || 'No se pudo abrir este capítulo.'));
     } finally {
       setLoading(false);
     }
@@ -118,6 +129,18 @@ const OfflineReader: React.FC<Props> = ({ workKey }) => {
       <div className="w-full h-full flex items-center justify-center overflow-auto">
         {loading ? (
           <div className="w-8 h-8 border-3 border-zinc-700 border-t-cyan-500 rounded-full animate-spin" />
+        ) : bloqueo ? (
+          <div className="max-w-sm px-6 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 ring-1 ring-amber-400/30">
+              <Lock size={24} />
+            </div>
+            <p className="mb-2 font-black text-white">Capítulo {chapter} bloqueado</p>
+            <p className="mb-5 text-sm leading-relaxed text-zinc-400">{bloqueo}</p>
+            <div className="flex flex-col gap-2">
+              <button onClick={() => setShowChapters(true)} className="rounded-xl bg-zinc-800 px-4 py-3 text-xs font-black uppercase tracking-widest text-white">Elegir otro capítulo</button>
+              <a href="/subscriptions" className="rounded-xl bg-amber-400 px-4 py-3 text-xs font-black uppercase tracking-widest text-zinc-950">Ver Premium</a>
+            </div>
+          </div>
         ) : pages[idx] ? (
           <img
             src={pages[idx]}
@@ -163,6 +186,11 @@ const OfflineReader: React.FC<Props> = ({ workKey }) => {
             {chapterList.map((c) => (
               <button key={c.number} onClick={() => openChapter(c.number)} className={`w-full text-left px-5 min-h-[48px] flex items-center text-sm font-bold ${c.number === chapter ? 'bg-cyan-500 text-zinc-950' : 'text-zinc-300 hover:bg-zinc-800'}`}>
                 Capítulo {c.number}{c.title ? ` · ${c.title}` : ''}
+                {c.anticipado && (
+                  capituloBloqueado(c, licenciaHasta)
+                    ? <Lock size={14} className={`ml-auto shrink-0 ${c.number === chapter ? '' : 'text-amber-400'}`} />
+                    : <span className={`ml-auto shrink-0 text-[10px] font-black uppercase ${c.number === chapter ? '' : 'text-amber-400'}`}>Anticipado</span>
+                )}
               </button>
             ))}
           </div>
