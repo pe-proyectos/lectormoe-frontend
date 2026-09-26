@@ -132,6 +132,11 @@ self.addEventListener('activate', (event) => {
 // service worker la controlara).
 self.addEventListener('message', (event) => {
   const d = event.data || {};
+  // Cambio de sesion: fuera las paginas y datos guardados de la cuenta anterior.
+  if (d.type === 'limpiar-sesion') {
+    event.waitUntil(Promise.all([caches.delete(PAGES), caches.delete(API)]));
+    return;
+  }
   if (d.type !== 'guardar-pagina' || !d.url) return;
   const url = new URL(d.url);
   if (url.origin !== self.location.origin || !paginaGuardable(url.pathname)) return;

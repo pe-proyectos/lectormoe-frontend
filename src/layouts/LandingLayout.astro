@@ -278,9 +278,23 @@ const siteName =
         // En la primera visita la página carga antes de que el service worker
         // la controle: se le pide que guarde también esta página para offline.
         const sinControl = !navigator.serviceWorker.controller;
+        // Si cambió la sesión (entrar, salir u otra cuenta), se borran las
+        // páginas y datos guardados de la anterior: sin conexión nadie debe
+        // ver lo que guardó otra cuenta (ni sus capítulos anticipados).
+        const tokenActual = (document.cookie.match(/(?:^|; )token=([^;]*)/) || [])[1] || '';
+        let huella = 0;
+        for (let i = 0; i < tokenActual.length; i++) huella = (Math.imul(31, huella) + tokenActual.charCodeAt(i)) | 0;
+        const sesion = String(huella);
+        const sesionPrevia = localStorage.getItem('capi-sesion');
+        const cambioSesion = sesionPrevia !== null && sesionPrevia !== sesion;
+        localStorage.setItem('capi-sesion', sesion);
         navigator.serviceWorker.register('/sw.js')
           .then(() => navigator.serviceWorker.ready)
-          .then((reg) => { if (sinControl && reg.active) reg.active.postMessage({ type: 'guardar-pagina', url: location.href }); })
+          .then((reg) => {
+            if (!reg.active) return;
+            if (cambioSesion) reg.active.postMessage({ type: 'limpiar-sesion' });
+            if (sinControl || cambioSesion) reg.active.postMessage({ type: 'guardar-pagina', url: location.href });
+          })
           .catch(() => {});
       }
     </script>
