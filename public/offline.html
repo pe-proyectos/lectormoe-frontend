@@ -2,25 +2,76 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#09090b" />
     <title>Sin conexión - CapibaraTraductor</title>
     <style>
-      html, body { margin: 0; height: 100%; background: #09090b; color: #f4f4f5; font-family: system-ui, sans-serif; }
-      .wrap { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
-      img { width: 96px; height: 96px; object-fit: contain; opacity: .9; margin-bottom: 20px; }
-      h1 { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
-      p { color: #a1a1aa; margin: 0 0 20px; max-width: 320px; }
-      button, a.btn { background: #06b6d4; color: #09090b; border: 0; border-radius: 12px; padding: 12px 24px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; text-decoration: none; display: inline-block; }
-      a.ghost { background: transparent; color: #06b6d4; border: 1px solid #27272a; margin-top: 10px; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: #09090b; color: #f4f4f5; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      body { background-image: radial-gradient(ellipse at top, rgba(6,182,212,.14), transparent 60%); }
+      .wrap { max-width: 520px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
+      .head { text-align: center; }
+      .logo { width: 84px; height: 84px; object-fit: contain; margin: 8px auto 16px; display: block; }
+      .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #fbbf24; background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.3); padding: 6px 12px; border-radius: 999px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; }
+      h1 { font-size: 26px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.03em; margin: 16px 0 8px; }
+      p.sub { color: #a1a1aa; margin: 0 auto 22px; max-width: 360px; line-height: 1.5; font-size: 15px; }
+      .actions { display: grid; gap: 10px; margin-bottom: 28px; }
+      .btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; border-radius: 16px; font-weight: 800; font-size: 14px; text-decoration: none; border: 0; cursor: pointer; }
+      .primary { background: linear-gradient(90deg, #22d3ee, #06b6d4); color: #09090b; }
+      .ghost { background: #18181b; color: #e4e4e7; border: 1px solid #27272a; }
+      h2 { font-size: 11px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: #22d3ee; margin: 0 0 10px 4px; }
+      ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      li a { display: block; padding: 12px 14px; border-radius: 14px; background: #18181b; border: 1px solid #27272a; color: #f4f4f5; text-decoration: none; }
+      li a small { display: block; color: #71717a; font-size: 12px; margin-top: 2px; }
+      .empty { color: #71717a; font-size: 14px; padding: 4px; }
     </style>
   </head>
   <body>
-    <div class="wrap" style="padding-top: calc(24px + env(safe-area-inset-top)); padding-bottom: calc(24px + env(safe-area-inset-bottom));">
-      <img src="/icons/icon-192.png" alt="CapibaraTraductor" />
-      <h1>Sin conexión</h1>
-      <p>No hay internet. Igual puedes leer los mangas que descargaste en este dispositivo.</p>
-      <a class="btn" href="/descargas">Mis descargas</a>
-      <a class="ghost btn" href="#" onclick="location.reload();return false;">Reintentar</a>
+    <div class="wrap">
+      <div class="head">
+        <img class="logo" src="/icons/icon-192.png" alt="CapibaraTraductor" />
+        <span class="pill"><span class="dot"></span>Sin conexión</span>
+        <h1>Estás sin internet</h1>
+        <p class="sub">Puedes seguir leyendo lo que descargaste y volver a abrir las páginas que ya visitaste en este dispositivo.</p>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" href="/descargas">Leer mis descargas</a>
+        <button class="btn ghost" type="button" onclick="location.reload()">Reintentar</button>
+      </div>
+
+      <h2>Guardado en este dispositivo</h2>
+      <ul id="lista"><li class="empty">Buscando páginas guardadas…</li></ul>
     </div>
+
+    <script>
+      // Al volver la conexión, recarga sola la página que se quería abrir.
+      window.addEventListener('online', function () { location.reload(); });
+
+      fetch('/__offline-pages.json')
+        .then(function (r) { return r.json(); })
+        .catch(function () { return []; })
+        .then(function (paginas) {
+          var ul = document.getElementById('lista');
+          ul.innerHTML = '';
+          if (!paginas || !paginas.length) {
+            ul.innerHTML = '<li class="empty">Todavía no hay páginas guardadas. Se guardan solas a medida que navegas con conexión.</li>';
+            return;
+          }
+          paginas.slice(0, 40).forEach(function (p) {
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = p.url;
+            a.textContent = (p.titulo || p.url).replace(/\s*[-|·]\s*CapibaraTraductor.*$/i, '');
+            var s = document.createElement('small');
+            var d = new Date(p.at);
+            s.textContent = 'Visto el ' + d.toLocaleDateString('es') + ' a las ' + d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+            a.appendChild(s);
+            li.appendChild(a);
+            ul.appendChild(li);
+          });
+        });
+    </script>
   </body>
 </html>

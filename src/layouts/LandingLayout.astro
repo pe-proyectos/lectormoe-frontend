@@ -6,6 +6,7 @@ import MobileTabBar from '../components/ui/MobileTabBar';
 import GlobalToaster from '../components/ui/GlobalToaster';
 import PullToRefresh from '../components/ui/PullToRefresh';
 import AppNative from '../components/app/AppNative';
+import InstallApp from '../components/ui/InstallApp';
 import { resolveAdsProvider, SOCIAL_BAR_HABILITADA } from '../util/ads-provider';
 import { ADSTERRA_GLOBAL } from '../util/adsterra';
 import { ClientRouter } from 'astro:transitions';
@@ -95,6 +96,12 @@ const siteName =
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/png" href={faviconUrl} />
     <link rel="manifest" href="/manifest.json" />
+    {/* Instalación como app (PWA): iPhone no lee el manifest para esto. */}
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Capibara" />
     <link rel="preconnect" href="https://r2.capibaratraductor.com" crossorigin />
     <link rel="canonical" href={Astro.url.origin + Astro.url.pathname} />
     <title>{title}</title>
@@ -169,6 +176,7 @@ const siteName =
     <slot />
     <GlobalToaster client:only="react" transition:persist="toaster" />
     <AppNative client:only="react" transition:persist="appnative" />
+    {!isNativeApp && <InstallApp client:only="react" transition:persist="install-app" conBarraInferior={!hideTabBar} />}
     {!hideTabBar && <PullToRefresh client:only="react" transition:persist="ptr" />}
     {!hideTabBar && <div class="h-16 md:hidden" aria-hidden="true"></div>}
     {!hideTabBar && (
@@ -266,7 +274,15 @@ const siteName =
       })();
     </script>
     <script is:inline>
-      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+      if ('serviceWorker' in navigator) {
+        // En la primera visita la página carga antes de que el service worker
+        // la controle: se le pide que guarde también esta página para offline.
+        const sinControl = !navigator.serviceWorker.controller;
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => navigator.serviceWorker.ready)
+          .then((reg) => { if (sinControl && reg.active) reg.active.postMessage({ type: 'guardar-pagina', url: location.href }); })
+          .catch(() => {});
+      }
     </script>
   </body>
 </html>

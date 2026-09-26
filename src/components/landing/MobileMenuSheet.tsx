@@ -16,6 +16,7 @@ import {
   LogIn,
   UserPlus,
   LogOut,
+  Smartphone,
 } from 'lucide-react';
 import { enlacesDescubrir, enlacesComunidad, useGeneros, conParams, type Item } from './NavMegaMenu';
 
@@ -307,6 +308,23 @@ const MobileMenuSheet: React.FC<MobileMenuSheetProps> = ({
                 ))}
               </div>
             </Seccion>
+          )}
+
+          {typeof window !== 'undefined' && (window as any).__capiPuedeInstalar && !window.matchMedia('(display-mode: standalone)').matches && (
+            <div className="px-4 mt-6">
+              <button
+                type="button"
+                onClick={() => { onClose(); window.dispatchEvent(new Event('capi:instalar')); }}
+                className="flex w-full items-center gap-3 rounded-2xl bg-zinc-900/70 p-3 ring-1 ring-zinc-800 active:bg-zinc-800 transition-colors text-left"
+              >
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-800 ${tono}`}><Smartphone size={19} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-white">Instalar app</span>
+                  <span className="block text-xs text-zinc-500">Ábrela desde tu inicio y lee sin conexión</span>
+                </span>
+                <ChevronRight size={16} className="text-zinc-600" />
+              </button>
+            </div>
           )}
 
           <div className="px-4 mt-6 grid grid-cols-2 gap-2">

@@ -1,14 +1,44 @@
 {
+  "id": "/",
   "name": "CapibaraTraductor",
   "short_name": "Capibara",
+  "description": "Lee mangas, manhwas y novelas de todos los scans en español. Descarga capítulos y léelos sin conexión.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#09090b",
   "theme_color": "#09090b",
   "lang": "es",
+  "dir": "ltr",
+  "categories": ["books", "entertainment", "social"],
+  "prefer_related_applications": false,
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mis descargas",
+      "short_name": "Descargas",
+      "description": "Lee lo que descargaste, también sin conexión",
+      "url": "/descargas",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Buscar",
+      "short_name": "Buscar",
+      "url": "/search",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Novelas",
+      "short_name": "Novelas",
+      "url": "/writings",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

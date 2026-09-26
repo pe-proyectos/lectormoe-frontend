@@ -130,9 +130,17 @@ Translations in `src/translations/{en,es}.ts`. Use `getTranslator(language)` fro
 - `components/ui/MobileTabBar.tsx`: barra inferior (Inicio/Buscar/Mi Lista/
   Alertas/Perfil). Se monta desde `LandingLayout.astro`; se oculta con la prop
   `hideTabBar` (lector de capítulos inmersivo, admin).
-- PWA: `public/manifest.json`, `public/sw.js` (cache-first SOLO para
-  `/_astro`, `/icons`, `/images`; NUNCA `/api` ni HTML), `public/offline.html`.
-  El SW versiona el cache (`capibara-static-vN`): sube la versión para invalidar.
+- PWA: `public/manifest.json`, `public/sw.js`, `public/offline.html`,
+  `components/ui/InstallApp.tsx` (aviso "Instalar app", pasos en iPhone y
+  aviso de sin conexión). El SW usa tres caches:
+  - `capibara-static-vN`: `/_astro`, `/icons`, `/images` (cache-first).
+  - `capibara-pages-vN`: HTML de páginas visitadas (network-first, respaldo
+    offline, máx. 80). Excluye cuenta, pagos, admin y sesión (`NO_CACHE_PAGE`).
+  - `capibara-api-vN`: GET de endpoints de contenido en `API_PUBLICO` y
+    `API_PERSONAL` (network-first). Lo personal se separa por cuenta con una
+    huella del token. Endpoints de sesión, pagos o admin nunca se guardan.
+  Sube la versión de una cache para invalidarla. Las descargas cifradas viven
+  en IndexedDB y se leen en `/descargas`.
 - Fundamentos móviles (tap highlight, inputs 16px, scrollbars ocultos, util
   `.cv-auto`) están en el `<style is:global>` de `LandingLayout.astro`.
 
